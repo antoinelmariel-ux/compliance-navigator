@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from '../react.js';
 import {
   Rocket,
-  Users,
   Calendar,
   AlertTriangle,
   Close,
@@ -345,23 +344,6 @@ const buildHeroHighlights = ({ targetAudience, runway }) => {
   return highlights;
 };
 
-const renderList = (items) => {
-  if (!Array.isArray(items) || items.length === 0) {
-    return null;
-  }
-
-  return (
-    <ul className="mt-4 space-y-2 text-sm leading-relaxed text-slate-200/90">
-      {items.map((item, index) => (
-        <li key={`${item}-${index}`} className="flex items-start gap-3">
-          <CheckCircle className="mt-0.5 h-4 w-4 text-sky-300" />
-          <span className="flex-1">{renderTextWithLinks(item)}</span>
-        </li>
-      ))}
-    </ul>
-  );
-};
-
 export const ProjectShowcase = ({
   projectName,
   onClose,
@@ -501,52 +483,6 @@ export const ProjectShowcase = ({
   const runway = useMemo(() => computeRunway(answers), [answers]);
   const timelineSummary = useMemo(() => computeTimelineSummary(timelineDetails), [timelineDetails]);
   const primaryRisk = useMemo(() => getPrimaryRisk(analysis), [analysis]);
-  const [parallaxOffset, setParallaxOffset] = useState({ x: 0, y: 0 });
-
-  const handleParallaxMove = useCallback((event) => {
-    const bounds = event.currentTarget.getBoundingClientRect();
-    const offsetX = (event.clientX - bounds.left) / bounds.width - 0.5;
-    const offsetY = (event.clientY - bounds.top) / bounds.height - 0.5;
-
-    setParallaxOffset({
-      x: Math.max(-0.5, Math.min(0.5, offsetX)),
-      y: Math.max(-0.5, Math.min(0.5, offsetY))
-    });
-  }, []);
-
-  const handleParallaxLeave = useCallback(() => {
-    setParallaxOffset({ x: 0, y: 0 });
-  }, []);
-
-  const heroTitleStyle = useMemo(
-    () => ({
-      backgroundImage: 'linear-gradient(120deg, #a855f7, #6366f1, #0ea5e9)',
-      backgroundSize: '200% 200%',
-      backgroundPosition: `${50 + parallaxOffset.x * 30}% ${50 + parallaxOffset.y * 30}%`,
-      WebkitBackgroundClip: 'text',
-      color: 'transparent',
-      textShadow: '0 25px 60px rgba(79, 70, 229, 0.45)',
-      transform: `translate3d(${parallaxOffset.x * 10}px, ${parallaxOffset.y * 16}px, 0)`,
-      transition: 'background-position 0.25s ease, transform 0.25s ease'
-    }),
-    [parallaxOffset]
-  );
-
-  const parallaxLayers = useMemo(
-    () => ({
-      far: {
-        transform: `translate3d(${parallaxOffset.x * 12}px, ${parallaxOffset.y * 12}px, 0)`
-      },
-      mid: {
-        transform: `translate3d(${parallaxOffset.x * 20}px, ${parallaxOffset.y * 20}px, 0)`
-      },
-      near: {
-        transform: `translate3d(${parallaxOffset.x * 32}px, ${parallaxOffset.y * 32}px, 0)`
-      }
-    }),
-    [parallaxOffset]
-  );
-
   const heroHighlights = useMemo(
     () =>
       buildHeroHighlights({
@@ -554,6 +490,48 @@ export const ProjectShowcase = ({
         runway
       }),
     [targetAudience, runway]
+  );
+
+  const innovationProcessSteps = useMemo(
+    () => parseListAnswer(getRawAnswer(answers, 'innovationProcess')),
+    [answers]
+  );
+
+  const teamMemberCards = useMemo(
+    () =>
+      teamCoreMembers.map((entry, index) => {
+        const raw = typeof entry === 'string' ? entry : String(entry ?? '');
+        const normalized = raw.trim();
+
+        if (normalized.length === 0) {
+          return {
+            id: `team-member-${index}`,
+            name: 'Membre clé',
+            details: null,
+            initials: '•',
+            fullText: raw
+          };
+        }
+
+        const separatorIndex = normalized.search(/[-–—:•]/);
+        const name = separatorIndex > -1 ? normalized.slice(0, separatorIndex).trim() : normalized;
+        const details = separatorIndex > -1 ? normalized.slice(separatorIndex + 1).trim() : '';
+        const initials = name
+          .split(/\s+/)
+          .filter(Boolean)
+          .slice(0, 2)
+          .map(part => part[0]?.toUpperCase() || '')
+          .join('');
+
+        return {
+          id: `team-member-${index}`,
+          name: name || normalized,
+          details: details.length > 0 ? details : null,
+          initials: initials.length > 0 ? initials : (normalized[0]?.toUpperCase() ?? '•'),
+          fullText: normalized
+        };
+      }),
+    [teamCoreMembers]
   );
 
   useEffect(() => {
@@ -601,578 +579,484 @@ export const ProjectShowcase = ({
     }
   }, [renderInStandalone]);
 
-  const neoCardShadow = '18px 18px 45px rgba(15, 23, 42, 0.55), -18px -18px 45px rgba(148, 163, 184, 0.12)';
-  const neoInsetShadow = 'inset 8px 8px 16px rgba(15, 23, 42, 0.45), inset -8px -8px 16px rgba(148, 163, 184, 0.15)';
 
-  const showcaseCard = (
-    <div
-      data-showcase-card
-      data-showcase-theme={showcaseThemeId}
-      className="relative w-full overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100"
-      onMouseMove={handleParallaxMove}
-      onMouseLeave={handleParallaxLeave}
-    >
-      <div className="pointer-events-none absolute inset-0 overflow-hidden" data-showcase-overlay>
-        <div
-          className="absolute -top-48 -left-32 h-80 w-80 rounded-full bg-indigo-500/20 blur-3xl transition-transform duration-300 ease-out"
-          style={parallaxLayers.far}
-          aria-hidden="true"
-          data-showcase-layer="glow-far"
-        />
-        <div
-          className="absolute -bottom-40 -right-24 h-96 w-96 rounded-full bg-sky-500/25 blur-[120px] transition-transform duration-500 ease-out"
-          style={parallaxLayers.mid}
-          aria-hidden="true"
-          data-showcase-layer="glow-mid"
-        />
-        <div
-          className="absolute top-1/2 left-1/2 h-[520px] w-[520px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/10 bg-white/5 backdrop-blur-xl transition-transform duration-300 ease-out"
-          style={parallaxLayers.near}
-          aria-hidden="true"
-          data-showcase-layer="glow-near"
-        />
-        <div
-          className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.12),_transparent_60%)]"
-          aria-hidden="true"
-          data-showcase-layer="glow-overlay"
-        />
-      </div>
+  const hasTimelineProfiles = Array.isArray(timelineSummary?.profiles) && timelineSummary.profiles.length > 0;
 
-      <div className="relative px-6 pt-10 pb-16 sm:px-14 sm:pt-16 sm:pb-20">
-        <div
-          data-showcase-theme-info
-          className="mb-8 flex flex-col gap-3 rounded-[28px] border border-white/10 bg-white/5 p-4 sm:flex-row sm:items-center sm:justify-between"
-        >
-          <div className="text-xs text-slate-200/80">
-            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.45em] text-indigo-200/80">Style de présentation</p>
-            <p className="mt-2 text-sm font-semibold uppercase tracking-[0.3em] text-white">{SHOWCASE_THEME.label}</p>
+  const previewContent = shouldShowPreview ? (
+    <div className="aurora-sections">
+      <section className="aurora-section aurora-hero" data-showcase-section="hero">
+        <div className="aurora-section__inner">
+          <div className="aurora-hero__copy">
+            <p className="aurora-eyebrow">Immersion</p>
+            <h1 className="aurora-hero__title">{safeProjectName}</h1>
+            {hasText(slogan) && (
+              <p className="aurora-hero__subtitle">{renderTextWithLinks(slogan)}</p>
+            )}
+            <div className="aurora-cta-group">
+              <button type="button" className="aurora-cta">Découvrir le projet</button>
+            </div>
           </div>
-          {SHOWCASE_THEME.description && (
-            <p className="text-[0.7rem] leading-relaxed text-slate-300/80 sm:max-w-sm">
-              {SHOWCASE_THEME.description}
-            </p>
+          {heroHighlights.length > 0 && (
+            <div className="aurora-hero__highlights">
+              {heroHighlights.map((highlight, index) => (
+                <div
+                  key={highlight.id}
+                  className="aurora-hero-highlight"
+                  style={{ animationDelay: `${index * 0.15}s` }}
+                >
+                  <p className="aurora-hero-highlight__label">{highlight.label}</p>
+                  <p className="aurora-hero-highlight__value">{highlight.value}</p>
+                  <p className="aurora-hero-highlight__caption">{highlight.caption}</p>
+                </div>
+              ))}
+            </div>
           )}
         </div>
+      </section>
 
-        <header
-          data-showcase-section="hero"
-          className="rounded-[32px] border border-white/10 bg-white/5 p-8 sm:p-12 backdrop-blur-xl"
-          style={{ boxShadow: '20px 20px 60px rgba(2, 6, 23, 0.45), -18px -18px 50px rgba(148, 163, 184, 0.12)' }}
-        >
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-            <div className="max-w-3xl">
-              {shouldShowPreview ? (
-                <>
-                  <h2
-                    className="mt-6 text-5xl font-black leading-tight sm:text-6xl sm:leading-[1.05]"
-                    style={heroTitleStyle}
-                  >
-                    {safeProjectName}
-                  </h2>
-                  {hasText(slogan) && (
-                    <p className="mt-5 text-2xl font-semibold text-indigo-200 sm:text-3xl" style={{ textShadow: '0 12px 40px rgba(79, 70, 229, 0.4)' }}>
-                      {renderTextWithLinks(slogan)}
-                    </p>
-                  )}
-                </>
-              ) : (
-                <>
-                  <p className="mt-6 text-[0.65rem] font-semibold uppercase tracking-[0.45em] text-indigo-200">Mode édition</p>
-                  <h2 className="mt-4 text-4xl font-bold text-white sm:text-5xl">
-                    Personnalisez la vitrine du projet
-                  </h2>
-                  <p className="mt-3 text-sm text-slate-300/80">
-                    Modifiez les informations via le formulaire ci-dessous. L'aperçu est temporairement masqué pendant l'édition.
-                  </p>
-                </>
-              )}
-            </div>
-            <div className="flex flex-wrap items-center gap-3 self-start lg:self-auto">
-              {canEdit && (
-                <div className="flex items-center gap-2">
-                  {isEditing ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={handleCancelEditing}
-                        className="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/10 px-4 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.45em] text-slate-200 transition hover:bg-white/20"
-                      >
-                        Annuler
-                      </button>
-                      <button
-                        type="submit"
-                        form={formId}
-                        className="inline-flex items-center justify-center rounded-full border border-indigo-400/60 bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-400 px-4 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.45em] text-white shadow-lg shadow-indigo-500/30 transition hover:brightness-110"
-                      >
-                        <CheckCircle className="mr-2 h-4 w-4" />
-                        Enregistrer
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleStartEditing}
-                      className="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/10 px-4 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.45em] text-indigo-200 transition hover:bg-white/20"
-                    >
-                      <Edit className="mr-2 h-4 w-4" />
-                      Editer
-                    </button>
-                  )}
+      <section className="aurora-section aurora-why" data-showcase-section="problem">
+        <div className="aurora-section__inner aurora-section__inner--narrow">
+          <div className="aurora-section__header">
+            <p className="aurora-eyebrow">Pourquoi maintenant</p>
+            <h2 className="aurora-section__title">Les signaux qui rendent l'action incontournable</h2>
+          </div>
+          {problemPainPoints.length > 0 && (
+            <div className="aurora-why__points">
+              {problemPainPoints.map((point, index) => (
+                <div
+                  key={`${point}-${index}`}
+                  className="aurora-why__point"
+                  style={{ animationDelay: `${index * 0.12 + 0.1}s` }}
+                >
+                  <span className="aurora-why__beam" />
+                  <span className="aurora-why__text">{renderTextWithLinks(point)}</span>
                 </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="aurora-section aurora-response" data-showcase-section="solution">
+        <div className="aurora-section__inner">
+          <div className="aurora-section__header aurora-section__header--split">
+            <div>
+              <p className="aurora-eyebrow">Notre réponse</p>
+              <h2 className="aurora-section__title">L'expérience Aurora au service du produit</h2>
+            </div>
+            <Rocket className="aurora-section__icon" />
+          </div>
+          <div className="aurora-pillars">
+            {hasText(solutionDescription) && (
+              <div className="aurora-pillar">
+                <h3 className="aurora-pillar__title">Expérience proposée</h3>
+                <p className="aurora-pillar__text">{renderTextWithLinks(solutionDescription)}</p>
+              </div>
+            )}
+            {solutionBenefits.length > 0 && (
+              <div className="aurora-pillar">
+                <h3 className="aurora-pillar__title">Bénéfices clés</h3>
+                <ul className="aurora-pillar__list">
+                  {solutionBenefits.map((benefit, index) => (
+                    <li key={`${benefit}-${index}`} className="aurora-pillar__item">
+                      <span className="aurora-pillar__bullet" />
+                      <span>{renderTextWithLinks(benefit)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {hasText(solutionComparison) && (
+              <div className="aurora-pillar">
+                <h3 className="aurora-pillar__title">Différenciation</h3>
+                <p className="aurora-pillar__text">{renderTextWithLinks(solutionComparison)}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {hasText(innovationProcess) && (
+        <section className="aurora-section aurora-difference" data-showcase-section="innovation">
+          <div className="aurora-section__inner">
+            <div className="aurora-section__header aurora-section__header--split">
+              <div>
+                <p className="aurora-eyebrow">Notre différence</p>
+                <h2 className="aurora-section__title">Une innovation guidée par la lumière</h2>
+              </div>
+              <Compass className="aurora-section__icon" />
+            </div>
+            <div className="aurora-difference__layout">
+              <div className="aurora-difference__text">{renderTextWithLinks(innovationProcess)}</div>
+              {innovationProcessSteps.length > 0 && (
+                <ul className="aurora-difference__timeline">
+                  {innovationProcessSteps.map((step, index) => (
+                    <li
+                      key={`${step}-${index}`}
+                      className="aurora-difference__step"
+                      style={{ animationDelay: `${index * 0.14}s` }}
+                    >
+                      <span className="aurora-difference__node" />
+                      <span className="aurora-difference__label">{renderTextWithLinks(step)}</span>
+                    </li>
+                  ))}
+                </ul>
               )}
-              <button
-                type="button"
-                onClick={onClose}
-                className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/10 p-3 text-slate-200 transition hover:bg-white/20"
-                aria-label="Fermer la vitrine du projet"
-                ref={renderInStandalone ? undefined : closeButtonRef}
-              >
-                <Close className="h-4 w-4" />
-              </button>
             </div>
           </div>
+        </section>
+      )}
 
-          {isEditing && canEdit && (
-              <form
-                id={formId}
-                onSubmit={handleSubmitEdit}
-                className="mt-10 space-y-6 rounded-[28px] border border-white/15 bg-slate-900/60 p-6 sm:p-8 text-slate-100 backdrop-blur-xl"
-                style={{ boxShadow: neoCardShadow }}
-              >
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-[0.65rem] font-semibold uppercase tracking-[0.45em] text-indigo-200">Mode édition actif</p>
-                    <h3 className="mt-1 text-lg font-semibold text-white">Ajustez les informations présentées dans la vitrine</h3>
-                  </div>
-                  <p className="text-xs text-slate-300/80 sm:max-w-xs">
-                    Chaque modification sera appliquée aux réponses du questionnaire correspondant.
-                  </p>
+      <section className="aurora-section aurora-impact" data-showcase-section="evidence">
+        <div className="aurora-section__inner">
+          <div className="aurora-section__header">
+            <p className="aurora-eyebrow">Impact & preuves</p>
+            <h2 className="aurora-section__title">Les repères qui donnent confiance</h2>
+          </div>
+          <div className="aurora-impact__grid">
+            {timelineSummary && (
+              <div className="aurora-impact__card">
+                <p className="aurora-impact__label">Préparation au lancement</p>
+                <p className="aurora-impact__value">{`${timelineSummary.weeks} sem.`}</p>
+                <p className="aurora-impact__caption">
+                  {timelineSummary.satisfied
+                    ? 'Runway suffisant pour activer les relais.'
+                    : 'Runway à renforcer pour sécuriser la diffusion.'}
+                </p>
+              </div>
+            )}
+            <div className="aurora-impact__card">
+              <p className="aurora-impact__label">Complexité estimée</p>
+              <p className="aurora-impact__value">{complexity}</p>
+              <p className="aurora-impact__caption">Basée sur les points de vigilance identifiés.</p>
+            </div>
+            {runway && (
+              <div className="aurora-impact__card">
+                <p className="aurora-impact__label">Runway projet</p>
+                <p className="aurora-impact__value">{runway.weeksLabel}</p>
+                <p className="aurora-impact__caption">{`Du ${runway.startLabel} au ${runway.endLabel}`}</p>
+              </div>
+            )}
+          </div>
+          {impactIndicators.length > 0 && (
+            <div className="aurora-impact__vision">
+              <h3 className="aurora-impact__vision-title">Indicateurs d'impact</h3>
+              <ul className="aurora-impact__vision-list">
+                {impactIndicators.map((indicator, index) => (
+                  <li key={`${indicator}-${index}`} className="aurora-impact__vision-item">
+                    <span className="aurora-impact__vision-pulse" />
+                    <span>{renderTextWithLinks(indicator)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {primaryRisk && (
+            <div className="aurora-risk-halo" data-showcase-aside="risk">
+              <AlertTriangle className="aurora-risk-halo__icon" />
+              <p className="aurora-risk-halo__label">Point de vigilance</p>
+              <h4 className="aurora-risk-halo__title">{primaryRisk.title || 'Vigilance prioritaire'}</h4>
+              <p className="aurora-risk-halo__text">{renderTextWithLinks(primaryRisk.description)}</p>
+              <p className="aurora-risk-halo__priority">Priorité : {primaryRisk.priority}</p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="aurora-section aurora-team" data-showcase-section="team">
+        <div className="aurora-section__inner">
+          <div className="aurora-section__header">
+            <p className="aurora-eyebrow">Équipe & alliances</p>
+            <h2 className="aurora-section__title">Les talents derrière la vision</h2>
+          </div>
+          <div className="aurora-team__layout">
+            <div className="aurora-team__lead">
+              {hasText(teamLead) && (
+                <div className="aurora-team__lead-info">
+                  <p className="aurora-team__lead-label">Lead du projet</p>
+                  <p className="aurora-team__lead-name">{renderTextWithLinks(teamLead)}</p>
+                  {hasText(teamLeadTeam) && (
+                    <p className="aurora-team__lead-team">{`Équipe : ${teamLeadTeam}`}</p>
+                  )}
                 </div>
+              )}
+            </div>
+            {teamMemberCards.length > 0 && (
+              <div className="aurora-team__carousel">
+                {teamMemberCards.map((member, index) => (
+                  <div
+                    key={member.id}
+                    className="aurora-team__card"
+                    style={{ animationDelay: `${index * 0.08}s` }}
+                  >
+                    <span className="aurora-team__avatar">{member.initials}</span>
+                    <div className="aurora-team__card-text">
+                      <p className="aurora-team__card-name">{member.name}</p>
+                      <p className="aurora-team__card-role">
+                        {member.details ? renderTextWithLinks(member.details) : renderTextWithLinks(member.fullText)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          {normalizedTeams.length > 0 && (
+            <div className="aurora-partners">
+              {normalizedTeams.map(team => (
+                <div key={team.id} className="aurora-partner">
+                  <span className="aurora-partner__name">{team.name}</span>
+                  {team.expertise && <span className="aurora-partner__role">{team.expertise}</span>}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
 
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  {editableFields.map(field => {
-                    const fieldId = field.id;
-                    const question = field.question;
-                    const type = question?.type || field.fallbackType || 'text';
-                    const label = question?.question || field.fallbackLabel || fieldId;
-                    const fieldValue = draftValues[fieldId];
-                    const options = Array.isArray(question?.options) ? question.options : [];
-                    const isLong = type === 'long_text';
-                    const isMulti = type === 'multi_choice';
-                    const isChoice = type === 'choice';
-                    const isDate = type === 'date';
-                    const isMultiWithOptions = isMulti && options.length > 0;
-                    const isMultiFreeform = isMulti && !isMultiWithOptions;
-                    const isChoiceWithOptions = isChoice && options.length > 0;
-                    const selectedValues = Array.isArray(fieldValue) ? fieldValue : [];
-                    const textValue = typeof fieldValue === 'string' ? fieldValue : '';
-                    const helperText = isMultiWithOptions
-                      ? 'Sélectionnez une ou plusieurs options.'
-                      : isMultiFreeform
-                        ? 'Indiquez une valeur par ligne.'
-                        : ['problemPainPoints', 'solutionBenefits', 'teamCoreMembers', 'visionStatement'].includes(fieldId)
-                          ? 'Utilisez une ligne par élément pour une meilleure mise en forme.'
-                          : null;
+      {(runway || timelineSummary) && (
+        <section className="aurora-section aurora-roadmap" data-showcase-section="timeline">
+          <div className="aurora-section__inner">
+            <div className="aurora-section__header aurora-section__header--split">
+              <div>
+                <p className="aurora-eyebrow">Feuille de route</p>
+                <h2 className="aurora-section__title">Tracer les prochains jalons</h2>
+              </div>
+              <Calendar className="aurora-section__icon" />
+            </div>
+            {runway && (
+              <p className="aurora-roadmap__intro">
+                Runway projet de <span>{runway.weeksLabel}</span> ({runway.daysLabel}) du {runway.startLabel} au {runway.endLabel}.
+              </p>
+            )}
+            {hasTimelineProfiles ? (
+              <ul className="aurora-roadmap__timeline">
+                {timelineSummary.profiles.map((profile, index) => (
+                  <li
+                    key={profile.id || `profile-${index}`}
+                    className="aurora-roadmap__step"
+                    style={{ animationDelay: `${index * 0.1}s` }}
+                  >
+                    <span className="aurora-roadmap__node" />
+                    <div>
+                      <p className="aurora-roadmap__label">{profile.label}</p>
+                      {profile.description && (
+                        <p className="aurora-roadmap__caption">{renderTextWithLinks(profile.description)}</p>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : timelineSummary ? (
+              <div className="aurora-roadmap__summary">
+                <p className="aurora-roadmap__label">{timelineSummary.ruleName}</p>
+                <p className="aurora-roadmap__value">{timelineSummary.weeks} semaines ({timelineSummary.days} jours)</p>
+                <p className="aurora-roadmap__caption">
+                  {timelineSummary.satisfied
+                    ? 'Runway conforme aux exigences identifiées.'
+                    : 'Un ajustement est recommandé pour sécuriser les jalons.'}
+                </p>
+              </div>
+            ) : null}
+          </div>
+        </section>
+      )}
+    </div>
+  ) : (
+    <div className="aurora-preview-placeholder">
+      <h2 className="aurora-preview-placeholder__title">Mode édition activé</h2>
+      <p className="aurora-preview-placeholder__text">
+        Le rendu Aurora est temporairement masqué pendant vos ajustements.
+      </p>
+    </div>
+  );
+
+  const editPanel = isEditing && canEdit ? (
+    <form id={formId} onSubmit={handleSubmitEdit} className="aurora-edit-panel">
+      <div className="aurora-edit-panel__header">
+        <div>
+          <p className="aurora-eyebrow aurora-eyebrow--soft">Mode édition actif</p>
+          <h3 className="aurora-edit-panel__title">Ajustez les informations présentées dans la vitrine</h3>
+        </div>
+        <p className="aurora-edit-panel__intro">
+          Chaque modification sera appliquée aux réponses du questionnaire correspondant.
+        </p>
+      </div>
+      <div className="aurora-edit-panel__grid">
+        {editableFields.map(field => {
+          const fieldId = field.id;
+          const question = field.question;
+          const type = question?.type || field.fallbackType || 'text';
+          const label = question?.question || field.fallbackLabel || fieldId;
+          const fieldValue = draftValues[fieldId];
+          const options = Array.isArray(question?.options) ? question.options : [];
+          const isLong = type === 'long_text';
+          const isMulti = type === 'multi_choice';
+          const isChoice = type === 'choice';
+          const isDate = type === 'date';
+          const isMultiWithOptions = isMulti && options.length > 0;
+          const isMultiFreeform = isMulti && !isMultiWithOptions;
+          const isChoiceWithOptions = isChoice && options.length > 0;
+          const selectedValues = Array.isArray(fieldValue) ? fieldValue : [];
+          const textValue = typeof fieldValue === 'string' ? fieldValue : '';
+          const helperText = isMultiWithOptions
+            ? 'Sélectionnez une ou plusieurs options.'
+            : isMultiFreeform
+              ? 'Indiquez une valeur par ligne.'
+              : ['problemPainPoints', 'solutionBenefits', 'teamCoreMembers', 'visionStatement'].includes(fieldId)
+                ? 'Utilisez une ligne par élément pour une meilleure mise en forme.'
+                : null;
+
+          return (
+            <div key={fieldId} className={`aurora-field${isLong || isMulti ? ' aurora-field--wide' : ''}`}>
+              <label htmlFor={`showcase-edit-${fieldId}`} className="aurora-field__label">
+                {label}
+              </label>
+              {isDate ? (
+                <input
+                  id={`showcase-edit-${fieldId}`}
+                  type="date"
+                  value={typeof fieldValue === 'string' ? fieldValue : ''}
+                  onChange={event => handleFieldChange(fieldId, event.target.value)}
+                  className="aurora-form-control"
+                />
+              ) : isMultiWithOptions ? (
+                <div className="aurora-option-grid">
+                  {options.map((option, optionIndex) => {
+                    const optionId = `showcase-edit-${fieldId}-option-${optionIndex}`;
+                    const isChecked = selectedValues.includes(option);
 
                     return (
-                      <div key={fieldId} className={`${isLong || isMulti ? 'sm:col-span-2' : ''}`}>
-                        <label
-                          htmlFor={`showcase-edit-${fieldId}`}
-                          className="block text-[0.65rem] font-semibold uppercase tracking-[0.4em] text-indigo-200/80"
-                        >
-                          {label}
-                        </label>
-                        {isDate ? (
-                          <input
-                            id={`showcase-edit-${fieldId}`}
-                            type="date"
-                            value={typeof fieldValue === 'string' ? fieldValue : ''}
-                            onChange={event => handleFieldChange(fieldId, event.target.value)}
-                            className="mt-2 w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-400 focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-400/40"
-                            style={{ boxShadow: neoInsetShadow }}
-                          />
-                        ) : isMultiWithOptions ? (
-                          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                            {options.map((option, optionIndex) => {
-                              const optionId = `showcase-edit-${fieldId}-option-${optionIndex}`;
-                              const isChecked = selectedValues.includes(option);
+                      <label
+                        key={optionId}
+                        htmlFor={optionId}
+                        className={`aurora-option${isChecked ? ' aurora-option--active' : ''}`}
+                      >
+                        <input
+                          id={optionId}
+                          type="checkbox"
+                          value={option}
+                          checked={isChecked}
+                          onChange={event => {
+                            const { checked } = event.target;
+                            handleFieldChange(fieldId, previousValue => {
+                              const previousSelections = Array.isArray(previousValue) ? previousValue : [];
+                              const selectionSet = new Set(previousSelections);
 
-                              return (
-                                <label
-                                  key={optionId}
-                                  htmlFor={optionId}
-                                  className="flex items-center gap-3 rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 transition hover:border-indigo-300/60"
-                                  style={{ boxShadow: neoInsetShadow }}
-                                >
-                                  <input
-                                    id={optionId}
-                                    type="checkbox"
-                                    value={option}
-                                    checked={isChecked}
-                                    onChange={event => {
-                                      const { checked } = event.target;
-                                      handleFieldChange(fieldId, previousValue => {
-                                        const previousSelections = Array.isArray(previousValue) ? previousValue : [];
-                                        const selectionSet = new Set(previousSelections);
+                              if (checked) {
+                                selectionSet.add(option);
+                              } else {
+                                selectionSet.delete(option);
+                              }
 
-                                        if (checked) {
-                                          selectionSet.add(option);
-                                        } else {
-                                          selectionSet.delete(option);
-                                        }
+                              if (options.length > 0) {
+                                return options.filter(choice => selectionSet.has(choice));
+                              }
 
-                                        if (options.length > 0) {
-                                          return options.filter(choice => selectionSet.has(choice));
-                                        }
-
-                                        return Array.from(selectionSet);
-                                      });
-                                    }}
-                                    className="h-4 w-4 rounded border-white/30 bg-slate-950 text-indigo-400 focus:ring-indigo-400/40"
-                                  />
-                                  <span className="flex-1 text-sm text-slate-100">{option}</span>
-                                </label>
-                              );
-                            })}
-                          </div>
-                        ) : isChoiceWithOptions ? (
-                          <select
-                            id={`showcase-edit-${fieldId}`}
-                            value={textValue}
-                            onChange={event => handleFieldChange(fieldId, event.target.value)}
-                            className="mt-2 w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-400/40"
-                            style={{ boxShadow: neoInsetShadow }}
-                          >
-                            <option value="">Sélectionnez une option</option>
-                            {options.map(option => (
-                              <option key={option} value={option}>
-                                {option}
-                              </option>
-                            ))}
-                          </select>
-                        ) : isLong || isMultiFreeform ? (
-                          <textarea
-                            id={`showcase-edit-${fieldId}`}
-                            value={textValue}
-                            onChange={event => handleFieldChange(fieldId, event.target.value)}
-                            rows={isMultiFreeform ? 4 : 5}
-                            className="mt-2 w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-400 focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-400/40"
-                            style={{ boxShadow: neoInsetShadow }}
-                          />
-                        ) : (
-                          <input
-                            id={`showcase-edit-${fieldId}`}
-                            type="text"
-                            value={textValue}
-                            onChange={event => handleFieldChange(fieldId, event.target.value)}
-                            className="mt-2 w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-400 focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-400/40"
-                            style={{ boxShadow: neoInsetShadow }}
-                          />
-                        )}
-                        {helperText && (
-                            <p className="mt-2 text-xs text-slate-400">{helperText}</p>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-                    <button
-                      type="button"
-                      onClick={handleCancelEditing}
-                      className="inline-flex items-center justify-center rounded-full border border-white/15 bg-white/5 px-5 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.45em] text-slate-200 transition hover:bg-white/10"
-                    >
-                      Annuler
-                    </button>
-                    <button
-                      type="submit"
-                      className="inline-flex items-center justify-center rounded-full border border-indigo-400/60 bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-400 px-5 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.45em] text-white shadow-lg shadow-indigo-500/30 transition hover:brightness-110"
-                    >
-                      <CheckCircle className="mr-2 h-4 w-4" />
-                      Enregistrer les modifications
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              {shouldShowPreview && heroHighlights.length > 0 && (
-                <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-3">
-                  {heroHighlights.map(highlight => (
-                    <div
-                      key={highlight.id}
-                      data-showcase-element="hero-highlight"
-                      className="rounded-3xl border border-white/10 bg-white/5 p-6 text-sm text-slate-200 backdrop-blur-xl"
-                      style={{ boxShadow: neoCardShadow }}
-                    >
-                      <p className="text-[0.65rem] font-semibold uppercase tracking-[0.45em] text-indigo-200/90">
-                        {highlight.label}
-                      </p>
-                      <p className="mt-3 text-3xl font-bold text-white" style={{ textShadow: '0 18px 45px rgba(79, 70, 229, 0.45)' }}>
-                        {highlight.value}
-                      </p>
-                      <p className="mt-3 text-xs text-slate-300/80">{highlight.caption}</p>
-                    </div>
+                              return Array.from(selectionSet);
+                            });
+                          }}
+                          className="aurora-option__checkbox"
+                        />
+                        <span className="aurora-option__text">{option}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              ) : isChoiceWithOptions ? (
+                <select
+                  id={`showcase-edit-${fieldId}`}
+                  value={textValue}
+                  onChange={event => handleFieldChange(fieldId, event.target.value)}
+                  className="aurora-form-control"
+                >
+                  <option value="">Sélectionnez une option</option>
+                  {options.map(option => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
                   ))}
-                </div>
+                </select>
+              ) : isLong || isMultiFreeform ? (
+                <textarea
+                  id={`showcase-edit-${fieldId}`}
+                  value={textValue}
+                  onChange={event => handleFieldChange(fieldId, event.target.value)}
+                  rows={isMultiFreeform ? 4 : 5}
+                  className="aurora-form-control aurora-form-control--textarea"
+                />
+              ) : (
+                <input
+                  id={`showcase-edit-${fieldId}`}
+                  type="text"
+                  value={textValue}
+                  onChange={event => handleFieldChange(fieldId, event.target.value)}
+                  className="aurora-form-control"
+                />
               )}
-            </header>
-
-            {shouldShowPreview && (
-              <section
-                data-showcase-section="problem"
-                className="mt-14 rounded-[32px] border border-white/10 bg-white/5 p-8 sm:p-12 text-slate-100 backdrop-blur-xl"
-                style={{ boxShadow: neoCardShadow }}
-              >
-                <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="max-w-3xl">
-                    <p className="text-[0.65rem] font-semibold uppercase tracking-[0.45em] text-indigo-200/80">Le problème</p>
-                    <h3 className="mt-3 text-3xl font-bold text-white">Pourquoi ce projet doit exister</h3>
-                    {renderList(problemPainPoints)}
-                  </div>
-                </div>
-              </section>
-            )}
-
-            {shouldShowPreview && (
-              <section
-                data-showcase-section="solution"
-                className="mt-14 rounded-[32px] border border-white/10 bg-gradient-to-br from-indigo-500/30 via-transparent to-sky-500/30 p-[1px]"
-                style={{ boxShadow: neoCardShadow }}
-              >
-                <div className="h-full w-full rounded-[30px] bg-slate-950/80 px-8 py-10 text-slate-100 sm:px-12">
-                  <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <p className="text-[0.65rem] font-semibold uppercase tracking-[0.45em] text-indigo-200/80">La solution</p>
-                      <h3 className="mt-3 text-3xl font-bold text-white">Comment nous changeons la donne</h3>
-                    </div>
-                    <Rocket className="text-4xl text-sky-300" />
-                  </div>
-                  <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-2">
-                    {hasText(solutionDescription) && (
-                      <div
-                        data-showcase-element="solution-card"
-                        className="rounded-3xl border border-white/10 bg-white/5 p-6 text-sm text-slate-200 backdrop-blur-xl"
-                        style={{ boxShadow: neoCardShadow }}
-                      >
-                        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.45em] text-indigo-200/90">Expérience proposée</p>
-                        <p className="mt-3 text-sm leading-relaxed text-slate-200/90">
-                          {renderTextWithLinks(solutionDescription)}
-                        </p>
-                      </div>
-                    )}
-                    {solutionBenefits.length > 0 && (
-                      <div
-                        data-showcase-element="solution-card"
-                        className="rounded-3xl border border-white/10 bg-white/5 p-6 text-sm text-slate-200 backdrop-blur-xl"
-                        style={{ boxShadow: neoCardShadow }}
-                      >
-                        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.45em] text-indigo-200/90">Bénéfices clés</p>
-                        {renderList(solutionBenefits)}
-                      </div>
-                    )}
-                    {hasText(solutionComparison) && (
-                      <div
-                        data-showcase-element="solution-card"
-                        className="rounded-3xl border border-white/10 bg-white/5 p-6 text-sm text-slate-200 backdrop-blur-xl"
-                        style={{ boxShadow: neoCardShadow }}
-                      >
-                        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.45em] text-indigo-200/90">Pourquoi c'est différent</p>
-                        <p className="mt-3 text-sm leading-relaxed text-slate-200/90">
-                          {renderTextWithLinks(solutionComparison)}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </section>
-            )}
-
-            {shouldShowPreview && hasText(innovationProcess) && (
-              <section
-                data-showcase-section="innovation"
-                className="mt-14 rounded-[32px] border border-white/10 bg-white/5 p-8 sm:p-12 text-slate-100 backdrop-blur-xl"
-                style={{ boxShadow: neoCardShadow }}
-              >
-                <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-                  <div>
-                    <p className="text-[0.65rem] font-semibold uppercase tracking-[0.45em] text-indigo-200/80">Innovation</p>
-                    <h3 className="mt-3 text-2xl font-bold text-white">Ce qui rend l'approche unique</h3>
-                  </div>
-                  <div
-                    data-showcase-element="innovation-card"
-                    className="rounded-3xl border border-white/10 bg-white/5 p-6 text-sm leading-relaxed text-slate-200 backdrop-blur-xl"
-                    style={{ boxShadow: neoCardShadow }}
-                  >
-                    <Compass className="mb-4 h-7 w-7 text-sky-300" />
-                    {renderTextWithLinks(innovationProcess)}
-                  </div>
-                </div>
-              </section>
-            )}
-
-            {shouldShowPreview && (
-              <section
-                data-showcase-section="evidence"
-                className="mt-14 rounded-[32px] border border-white/10 bg-white/5 p-8 sm:p-12 text-slate-100 backdrop-blur-xl"
-                style={{ boxShadow: neoCardShadow }}
-              >
-                <div className="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
-                  <div className="max-w-3xl space-y-8">
-                    <div>
-                      <p className="text-[0.65rem] font-semibold uppercase tracking-[0.45em] text-indigo-200/80">Potentiel & impact</p>
-                      <h3 className="mt-3 text-3xl font-bold text-white">Les preuves qui donnent envie d'y croire</h3>
-                      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        {timelineSummary && (
-                          <div
-                            data-showcase-element="metric-card"
-                            className="rounded-3xl border border-white/10 bg-white/5 p-5 text-sm text-slate-200 backdrop-blur-xl"
-                            style={{ boxShadow: neoCardShadow }}
-                          >
-                            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.45em] text-indigo-200/70">Préparation au lancement</p>
-                            <p className="mt-2 text-2xl font-bold text-white">{`${timelineSummary.weeks} sem.`}</p>
-                            <p className="mt-2 text-xs text-slate-300/80">
-                              {timelineSummary.satisfied ? 'Runway suffisant pour activer les relais.' : 'Runway à renforcer pour sécuriser la diffusion.'}
-                            </p>
-                          </div>
-                        )}
-                        <div
-                          data-showcase-element="metric-card"
-                          className="rounded-3xl border border-white/10 bg-white/5 p-5 text-sm text-slate-200 backdrop-blur-xl"
-                          style={{ boxShadow: neoCardShadow }}
-                        >
-                          <p className="text-[0.65rem] font-semibold uppercase tracking-[0.45em] text-indigo-200/70">Complexité estimée</p>
-                          <p className="mt-2 text-2xl font-bold text-white">{complexity}</p>
-                          <p className="mt-2 text-xs text-slate-300/80">Basée sur les points de vigilance identifiés.</p>
-                        </div>
-                      </div>
-                    </div>
-                    {impactIndicators.length > 0 && (
-                      <div
-                        data-showcase-element="vision-card"
-                        className="rounded-3xl border border-white/10 bg-white/5 p-6 text-slate-200 backdrop-blur-xl"
-                        style={{ boxShadow: neoCardShadow }}
-                      >
-                        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.45em] text-indigo-200/80">
-                          Indicateurs d'impact
-                        </p>
-                        {renderList(impactIndicators)}
-                      </div>
-                    )}
-                  </div>
-                  {primaryRisk && (
-                    <aside
-                      data-showcase-aside="risk"
-                      className="max-w-sm rounded-3xl border border-amber-400/30 bg-gradient-to-br from-amber-500/20 via-amber-500/10 to-amber-300/10 p-6 text-sm leading-relaxed text-amber-100 backdrop-blur-xl"
-                      style={{ boxShadow: neoCardShadow }}
-                    >
-                      <AlertTriangle className="mb-4 h-8 w-8 text-amber-300" />
-                      <p className="text-[0.65rem] font-semibold uppercase tracking-[0.4em] text-amber-200/90">Point de vigilance</p>
-                      <h4 className="mt-3 text-xl font-semibold text-white">{primaryRisk.title || 'Vigilance prioritaire'}</h4>
-                      <p className="mt-4 text-sm text-amber-100/90">{renderTextWithLinks(primaryRisk.description)}</p>
-                      <p className="mt-4 text-[0.65rem] font-semibold uppercase tracking-[0.4em] text-amber-200/90">Priorité : {primaryRisk.priority}</p>
-                    </aside>
-                  )}
-                </div>
-              </section>
-            )}
-
-            {shouldShowPreview && (
-              <section
-                data-showcase-section="team"
-                className="mt-14 rounded-[32px] border border-white/10 bg-white/5 p-8 sm:p-12 text-slate-100 backdrop-blur-xl"
-                style={{ boxShadow: neoCardShadow }}
-              >
-                <div className="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
-                  <div className="max-w-3xl space-y-6 text-sm text-slate-200/90">
-                    <div>
-                      <p className="text-[0.65rem] font-semibold uppercase tracking-[0.45em] text-indigo-200/80">L'équipe</p>
-                      <h3 className="mt-3 text-3xl font-bold text-white">Les talents derrière la vision</h3>
-                    </div>
-                    {hasText(teamLead) && (
-                      <div className="space-y-2">
-                        <p>
-                          <span className="font-semibold text-white">Lead du projet :</span>{' '}
-                          {renderTextWithLinks(teamLead)}
-                        </p>
-                        {hasText(teamLeadTeam) && (
-                          <p className="text-xs uppercase tracking-[0.25em] text-indigo-200/80">
-                            {`Équipe : ${teamLeadTeam}`}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                    {teamCoreMembers.length > 0 && (
-                      <div>
-                        <p className="text-sm font-semibold uppercase tracking-[0.2em] text-indigo-200/90">Collectif moteur</p>
-                        {renderList(teamCoreMembers)}
-                      </div>
-                    )}
-                  </div>
-                  {normalizedTeams.length > 0 && (
-                    <aside
-                      data-showcase-aside="teams"
-                      className="max-w-sm rounded-3xl border border-white/10 bg-white/5 p-6 text-sm text-slate-100 backdrop-blur-xl"
-                      style={{ boxShadow: neoCardShadow }}
-                    >
-                      <p className="text-[0.65rem] font-semibold uppercase tracking-[0.45em] text-indigo-200/80">Alliés activés</p>
-                      <div className="mt-4 space-y-3">
-                        {normalizedTeams.map(team => (
-                          <div key={team.id} className="flex items-start gap-3">
-                            <Users className="mt-1 h-4 w-4 text-sky-300" />
-                            <div>
-                              <p className="text-sm font-semibold text-white">{team.name}</p>
-                              <p className="text-xs text-slate-300/80">{team.expertise}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </aside>
-                  )}
-                </div>
-              </section>
-            )}
-
-            {shouldShowPreview && (runway || timelineSummary) && (
-              <section
-                data-showcase-section="timeline"
-                className="mt-14 rounded-[32px] border border-white/10 bg-gradient-to-br from-indigo-500/25 via-transparent to-sky-500/25 p-8 sm:p-12 text-slate-100 backdrop-blur-xl"
-                style={{ boxShadow: neoCardShadow }}
-              >
-                <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-                  <div className="space-y-3">
-                    <p className="text-[0.65rem] font-semibold uppercase tracking-[0.45em] text-indigo-200/80">Prochaines étapes</p>
-                    <h3 className="text-2xl font-bold text-white">Orchestrer la narration jusqu'au lancement</h3>
-                    {runway && (
-                      <p className="text-sm text-slate-200/90">
-                        Runway prévu de <span className="font-semibold text-white">{runway.weeksLabel}</span> ({runway.daysLabel}) entre le {runway.startLabel} et le {runway.endLabel}.
-                      </p>
-                    )}
-                  </div>
-                  <Calendar className="text-4xl text-sky-300" />
-                </div>
-                {timelineSummary?.profiles?.length > 0 && (
-                  <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    {timelineSummary.profiles.map(profile => (
-                      <div
-                        data-showcase-element="timeline-profile"
-                        key={profile.id}
-                        className="rounded-3xl border border-white/10 bg-white/5 p-5 text-sm text-slate-200 backdrop-blur-xl"
-                        style={{ boxShadow: neoCardShadow }}
-                      >
-                        <p className="text-sm font-semibold text-white">{profile.label}</p>
-                        {profile.description && (
-                          <p className="mt-2 text-xs text-slate-300/80">{profile.description}</p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </section>
-            )}
-
-        </div>
+              {helperText && <p className="aurora-field__helper">{helperText}</p>}
+            </div>
+          );
+        })}
       </div>
+      <div className="aurora-edit-panel__actions">
+        <button type="button" onClick={handleCancelEditing} className="aurora-button aurora-button--ghost">
+          Annuler
+        </button>
+        <button type="submit" className="aurora-button aurora-button--primary">
+          <CheckCircle className="aurora-button__icon" />
+          Enregistrer les modifications
+        </button>
+      </div>
+    </form>
+  ) : null;
+
+  const editBar = (
+    <div className={`aurora-edit-bar${isEditing ? ' aurora-edit-bar--editing' : ''}`}>
+      <div className="aurora-theme-pill">
+        <span className="aurora-theme-pill__label">{SHOWCASE_THEME.label}</span>
+        {SHOWCASE_THEME.description && (
+          <span className="aurora-theme-pill__description">{SHOWCASE_THEME.description}</span>
+        )}
+      </div>
+      <div className="aurora-edit-actions">
+        {canEdit && (
+          isEditing ? (
+            <>
+              <button type="button" onClick={handleCancelEditing} className="aurora-button aurora-button--ghost">
+                Annuler
+              </button>
+              <button type="submit" form={formId} className="aurora-button aurora-button--primary">
+                <CheckCircle className="aurora-button__icon" />
+                Enregistrer
+              </button>
+            </>
+          ) : (
+            <button type="button" onClick={handleStartEditing} className="aurora-button aurora-button--outline">
+              <Edit className="aurora-button__icon" />
+              Modifier
+            </button>
+          )
+        )}
+        <button
+          type="button"
+          onClick={onClose}
+          className="aurora-close"
+          aria-label="Fermer la vitrine du projet"
+          ref={renderInStandalone ? undefined : closeButtonRef}
+        >
+          <Close className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+
+  const content = (
+    <>
+      {editBar}
+      {editPanel}
+      {previewContent}
+    </>
   );
 
   if (renderInStandalone) {
@@ -1180,9 +1064,9 @@ export const ProjectShowcase = ({
       <div
         data-showcase-scope
         data-showcase-theme={showcaseThemeId}
-        className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 py-12 px-4 sm:px-8"
+        className="aurora-shell aurora-shell--standalone"
       >
-        <div className="mx-auto w-full">{showcaseCard}</div>
+        {content}
       </div>
     );
   }
@@ -1191,11 +1075,10 @@ export const ProjectShowcase = ({
     <section
       data-showcase-scope
       data-showcase-theme={showcaseThemeId}
-      className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 px-4 py-10 sm:px-8"
+      className="aurora-shell"
       aria-label="Vitrine marketing du projet"
     >
-      <div className="w-full">{showcaseCard}</div>
+      {content}
     </section>
   );
 };
-
