@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from '../react.js';
+import React, { useEffect, useMemo, useRef, useState } from '../react.js';
 import {
   Info,
   Calendar,
@@ -29,6 +29,39 @@ const normalizeMilestoneDrafts = (value) => {
     date: typeof item?.date === 'string' ? item.date : '',
     description: typeof item?.description === 'string' ? item.description : ''
   }));
+};
+
+const isMilestoneDraftEmpty = (entry) => {
+  const date = typeof entry?.date === 'string' ? entry.date.trim() : '';
+  const description = typeof entry?.description === 'string' ? entry.description.trim() : '';
+
+  return date.length === 0 && description.length === 0;
+};
+
+const areMilestoneDraftsEqual = (first, second) => {
+  if (!Array.isArray(first) || !Array.isArray(second)) {
+    return false;
+  }
+
+  if (first.length !== second.length) {
+    return false;
+  }
+
+  return first.every((entry, index) => {
+    const counterpart = second[index];
+
+    if (!counterpart) {
+      return false;
+    }
+
+    const entryDate = typeof entry?.date === 'string' ? entry.date : '';
+    const entryDescription = typeof entry?.description === 'string' ? entry.description : '';
+    const counterpartDate = typeof counterpart?.date === 'string' ? counterpart.date : '';
+    const counterpartDescription =
+      typeof counterpart?.description === 'string' ? counterpart.description : '';
+
+    return entryDate === counterpartDate && entryDescription === counterpartDescription;
+  });
 };
 
 const sanitizeMilestonesForAnswer = (drafts) => {
@@ -70,6 +103,7 @@ export const QuestionnaireScreen = ({
   const multiSelection = Array.isArray(currentAnswer) ? currentAnswer : [];
   const [showGuidance, setShowGuidance] = useState(false);
   const [milestoneDrafts, setMilestoneDrafts] = useState(() => normalizeMilestoneDrafts(currentAnswer));
+  const milestoneQuestionIdRef = useRef(questionType === 'milestone_list' ? currentQuestion.id : null);
   const questionTextId = `question-${currentQuestion.id}`;
   const instructionsId = `instructions-${currentQuestion.id}`;
   const guidancePanelId = `guidance-${currentQuestion.id}`;
@@ -83,11 +117,38 @@ export const QuestionnaireScreen = ({
   }, [currentQuestion.id]);
 
   useEffect(() => {
-    if (questionType === 'milestone_list') {
-      setMilestoneDrafts(normalizeMilestoneDrafts(currentAnswer));
-    } else {
+    if (questionType !== 'milestone_list') {
+      milestoneQuestionIdRef.current = null;
       setMilestoneDrafts([]);
+      return;
     }
+
+    const normalizedAnswer = normalizeMilestoneDrafts(currentAnswer);
+    const previousQuestionId = milestoneQuestionIdRef.current;
+    milestoneQuestionIdRef.current = currentQuestion.id;
+
+    setMilestoneDrafts(previousDrafts => {
+      if (previousQuestionId !== currentQuestion.id) {
+        return normalizedAnswer;
+      }
+
+      if (
+        normalizedAnswer.length === 0 &&
+        Array.isArray(previousDrafts) &&
+        previousDrafts.length > 0 &&
+        previousDrafts.every(isMilestoneDraftEmpty)
+      ) {
+        return previousDrafts;
+      }
+
+      const normalizedPreviousDrafts = normalizeMilestoneDrafts(previousDrafts);
+
+      if (areMilestoneDraftsEqual(normalizedPreviousDrafts, normalizedAnswer)) {
+        return previousDrafts;
+      }
+
+      return normalizedAnswer;
+    });
   }, [currentAnswer, currentQuestion.id, questionType]);
 
   const guidance = currentQuestion.guidance || {};
