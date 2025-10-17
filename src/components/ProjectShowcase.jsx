@@ -35,11 +35,25 @@ const getRawAnswer = (answers, id) => {
 
 const hasText = (value) => typeof value === 'string' && value.trim().length > 0;
 
-const SHOWCASE_THEME = {
-  id: 'aurora',
-  label: 'Aurora néon',
-  description: 'Jeux de lumières et ambiance futuriste pour un rendu premium.',
-};
+const SHOWCASE_THEMES = [
+  {
+    id: 'aurora',
+    label: 'Aura néon',
+    description: 'Jeux de lumières futuristes et halos électriques pour un rendu premium.'
+  },
+  {
+    id: 'lumen',
+    label: 'Lumen Atelier',
+    description: 'Univers crème pastel, rubans lumineux et séparateurs graphiques sans effet carte.'
+  },
+  {
+    id: 'zenith',
+    label: 'Zenith Breeze',
+    description: 'Vibrations glacier translucides avec accents sauge et dégradés aériens.'
+  }
+];
+
+const SHOWCASE_THEME_STORAGE_KEY = 'compliance-navigator.showcase.theme';
 
 const SHOWCASE_FIELD_CONFIG = [
   { id: 'projectName', fallbackLabel: 'Nom du projet', fallbackType: 'text' },
@@ -537,7 +551,57 @@ export const ProjectShowcase = ({
     [questions]
   );
 
-  const showcaseThemeId = SHOWCASE_THEME.id;
+  const defaultThemeId = SHOWCASE_THEMES[0]?.id || 'aurora';
+
+  const [showcaseThemeId, setShowcaseThemeId] = useState(() => {
+    if (typeof window === 'undefined') {
+      return defaultThemeId;
+    }
+
+    try {
+      const storedTheme = window.localStorage.getItem(SHOWCASE_THEME_STORAGE_KEY);
+      if (storedTheme && SHOWCASE_THEMES.some(theme => theme.id === storedTheme)) {
+        return storedTheme;
+      }
+    } catch (error) {
+      // Ignored : accès localStorage indisponible (mode SSR/tests)
+    }
+
+    return defaultThemeId;
+  });
+
+  const selectedTheme = useMemo(
+    () => SHOWCASE_THEMES.find(theme => theme.id === showcaseThemeId) || SHOWCASE_THEMES[0],
+    [showcaseThemeId]
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(SHOWCASE_THEME_STORAGE_KEY, showcaseThemeId);
+    } catch (error) {
+      // Ignored : stockage non disponible
+    }
+  }, [showcaseThemeId]);
+
+  const handleSelectTheme = useCallback(
+    (themeId) => {
+      if (themeId === showcaseThemeId) {
+        return;
+      }
+
+      const isValidTheme = SHOWCASE_THEMES.some(theme => theme.id === themeId);
+      if (!isValidTheme) {
+        return;
+      }
+
+      setShowcaseThemeId(themeId);
+    },
+    [showcaseThemeId]
+  );
 
   const [isEditing, setIsEditing] = useState(false);
   const [draftValues, setDraftValues] = useState(() =>
@@ -565,6 +629,32 @@ export const ProjectShowcase = ({
   const canEdit = typeof onUpdateAnswers === 'function';
   const shouldShowPreview = !isEditing || !canEdit;
   const formId = 'project-showcase-edit-form';
+
+  const ThemeSelector = () => (
+    <header className="aurora-topbar" data-showcase-section="theme">
+      <div className="aurora-topbar__info">
+        <p className="aurora-eyebrow">Thème graphique</p>
+        <h2 className="aurora-topbar__title">{selectedTheme?.label}</h2>
+        {selectedTheme?.description && (
+          <p className="aurora-topbar__description">{selectedTheme.description}</p>
+        )}
+      </div>
+      <div className="aurora-theme-switcher" role="group" aria-label="Choisir un thème pour la vitrine">
+        {SHOWCASE_THEMES.map(theme => (
+          <button
+            key={theme.id}
+            type="button"
+            className="aurora-theme-switcher__option"
+            aria-pressed={theme.id === showcaseThemeId}
+            onClick={() => handleSelectTheme(theme.id)}
+            title={theme.description}
+          >
+            {theme.label}
+          </button>
+        ))}
+      </div>
+    </header>
+  );
 
   const handleStartEditing = useCallback(() => {
     setDraftValues(buildDraftValues(editableFields, answers, rawProjectName));
@@ -817,6 +907,7 @@ export const ProjectShowcase = ({
 
   const previewContent = shouldShowPreview ? (
     <div className="aurora-sections">
+      <ThemeSelector />
       <section className="aurora-section aurora-hero" data-showcase-section="hero">
         <div className="aurora-section__inner">
           <div className="aurora-hero__copy">
@@ -1510,6 +1601,7 @@ export const ProjectShowcase = ({
   const content = (
     <>
       {editBar}
+      {!shouldShowPreview && <ThemeSelector />}
       {editPanel}
       {previewContent}
     </>
