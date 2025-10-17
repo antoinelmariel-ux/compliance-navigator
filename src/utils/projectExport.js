@@ -1,0 +1,208 @@
+export const sanitizeFileName = (value, fallback = 'projet-compliance') => {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+
+  let normalized = value.trim();
+  if (normalized.length === 0) {
+    return fallback;
+  }
+
+  try {
+    normalized = normalized.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  } catch (error) {
+    normalized = normalized.replace(/[^\w\s-]/g, '');
+  }
+
+  const sanitized = normalized
+    .replace(/[^a-zA-Z0-9-_]+/g, '-')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60);
+
+  return sanitized.length > 0 ? sanitized : fallback;
+};
+
+export const getTeamPriority = (analysis, teamId) => {
+  if (!analysis) {
+    return 'Recommandé';
+  }
+
+  const priorityWeights = {
+    Recommandé: 1,
+    Important: 2,
+    Critique: 3
+  };
+
+  const getWeight = (priority) => priorityWeights[priority] || 0;
+
+  const risks = Array.isArray(analysis.risks) ? analysis.risks : [];
+  let bestPriority = 'Recommandé';
+
+  risks.forEach(risk => {
+    if (!Array.isArray(risk.teams) || !risk.teams.includes(teamId)) {
+      return;
+    }
+
+    if (getWeight(risk.priority) > getWeight(bestPriority)) {
+      bestPriority = risk.priority;
+    }
+  });
+
+  if (bestPriority !== 'Recommandé') {
+    return bestPriority;
+  }
+
+  const triggeredRules = Array.isArray(analysis.triggeredRules)
+    ? analysis.triggeredRules
+    : [];
+
+  triggeredRules.forEach(rule => {
+    if (!Array.isArray(rule.teams) || !rule.teams.includes(teamId)) {
+      return;
+    }
+
+    if (getWeight(rule.priority) > getWeight(bestPriority)) {
+      bestPriority = rule.priority;
+    }
+  });
+
+  return bestPriority;
+};
+
+export const buildProjectExport = ({
+  projectName,
+  answers,
+  analysis,
+  relevantTeams = [],
+  timelineByTeam = {},
+  timelineDetails = [],
+  questions = []
+} = {}) => {
+  const normalizedAnswers =
+    answers && typeof answers === 'object' ? answers : {};
+
+  const teamsSnapshot = Array.isArray(relevantTeams)
+    ? relevantTeams.map(team => ({
+        id: team.id,
+        name: team.name,
+        contact: team.contact || null,
+        priority: getTeamPriority(analysis, team.id)
+      }))
+    : [];
+
+  const questionsSnapshot = Array.isArray(questions)
+    ? questions.map(question => question.id).filter(Boolean)
+    : [];
+
+  return {
+    version: 1,
+    generatedAt: new Date().toISOString(),
+    project: {
+      name: projectName || 'Projet sans nom',
+      answers: normalizedAnswers,
+      analysis: analysis || null,
+      relevantTeams: teamsSnapshot,
+      timeline: {
+        byTeam: timelineByTeam || {},
+        details: Array.isArray(timelineDetails) ? timelineDetails : []
+      },
+      questionnaire: {
+        questionIds: questionsSnapshot
+      }
+    }
+  };
+};
+
+export const downloadProjectJson = (projectData, { projectName } = {}) => {
+  let jsonString = '';
+  let inferredName = projectName;
+
+  if (typeof projectData === 'string') {
+    jsonString = projectData;
+  } else if (projectData) {
+    inferredName = inferredName || projectData?.project?.name;
+    try {
+      jsonString = JSON.stringify(projectData, null, 2);
+    } catch (error) {
+      if (typeof console !== 'undefined' && typeof console.error === 'function') {
+        console.error('[projectExport] Impossible de sérialiser le projet :', error);
+      }
+      jsonString = JSON.stringify(
+        {
+          version: 1,
+          project: {
+            name: projectData?.project?.name || 'Projet sans nom',
+            answers: {}
+          }
+        },
+        null,
+        2
+      );
+    }
+  }
+
+  if (!jsonString) {
+    return false;
+  }
+
+  const fileNameBase = sanitizeFileName(inferredName || 'Projet compliance');
+  const fileName = `${fileNameBase}.json`;
+
+  if (
+    typeof document === 'undefined'
+    || typeof URL === 'undefined'
+    || typeof URL.createObjectURL !== 'function'
+    || typeof Blob === 'undefined'
+  ) {
+    if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+      console.warn('[projectExport] Environnement incompatible avec le téléchargement de fichiers.');
+    }
+    return false;
+  }
+
+  try {
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = fileName;
+    anchor.style.display = 'none';
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    setTimeout(() => {
+      if (typeof URL.revokeObjectURL === 'function') {
+        URL.revokeObjectURL(url);
+      }
+    }, 0);
+    return true;
+  } catch (error) {
+    if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+      console.warn('[projectExport] Téléchargement du projet impossible :', error);
+    }
+    return false;
+  }
+};
+
+export const exportProjectToFile = ({
+  projectName,
+  answers,
+  analysis,
+  relevantTeams,
+  timelineByTeam,
+  timelineDetails,
+  questions
+} = {}) => {
+  const exportPayload = buildProjectExport({
+    projectName,
+    answers,
+    analysis,
+    relevantTeams,
+    timelineByTeam,
+    timelineDetails,
+    questions
+  });
+
+  return downloadProjectJson(exportPayload, { projectName });
+};
