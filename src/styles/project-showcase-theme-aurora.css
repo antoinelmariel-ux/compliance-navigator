@@ -49,7 +49,6 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.85rem 1.5rem;
-  border-radius: 999px;
   background: rgba(10, 16, 30, 0.65);
   border: 1px solid rgba(148, 163, 184, 0.22);
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35);
@@ -346,7 +345,6 @@
   display: flex;
   align-items: center;
   padding: clamp(4rem, 10vh, 6rem) clamp(1.5rem, 7vw, 6rem);
-  border-radius: 3rem;
   overflow: hidden;
 }
 
