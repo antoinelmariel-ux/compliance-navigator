@@ -782,22 +782,27 @@ export const ProjectShowcase = ({
               )}
             </div>
             {teamMemberCards.length > 0 && (
-              <div className="aurora-team__carousel">
-                {teamMemberCards.map((member, index) => (
-                  <div
-                    key={member.id}
-                    className="aurora-team__card"
-                    style={{ animationDelay: `${index * 0.08}s` }}
-                  >
-                    <span className="aurora-team__avatar">{member.initials}</span>
-                    <div className="aurora-team__card-text">
-                      <p className="aurora-team__card-name">{member.name}</p>
-                      <p className="aurora-team__card-role">
-                        {member.details ? renderTextWithLinks(member.details) : renderTextWithLinks(member.fullText)}
-                      </p>
+              <div className="aurora-team__members">
+                <p className="aurora-team__members-label">Équipe projet</p>
+                <div className="aurora-team__carousel">
+                  {teamMemberCards.map((member, index) => (
+                    <div
+                      key={member.id}
+                      className="aurora-team__card"
+                      style={{ animationDelay: `${index * 0.08}s` }}
+                    >
+                      <span className="aurora-team__avatar">{member.initials}</span>
+                      <div className="aurora-team__card-text">
+                        <p className="aurora-team__card-name">{member.name}</p>
+                        <p className="aurora-team__card-role">
+                          {member.details
+                            ? renderTextWithLinks(member.details)
+                            : renderTextWithLinks(member.fullText)}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
           </div>
