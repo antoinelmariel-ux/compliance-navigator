@@ -121,28 +121,37 @@ export const HomeScreen = ({
                 <button
                   type="button"
                   onClick={onStartNewProject}
-                  className="inline-flex items-center justify-center px-5 py-3 text-base font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md transition-all hv-button hv-button-primary"
+                  className="inline-flex items-center justify-center gap-3 px-5 py-3 text-base font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md transition-all hv-button hv-button-primary"
                 >
-                  <Plus className="w-5 h-5 mr-2" />
-                  Créer un nouveau projet
+                  <Plus className="w-5 h-5" aria-hidden="true" />
+                  <span className="flex flex-col leading-tight text-left">
+                    <span>Créer un nouveau</span>
+                    <span>projet</span>
+                  </span>
                 </button>
                 {hasProjects && (
                   <button
                     type="button"
                     onClick={() => onOpenProject(sortedProjects[0]?.id)}
-                    className="inline-flex items-center justify-center px-5 py-3 text-base font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl border border-indigo-200 transition-all hv-button hv-focus-ring"
+                    className="inline-flex items-center justify-center gap-3 px-5 py-3 text-base font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl border border-indigo-200 transition-all hv-button hv-focus-ring"
                   >
-                    <Eye className="w-5 h-5 mr-2" />
-                    Reprendre le dernier projet
+                    <Eye className="w-5 h-5" aria-hidden="true" />
+                    <span className="flex flex-col leading-tight text-left">
+                      <span>Reprendre le</span>
+                      <span>dernier projet</span>
+                    </span>
                   </button>
                 )}
                 <button
                   type="button"
                   onClick={handleTriggerImport}
-                  className="inline-flex items-center justify-center px-5 py-3 text-base font-semibold text-indigo-600 bg-white hover:bg-indigo-50 rounded-xl border border-indigo-200 transition-all hv-button hv-focus-ring"
+                  className="inline-flex items-center justify-center gap-3 px-5 py-3 text-base font-semibold text-indigo-600 bg-white hover:bg-indigo-50 rounded-xl border border-indigo-200 transition-all hv-button hv-focus-ring"
                 >
-                  <Upload className="w-5 h-5 mr-2" />
-                  Charger un projet
+                  <Upload className="w-5 h-5" aria-hidden="true" />
+                  <span className="flex flex-col leading-tight text-left">
+                    <span>Charger</span>
+                    <span>un projet</span>
+                  </span>
                 </button>
               </div>
               <input
