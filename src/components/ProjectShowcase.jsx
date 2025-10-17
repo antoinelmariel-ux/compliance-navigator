@@ -60,6 +60,12 @@ const SHOWCASE_FIELD_CONFIG = [
   { id: 'roadmapMilestones', fallbackLabel: 'Jalons du projet', fallbackType: 'milestone_list' }
 ];
 
+const createEmptyMilestoneDragState = () => ({
+  fieldId: null,
+  sourceIndex: null,
+  targetIndex: null
+});
+
 const ensureStringArrayUniqueness = (values) => {
   const seen = new Set();
   return values.filter(value => {
@@ -538,6 +544,11 @@ export const ProjectShowcase = ({
   const [draftValues, setDraftValues] = useState(() =>
     buildDraftValues(editableFields, answers, rawProjectName)
   );
+  const [milestoneDragState, setMilestoneDragState] = useState(createEmptyMilestoneDragState);
+
+  const resetMilestoneDragState = useCallback(() => {
+    setMilestoneDragState(createEmptyMilestoneDragState());
+  }, []);
 
   useEffect(() => {
     if (isEditing) {
@@ -546,14 +557,21 @@ export const ProjectShowcase = ({
     setDraftValues(buildDraftValues(editableFields, answers, rawProjectName));
   }, [answers, editableFields, isEditing, rawProjectName]);
 
+  useEffect(() => {
+    if (!isEditing) {
+      resetMilestoneDragState();
+    }
+  }, [isEditing, resetMilestoneDragState]);
+
   const canEdit = typeof onUpdateAnswers === 'function';
   const shouldShowPreview = !isEditing || !canEdit;
   const formId = 'project-showcase-edit-form';
 
   const handleStartEditing = useCallback(() => {
     setDraftValues(buildDraftValues(editableFields, answers, rawProjectName));
+    resetMilestoneDragState();
     setIsEditing(true);
-  }, [answers, editableFields, rawProjectName]);
+  }, [answers, editableFields, rawProjectName, resetMilestoneDragState]);
 
   const handleCancelEditing = useCallback(() => {
     setDraftValues(buildDraftValues(editableFields, answers, rawProjectName));
@@ -1178,6 +1196,119 @@ export const ProjectShowcase = ({
             updateMilestoneDraft(entries => [...entries, { date: '', description: '' }]);
           };
 
+          const handleMilestoneDragStart = (index, event) => {
+            if (event?.dataTransfer) {
+              event.dataTransfer.effectAllowed = 'move';
+              try {
+                event.dataTransfer.setData('text/plain', String(index));
+              } catch (_error) {
+                // Certains navigateurs peuvent empêcher l'écriture : on ignore l'erreur.
+              }
+            }
+
+            setMilestoneDragState({
+              fieldId,
+              sourceIndex: index,
+              targetIndex: index
+            });
+          };
+
+          const handleMilestoneDragEnter = (index) => {
+            setMilestoneDragState(previous => {
+              if (previous.fieldId !== fieldId || previous.targetIndex === index) {
+                return previous;
+              }
+
+              return {
+                ...previous,
+                targetIndex: index
+              };
+            });
+          };
+
+          const handleMilestoneDragLeave = (index, event) => {
+            if (event?.currentTarget?.contains(event?.relatedTarget)) {
+              return;
+            }
+
+            setMilestoneDragState(previous => {
+              if (previous.fieldId !== fieldId || previous.targetIndex !== index) {
+                return previous;
+              }
+
+              return {
+                ...previous,
+                targetIndex: previous.sourceIndex
+              };
+            });
+          };
+
+          const handleMilestoneDragOver = (event) => {
+            if (milestoneDragState.fieldId === fieldId) {
+              event.preventDefault();
+              if (event?.dataTransfer) {
+                event.dataTransfer.dropEffect = 'move';
+              }
+            }
+          };
+
+          const handleMilestoneDrop = (index, event) => {
+            if (milestoneDragState.fieldId !== fieldId) {
+              return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            setMilestoneDragState(previous => {
+              if (previous.fieldId !== fieldId || typeof previous.sourceIndex !== 'number') {
+                return createEmptyMilestoneDragState();
+              }
+
+              const rawTargetIndex = typeof index === 'number' ? index : previous.targetIndex;
+
+              if (typeof rawTargetIndex !== 'number') {
+                return createEmptyMilestoneDragState();
+              }
+
+              updateMilestoneDraft(entries => {
+                if (!Array.isArray(entries) || entries.length <= 1) {
+                  return Array.isArray(entries) ? entries : [];
+                }
+
+                const boundedSourceIndex = Math.max(0, Math.min(entries.length - 1, previous.sourceIndex));
+                const maxTargetIndex = entries.length;
+                const normalizedTargetIndex = Math.max(0, Math.min(maxTargetIndex, rawTargetIndex));
+
+                let insertionIndex = normalizedTargetIndex;
+                if (boundedSourceIndex < normalizedTargetIndex) {
+                  insertionIndex = normalizedTargetIndex - 1;
+                }
+
+                const workingEntries = entries.slice();
+                const [movedEntry] = workingEntries.splice(boundedSourceIndex, 1);
+
+                if (!movedEntry) {
+                  return entries;
+                }
+
+                const safeInsertionIndex = Math.max(0, Math.min(workingEntries.length, insertionIndex));
+                workingEntries.splice(safeInsertionIndex, 0, movedEntry);
+
+                return workingEntries;
+              });
+
+              return createEmptyMilestoneDragState();
+            });
+          };
+
+          const handleMilestoneDragEnd = () => {
+            resetMilestoneDragState();
+          };
+
+          const isDropTargetAtEnd =
+            milestoneDragState.fieldId === fieldId && milestoneDragState.targetIndex === milestoneDraftEntries.length;
+
           return (
             <div key={fieldId} className={`aurora-field${isLong || isMulti || isMilestoneList ? ' aurora-field--wide' : ''}`}>
               <label htmlFor={`showcase-edit-${fieldId}`} className="aurora-field__label">
@@ -1191,9 +1322,33 @@ export const ProjectShowcase = ({
                   {milestoneDraftEntries.map((entry, index) => {
                     const dateInputId = `showcase-edit-${fieldId}-date-${index}`;
                     const descriptionInputId = `showcase-edit-${fieldId}-description-${index}`;
+                    const isCurrentDragging =
+                      milestoneDragState.fieldId === fieldId && milestoneDragState.sourceIndex === index;
+                    const isCurrentDropTarget =
+                      milestoneDragState.fieldId === fieldId &&
+                      milestoneDragState.targetIndex === index &&
+                      milestoneDragState.sourceIndex !== index;
+                    const milestoneRowClasses = [
+                      'aurora-milestone-row',
+                      isCurrentDragging ? 'aurora-milestone-row--dragging' : '',
+                      isCurrentDropTarget ? 'aurora-milestone-row--drop-target' : ''
+                    ]
+                      .filter(Boolean)
+                      .join(' ');
 
                     return (
-                      <div key={dateInputId} className="aurora-milestone-row">
+                      <div
+                        key={dateInputId}
+                        className={milestoneRowClasses}
+                        draggable={milestoneDraftEntries.length > 1}
+                        onDragStart={event => handleMilestoneDragStart(index, event)}
+                        onDragEnter={() => handleMilestoneDragEnter(index)}
+                        onDragLeave={event => handleMilestoneDragLeave(index, event)}
+                        onDragOver={handleMilestoneDragOver}
+                        onDrop={event => handleMilestoneDrop(index, event)}
+                        onDragEnd={handleMilestoneDragEnd}
+                        aria-grabbed={isCurrentDragging ? 'true' : 'false'}
+                      >
                         <div className="aurora-milestone-row__date">
                           <label htmlFor={dateInputId} className="aurora-milestone-label">
                             Date
@@ -1229,7 +1384,15 @@ export const ProjectShowcase = ({
                       </div>
                     );
                   })}
-                  <button type="button" onClick={handleMilestoneDraftAddition} className="aurora-milestone-add">
+                  <button
+                    type="button"
+                    onClick={handleMilestoneDraftAddition}
+                    className={`aurora-milestone-add${isDropTargetAtEnd ? ' aurora-milestone-add--drop-target' : ''}`}
+                    onDragEnter={() => handleMilestoneDragEnter(milestoneDraftEntries.length)}
+                    onDragLeave={event => handleMilestoneDragLeave(milestoneDraftEntries.length, event)}
+                    onDragOver={handleMilestoneDragOver}
+                    onDrop={event => handleMilestoneDrop(milestoneDraftEntries.length, event)}
+                  >
                     <Plus className="aurora-milestone-add__icon" />
                     Ajouter un jalon
                   </button>
