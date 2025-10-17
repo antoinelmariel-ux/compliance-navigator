@@ -17,7 +17,7 @@ import { extractProjectName } from './utils/projects.js';
 import { createDemoProject } from './data/demoProject.js';
 import { exportProjectToFile } from './utils/projectExport.js';
 
-const APP_VERSION = 'v1.0.31';
+const APP_VERSION = 'v1.0.32';
 
 const restoreShowcaseQuestions = (currentQuestions, referenceQuestions = initialQuestions) => {
   if (!Array.isArray(currentQuestions)) {
@@ -960,34 +960,26 @@ export const App = () => {
   }, [answers, rules, unansweredMandatoryQuestions]);
 
   return (
-    <div className="min-h-screen">
-      <nav className="bg-white shadow-sm border-b border-gray-200 hv-surface">
+    <div className="min-h-screen hv-app-shell">
+      <nav className="hv-topbar">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 py-4">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="hv-topbar__inner">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
-                <CheckCircle className="w-6 h-6 text-white" />
+              <div className="hv-brand-icon">
+                <CheckCircle className="w-6 h-6" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-gray-800 sm:text-xl">Compliance Advisor</h1>
-                <p className="text-xs text-gray-500">Outil d'aide à la décision</p>
+                <h1 className="hv-topbar__title">Compliance Advisor</h1>
+                <p className="hv-topbar__subtitle">Outil d'aide à la décision</p>
               </div>
             </div>
 
-            <div
-              className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3 lg:justify-end"
-              role="group"
-              aria-label="Sélection du mode d'utilisation"
-            >
+            <div className="hv-topbar__actions" role="group" aria-label="Sélection du mode d'utilisation">
               {mode === 'user' && (
                 <button
                   type="button"
                   onClick={() => setScreen('home')}
-                  className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button ${
-                    screen === 'home'
-                      ? 'bg-indigo-600 text-white hv-button-primary'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
+                  className={`hv-button hv-topbar__action ${screen === 'home' ? 'is-active' : ''}`}
                   aria-pressed={screen === 'home'}
                   aria-label="Retourner à l'accueil des projets"
                 >
@@ -998,11 +990,7 @@ export const App = () => {
                 <button
                   type="button"
                   onClick={() => setMode('user')}
-                  className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button ${
-                    mode === 'user'
-                      ? 'bg-indigo-600 text-white hv-button-primary'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
+                  className={`hv-button hv-topbar__action ${mode === 'user' ? 'is-active' : ''}`}
                   aria-pressed={mode === 'user'}
                   aria-label="Basculer vers le mode chef de projet"
                 >
@@ -1012,11 +1000,7 @@ export const App = () => {
               <button
                 type="button"
                 onClick={() => setMode('admin')}
-                className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button ${
-                  mode === 'admin'
-                    ? 'bg-indigo-600 text-white hv-button-primary'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+                className={`hv-button hv-topbar__action ${mode === 'admin' ? 'is-active' : ''}`}
                 aria-pressed={mode === 'admin'}
                 aria-label="Basculer vers le mode back-office"
               >
@@ -1102,8 +1086,8 @@ export const App = () => {
         )}
       </main>
 
-      <footer className="bg-white border-t border-gray-200 mt-10" aria-label="Pied de page">
-        <p className="text-xs text-gray-400 text-center py-4">
+      <footer className="hv-footer mt-10" aria-label="Pied de page">
+        <p className="hv-footer__version">
           Compliance Advisor · Version {APP_VERSION}
         </p>
       </footer>
