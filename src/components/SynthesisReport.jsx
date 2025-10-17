@@ -411,6 +411,8 @@ export const SynthesisReport = ({
 }) => {
   const [isShowcaseFallbackOpen, setIsShowcaseFallbackOpen] = useState(false);
   const showcaseFallbackRef = useRef(null);
+  const [attachmentReminder, setAttachmentReminder] = useState(null);
+  const reminderCloseButtonRef = useRef(null);
   const relevantTeams = teams.filter(team => (analysis?.teams || []).includes(team.id));
   const hasSaveFeedback = Boolean(saveFeedback?.message);
   const isSaveSuccess = saveFeedback?.status === 'success';
@@ -471,6 +473,19 @@ export const SynthesisReport = ({
     }
   }, [isShowcaseFallbackOpen, scrollShowcaseIntoView]);
 
+  useEffect(() => {
+    if (!attachmentReminder) {
+      return;
+    }
+
+    if (
+      reminderCloseButtonRef.current
+      && typeof reminderCloseButtonRef.current.focus === 'function'
+    ) {
+      reminderCloseButtonRef.current.focus();
+    }
+  }, [attachmentReminder]);
+
   const handleOpenShowcase = useCallback(() => {
     setIsShowcaseFallbackOpen(true);
 
@@ -485,6 +500,10 @@ export const SynthesisReport = ({
 
   const handleCloseShowcase = useCallback(() => {
     setIsShowcaseFallbackOpen(false);
+  }, []);
+
+  const handleDismissAttachmentReminder = useCallback(() => {
+    setAttachmentReminder(null);
   }, []);
 
   const handleSaveProject = useCallback(() => {
@@ -592,6 +611,7 @@ export const SynthesisReport = ({
     }
 
     downloadProjectJson(projectJson, { projectName });
+    setAttachmentReminder({ fileName });
 
     const fallbackBody = `${emailText}\n\nFichier du projet : ${fileName}\nLe fichier JSON a été téléchargé automatiquement ; merci de l'ajouter en pièce jointe avant envoi.`;
     const mailtoLink = buildMailtoLink({ projectName, relevantTeams, body: fallbackBody });
@@ -605,7 +625,8 @@ export const SynthesisReport = ({
     questions,
     relevantTeams,
     timelineByTeam,
-    timelineDetails
+    timelineDetails,
+    setAttachmentReminder
   ]);
 
   return (
@@ -904,6 +925,41 @@ export const SynthesisReport = ({
             timelineDetails={timelineDetails}
             onUpdateAnswers={onUpdateAnswers}
           />
+        </div>
+      )}
+      {attachmentReminder && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 bg-black bg-opacity-50"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="attachment-reminder-title"
+        >
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 sm:p-8 space-y-4 hv-surface hv-modal-panel">
+            <div className="flex items-center justify-center">
+              <Mail className="w-10 h-10 text-indigo-600" aria-hidden="true" />
+            </div>
+            <div className="text-center">
+              <h2 id="attachment-reminder-title" className="text-xl font-semibold text-gray-800">
+                N'oubliez pas la pièce jointe JSON
+              </h2>
+              <p className="mt-3 text-sm text-gray-600">
+                Le fichier{' '}
+                <span className="font-medium text-gray-900">{attachmentReminder.fileName}</span>
+                {' '}vient d'être téléchargé. Ajoutez-le en pièce jointe de votre e-mail aux équipes compliance pour garantir
+                l'intégration du projet dans la base de données.
+              </p>
+            </div>
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={handleDismissAttachmentReminder}
+                ref={reminderCloseButtonRef}
+                className="px-5 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 hv-button hv-button-primary"
+              >
+                Compris
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
