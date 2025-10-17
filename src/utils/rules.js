@@ -2,6 +2,77 @@ import { normalizeAnswerForComparison } from './questions.js';
 import { normalizeConditionGroups } from './conditionGroups.js';
 import { sanitizeRuleCondition } from './ruleConditions.js';
 
+const DEFAULT_COMPLEXITY_RULES = [
+  { id: 'default_low', label: 'Faible', minRisks: 0, maxRisks: 1 },
+  { id: 'default_medium', label: 'Modérée', minRisks: 2, maxRisks: 3 },
+  { id: 'default_high', label: 'Élevée', minRisks: 4, maxRisks: null }
+];
+
+const normalizeRiskLevelRules = (rules) => {
+  if (!Array.isArray(rules) || rules.length === 0) {
+    return DEFAULT_COMPLEXITY_RULES;
+  }
+
+  return rules
+    .map((rule, index) => {
+      const minRisks = Number.isFinite(rule?.minRisks)
+        ? Math.max(0, Math.floor(rule.minRisks))
+        : 0;
+      const maxRisks = Number.isFinite(rule?.maxRisks)
+        ? Math.max(0, Math.floor(rule.maxRisks))
+        : null;
+
+      return {
+        id: rule?.id || `risk_level_${index + 1}`,
+        label: typeof rule?.label === 'string' && rule.label.trim() !== ''
+          ? rule.label.trim()
+          : `Niveau ${index + 1}`,
+        description: typeof rule?.description === 'string'
+          ? rule.description.trim()
+          : '',
+        minRisks,
+        maxRisks
+      };
+    })
+    .sort((a, b) => {
+      if (a.minRisks !== b.minRisks) {
+        return a.minRisks - b.minRisks;
+      }
+
+      const aMax = a.maxRisks === null ? Number.POSITIVE_INFINITY : a.maxRisks;
+      const bMax = b.maxRisks === null ? Number.POSITIVE_INFINITY : b.maxRisks;
+
+      if (aMax !== bMax) {
+        return aMax - bMax;
+      }
+
+      return a.id.localeCompare(b.id);
+    });
+};
+
+const resolveComplexityLevel = (riskCount, riskLevelRules) => {
+  const normalizedRules = normalizeRiskLevelRules(riskLevelRules);
+  const firstRule = normalizedRules[0];
+
+  for (let index = 0; index < normalizedRules.length; index += 1) {
+    const rule = normalizedRules[index];
+    const matchesMinimum = riskCount >= rule.minRisks;
+    const matchesMaximum =
+      rule.maxRisks === null || rule.maxRisks === undefined
+        ? true
+        : riskCount <= rule.maxRisks;
+
+    if (matchesMinimum && matchesMaximum) {
+      return { label: rule.label, rule };
+    }
+  }
+
+  const fallback = riskCount < (firstRule?.minRisks ?? 0)
+    ? firstRule
+    : normalizedRules[normalizedRules.length - 1];
+  return { label: fallback?.label || 'Modérée', rule: fallback || null };
+};
+
 const matchesCondition = (condition, answers) => {
   if (!condition || !condition.question) {
     return true;
@@ -252,7 +323,7 @@ export const evaluateRule = (rule, answers) => {
   return { triggered, timingContexts };
 };
 
-export const analyzeAnswers = (answers, rules) => {
+export const analyzeAnswers = (answers, rules, riskLevelRules) => {
   const evaluations = rules.map(rule => ({ rule, evaluation: evaluateRule(rule, answers) }));
 
   const teamsSet = new Set();
@@ -342,8 +413,7 @@ export const analyzeAnswers = (answers, rules) => {
     });
   });
 
-  const complexityLevels = ['Faible', 'Modérée', 'Élevée'];
-  const complexity = complexityLevels[Math.min(2, Math.floor(allRisks.length / 2))];
+  const { label: complexity, rule: complexityRule } = resolveComplexityLevel(allRisks.length, riskLevelRules);
 
   return {
     triggeredRules: evaluations.filter(({ evaluation }) => evaluation.triggered).map(({ rule }) => rule),
@@ -354,7 +424,8 @@ export const analyzeAnswers = (answers, rules) => {
       byTeam: timelineByTeam,
       details: timingDetails
     },
-    complexity
+    complexity,
+    complexityRule
   };
 };
 

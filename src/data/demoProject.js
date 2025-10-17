@@ -1,5 +1,6 @@
 import { initialQuestions } from './questions.js';
 import { initialRules } from './rules.js';
+import { initialRiskLevelRules } from './riskLevelRules.js';
 import { analyzeAnswers } from '../utils/rules.js';
 
 const demoProjectAnswers = {
@@ -37,8 +38,12 @@ const demoProjectAnswers = {
 
 const DEMO_TIMESTAMP = '2024-04-18T09:00:00.000Z';
 
-export const createDemoProject = ({ questions = initialQuestions, rules = initialRules } = {}) => {
-  const analysis = analyzeAnswers(demoProjectAnswers, rules);
+export const createDemoProject = ({
+  questions = initialQuestions,
+  rules = initialRules,
+  riskLevelRules = initialRiskLevelRules
+} = {}) => {
+  const analysis = analyzeAnswers(demoProjectAnswers, rules, riskLevelRules);
   const totalQuestions = Array.isArray(questions) ? questions.length : Object.keys(demoProjectAnswers).length;
   const sanitizedTotal = totalQuestions > 0 ? totalQuestions : Object.keys(demoProjectAnswers).length;
 

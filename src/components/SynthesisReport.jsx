@@ -703,10 +703,15 @@ export const SynthesisReport = ({
             </div>
             <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between bg-white rounded-lg p-4 border border-gray-200 hv-surface" role="status" aria-live="polite">
               <span className="font-medium text-gray-700">Niveau de complexité compliance :</span>
-              <span className={`text-xl font-bold ${complexityColors[analysis.complexity]}`}>
+              <span className={`text-xl font-bold ${complexityColors[analysis.complexity] || 'text-indigo-600'}`}>
                 {analysis.complexity}
               </span>
             </div>
+            {analysis?.complexityRule?.description && (
+              <p className="mt-3 bg-white border border-gray-200 rounded-lg p-3 text-sm text-gray-600 hv-surface">
+                {analysis.complexityRule.description}
+              </p>
+            )}
           </section>
 
           {hasTimelineData && (

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from '../react.js';
-import { Settings, Plus, Edit, Trash2, Eye, Info, GripVertical, Download } from './icons.js';
+import { Settings, Plus, Edit, Trash2, Eye, Info, GripVertical, Download, ArrowUp, ArrowDown } from './icons.js';
 import { QuestionEditor } from './QuestionEditor.jsx';
 import { RuleEditor } from './RuleEditor.jsx';
 import { renderTextWithLinks } from '../utils/linkify.js';
@@ -194,13 +194,24 @@ const getTeamLabel = (teamId, teams) => {
   return teamId;
 };
 
-export const BackOffice = ({ questions, setQuestions, rules, setRules, teams, setTeams }) => {
+export const BackOffice = ({
+  questions,
+  setQuestions,
+  rules,
+  setRules,
+  riskLevelRules,
+  setRiskLevelRules,
+  teams,
+  setTeams
+}) => {
   const [activeTab, setActiveTab] = useState('questions');
   const [editingRule, setEditingRule] = useState(null);
   const [editingQuestion, setEditingQuestion] = useState(null);
   const [draggedQuestionIndex, setDraggedQuestionIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [reorderAnnouncement, setReorderAnnouncement] = useState('');
+  const safeRiskLevelRules = Array.isArray(riskLevelRules) ? riskLevelRules : [];
+  const riskLevelRuleCount = safeRiskLevelRules.length;
 
   useEffect(() => {
     if (!reorderAnnouncement || typeof window === 'undefined') {
@@ -322,6 +333,179 @@ export const BackOffice = ({ questions, setQuestions, rules, setRules, teams, se
     return candidate;
   };
 
+  const addRiskLevelRule = () => {
+    if (typeof setRiskLevelRules !== 'function') {
+      return;
+    }
+
+    const nextId = getNextId(safeRiskLevelRules, 'risk_level_');
+    const lastRule = safeRiskLevelRules[safeRiskLevelRules.length - 1];
+    const baseMinimum = lastRule
+      ? Math.max(
+        0,
+        Number.isFinite(lastRule?.maxRisks)
+          ? Math.floor(lastRule.maxRisks) + 1
+          : Number.isFinite(lastRule?.minRisks)
+            ? Math.floor(lastRule.minRisks) + 1
+            : safeRiskLevelRules.length
+      )
+      : 0;
+
+    const newRule = {
+      id: nextId,
+      label: 'Nouveau niveau',
+      minRisks: baseMinimum,
+      maxRisks: null,
+      description: ''
+    };
+
+    setRiskLevelRules([...safeRiskLevelRules, newRule]);
+    setActiveTab('riskLevels');
+    setReorderAnnouncement(`Niveau de risque ajouté en position ${safeRiskLevelRules.length + 1}.`);
+  };
+
+  const updateRiskLevelRuleField = (index, field, value) => {
+    if (typeof setRiskLevelRules !== 'function') {
+      return;
+    }
+
+    setRiskLevelRules(prevRules => {
+      const baseRules = Array.isArray(prevRules) ? [...prevRules] : [];
+      if (!baseRules[index]) {
+        return prevRules;
+      }
+
+      const updatedRule = { ...baseRules[index] };
+
+      if (field === 'label') {
+        updatedRule.label = value;
+      } else if (field === 'description') {
+        updatedRule.description = value;
+      } else if (field === 'minRisks') {
+        const parsed = Number.parseInt(value, 10);
+        updatedRule.minRisks = Number.isNaN(parsed) ? 0 : Math.max(0, parsed);
+      } else if (field === 'maxRisks') {
+        if (value === '' || value === null) {
+          updatedRule.maxRisks = null;
+        } else {
+          const parsed = Number.parseInt(value, 10);
+          updatedRule.maxRisks = Number.isNaN(parsed) ? null : Math.max(0, parsed);
+        }
+      }
+
+      baseRules[index] = updatedRule;
+      return baseRules;
+    });
+  };
+
+  const deleteRiskLevelRule = (id, index) => {
+    if (typeof setRiskLevelRules !== 'function') {
+      return;
+    }
+
+    if (safeRiskLevelRules.length <= 1) {
+      setReorderAnnouncement('Au moins un niveau de risque doit être conservé.');
+      return;
+    }
+
+    setRiskLevelRules(prevRules => {
+      const baseRules = Array.isArray(prevRules) ? [...prevRules] : [];
+
+      if (Number.isInteger(index) && index >= 0 && index < baseRules.length) {
+        baseRules.splice(index, 1);
+        return baseRules;
+      }
+
+      if (!id) {
+        return baseRules;
+      }
+
+      return baseRules.filter(rule => rule?.id !== id);
+    });
+
+    setReorderAnnouncement(`Niveau de risque supprimé. ${Math.max(safeRiskLevelRules.length - 1, 0)} niveau(x) restant(s).`);
+  };
+
+  const moveRiskLevelRule = (fromIndex, toIndex) => {
+    if (typeof setRiskLevelRules !== 'function') {
+      return;
+    }
+
+    if (
+      fromIndex === toIndex ||
+      fromIndex < 0 ||
+      toIndex < 0 ||
+      fromIndex >= safeRiskLevelRules.length ||
+      toIndex >= safeRiskLevelRules.length
+    ) {
+      return;
+    }
+
+    const movedRule = safeRiskLevelRules[fromIndex];
+
+    setRiskLevelRules(prevRules => {
+      const baseRules = Array.isArray(prevRules) ? [...prevRules] : [];
+      if (
+        fromIndex < 0 ||
+        fromIndex >= baseRules.length ||
+        toIndex < 0 ||
+        toIndex >= baseRules.length
+      ) {
+        return prevRules;
+      }
+
+      const next = [...baseRules];
+      const [extracted] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, extracted);
+      return next;
+    });
+
+    if (movedRule) {
+      const label = movedRule.label || movedRule.id || 'Niveau de risque';
+      setReorderAnnouncement(`Le niveau « ${label} » est maintenant en position ${toIndex + 1} sur ${safeRiskLevelRules.length}.`);
+    }
+  };
+
+  const formatRiskRangeLabel = (rule) => {
+    const min = Number.isFinite(rule?.minRisks) ? Math.max(0, Math.floor(rule.minRisks)) : 0;
+    const max = Number.isFinite(rule?.maxRisks) ? Math.max(0, Math.floor(rule.maxRisks)) : null;
+
+    if (max === null) {
+      return `≥ ${min} risque${min > 1 ? 's' : ''}`;
+    }
+
+    if (min === max) {
+      return `${min} risque${min > 1 ? 's' : ''}`;
+    }
+
+    return `${min} à ${max} risques`;
+  };
+
+  const getRiskLevelRuleIssues = (rule, index, rulesList) => {
+    const issues = [];
+    const min = Number.isFinite(rule?.minRisks) ? Math.max(0, Math.floor(rule.minRisks)) : 0;
+    const max = Number.isFinite(rule?.maxRisks) ? Math.max(0, Math.floor(rule.maxRisks)) : null;
+
+    if (max !== null && max < min) {
+      issues.push('La borne maximale doit être supérieure ou égale à la borne minimale.');
+    }
+
+    if (index > 0) {
+      const previous = rulesList[index - 1];
+      const previousMax = Number.isFinite(previous?.maxRisks)
+        ? Math.max(0, Math.floor(previous.maxRisks))
+        : null;
+
+      if (previousMax === null) {
+        issues.push('Le niveau précédent couvre déjà toutes les valeurs (maximum illimité). Ajustez-le avant d’ajouter ce palier.');
+      } else if (min <= previousMax) {
+        issues.push(`La borne minimale doit être strictement supérieure à ${previousMax}, le maximum du niveau précédent.`);
+      }
+    }
+
+    return issues;
+  };
+
   const downloadDataModule = (filename, exportName, data) => {
     if (typeof window === 'undefined' || typeof document === 'undefined') {
       return;
@@ -343,6 +527,7 @@ export const BackOffice = ({ questions, setQuestions, rules, setRules, teams, se
   const handleDownloadDataFiles = () => {
     downloadDataModule('questions.js', 'initialQuestions', questions);
     downloadDataModule('rules.js', 'initialRules', rules);
+    downloadDataModule('riskLevelRules.js', 'initialRiskLevelRules', safeRiskLevelRules);
     downloadDataModule('teams.js', 'initialTeams', teams);
   };
 
@@ -356,6 +541,11 @@ export const BackOffice = ({ questions, setQuestions, rules, setRules, teams, se
       id: 'rules',
       label: `Règles (${rules.length})`,
       panelId: 'backoffice-tabpanel-rules'
+    },
+    {
+      id: 'riskLevels',
+      label: `Niveaux de complexité (${riskLevelRuleCount})`,
+      panelId: 'backoffice-tabpanel-risk-levels'
     },
     {
       id: 'teams',
@@ -860,6 +1050,200 @@ export const BackOffice = ({ questions, setQuestions, rules, setRules, teams, se
                   </article>
                 );
               })}
+            </section>
+          )}
+
+          {activeTab === 'riskLevels' && (
+            <section
+              id="backoffice-tabpanel-risk-levels"
+              role="tabpanel"
+              aria-labelledby="backoffice-tab-riskLevels"
+              className="space-y-4"
+            >
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-800">Niveaux de risque</h2>
+                  <p className="text-sm text-gray-600">
+                    Ajustez les seuils utilisés pour calculer la complexité compliance affichée aux équipes.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={addRiskLevelRule}
+                  className="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 text-white rounded-lg shadow-sm hover:bg-indigo-700 hv-button hv-button-primary w-full sm:w-auto text-sm sm:text-base"
+                >
+                  <Plus className="w-5 h-5 mr-2" />
+                  Ajouter un niveau
+                </button>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 text-sm text-blue-900 space-y-2">
+                <p className="flex items-start gap-2">
+                  <Info className="w-5 h-5 mt-0.5" />
+                  <span>
+                    Les niveaux sont évalués du haut vers le bas : le premier palier correspondant au nombre total de risques s’applique.
+                  </span>
+                </p>
+                <p className="text-xs text-blue-700">
+                  Laissez la borne maximale vide pour couvrir toutes les valeurs supérieures à la borne minimale.
+                </p>
+              </div>
+
+              {riskLevelRuleCount === 0 ? (
+                <div className="border border-dashed border-gray-300 rounded-xl p-6 text-center text-gray-500">
+                  Aucun niveau de risque n'est configuré.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {safeRiskLevelRules.map((rule, index) => {
+                    const ruleId = rule?.id || `risk-level-${index + 1}`;
+                    const labelInputId = `${ruleId}-label`;
+                    const minInputId = `${ruleId}-min`;
+                    const maxInputId = `${ruleId}-max`;
+                    const descriptionId = `${ruleId}-description`;
+                    const rangeLabel = formatRiskRangeLabel(rule);
+                    const issues = getRiskLevelRuleIssues(rule, index, safeRiskLevelRules);
+                    const disableDelete = riskLevelRuleCount <= 1;
+                    const minValue = Number.isFinite(rule?.minRisks)
+                      ? Math.max(0, Math.floor(rule.minRisks))
+                      : 0;
+                    const maxValue = Number.isFinite(rule?.maxRisks)
+                      ? Math.max(0, Math.floor(rule.maxRisks))
+                      : '';
+
+                    return (
+                      <article key={ruleId} className="border border-gray-200 rounded-xl p-6 bg-white shadow-sm hv-surface">
+                        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                          <div className="space-y-3 flex-1">
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                              <span className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded-full font-semibold">{ruleId}</span>
+                              <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full">{rangeLabel}</span>
+                              <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full">Palier {index + 1}</span>
+                            </div>
+                            <div>
+                              <label
+                                className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1"
+                                htmlFor={labelInputId}
+                              >
+                                Intitulé du niveau
+                              </label>
+                              <input
+                                id={labelInputId}
+                                type="text"
+                                value={rule?.label || ''}
+                                onChange={(event) => updateRiskLevelRuleField(index, 'label', event.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm hv-focus-ring"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-2 self-stretch md:self-start">
+                            <div className="flex flex-col gap-2" role="group" aria-label={`Réordonner le niveau ${rule?.label || index + 1}`}>
+                              <button
+                                type="button"
+                                onClick={() => moveRiskLevelRule(index, index - 1)}
+                                disabled={index === 0}
+                                className="p-2 text-gray-600 bg-white border border-gray-200 rounded hover:bg-gray-100 hv-button disabled:opacity-40 disabled:cursor-not-allowed"
+                                aria-label={`Monter le niveau ${rule?.label || ruleId}`}
+                              >
+                                <ArrowUp className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => moveRiskLevelRule(index, index + 1)}
+                                disabled={index === riskLevelRuleCount - 1}
+                                className="p-2 text-gray-600 bg-white border border-gray-200 rounded hover:bg-gray-100 hv-button disabled:opacity-40 disabled:cursor-not-allowed"
+                                aria-label={`Descendre le niveau ${rule?.label || ruleId}`}
+                              >
+                                <ArrowDown className="w-4 h-4" />
+                              </button>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => deleteRiskLevelRule(ruleId, index)}
+                              disabled={disableDelete}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded hv-button disabled:opacity-40 disabled:cursor-not-allowed"
+                              aria-label={`Supprimer le niveau ${rule?.label || ruleId}`}
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                            <label
+                              className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1"
+                              htmlFor={minInputId}
+                            >
+                              Borne minimale (nombre de risques)
+                            </label>
+                            <input
+                              id={minInputId}
+                              type="number"
+                              min="0"
+                              value={minValue}
+                              onChange={(event) => updateRiskLevelRuleField(index, 'minRisks', event.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm hv-focus-ring"
+                            />
+                          </div>
+                          <div>
+                            <label
+                              className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1"
+                              htmlFor={maxInputId}
+                            >
+                              Borne maximale
+                            </label>
+                            <input
+                              id={maxInputId}
+                              type="number"
+                              min="0"
+                              placeholder="Illimitée"
+                              value={maxValue}
+                              onChange={(event) => updateRiskLevelRuleField(index, 'maxRisks', event.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm hv-focus-ring"
+                            />
+                            <p className="mt-1 text-xs text-gray-500">
+                              Laisser vide pour couvrir toutes les valeurs au-delà de la borne minimale.
+                            </p>
+                          </div>
+                          <div>
+                            <span className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">
+                              Résumé automatique
+                            </span>
+                            <div className="px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-sm text-gray-700">
+                              {rangeLabel}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-4">
+                          <label
+                            className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1"
+                            htmlFor={descriptionId}
+                          >
+                            Message de contexte
+                          </label>
+                          <textarea
+                            id={descriptionId}
+                            rows={3}
+                            value={rule?.description || ''}
+                            onChange={(event) => updateRiskLevelRuleField(index, 'description', event.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-y hv-focus-ring"
+                          />
+                        </div>
+
+                        {issues.length > 0 && (
+                          <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700 space-y-1">
+                            {issues.map((issue, issueIndex) => (
+                              <p key={`${ruleId}-issue-${issueIndex}`}>• {issue}</p>
+                            ))}
+                          </div>
+                        )}
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
             </section>
           )}
 
