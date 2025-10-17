@@ -17,7 +17,7 @@ import { extractProjectName } from './utils/projects.js';
 import { createDemoProject } from './data/demoProject.js';
 import { exportProjectToFile } from './utils/projectExport.js';
 
-const APP_VERSION = 'v1.0.40';
+const APP_VERSION = 'v1.0.41';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -601,7 +601,7 @@ export const App = () => {
       setAnalysis(analyzeAnswers(sanitizedResult, rules, riskLevelRules));
       setValidationError(null);
     }
-  }, [questions, rules, shouldShowQuestion]);
+  }, [analyzeAnswers, questions, riskLevelRules, rules, shouldShowQuestion]);
 
   const resetProjectState = useCallback(() => {
     setAnswers({});
@@ -799,10 +799,12 @@ export const App = () => {
     setScreen('synthesis');
   }, [
     activeQuestions,
-    currentQuestionIndex,
-    unansweredMandatoryQuestions,
+    analyzeAnswers,
     answers,
-    rules
+    currentQuestionIndex,
+    riskLevelRules,
+    rules,
+    unansweredMandatoryQuestions
   ]);
 
   const handleBack = useCallback(() => {
@@ -857,7 +859,14 @@ export const App = () => {
     } else {
       setScreen('synthesis');
     }
-  }, [projects, questions, rules]);
+  }, [
+    analyzeAnswers,
+    projects,
+    questions,
+    riskLevelRules,
+    rules,
+    shouldShowQuestion
+  ]);
 
   const handleDeleteProject = useCallback((projectId) => {
     if (!projectId) {
@@ -897,7 +906,16 @@ export const App = () => {
     });
     previousScreenRef.current = screen;
     setScreen('showcase');
-  }, [projects, questions, rules, teams, screen, shouldShowQuestion]);
+  }, [
+    analyzeAnswers,
+    projects,
+    questions,
+    riskLevelRules,
+    rules,
+    screen,
+    shouldShowQuestion,
+    teams
+  ]);
 
   const handleCloseProjectShowcase = useCallback(() => {
     setShowcaseProjectContext(null);
@@ -987,7 +1005,16 @@ export const App = () => {
         };
       });
     }
-  }, [analyzeAnswers, extractProjectName, questions, rules, showcaseProjectContext, shouldShowQuestion, teams]);
+  }, [
+    analyzeAnswers,
+    extractProjectName,
+    questions,
+    riskLevelRules,
+    rules,
+    showcaseProjectContext,
+    shouldShowQuestion,
+    teams
+  ]);
 
   const upsertProject = useCallback((entry) => {
     return prevProjects => {
@@ -1073,7 +1100,19 @@ export const App = () => {
     }
 
     return entry;
-  }, [activeProjectId, activeQuestions.length, answers, currentQuestionIndex, questions, rules, shouldShowQuestion, upsertProject]);
+  }, [
+    activeProjectId,
+    activeQuestions.length,
+    analyzeAnswers,
+    answers,
+    currentQuestionIndex,
+    extractProjectName,
+    questions,
+    riskLevelRules,
+    rules,
+    shouldShowQuestion,
+    upsertProject
+  ]);
 
   const handleSubmitProject = useCallback((payload = {}) => {
     const entry = handleSaveProject({ ...payload, status: 'submitted' });
@@ -1175,7 +1214,7 @@ export const App = () => {
     setAnalysis(result);
     setValidationError(null);
     setScreen('synthesis');
-  }, [answers, rules, unansweredMandatoryQuestions]);
+  }, [analyzeAnswers, answers, riskLevelRules, rules, unansweredMandatoryQuestions]);
 
   return (
     <div className="min-h-screen">
