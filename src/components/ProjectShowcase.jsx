@@ -39,28 +39,11 @@ const getRawAnswer = (answers, id) => {
 
 const hasText = (value) => typeof value === 'string' && value.trim().length > 0;
 
-const SHOWCASE_THEME_STORAGE_KEY = 'compliance-advisor.showcase-theme';
-
-const SHOWCASE_THEMES = [
-  {
-    id: 'aurora',
-    label: 'Aurora néon',
-    shortLabel: 'Aurora',
-    description: 'Jeux de lumières et ambiance futuriste pour un rendu premium.',
-  },
-  {
-    id: 'minimal',
-    label: 'Nordique minimal',
-    shortLabel: 'Minimal',
-    description: 'Palette claire et structurée idéale pour les documents institutionnels.',
-  },
-  {
-    id: 'sunset',
-    label: 'Sunset impact',
-    shortLabel: 'Sunset',
-    description: 'Dégradés chauds et contrastés pour un storytelling percutant.',
-  },
-];
+const SHOWCASE_THEME = {
+  id: 'aurora',
+  label: 'Aurora néon',
+  description: 'Jeux de lumières et ambiance futuriste pour un rendu premium.',
+};
 
 const SHOWCASE_FIELD_CONFIG = [
   { id: 'projectName', fallbackLabel: 'Nom du projet', fallbackType: 'text' },
@@ -350,49 +333,7 @@ export const ProjectShowcase = ({
     [questions]
   );
 
-  const [selectedTheme, setSelectedTheme] = useState(() => {
-    const fallbackTheme = SHOWCASE_THEMES[0]?.id || 'aurora';
-
-    if (typeof window === 'undefined' || typeof window.localStorage === 'undefined') {
-      return fallbackTheme;
-    }
-
-    try {
-      const storedTheme = window.localStorage.getItem(SHOWCASE_THEME_STORAGE_KEY);
-      if (typeof storedTheme === 'string' && SHOWCASE_THEMES.some(theme => theme.id === storedTheme)) {
-        return storedTheme;
-      }
-    } catch (error) {
-      // Ignore storage errors (quota, privacy mode, etc.) and fall back to the default theme.
-    }
-
-    return fallbackTheme;
-  });
-
-  const activeTheme = useMemo(
-    () => SHOWCASE_THEMES.find(theme => theme.id === selectedTheme) || SHOWCASE_THEMES[0],
-    [selectedTheme]
-  );
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || typeof window.localStorage === 'undefined') {
-      return;
-    }
-
-    try {
-      window.localStorage.setItem(SHOWCASE_THEME_STORAGE_KEY, selectedTheme);
-    } catch (error) {
-      // Silently ignore storage issues.
-    }
-  }, [selectedTheme]);
-
-  const handleThemeChange = useCallback((nextThemeId) => {
-    if (!SHOWCASE_THEMES.some(theme => theme.id === nextThemeId)) {
-      return;
-    }
-
-    setSelectedTheme(nextThemeId);
-  }, []);
+  const showcaseThemeId = SHOWCASE_THEME.id;
 
   const [isEditing, setIsEditing] = useState(false);
   const [draftValues, setDraftValues] = useState(() =>
@@ -592,7 +533,7 @@ export const ProjectShowcase = ({
   const showcaseCard = (
     <div
       data-showcase-card
-      data-showcase-theme={selectedTheme}
+      data-showcase-theme={showcaseThemeId}
       className="relative w-full overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100"
       onMouseMove={handleParallaxMove}
       onMouseLeave={handleParallaxLeave}
@@ -625,36 +566,18 @@ export const ProjectShowcase = ({
 
       <div className="relative px-6 pt-10 pb-16 sm:px-14 sm:pt-16 sm:pb-20">
         <div
-          data-showcase-theme-switcher
-          className="mb-8 flex flex-col gap-4 rounded-[28px] border border-white/10 bg-white/5 p-4 sm:flex-row sm:items-center sm:justify-between"
+          data-showcase-theme-info
+          className="mb-8 flex flex-col gap-3 rounded-[28px] border border-white/10 bg-white/5 p-4 sm:flex-row sm:items-center sm:justify-between"
         >
-          <div className="max-w-xl text-xs text-slate-200/80">
+          <div className="text-xs text-slate-200/80">
             <p className="text-[0.65rem] font-semibold uppercase tracking-[0.45em] text-indigo-200/80">Style de présentation</p>
-            {activeTheme?.description && (
-              <p className="mt-2 text-[0.7rem] leading-relaxed text-slate-300/80">{activeTheme.description}</p>
-            )}
+            <p className="mt-2 text-sm font-semibold uppercase tracking-[0.3em] text-white">{SHOWCASE_THEME.label}</p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {SHOWCASE_THEMES.map(theme => {
-              const isActiveTheme = theme.id === selectedTheme;
-              return (
-                <button
-                  key={theme.id}
-                  type="button"
-                  onClick={() => handleThemeChange(theme.id)}
-                  className={`inline-flex items-center justify-center rounded-full border px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.3em] transition focus:outline-none focus:ring-2 focus:ring-indigo-400/40 ${
-                    isActiveTheme
-                      ? 'border-white/20 bg-white/15 text-white shadow-lg shadow-indigo-500/30'
-                      : 'border-white/10 bg-transparent text-slate-200/80 hover:bg-white/10'
-                  }`}
-                  aria-pressed={isActiveTheme}
-                  title={theme.description}
-                >
-                  {theme.shortLabel}
-                </button>
-              );
-            })}
-          </div>
+          {SHOWCASE_THEME.description && (
+            <p className="text-[0.7rem] leading-relaxed text-slate-300/80 sm:max-w-sm">
+              {SHOWCASE_THEME.description}
+            </p>
+          )}
         </div>
 
         <header
@@ -1105,7 +1028,7 @@ export const ProjectShowcase = ({
     return (
       <div
         data-showcase-scope
-        data-showcase-theme={selectedTheme}
+        data-showcase-theme={showcaseThemeId}
         className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 py-12 px-4 sm:px-8"
       >
         <div className="mx-auto w-full">{showcaseCard}</div>
@@ -1116,7 +1039,7 @@ export const ProjectShowcase = ({
   return (
     <section
       data-showcase-scope
-      data-showcase-theme={selectedTheme}
+      data-showcase-theme={showcaseThemeId}
       className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 px-4 py-10 sm:px-8"
       aria-label="Vitrine marketing du projet"
     >
