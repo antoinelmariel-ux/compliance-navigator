@@ -5,38 +5,48 @@ import { analyzeAnswers } from '../utils/rules.js';
 
 const demoProjectAnswers = {
   projectName: 'Campagne Aura',
-  projectSlogan: 'Illuminer chaque lancement produit',
+  projectSlogan: 'Synchroniser chaque prise de parole autour d’Aura',
   targetAudience: [
     'Grand public / clients finaux',
+    'Décideurs internes / sponsors',
     'Investisseurs',
     'Partenaires ou prescripteurs'
   ],
   problemPainPoints:
-    '• Les équipes ont besoin d’un récit unifié pour coordonner leurs prises de parole.\n• Les preuves clients doivent être centralisées pour soutenir les validations compliance.\n• Les partenaires réclament des assets prêts à l’emploi pour activer rapidement leurs réseaux.',
+    '• Les contenus de lancement varient selon les pays et génèrent des allers-retours compliance.\n• Les données d’impact sont dispersées et ralentissent les validations investisseurs.\n• Les partenaires retail manquent d’assets co-brandés prêts à diffuser.',
   solutionDescription:
-    "Nous construisons une narration immersive combinant démonstrations live, contenus interactifs et preuves sociales activables par chaque équipe locale.",
+    'Aura consolide une narration immersive avec démonstrations interactives, argumentaires validés et assets localisables en quelques clics.',
   solutionBenefits:
-    '• +35 % d’intention d’achat mesurée lors des tests pré-lancement.\n• Bibliothèque d’assets localisés livrée en 4 semaines.\n• Plan média multi-pays orchestré avec les partenaires retail.',
+    '• 40 % de réduction du temps de validation compliance grâce à un kit unique par audience.\n• +28 % d’intention d’achat mesurée lors des tests de storytelling.\n• Activation partenaires accélérée avec 20 assets prêts à l’emploi dès J+30.',
   solutionComparison:
-    'Contrairement aux campagnes précédentes, Aura intègre dès le départ les besoins des partenaires et un plan de preuves dynamique, évitant les validations tardives.',
+    'Contrairement aux précédentes campagnes fragmentées, Aura s’appuie sur des scripts unifiés et une bibliothèque certifiée compliance accessible par chaque marché.',
   innovationProcess:
-    '1. Sprint storytelling de 5 jours pour cadrer le pitch.\n2. Production collaborative des assets avec validations hebdomadaires.\n3. Activation omnicanale pilotée par un cockpit partagé.',
+    '• Aligner 100 % des messages clés sur un récit validé par la compliance avant la phase média.\n• Industrialiser la production d’assets localisés pour 8 pays en moins de 6 semaines.\n• Outiller les partenaires avec un kit d’activation prêt à diffuser dès le pré-lancement.',
   visionStatement:
-    '• Taux de conformité validé dès le premier passage.\n• Score de satisfaction partenaires supérieur à 4/5.\n• +30 % d’engagement sur les contenus du reveal.',
-  campaignKickoffDate: '2024-01-15',
-  launchDate: '2024-04-15',
+    '• Taux de conformité validé dès la première revue.\n• Score d’adhésion partenaires supérieur à 4,5/5.\n• +30 % d’engagement sur les contenus reveal à J+7.',
+  campaignKickoffDate: '2024-01-22',
+  launchDate: '2024-04-22',
   roadmapMilestones: [
-    { date: '2024-02-01', description: 'Signature du plan média avec les partenaires retail clés.' },
-    { date: '2024-03-04', description: 'Revue compliance finale et validation des assets localisés.' },
-    { date: '2024-03-25', description: 'Pré-lancement exclusif auprès des influenceurs premium.' }
+    {
+      date: '2024-02-05',
+      description: 'Atelier de cadrage narratif et validation des claims compliance.'
+    },
+    {
+      date: '2024-03-08',
+      description: 'Production localisée des assets et revue investisseurs avec l’équipe Growth.'
+    },
+    {
+      date: '2024-04-05',
+      description: 'Pré-lancement partenaires : kit co-brandé et plan média finalisé.'
+    }
   ],
-  teamLead: 'Clara Dupont — Head of Narrative Design',
+  teamLead: 'Clara Dupont — Head of Narrative Design & Compliance',
   teamLeadTeam: 'Marketing',
   teamCoreMembers:
-    'Lina Morel — Product marketing lead\nHugo Martin — Data & Growth strategist\nNoémie Laurent — Partnerships manager',
+    'Sofia Bernard — Storytelling & Brand lead\nHugo Martin — Growth & Impact strategist\nNoémie Laurent — Partnerships manager\nYanis Delcourt — Product Experience producer',
 };
 
-const DEMO_TIMESTAMP = '2024-04-18T09:00:00.000Z';
+const DEMO_TIMESTAMP = '2024-05-02T10:00:00.000Z';
 
 export const createDemoProject = ({
   questions = initialQuestions,
