@@ -545,6 +545,14 @@ export const BackOffice = ({ questions, setQuestions, rules, setRules, teams, se
                 </button>
               </div>
 
+              <div className="rounded-lg border border-indigo-100 bg-indigo-50/60 px-4 py-3 text-sm text-indigo-900">
+                <p className="font-medium">Questions vitrine projet</p>
+                <p className="mt-1 text-indigo-800">
+                  Les questions marquées «&nbsp;Vitrine projet&nbsp;» alimentent automatiquement la vitrine marketing.
+                  Elles sont obligatoires pour compléter le showcase et ne peuvent pas être supprimées.
+                </p>
+              </div>
+
               {questions.length === 0 && (
                 <div className="border border-dashed border-gray-300 rounded-xl p-6 text-center text-gray-500">
                   Aucune question configurée pour le moment.
@@ -585,6 +593,11 @@ export const BackOffice = ({ questions, setQuestions, rules, setRules, teams, se
                           <span className="text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
                             {typeMeta.label}
                           </span>
+                          {isShowcaseQuestion && (
+                            <span className="text-xs text-indigo-800 bg-indigo-100 px-2 py-1 rounded-full font-medium">
+                              Vitrine projet
+                            </span>
+                          )}
                           {question.required && (
                             <span className="text-xs text-red-700 bg-red-100 px-2 py-1 rounded-full">Obligatoire</span>
                           )}
@@ -619,7 +632,20 @@ export const BackOffice = ({ questions, setQuestions, rules, setRules, teams, se
                         </button>
                         <button
                           type="button"
-                          onClick={isShowcaseQuestion ? undefined : () => deleteQuestion(question.id)}
+                          onClick={() => {
+                            if (isShowcaseQuestion) {
+                              return;
+                            }
+
+                            const confirmationMessage = `Voulez-vous vraiment supprimer la question ${question.id} ?`;
+                            const shouldDelete = typeof window === 'undefined'
+                              ? true
+                              : window.confirm(confirmationMessage);
+
+                            if (shouldDelete) {
+                              deleteQuestion(question.id);
+                            }
+                          }}
                           className={deleteButtonClasses}
                           aria-label={deleteButtonTitle}
                           aria-disabled={isShowcaseQuestion}

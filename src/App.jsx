@@ -16,7 +16,50 @@ import { extractProjectName } from './utils/projects.js';
 import { createDemoProject } from './data/demoProject.js';
 import { exportProjectToFile } from './utils/projectExport.js';
 
-const APP_VERSION = 'v1.0.22';
+const APP_VERSION = 'v1.0.23';
+
+const restoreShowcaseQuestions = (currentQuestions, referenceQuestions = initialQuestions) => {
+  if (!Array.isArray(currentQuestions)) {
+    return referenceQuestions;
+  }
+
+  const nextQuestions = currentQuestions.slice();
+  let changed = false;
+
+  referenceQuestions.forEach((referenceQuestion, referenceIndex) => {
+    if (!referenceQuestion || !referenceQuestion.showcase) {
+      return;
+    }
+
+    const existingIndex = nextQuestions.findIndex((item) => item && item.id === referenceQuestion.id);
+
+    if (existingIndex === -1) {
+      const clonedQuestion = JSON.parse(JSON.stringify(referenceQuestion));
+      const insertionIndex = Math.min(referenceIndex, nextQuestions.length);
+      nextQuestions.splice(insertionIndex, 0, clonedQuestion);
+      changed = true;
+      return;
+    }
+
+    const existingQuestion = nextQuestions[existingIndex];
+    const existingShowcaseMeta = existingQuestion && existingQuestion.showcase;
+    const referenceShowcaseMeta = referenceQuestion.showcase;
+
+    const showcaseMetaDiffers =
+      !existingShowcaseMeta ||
+      JSON.stringify(existingShowcaseMeta) !== JSON.stringify(referenceShowcaseMeta);
+
+    if (showcaseMetaDiffers) {
+      nextQuestions[existingIndex] = {
+        ...existingQuestion,
+        showcase: JSON.parse(JSON.stringify(referenceShowcaseMeta))
+      };
+      changed = true;
+    }
+  });
+
+  return changed ? nextQuestions : currentQuestions;
+};
 
 
 const isAnswerProvided = (value) => {
@@ -214,7 +257,7 @@ export const App = () => {
   const [saveFeedback, setSaveFeedback] = useState(null);
   const [showcaseProjectContext, setShowcaseProjectContext] = useState(null);
 
-  const [questions, setQuestions] = useState(initialQuestions);
+  const [questions, setQuestions] = useState(() => restoreShowcaseQuestions(initialQuestions));
   const [rules, setRules] = useState(initialRules);
   const [teams, setTeams] = useState(initialTeams);
   const [isHydrated, setIsHydrated] = useState(false);
@@ -255,7 +298,9 @@ export const App = () => {
       }
     }
     if (typeof savedState.activeProjectId === 'string') setActiveProjectId(savedState.activeProjectId);
-    if (Array.isArray(savedState.questions)) setQuestions(savedState.questions);
+    if (Array.isArray(savedState.questions)) {
+      setQuestions(restoreShowcaseQuestions(savedState.questions));
+    }
     if (Array.isArray(savedState.rules)) setRules(savedState.rules);
     if (Array.isArray(savedState.teams)) setTeams(savedState.teams);
 
