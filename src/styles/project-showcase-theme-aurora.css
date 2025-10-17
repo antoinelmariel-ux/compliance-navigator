@@ -38,10 +38,13 @@
 }
 
 [data-showcase-theme='aurora'] .aurora-edit-bar {
-  position: absolute;
-  top: 1.75rem;
-  right: clamp(1.5rem, 6vw, 5.5rem);
+  position: sticky;
+  top: clamp(1.25rem, 4vw, 2.5rem);
   z-index: 40;
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  margin: 1rem 0 2rem;
 }
 
 [data-showcase-theme='aurora'] .aurora-edit-bar__trigger {
@@ -100,27 +103,6 @@
 [data-showcase-theme='aurora'] .aurora-button--outline:hover {
   border-color: rgba(129, 140, 248, 0.8);
   color: #c7d2fe;
-}
-
-[data-showcase-theme='aurora'] .aurora-close {
-  position: absolute;
-  top: 1.75rem;
-  left: clamp(1.5rem, 6vw, 5.5rem);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  background: rgba(15, 23, 42, 0.55);
-  color: #e2e8f0;
-  transition: background 0.3s ease, border-color 0.3s ease;
-}
-
-[data-showcase-theme='aurora'] .aurora-close:hover {
-  background: rgba(30, 41, 59, 0.75);
-  border-color: rgba(148, 163, 184, 0.45);
 }
 
 [data-showcase-theme='aurora'] .aurora-edit-panel {

@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from '../react.js';
 import {
-  Close,
   CheckCircle,
   Edit,
   Plus,
@@ -523,7 +522,6 @@ export const ProjectShowcase = ({
   renderInStandalone = false,
   onUpdateAnswers
 }) => {
-  const closeButtonRef = useRef(null);
   const rawProjectName = typeof projectName === 'string' ? projectName.trim() : '';
   const safeProjectName = rawProjectName.length > 0 ? rawProjectName : 'Votre projet';
   const normalizedTeams = Array.isArray(relevantTeams) ? relevantTeams : [];
@@ -770,10 +768,6 @@ export const ProjectShowcase = ({
 
     if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-
-    if (closeButtonRef.current && typeof closeButtonRef.current.focus === 'function') {
-      closeButtonRef.current.focus();
     }
   }, [renderInStandalone]);
 
@@ -1513,22 +1507,8 @@ export const ProjectShowcase = ({
       </div>
     ) : null;
 
-  const closeButton =
-    typeof onClose === 'function' ? (
-      <button
-        type="button"
-        onClick={onClose}
-        className="aurora-close"
-        aria-label="Fermer la vitrine du projet"
-        ref={renderInStandalone ? undefined : closeButtonRef}
-      >
-        <Close className="h-4 w-4" />
-      </button>
-    ) : null;
-
   const content = (
     <>
-      {closeButton}
       {editBar}
       {editPanel}
       {previewContent}
