@@ -33,7 +33,6 @@
 [data-showcase-theme='aurora'] .aurora-sections {
   display: flex;
   flex-direction: column;
-  gap: 12vh;
   position: relative;
   z-index: 1;
 }
