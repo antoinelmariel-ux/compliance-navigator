@@ -614,24 +614,14 @@ export const SynthesisReport = ({
                   Retour au questionnaire
                 </button>
               )}
-              {onSubmitProject && (
-                <button
-                  type="button"
-                  onClick={handleSaveProject}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-all flex items-center justify-center hv-button hv-button-primary w-full sm:w-auto text-sm sm:text-base"
-                >
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Enregistrer le projet
-                </button>
-              )}
               {onSaveDraft && (
                 <button
                   type="button"
                   onClick={handleDownloadProject}
-                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-medium transition-all flex items-center justify-center hv-button w-full sm:w-auto text-sm sm:text-base"
+                  className="px-4 py-2 bg-white border border-indigo-200 text-indigo-600 hover:bg-indigo-50 rounded-lg font-medium transition-all flex items-center justify-center hv-button hv-focus-ring w-full sm:w-auto text-sm sm:text-base"
                 >
                   <Save className="w-4 h-4 mr-2" />
-                  Télécharger le projet
+                  Sauvegarder le projet
                 </button>
               )}
               <button
