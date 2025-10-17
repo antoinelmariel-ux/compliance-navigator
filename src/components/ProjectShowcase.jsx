@@ -6,7 +6,9 @@ import {
   Close,
   CheckCircle,
   Edit,
-  Compass
+  Compass,
+  Plus,
+  Trash2
 } from './icons.js';
 import { formatAnswer } from '../utils/questions.js';
 import { renderTextWithLinks } from '../utils/linkify.js';
@@ -58,7 +60,8 @@ const SHOWCASE_FIELD_CONFIG = [
   { id: 'teamLeadTeam', fallbackLabel: 'Équipe du lead', fallbackType: 'text' },
   { id: 'teamCoreMembers', fallbackLabel: 'Membres clés', fallbackType: 'long_text' },
   { id: 'campaignKickoffDate', fallbackLabel: 'Date de soumission compliance', fallbackType: 'date' },
-  { id: 'launchDate', fallbackLabel: 'Date de lancement', fallbackType: 'date' }
+  { id: 'launchDate', fallbackLabel: 'Date de lancement', fallbackType: 'date' },
+  { id: 'roadmapMilestones', fallbackLabel: 'Jalons du projet', fallbackType: 'milestone_list' }
 ];
 
 const ensureStringArrayUniqueness = (values) => {
@@ -105,9 +108,36 @@ const normalizeMultiChoiceValue = (rawValue) => {
   return [];
 };
 
+const sanitizeMilestoneEntries = (entries) => {
+  if (!Array.isArray(entries)) {
+    return [];
+  }
+
+  return entries
+    .map(item => ({
+      date: typeof item?.date === 'string' ? item.date.trim() : '',
+      description: typeof item?.description === 'string' ? item.description.trim() : ''
+    }))
+    .filter(entry => entry.date.length > 0 || entry.description.length > 0)
+    .map(entry => ({ date: entry.date, description: entry.description }));
+};
+
+const formatMilestoneDraftState = (entries) => {
+  if (!Array.isArray(entries)) {
+    return [];
+  }
+
+  return entries
+    .map(item => ({
+      date: typeof item?.date === 'string' ? item.date : '',
+      description: typeof item?.description === 'string' ? item.description : ''
+    }))
+    .filter(entry => entry.date.trim().length > 0 || entry.description.trim().length > 0);
+};
+
 const formatValueForDraft = (type, rawValue) => {
   if (rawValue === null || rawValue === undefined) {
-    return type === 'multi_choice' ? [] : '';
+    return type === 'multi_choice' || type === 'milestone_list' ? [] : '';
   }
 
   if (type === 'multi_choice') {
@@ -120,6 +150,10 @@ const formatValueForDraft = (type, rawValue) => {
       return String(rawValue);
     }
     return parsed.toISOString().slice(0, 10);
+  }
+
+  if (type === 'milestone_list') {
+    return formatMilestoneDraftState(rawValue);
   }
 
   return String(rawValue);
@@ -136,6 +170,10 @@ const formatValueForUpdate = (type, draftValue) => {
     }
     const trimmed = draftValue.trim();
     return trimmed.length > 0 ? trimmed : null;
+  }
+
+  if (type === 'milestone_list') {
+    return sanitizeMilestoneEntries(draftValue);
   }
 
   if (typeof draftValue !== 'string') {
@@ -161,6 +199,24 @@ const areFieldValuesEqual = (type, previousValue, nextValue) => {
     return previousArray.every((entry, index) => entry === nextArray[index]);
   }
 
+  if (type === 'milestone_list') {
+    const previousEntries = sanitizeMilestoneEntries(previousValue);
+    const nextEntries = sanitizeMilestoneEntries(nextValue);
+
+    if (previousEntries.length !== nextEntries.length) {
+      return false;
+    }
+
+    return previousEntries.every((entry, index) => {
+      const nextEntry = nextEntries[index];
+      if (!nextEntry) {
+        return false;
+      }
+
+      return entry.date === nextEntry.date && entry.description === nextEntry.description;
+    });
+  }
+
   return previousValue === nextValue;
 };
 
@@ -172,7 +228,7 @@ const buildDraftValues = (fields, answers, fallbackProjectName) => {
     const fieldType = question?.type || field.fallbackType || 'text';
     const rawValue = getRawAnswer(answers, field.id);
     if (rawValue === undefined || rawValue === null) {
-      draft[field.id] = fieldType === 'multi_choice' ? [] : '';
+      draft[field.id] = fieldType === 'multi_choice' || fieldType === 'milestone_list' ? [] : '';
     } else {
       draft[field.id] = formatValueForDraft(fieldType, rawValue);
     }
@@ -219,6 +275,34 @@ const formatDate = (value) => {
     month: '2-digit',
     year: 'numeric'
   }).format(parsed);
+};
+
+const formatMilestoneDisplayDate = (value) => {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    return '';
+  }
+
+  const formatted = formatDate(value);
+  if (formatted && formatted.length > 0) {
+    return formatted;
+  }
+
+  return value.trim();
+};
+
+const buildManualMilestones = (entries) => {
+  const sanitized = sanitizeMilestoneEntries(entries);
+
+  return sanitized.map((entry, index) => {
+    const formattedDate = formatMilestoneDisplayDate(entry.date);
+
+    return {
+      id: `manual-milestone-${index}`,
+      date: entry.date,
+      formattedDate,
+      description: entry.description
+    };
+  });
 };
 
 const MS_IN_DAY = 24 * 60 * 60 * 1000;
@@ -394,7 +478,8 @@ const REQUIRED_SHOWCASE_QUESTION_IDS = [
   'teamLeadTeam',
   'teamCoreMembers',
   'campaignKickoffDate',
-  'launchDate'
+  'launchDate',
+  'roadmapMilestones'
 ];
 
 const buildHeroHighlights = ({ targetAudience, runway }) => {
@@ -517,12 +602,12 @@ export const ProjectShowcase = ({
         const rawPreviousValue = getRawAnswer(answers, id);
         const previousValue =
           rawPreviousValue === undefined || rawPreviousValue === null
-            ? (type === 'multi_choice' ? [] : '')
+            ? (type === 'multi_choice' || type === 'milestone_list' ? [] : '')
             : formatValueForDraft(type, rawPreviousValue);
         const nextValue =
           draftValues[id] !== undefined
             ? draftValues[id]
-            : (type === 'multi_choice' ? [] : '');
+            : (type === 'multi_choice' || type === 'milestone_list' ? [] : '');
 
         if (areFieldValuesEqual(type, previousValue, nextValue)) {
           return;
@@ -576,6 +661,10 @@ export const ProjectShowcase = ({
     };
   }, [rawRunway, animatedWeeks, animatedDays]);
   const timelineSummary = useMemo(() => computeTimelineSummary(timelineDetails), [timelineDetails]);
+  const manualMilestones = useMemo(
+    () => buildManualMilestones(getRawAnswer(answers, 'roadmapMilestones')),
+    [answers]
+  );
   const primaryRisk = useMemo(() => getPrimaryRisk(analysis), [analysis]);
   const heroHighlights = useMemo(
     () =>
@@ -675,6 +764,47 @@ export const ProjectShowcase = ({
 
 
   const hasTimelineProfiles = Array.isArray(timelineSummary?.profiles) && timelineSummary.profiles.length > 0;
+  const hasManualMilestones = manualMilestones.length > 0;
+  const timelineProfileEntries = useMemo(() => {
+    if (!hasTimelineProfiles) {
+      return [];
+    }
+
+    return timelineSummary.profiles.map((profile, index) => ({
+      id: profile.id || `profile-${index}`,
+      label: profile.label,
+      description: profile.description || ''
+    }));
+  }, [hasTimelineProfiles, timelineSummary]);
+
+  const manualTimelineEntries = useMemo(
+    () =>
+      manualMilestones.map((milestone, index) => {
+        const hasDate = typeof milestone.formattedDate === 'string' && milestone.formattedDate.length > 0;
+        const hasDescription = typeof milestone.description === 'string' && milestone.description.length > 0;
+        const label = hasDate
+          ? milestone.formattedDate
+          : hasDescription
+            ? milestone.description
+            : 'Jalon à venir';
+        const description = hasDate && hasDescription ? milestone.description : '';
+
+        return {
+          id: milestone.id || `manual-milestone-${index}`,
+          label,
+          description
+        };
+      }),
+    [manualMilestones]
+  );
+
+  const timelineEntries = useMemo(
+    () => [...timelineProfileEntries, ...manualTimelineEntries],
+    [timelineProfileEntries, manualTimelineEntries]
+  );
+  const hasTimelineEntries = timelineEntries.length > 0;
+  const hasTimelineSection = Boolean(runway || timelineSummary || hasManualMilestones);
+  const shouldShowTimelineSummary = Boolean(timelineSummary && !hasTimelineProfiles);
 
   const previewContent = shouldShowPreview ? (
     <div className="aurora-sections">
@@ -919,7 +1049,7 @@ export const ProjectShowcase = ({
         </div>
       </section>
 
-      {(runway || timelineSummary) && (
+      {hasTimelineSection && (
         <section className="aurora-section aurora-roadmap" data-showcase-section="timeline">
           <div className="aurora-section__inner">
             <div className="aurora-section__header aurora-section__header--split">
@@ -942,25 +1072,7 @@ export const ProjectShowcase = ({
                 )}
               </p>
             )}
-            {hasTimelineProfiles ? (
-              <ul className="aurora-roadmap__timeline">
-                {timelineSummary.profiles.map((profile, index) => (
-                  <li
-                    key={profile.id || `profile-${index}`}
-                    className="aurora-roadmap__step"
-                    style={{ animationDelay: `${index * 0.1}s` }}
-                  >
-                    <span className="aurora-roadmap__node" />
-                    <div>
-                      <p className="aurora-roadmap__label">{profile.label}</p>
-                      {profile.description && (
-                        <p className="aurora-roadmap__caption">{renderTextWithLinks(profile.description)}</p>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : timelineSummary ? (
+            {shouldShowTimelineSummary && (
               <div className="aurora-roadmap__summary">
                 <p className="aurora-roadmap__label">{timelineSummary.ruleName}</p>
                 <p className="aurora-roadmap__value">{timelineSummary.weeks} semaines ({timelineSummary.days} jours)</p>
@@ -970,7 +1082,26 @@ export const ProjectShowcase = ({
                     : 'Un ajustement est recommandé pour sécuriser les jalons.'}
                 </p>
               </div>
-            ) : null}
+            )}
+            {hasTimelineEntries && (
+              <ul className="aurora-roadmap__timeline">
+                {timelineEntries.map((entry, index) => (
+                  <li
+                    key={entry.id || `timeline-entry-${index}`}
+                    className="aurora-roadmap__step"
+                    style={{ animationDelay: `${index * 0.1}s` }}
+                  >
+                    <span className="aurora-roadmap__node" />
+                    <div>
+                      <p className="aurora-roadmap__label">{entry.label}</p>
+                      {entry.description && (
+                        <p className="aurora-roadmap__caption">{renderTextWithLinks(entry.description)}</p>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </section>
       )}
@@ -1007,25 +1138,111 @@ export const ProjectShowcase = ({
           const isMulti = type === 'multi_choice';
           const isChoice = type === 'choice';
           const isDate = type === 'date';
+          const isMilestoneList = type === 'milestone_list';
           const isMultiWithOptions = isMulti && options.length > 0;
           const isMultiFreeform = isMulti && !isMultiWithOptions;
           const isChoiceWithOptions = isChoice && options.length > 0;
           const selectedValues = Array.isArray(fieldValue) ? fieldValue : [];
           const textValue = typeof fieldValue === 'string' ? fieldValue : '';
-          const helperText = isMultiWithOptions
-            ? 'Sélectionnez une ou plusieurs options.'
-            : isMultiFreeform
-              ? 'Indiquez une valeur par ligne.'
-              : ['problemPainPoints', 'solutionBenefits', 'teamCoreMembers', 'visionStatement'].includes(fieldId)
-                ? 'Utilisez une ligne par élément pour une meilleure mise en forme.'
-                : null;
+          const helperText = isMilestoneList
+            ? 'Ajoutez une date (optionnelle) et un descriptif pour chaque jalon.'
+            : isMultiWithOptions
+              ? 'Sélectionnez une ou plusieurs options.'
+              : isMultiFreeform
+                ? 'Indiquez une valeur par ligne.'
+                : ['problemPainPoints', 'solutionBenefits', 'teamCoreMembers', 'visionStatement'].includes(fieldId)
+                  ? 'Utilisez une ligne par élément pour une meilleure mise en forme.'
+                  : null;
+
+          const milestoneDraftEntries = isMilestoneList && Array.isArray(fieldValue) ? fieldValue : [];
+
+          const updateMilestoneDraft = (updater) => {
+            handleFieldChange(fieldId, previousValue => {
+              const previousEntries = Array.isArray(previousValue)
+                ? previousValue.map(entry => ({
+                    date: typeof entry?.date === 'string' ? entry.date : '',
+                    description: typeof entry?.description === 'string' ? entry.description : ''
+                  }))
+                : [];
+              const nextEntries = typeof updater === 'function' ? updater(previousEntries) : updater;
+              return Array.isArray(nextEntries) ? nextEntries : [];
+            });
+          };
+
+          const handleMilestoneDraftChange = (index, fieldName, value) => {
+            updateMilestoneDraft(entries => {
+              const nextEntries = entries.map((entry, entryIndex) => (
+                entryIndex === index ? { ...entry, [fieldName]: value } : entry
+              ));
+              return nextEntries;
+            });
+          };
+
+          const handleMilestoneDraftRemoval = (index) => {
+            updateMilestoneDraft(entries => entries.filter((_, entryIndex) => entryIndex !== index));
+          };
+
+          const handleMilestoneDraftAddition = () => {
+            updateMilestoneDraft(entries => [...entries, { date: '', description: '' }]);
+          };
 
           return (
-            <div key={fieldId} className={`aurora-field${isLong || isMulti ? ' aurora-field--wide' : ''}`}>
+            <div key={fieldId} className={`aurora-field${isLong || isMulti || isMilestoneList ? ' aurora-field--wide' : ''}`}>
               <label htmlFor={`showcase-edit-${fieldId}`} className="aurora-field__label">
                 {label}
               </label>
-              {isDate ? (
+              {isMilestoneList ? (
+                <div className="aurora-milestone-list">
+                  {milestoneDraftEntries.length === 0 && (
+                    <p className="aurora-field__helper">Aucun jalon n'a encore été ajouté.</p>
+                  )}
+                  {milestoneDraftEntries.map((entry, index) => {
+                    const dateInputId = `showcase-edit-${fieldId}-date-${index}`;
+                    const descriptionInputId = `showcase-edit-${fieldId}-description-${index}`;
+
+                    return (
+                      <div key={dateInputId} className="aurora-milestone-row">
+                        <div className="aurora-milestone-row__date">
+                          <label htmlFor={dateInputId} className="aurora-milestone-label">
+                            Date
+                          </label>
+                          <input
+                            id={dateInputId}
+                            type="date"
+                            value={typeof entry?.date === 'string' ? entry.date : ''}
+                            onChange={event => handleMilestoneDraftChange(index, 'date', event.target.value)}
+                            className="aurora-form-control"
+                          />
+                        </div>
+                        <div className="aurora-milestone-row__description">
+                          <label htmlFor={descriptionInputId} className="aurora-milestone-label">
+                            Description
+                          </label>
+                          <input
+                            id={descriptionInputId}
+                            type="text"
+                            value={typeof entry?.description === 'string' ? entry.description : ''}
+                            onChange={event => handleMilestoneDraftChange(index, 'description', event.target.value)}
+                            className="aurora-form-control"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleMilestoneDraftRemoval(index)}
+                          className="aurora-milestone-remove"
+                        >
+                          <Trash2 className="aurora-milestone-remove__icon" />
+                          Supprimer
+                        </button>
+                      </div>
+                    );
+                  })}
+                  <button type="button" onClick={handleMilestoneDraftAddition} className="aurora-milestone-add">
+                    <Plus className="aurora-milestone-add__icon" />
+                    Ajouter un jalon
+                  </button>
+                </div>
+              ) : isDate ? (
                 <input
                   id={`showcase-edit-${fieldId}`}
                   type="date"

@@ -122,6 +122,46 @@ const normalizeProjectsCollection = (projects, fallbackQuestionsLength = initial
   return projects.map(project => normalizeProjectEntry(project, fallbackQuestionsLength));
 };
 
+const findQuestionById = (questions, id) => {
+  if (!Array.isArray(questions)) {
+    return null;
+  }
+
+  return questions.find(question => question?.id === id) || null;
+};
+
+const normalizeMilestoneListValue = (value) => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map(item => ({
+      date: typeof item?.date === 'string' ? item.date.trim() : '',
+      description: typeof item?.description === 'string' ? item.description.trim() : ''
+    }))
+    .filter(entry => entry.date.length > 0 || entry.description.length > 0)
+    .map(entry => ({
+      date: entry.date,
+      description: entry.description
+    }));
+};
+
+const areMilestoneListsEqual = (previousValue, nextValue) => {
+  if (previousValue.length !== nextValue.length) {
+    return false;
+  }
+
+  return previousValue.every((entry, index) => {
+    const nextEntry = nextValue[index];
+    if (!nextEntry) {
+      return false;
+    }
+
+    return entry.date === nextEntry.date && entry.description === nextEntry.description;
+  });
+};
+
 const applyAnswerUpdates = (prevAnswers = {}, updates, questions, predicate) => {
   if (!updates || typeof updates !== 'object') {
     return { nextAnswers: prevAnswers, changed: false };
@@ -137,6 +177,31 @@ const applyAnswerUpdates = (prevAnswers = {}, updates, questions, predicate) => 
 
   entries.forEach(([questionId, value]) => {
     if (!questionId) {
+      return;
+    }
+
+    const question = findQuestionById(questions, questionId);
+    const questionType = question?.type;
+
+    if (questionType === 'milestone_list') {
+      const normalizedValue = normalizeMilestoneListValue(value);
+      const previousRawValue = nextAnswers[questionId];
+      const previousValue = Array.isArray(previousRawValue)
+        ? normalizeMilestoneListValue(previousRawValue)
+        : [];
+      const previousRawJson = JSON.stringify(Array.isArray(previousRawValue) ? previousRawValue : []);
+      const normalizedJson = JSON.stringify(normalizedValue);
+
+      if (normalizedValue.length > 0) {
+        if (!areMilestoneListsEqual(previousValue, normalizedValue) || previousRawJson !== normalizedJson) {
+          changed = true;
+          nextAnswers[questionId] = normalizedValue;
+        }
+      } else if (questionId in nextAnswers) {
+        changed = true;
+        delete nextAnswers[questionId];
+      }
+
       return;
     }
 

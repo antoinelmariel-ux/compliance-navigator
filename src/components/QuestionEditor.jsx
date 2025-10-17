@@ -341,9 +341,10 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                   <option value="file">Fichier</option>
                   <option value="text">Texte libre (1 ligne)</option>
                   <option value="long_text">Texte libre (plusieurs lignes)</option>
+                  <option value="milestone_list">Liste de jalons (date + description)</option>
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  Choisissez le format adapté : liste simple ou multiple, date, valeurs numériques, URL, fichier ou zone de texte libre.
+                  Choisissez le format adapté : liste simple ou multiple, date, jalons structurés, valeurs numériques, URL, fichier ou zone de texte libre.
                 </p>
               </div>
 
