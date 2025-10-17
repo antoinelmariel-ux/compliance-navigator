@@ -15,7 +15,7 @@ import { analyzeAnswers } from './utils/rules.js';
 import { extractProjectName } from './utils/projects.js';
 import { createDemoProject } from './data/demoProject.js';
 
-const APP_VERSION = 'v1.0.14';
+const APP_VERSION = 'v1.0.15';
 
 
 const isAnswerProvided = (value) => {
@@ -76,6 +76,100 @@ const normalizeProjectsCollection = (projects, fallbackQuestionsLength = initial
   }
 
   return projects.map(project => normalizeProjectEntry(project, fallbackQuestionsLength));
+};
+
+const applyAnswerUpdates = (prevAnswers = {}, updates, questions, predicate) => {
+  if (!updates || typeof updates !== 'object') {
+    return { nextAnswers: prevAnswers, changed: false };
+  }
+
+  const entries = Object.entries(updates);
+  if (entries.length === 0) {
+    return { nextAnswers: prevAnswers, changed: false };
+  }
+
+  const nextAnswers = { ...prevAnswers };
+  let changed = false;
+
+  entries.forEach(([questionId, value]) => {
+    if (!questionId) {
+      return;
+    }
+
+    if (Array.isArray(value)) {
+      const filtered = value
+        .map(item => (typeof item === 'string' ? item.trim() : item))
+        .filter(item => {
+          if (typeof item === 'string') {
+            return item.length > 0;
+          }
+          return item !== null && item !== undefined;
+        });
+
+      const previousValue = nextAnswers[questionId];
+      const arraysAreEqual = Array.isArray(previousValue)
+        && previousValue.length === filtered.length
+        && previousValue.every((item, index) => item === filtered[index]);
+
+      if (filtered.length > 0) {
+        if (!arraysAreEqual) {
+          changed = true;
+        }
+        nextAnswers[questionId] = filtered;
+      } else if (questionId in nextAnswers) {
+        changed = true;
+        delete nextAnswers[questionId];
+      }
+
+      return;
+    }
+
+    if (value === null || value === undefined) {
+      if (questionId in nextAnswers) {
+        changed = true;
+        delete nextAnswers[questionId];
+      }
+      return;
+    }
+
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (trimmed.length > 0) {
+        if (nextAnswers[questionId] !== value) {
+          changed = true;
+          nextAnswers[questionId] = value;
+        }
+      } else if (questionId in nextAnswers) {
+        changed = true;
+        delete nextAnswers[questionId];
+      }
+      return;
+    }
+
+    if (nextAnswers[questionId] !== value) {
+      changed = true;
+      nextAnswers[questionId] = value;
+    }
+  });
+
+  if (!changed) {
+    return { nextAnswers: prevAnswers, changed: false };
+  }
+
+  const questionsToRemove = Array.isArray(questions)
+    ? questions.filter(question => !predicate(question, nextAnswers)).map(question => question.id)
+    : [];
+
+  if (questionsToRemove.length > 0) {
+    questionsToRemove.forEach(questionId => {
+      if (questionId in nextAnswers) {
+        changed = true;
+        delete nextAnswers[questionId];
+      }
+    });
+  }
+
+  return { nextAnswers, changed };
 };
 
 const resolveFallbackQuestionsLength = (savedState, currentQuestionsLength = initialQuestions.length) => {
@@ -307,82 +401,22 @@ export const App = () => {
   }, [questions]);
 
   const handleUpdateAnswers = useCallback((updates) => {
-    if (!updates || typeof updates !== 'object') {
-      return;
-    }
-
-    const entries = Object.entries(updates);
-    if (entries.length === 0) {
-      return;
-    }
-
     let sanitizedResult = null;
 
     setAnswers(prevAnswers => {
-      const nextAnswers = { ...prevAnswers };
-
-      entries.forEach(([questionId, value]) => {
-        if (!questionId) {
-          return;
-        }
-
-        if (Array.isArray(value)) {
-          const filtered = value
-            .map(item => (typeof item === 'string' ? item.trim() : item))
-            .filter(item => {
-              if (typeof item === 'string') {
-                return item.length > 0;
-              }
-              return item !== null && item !== undefined;
-            });
-
-          if (filtered.length > 0) {
-            nextAnswers[questionId] = filtered;
-          } else {
-            delete nextAnswers[questionId];
-          }
-
-          return;
-        }
-
-        if (value === null || value === undefined) {
-          delete nextAnswers[questionId];
-          return;
-        }
-
-        if (typeof value === 'string') {
-          const trimmed = value.trim();
-          if (trimmed.length > 0) {
-            nextAnswers[questionId] = value;
-          } else {
-            delete nextAnswers[questionId];
-          }
-          return;
-        }
-
-        nextAnswers[questionId] = value;
-      });
-
-      const questionsToRemove = questions
-        .filter(q => !shouldShowQuestion(q, nextAnswers))
-        .map(q => q.id);
-
-      if (questionsToRemove.length > 0) {
-        questionsToRemove.forEach(qId => {
-          delete nextAnswers[qId];
-        });
+      const { nextAnswers, changed } = applyAnswerUpdates(prevAnswers, updates, questions, shouldShowQuestion);
+      if (!changed) {
+        return prevAnswers;
       }
-
       sanitizedResult = nextAnswers;
       return nextAnswers;
     });
 
     if (sanitizedResult) {
       setAnalysis(analyzeAnswers(sanitizedResult, rules));
+      setValidationError(null);
     }
-
-    setValidationError(null);
-  }, [questions, rules]);
+  }, [questions, rules, shouldShowQuestion]);
 
   const resetProjectState = useCallback(() => {
     setAnswers({});
@@ -509,6 +543,7 @@ export const App = () => {
     const derivedProjectName = project.projectName || extractProjectName(projectAnswers, questions);
 
     setShowcaseProjectContext({
+      projectId: project.id,
       projectName: derivedProjectName,
       answers: projectAnswers,
       analysis: projectAnalysis,
@@ -529,6 +564,86 @@ export const App = () => {
     }
     previousScreenRef.current = null;
   }, []);
+
+  const handleUpdateProjectShowcaseAnswers = useCallback((updates) => {
+    if (!showcaseProjectContext || !showcaseProjectContext.projectId) {
+      return;
+    }
+
+    const projectId = showcaseProjectContext.projectId;
+    let contextPatch = null;
+
+    setProjects(prevProjects => {
+      const project = prevProjects.find(entry => entry.id === projectId);
+      if (!project) {
+        return prevProjects;
+      }
+
+      const { nextAnswers, changed } = applyAnswerUpdates(project.answers || {}, updates, questions, shouldShowQuestion);
+      if (!changed) {
+        return prevProjects;
+      }
+
+      const relevantQuestions = questions.filter(question => shouldShowQuestion(question, nextAnswers));
+      const totalQuestions = relevantQuestions.length > 0
+        ? relevantQuestions.length
+        : project.totalQuestions || questions.length || 0;
+      const answeredQuestions = relevantQuestions.length > 0
+        ? relevantQuestions.filter(question => isAnswerProvided(nextAnswers[question.id])).length
+        : Object.keys(nextAnswers).length;
+
+      const updatedAnalysis = analyzeAnswers(nextAnswers, rules);
+      const timelineDetails = updatedAnalysis?.timeline?.details || [];
+      const relevantTeamsIds = Array.isArray(updatedAnalysis?.teams) ? updatedAnalysis.teams : [];
+      const relevantTeams = teams.filter(team => relevantTeamsIds.includes(team.id));
+      const inferredName = extractProjectName(nextAnswers, questions);
+      const sanitizedName = inferredName && inferredName.trim().length > 0
+        ? inferredName.trim()
+        : project.projectName;
+
+      const lastQuestionIndex = totalQuestions > 0
+        ? Math.min(Math.max(project.lastQuestionIndex ?? totalQuestions - 1, 0), totalQuestions - 1)
+        : project.lastQuestionIndex ?? 0;
+
+      contextPatch = {
+        projectName: sanitizedName,
+        answers: nextAnswers,
+        analysis: updatedAnalysis,
+        relevantTeams,
+        timelineDetails,
+        questions: relevantQuestions.length > 0 ? relevantQuestions : null
+      };
+
+      const now = new Date().toISOString();
+
+      const updatedProject = {
+        ...project,
+        answers: nextAnswers,
+        analysis: updatedAnalysis,
+        projectName: sanitizedName,
+        totalQuestions,
+        answeredQuestions: Math.min(answeredQuestions, totalQuestions || answeredQuestions),
+        lastQuestionIndex,
+        lastUpdated: now
+      };
+
+      return [updatedProject, ...prevProjects.filter(entry => entry.id !== projectId)];
+    });
+
+    if (contextPatch) {
+      setShowcaseProjectContext(prev => {
+        if (!prev || prev.projectId !== projectId) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          ...contextPatch,
+          questions: contextPatch.questions ? contextPatch.questions : prev.questions
+        };
+      });
+    }
+  }, [analyzeAnswers, extractProjectName, questions, rules, showcaseProjectContext, shouldShowQuestion, teams]);
 
   const upsertProject = useCallback((entry) => {
     return prevProjects => {
@@ -806,6 +921,7 @@ export const App = () => {
                 questions={showcaseProjectContext.questions}
                 answers={showcaseProjectContext.answers}
                 timelineDetails={showcaseProjectContext.timelineDetails}
+                onUpdateAnswers={handleUpdateProjectShowcaseAnswers}
               />
             ) : null
           ) : null
