@@ -522,6 +522,7 @@ export const ProjectShowcase = ({
   const safeProjectName = rawProjectName.length > 0 ? rawProjectName : 'Votre projet';
   const normalizedTeams = Array.isArray(relevantTeams) ? relevantTeams : [];
   const complexity = analysis?.complexity || 'Modérée';
+  const complexityDescription = analysis?.complexityRule?.description;
 
   const editableFields = useMemo(
     () =>
@@ -946,7 +947,9 @@ export const ProjectShowcase = ({
             <div className="aurora-impact__card">
               <p className="aurora-impact__label">Complexité estimée</p>
               <p className="aurora-impact__value">{complexity}</p>
-              <p className="aurora-impact__caption">Basée sur les points de vigilance identifiés.</p>
+              <p className="aurora-impact__caption">
+                {complexityDescription || 'Basée sur les points de vigilance identifiés.'}
+              </p>
             </div>
             {runway && (
               <div className="aurora-impact__card">

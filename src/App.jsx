@@ -8,6 +8,7 @@ import { CheckCircle } from './components/icons.js';
 import { MandatoryQuestionsSummary } from './components/MandatoryQuestionsSummary.jsx';
 import { initialQuestions } from './data/questions.js';
 import { initialRules } from './data/rules.js';
+import { initialRiskLevelRules } from './data/riskLevelRules.js';
 import { initialTeams } from './data/teams.js';
 import { loadPersistedState, persistState } from './utils/storage.js';
 import { shouldShowQuestion } from './utils/questions.js';
@@ -298,6 +299,9 @@ const buildInitialProjectsState = () => {
 
   const fallbackQuestions = Array.isArray(savedState.questions) ? savedState.questions : initialQuestions;
   const fallbackRules = Array.isArray(savedState.rules) ? savedState.rules : initialRules;
+  const fallbackRiskLevelRules = Array.isArray(savedState.riskLevelRules)
+    ? savedState.riskLevelRules
+    : initialRiskLevelRules;
   const fallbackQuestionsLength = resolveFallbackQuestionsLength(savedState, fallbackQuestions.length);
 
   const normalizedProjects = normalizeProjectsCollection(savedState.projects, fallbackQuestionsLength)
@@ -307,7 +311,11 @@ const buildInitialProjectsState = () => {
     return normalizedProjects;
   }
 
-  return [createDemoProject({ questions: fallbackQuestions, rules: fallbackRules })];
+  return [createDemoProject({
+    questions: fallbackQuestions,
+    rules: fallbackRules,
+    riskLevelRules: fallbackRiskLevelRules
+  })];
 };
 
 export const App = () => {
@@ -324,6 +332,7 @@ export const App = () => {
 
   const [questions, setQuestions] = useState(() => restoreShowcaseQuestions(initialQuestions));
   const [rules, setRules] = useState(initialRules);
+  const [riskLevelRules, setRiskLevelRules] = useState(initialRiskLevelRules);
   const [teams, setTeams] = useState(initialTeams);
   const [isHydrated, setIsHydrated] = useState(false);
   const persistTimeoutRef = useRef(null);
@@ -338,6 +347,9 @@ export const App = () => {
 
     const fallbackQuestions = Array.isArray(savedState.questions) ? savedState.questions : questions;
     const fallbackRules = Array.isArray(savedState.rules) ? savedState.rules : rules;
+    const fallbackRiskLevelRules = Array.isArray(savedState.riskLevelRules)
+      ? savedState.riskLevelRules
+      : riskLevelRules;
     const fallbackQuestionsLength = resolveFallbackQuestionsLength(savedState, fallbackQuestions.length);
 
     if (savedState.mode) setMode(savedState.mode);
@@ -352,14 +364,22 @@ export const App = () => {
       if (normalized && normalized.length > 0) {
         setProjects(normalized);
       } else {
-        setProjects([createDemoProject({ questions: fallbackQuestions, rules: fallbackRules })]);
+        setProjects([createDemoProject({
+          questions: fallbackQuestions,
+          rules: fallbackRules,
+          riskLevelRules: fallbackRiskLevelRules
+        })]);
       }
     } else if (Array.isArray(savedState.submittedProjects)) {
       const normalized = normalizeProjectsCollection(savedState.submittedProjects, fallbackQuestionsLength);
       if (normalized && normalized.length > 0) {
         setProjects(normalized);
       } else {
-        setProjects([createDemoProject({ questions: fallbackQuestions, rules: fallbackRules })]);
+        setProjects([createDemoProject({
+          questions: fallbackQuestions,
+          rules: fallbackRules,
+          riskLevelRules: fallbackRiskLevelRules
+        })]);
       }
     }
     if (typeof savedState.activeProjectId === 'string') setActiveProjectId(savedState.activeProjectId);
@@ -367,6 +387,7 @@ export const App = () => {
       setQuestions(restoreShowcaseQuestions(savedState.questions));
     }
     if (Array.isArray(savedState.rules)) setRules(savedState.rules);
+    if (Array.isArray(savedState.riskLevelRules)) setRiskLevelRules(savedState.riskLevelRules);
     if (Array.isArray(savedState.teams)) setTeams(savedState.teams);
 
     setIsHydrated(true);
@@ -397,6 +418,7 @@ export const App = () => {
         analysis,
         questions,
         rules,
+        riskLevelRules,
         teams,
         projects,
         activeProjectId
@@ -418,6 +440,7 @@ export const App = () => {
     analysis,
     questions,
     rules,
+    riskLevelRules,
     teams,
     projects,
     activeProjectId,
@@ -516,7 +539,7 @@ export const App = () => {
     });
 
     if (sanitizedResult) {
-      setAnalysis(analyzeAnswers(sanitizedResult, rules));
+      setAnalysis(analyzeAnswers(sanitizedResult, rules, riskLevelRules));
       setValidationError(null);
     }
   }, [questions, rules, shouldShowQuestion]);
@@ -552,7 +575,7 @@ export const App = () => {
       return;
     }
 
-    const result = analyzeAnswers(answers, rules);
+    const result = analyzeAnswers(answers, rules, riskLevelRules);
     setAnalysis(result);
     setValidationError(null);
     setScreen('synthesis');
@@ -589,7 +612,7 @@ export const App = () => {
     const projectAnswers = project.answers || {};
     const derivedQuestions = questions.filter(q => shouldShowQuestion(q, projectAnswers));
     const derivedAnalysis = project.analysis
-      || (Object.keys(projectAnswers).length > 0 ? analyzeAnswers(projectAnswers, rules) : null);
+      || (Object.keys(projectAnswers).length > 0 ? analyzeAnswers(projectAnswers, rules, riskLevelRules) : null);
     const missingMandatory = derivedQuestions.filter(question => question.required && !isAnswerProvided(projectAnswers[question.id]));
     const totalQuestions = derivedQuestions.length;
     const rawIndex = typeof project.lastQuestionIndex === 'number' ? project.lastQuestionIndex : 0;
@@ -640,7 +663,7 @@ export const App = () => {
     const projectAnswers = project.answers || {};
     const visibleQuestions = questions.filter(question => shouldShowQuestion(question, projectAnswers));
     const projectAnalysis = project.analysis
-      || (Object.keys(projectAnswers).length > 0 ? analyzeAnswers(projectAnswers, rules) : null);
+      || (Object.keys(projectAnswers).length > 0 ? analyzeAnswers(projectAnswers, rules, riskLevelRules) : null);
     const relevantTeams = teams.filter(team => (projectAnalysis?.teams || []).includes(team.id));
     const timelineDetails = projectAnalysis?.timeline?.details || [];
     const derivedProjectName = project.projectName || extractProjectName(projectAnswers, questions);
@@ -695,7 +718,7 @@ export const App = () => {
         ? relevantQuestions.filter(question => isAnswerProvided(nextAnswers[question.id])).length
         : Object.keys(nextAnswers).length;
 
-      const updatedAnalysis = analyzeAnswers(nextAnswers, rules);
+      const updatedAnalysis = analyzeAnswers(nextAnswers, rules, riskLevelRules);
       const timelineDetails = updatedAnalysis?.timeline?.details || [];
       const relevantTeamsIds = Array.isArray(updatedAnalysis?.teams) ? updatedAnalysis.teams : [];
       const relevantTeams = teams.filter(team => relevantTeamsIds.includes(team.id));
@@ -786,7 +809,7 @@ export const App = () => {
     if (payload.analysis && typeof payload.analysis === 'object') {
       computedAnalysis = payload.analysis;
     } else if (Object.keys(sanitizedAnswers).length > 0) {
-      computedAnalysis = analyzeAnswers(sanitizedAnswers, rules);
+      computedAnalysis = analyzeAnswers(sanitizedAnswers, rules, riskLevelRules);
     }
 
     if (status === 'submitted' && !computedAnalysis) {
@@ -930,7 +953,7 @@ export const App = () => {
       return;
     }
 
-    const result = analyzeAnswers(answers, rules);
+    const result = analyzeAnswers(answers, rules, riskLevelRules);
     setAnalysis(result);
     setValidationError(null);
     setScreen('synthesis');
@@ -1071,6 +1094,8 @@ export const App = () => {
             setQuestions={setQuestions}
             rules={rules}
             setRules={setRules}
+            riskLevelRules={riskLevelRules}
+            setRiskLevelRules={setRiskLevelRules}
             teams={teams}
             setTeams={setTeams}
           />
