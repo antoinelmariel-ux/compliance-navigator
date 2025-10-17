@@ -19,6 +19,8 @@ export const QuestionnaireScreen = ({
   onBack,
   allQuestions,
   onSaveDraft,
+  saveFeedback,
+  onDismissSaveFeedback,
   validationError
 }) => {
   const currentQuestion = questions[currentIndex];
@@ -38,6 +40,8 @@ export const QuestionnaireScreen = ({
   const guidancePanelId = `guidance-${currentQuestion.id}`;
   const progressLabelId = `progress-label-${currentQuestion.id}`;
   const hasValidationError = validationError?.questionId === currentQuestion.id;
+  const hasSaveFeedback = Boolean(saveFeedback?.message);
+  const isSaveSuccess = saveFeedback?.status === 'success';
 
   useEffect(() => {
     setShowGuidance(false);
@@ -341,6 +345,36 @@ export const QuestionnaireScreen = ({
             )}
           </div>
 
+          {hasSaveFeedback && (
+            <div className="mb-6" role="status" aria-live="polite">
+              <div
+                className={`flex items-start gap-3 rounded-xl border p-4 text-sm ${
+                  isSaveSuccess
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                    : 'border-red-200 bg-red-50 text-red-700'
+                }`}
+              >
+                {isSaveSuccess ? (
+                  <CheckCircle className="mt-0.5 h-5 w-5" />
+                ) : (
+                  <AlertTriangle className="mt-0.5 h-5 w-5" />
+                )}
+                <div className="flex-1">
+                  <p className="font-medium">{saveFeedback.message}</p>
+                </div>
+                {typeof onDismissSaveFeedback === 'function' && (
+                  <button
+                    type="button"
+                    onClick={onDismissSaveFeedback}
+                    className="text-xs font-semibold uppercase tracking-wide text-current hover:underline focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-current rounded"
+                  >
+                    Fermer
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="mb-8">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <h2 id={questionTextId} className="text-2xl font-bold text-gray-800 sm:text-3xl">
@@ -525,7 +559,7 @@ export const QuestionnaireScreen = ({
                 className="flex items-center justify-center px-6 py-3 rounded-lg font-medium bg-amber-500 text-white hover:bg-amber-600 transition-all hv-button w-full sm:w-auto text-sm sm:text-base"
               >
                 <Save className="w-5 h-5 mr-2" />
-                Enregistrer et quitter
+                Enregistrer le projet
               </button>
             )}
 

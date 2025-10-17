@@ -14,8 +14,9 @@ import { shouldShowQuestion } from './utils/questions.js';
 import { analyzeAnswers } from './utils/rules.js';
 import { extractProjectName } from './utils/projects.js';
 import { createDemoProject } from './data/demoProject.js';
+import { exportProjectToFile } from './utils/projectExport.js';
 
-const APP_VERSION = 'v1.0.17';
+const APP_VERSION = 'v1.0.18';
 
 
 const isAnswerProvided = (value) => {
@@ -210,6 +211,7 @@ export const App = () => {
   const [projects, setProjects] = useState(buildInitialProjectsState);
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [validationError, setValidationError] = useState(null);
+  const [saveFeedback, setSaveFeedback] = useState(null);
   const [showcaseProjectContext, setShowcaseProjectContext] = useState(null);
 
   const [questions, setQuestions] = useState(initialQuestions);
@@ -358,6 +360,12 @@ export const App = () => {
     activeQuestions,
     isHydrated
   ]);
+
+  useEffect(() => {
+    if (screen !== 'questionnaire' && screen !== 'synthesis') {
+      setSaveFeedback(null);
+    }
+  }, [screen]);
 
   const handleAnswer = useCallback((questionId, answer) => {
     setAnswers(prevAnswers => {
@@ -724,13 +732,58 @@ export const App = () => {
     }
   }, [handleSaveProject]);
 
-  const handleSaveDraft = useCallback(() => {
-    const entry = handleSaveProject({ status: 'draft', lastQuestionIndex: currentQuestionIndex });
+  const handleSaveDraft = useCallback((payload = {}) => {
+    const {
+      questions: questionsOverride,
+      lastQuestionIndex: payloadLastQuestionIndex,
+      ...otherPayload
+    } = payload || {};
+
+    const entry = handleSaveProject({
+      ...otherPayload,
+      lastQuestionIndex:
+        typeof payloadLastQuestionIndex === 'number'
+          ? payloadLastQuestionIndex
+          : currentQuestionIndex,
+      status: 'draft'
+    });
+
     if (entry) {
       setValidationError(null);
-      setScreen('home');
+
+      const relevantTeamIds = Array.isArray(entry.analysis?.teams) ? entry.analysis.teams : [];
+      const relevantTeams = teams.filter(team => relevantTeamIds.includes(team.id));
+      const timelineByTeam = entry.analysis?.timeline?.byTeam || {};
+      const timelineDetails = entry.analysis?.timeline?.details || [];
+      const exportQuestions = Array.isArray(questionsOverride) ? questionsOverride : activeQuestions;
+
+      const exported = exportProjectToFile({
+        projectName: entry.projectName,
+        answers: entry.answers,
+        analysis: entry.analysis,
+        relevantTeams,
+        timelineByTeam,
+        timelineDetails,
+        questions: exportQuestions
+      });
+
+      setSaveFeedback(
+        exported
+          ? {
+              status: 'success',
+              message: 'Votre projet a bien été enregistré dans vos téléchargements'
+            }
+          : {
+              status: 'error',
+              message: 'Projet enregistré mais le téléchargement a échoué. Veuillez réessayer.'
+            }
+      );
     }
-  }, [currentQuestionIndex, handleSaveProject]);
+  }, [activeQuestions, currentQuestionIndex, handleSaveProject, teams]);
+
+  const handleDismissSaveFeedback = useCallback(() => {
+    setSaveFeedback(null);
+  }, []);
 
   const handleBackToQuestionnaire = useCallback(() => {
     if (unansweredMandatoryQuestions.length > 0) {
@@ -861,6 +914,8 @@ export const App = () => {
               onBack={handleBack}
               allQuestions={questions}
               onSaveDraft={handleSaveDraft}
+              saveFeedback={saveFeedback}
+              onDismissSaveFeedback={handleDismissSaveFeedback}
               validationError={validationError}
             />
           ) : screen === 'mandatory-summary' ? (
@@ -882,6 +937,9 @@ export const App = () => {
               onUpdateAnswers={handleUpdateAnswers}
               onSubmitProject={handleSubmitProject}
               isExistingProject={Boolean(activeProjectId)}
+              onSaveDraft={handleSaveDraft}
+              saveFeedback={saveFeedback}
+              onDismissSaveFeedback={handleDismissSaveFeedback}
             />
           ) : screen === 'showcase' ? (
             showcaseProjectContext ? (

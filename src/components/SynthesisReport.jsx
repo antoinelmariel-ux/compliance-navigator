@@ -1,9 +1,15 @@
 import React, { useState, useCallback, useEffect, useRef } from '../react.js';
-import { FileText, Calendar, Users, AlertTriangle, Send, Sparkles, CheckCircle } from './icons.js';
+import { FileText, Calendar, Users, AlertTriangle, Send, Sparkles, CheckCircle, Save } from './icons.js';
 import { formatAnswer } from '../utils/questions.js';
 import { renderTextWithLinks } from '../utils/linkify.js';
 import { ProjectShowcase } from './ProjectShowcase.jsx';
 import { extractProjectName } from '../utils/projects.js';
+import {
+  buildProjectExport,
+  downloadProjectJson,
+  getTeamPriority,
+  sanitizeFileName
+} from '../utils/projectExport.js';
 
 const escapeHtml = (value) => {
   if (value === null || value === undefined) {
@@ -16,31 +22,6 @@ const escapeHtml = (value) => {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
-};
-
-const sanitizeFileName = (value, fallback = 'projet-compliance') => {
-  if (typeof value !== 'string') {
-    return fallback;
-  }
-
-  let normalized = value.trim();
-  if (normalized.length === 0) {
-    return fallback;
-  }
-
-  try {
-    normalized = normalized.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  } catch (error) {
-    normalized = normalized.replace(/[^\w\s-]/g, '');
-  }
-
-  const sanitized = normalized
-    .replace(/[^a-zA-Z0-9-_]+/g, '-')
-    .replace(/-{2,}/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 60);
-
-  return sanitized.length > 0 ? sanitized : fallback;
 };
 
 const formatNumber = (value, options = {}) => {
@@ -108,53 +89,6 @@ const computeTeamTimeline = (timelineByTeam, teamId) => {
     meetsAll,
     strictestRequirement
   };
-};
-
-const getTeamPriority = (analysis, teamId) => {
-  if (!analysis) {
-    return 'Recommandé';
-  }
-
-  const priorityWeights = {
-    Recommandé: 1,
-    Important: 2,
-    Critique: 3
-  };
-
-  const getWeight = (priority) => priorityWeights[priority] || 0;
-
-  const risks = Array.isArray(analysis.risks) ? analysis.risks : [];
-  let bestPriority = 'Recommandé';
-
-  risks.forEach(risk => {
-    if (!Array.isArray(risk.teams) || !risk.teams.includes(teamId)) {
-      return;
-    }
-
-    if (getWeight(risk.priority) > getWeight(bestPriority)) {
-      bestPriority = risk.priority;
-    }
-  });
-
-  if (bestPriority !== 'Recommandé') {
-    return bestPriority;
-  }
-
-  const triggeredRules = Array.isArray(analysis.triggeredRules)
-    ? analysis.triggeredRules
-    : [];
-
-  triggeredRules.forEach(rule => {
-    if (!Array.isArray(rule.teams) || !rule.teams.includes(teamId)) {
-      return;
-    }
-
-    if (getWeight(rule.priority) > getWeight(bestPriority)) {
-      bestPriority = rule.priority;
-    }
-  });
-
-  return bestPriority;
 };
 
 const formatAsHtmlText = (value) => {
@@ -386,46 +320,6 @@ const buildEmailHtml = ({
     </html>`;
 };
 
-const buildProjectExport = ({
-  projectName,
-  answers,
-  analysis,
-  relevantTeams,
-  timelineByTeam,
-  timelineDetails,
-  questions
-}) => {
-  const normalizedAnswers =
-    answers && typeof answers === 'object' ? answers : {};
-
-  const teamsSnapshot = relevantTeams.map(team => ({
-    id: team.id,
-    name: team.name,
-    contact: team.contact || null,
-    priority: getTeamPriority(analysis, team.id)
-  }));
-
-  return {
-    version: 1,
-    generatedAt: new Date().toISOString(),
-    project: {
-      name: projectName || 'Projet sans nom',
-      answers: normalizedAnswers,
-      analysis: analysis || null,
-      relevantTeams: teamsSnapshot,
-      timeline: {
-        byTeam: timelineByTeam,
-        details: timelineDetails
-      },
-      questionnaire: {
-        questionIds: Array.isArray(questions)
-          ? questions.map(question => question.id)
-          : []
-      }
-    }
-  };
-};
-
 const decodeHtmlEntities = (text) =>
   text
     .replace(/&nbsp;/g, ' ')
@@ -501,11 +395,16 @@ export const SynthesisReport = ({
   onBack,
   onUpdateAnswers,
   onSubmitProject,
-  isExistingProject
+  isExistingProject,
+  onSaveDraft,
+  saveFeedback,
+  onDismissSaveFeedback
 }) => {
   const [isShowcaseFallbackOpen, setIsShowcaseFallbackOpen] = useState(false);
   const showcaseFallbackRef = useRef(null);
   const relevantTeams = teams.filter(team => (analysis?.teams || []).includes(team.id));
+  const hasSaveFeedback = Boolean(saveFeedback?.message);
+  const isSaveSuccess = saveFeedback?.status === 'success';
 
   const priorityColors = {
     Critique: 'bg-red-100 text-red-800 border-red-300',
@@ -593,6 +492,22 @@ export const SynthesisReport = ({
     });
   }, [analysis, answers, onSubmitProject, projectName, relevantTeams, timelineDetails]);
 
+  const handleDownloadProject = useCallback(() => {
+    if (!onSaveDraft) {
+      return;
+    }
+
+    onSaveDraft({
+      projectName,
+      answers,
+      analysis,
+      questions,
+      relevantTeams,
+      timelineDetails,
+      lastQuestionIndex: questions.length > 0 ? questions.length - 1 : 0
+    });
+  }, [analysis, answers, onSaveDraft, projectName, questions, relevantTeams, timelineDetails]);
+
   const handleSubmitByEmail = useCallback(async () => {
     const emailHtml = buildEmailHtml({
       projectName,
@@ -667,28 +582,7 @@ export const SynthesisReport = ({
       }
     }
 
-    if (typeof document !== 'undefined' && typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
-      try {
-        const blob = new Blob([projectJson], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const anchor = document.createElement('a');
-        anchor.href = url;
-        anchor.download = fileName;
-        anchor.style.display = 'none';
-        document.body.appendChild(anchor);
-        anchor.click();
-        document.body.removeChild(anchor);
-        setTimeout(() => {
-          if (typeof URL.revokeObjectURL === 'function') {
-            URL.revokeObjectURL(url);
-          }
-        }, 0);
-      } catch (error) {
-        if (typeof console !== 'undefined' && typeof console.warn === 'function') {
-          console.warn('[SynthesisReport] Téléchargement du projet impossible :', error);
-        }
-      }
-    }
+    downloadProjectJson(projectJson, { projectName });
 
     const fallbackBody = `${emailText}\n\nFichier du projet : ${fileName}\nLe fichier JSON a été téléchargé automatiquement ; merci de l'ajouter en pièce jointe avant envoi.`;
     const mailtoLink = buildMailtoLink({ projectName, relevantTeams, body: fallbackBody });
@@ -731,6 +625,16 @@ export const SynthesisReport = ({
                   {isExistingProject ? 'Mettre à jour le projet' : 'Enregistrer le projet'}
                 </button>
               )}
+              {onSaveDraft && (
+                <button
+                  type="button"
+                  onClick={handleDownloadProject}
+                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-medium transition-all flex items-center justify-center hv-button w-full sm:w-auto text-sm sm:text-base"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  Télécharger le projet
+                </button>
+              )}
               <button
                 type="button"
                 onClick={handleSubmitByEmail}
@@ -749,6 +653,36 @@ export const SynthesisReport = ({
               </button>
             </div>
           </div>
+
+          {hasSaveFeedback && (
+            <div className="mb-6" role="status" aria-live="polite">
+              <div
+                className={`flex items-start gap-3 rounded-xl border p-4 text-sm ${
+                  isSaveSuccess
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                    : 'border-red-200 bg-red-50 text-red-700'
+                }`}
+              >
+                {isSaveSuccess ? (
+                  <CheckCircle className="mt-0.5 h-5 w-5" />
+                ) : (
+                  <AlertTriangle className="mt-0.5 h-5 w-5" />
+                )}
+                <div className="flex-1">
+                  <p className="font-medium">{saveFeedback.message}</p>
+                </div>
+                {typeof onDismissSaveFeedback === 'function' && (
+                  <button
+                    type="button"
+                    onClick={onDismissSaveFeedback}
+                    className="text-xs font-semibold uppercase tracking-wide text-current hover:underline focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white focus:ring-current rounded"
+                  >
+                    Fermer
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Vue d'ensemble */}
           <section className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl p-5 sm:p-6 mb-8 border border-indigo-200 hv-surface" aria-labelledby="overview-heading">
