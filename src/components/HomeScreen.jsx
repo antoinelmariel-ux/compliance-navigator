@@ -287,14 +287,23 @@ export const HomeScreen = ({
                       <button
                         type="button"
                         onClick={() => onOpenProject(project.id)}
-                        className={`inline-flex items-center px-4 py-2 rounded-lg font-semibold transition-all hv-button ${
+                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all hv-button ${
                           isDraft
                             ? 'bg-amber-500 text-white hover:bg-amber-600'
                             : 'bg-indigo-600 text-white hover:bg-indigo-700 hv-button-primary'
                         }`}
                       >
-                        {isDraft ? <Edit className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
-                        {isDraft ? 'Continuer le questionnaire' : 'Consulter la synthèse'}
+                        {isDraft ? (
+                          <>
+                            <Edit className="w-4 h-4" aria-hidden="true" />
+                            <span>Continuer l'édition</span>
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="w-4 h-4" aria-hidden="true" />
+                            <span>Consulter la synthèse</span>
+                          </>
+                        )}
                       </button>
                       {onShowProjectShowcase && (
                         <button
