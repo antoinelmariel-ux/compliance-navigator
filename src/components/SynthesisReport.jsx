@@ -1,5 +1,15 @@
 import React, { useState, useCallback, useEffect, useRef } from '../react.js';
-import { FileText, Calendar, Users, AlertTriangle, Send, Sparkles, CheckCircle, Save } from './icons.js';
+import {
+  FileText,
+  Calendar,
+  Users,
+  AlertTriangle,
+  Send,
+  Sparkles,
+  CheckCircle,
+  Save,
+  Mail
+} from './icons.js';
 import { formatAnswer } from '../utils/questions.js';
 import { renderTextWithLinks } from '../utils/linkify.js';
 import { ProjectShowcase } from './ProjectShowcase.jsx';
@@ -785,7 +795,17 @@ export const SynthesisReport = ({
                                 <p className="text-xs opacity-80">{renderTextWithLinks(entry.description)}</p>
                               )}
                               <div className="mt-2 text-xs font-semibold">
-                                {entry.satisfied ? '✅ Délai respecté' : '⚠️ Prévoir un délai supplémentaire'}
+                                {entry.satisfied ? (
+                                  <span className="inline-flex items-center gap-2 text-emerald-700">
+                                    <CheckCircle className="w-4 h-4" />
+                                    Délai respecté
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-2 text-amber-700">
+                                    <AlertTriangle className="w-4 h-4" />
+                                    Prévoir un délai supplémentaire
+                                  </span>
+                                )}
                               </div>
                             </div>
                           );
@@ -822,8 +842,9 @@ export const SynthesisReport = ({
                       <Calendar className="w-4 h-4 mr-2" />
                       <span>À solliciter en phase de conception</span>
                     </div>
-                    <div className="mt-2 text-sm text-indigo-600 font-medium">
-                      📧 {renderTextWithLinks(team.contact)}
+                    <div className="mt-2 text-sm text-indigo-600 font-medium flex items-center gap-2">
+                      <Mail className="w-4 h-4" />
+                      {renderTextWithLinks(team.contact)}
                     </div>
 
                       {teamQuestions && (

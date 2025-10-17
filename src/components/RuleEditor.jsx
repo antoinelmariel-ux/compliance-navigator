@@ -1,5 +1,15 @@
 import React, { useEffect, useRef, useState } from '../react.js';
-import { Plus, Trash2, CheckCircle } from './icons.js';
+import {
+  Plus,
+  Trash2,
+  CheckCircle,
+  Clipboard,
+  Target,
+  Lightbulb,
+  Users,
+  FileText,
+  AlertTriangle
+} from './icons.js';
 import {
   applyRuleConditionGroups,
   normalizeRuleConditionGroups,
@@ -376,7 +386,10 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
         <div className="px-8 py-6 space-y-8">
           {/* Informations générales */}
           <div>
-            <h3 className="text-xl font-bold text-gray-800 mb-4">📋 Informations générales</h3>
+            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <Clipboard className="w-5 h-5 text-indigo-500" />
+              Informations générales
+            </h3>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Nom de la règle</label>
@@ -396,9 +409,9 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                   onChange={(e) => setEditedRule({ ...editedRule, priority: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 >
-                  <option value="Critique">🔴 Critique</option>
-                  <option value="Important">🟠 Important</option>
-                  <option value="Recommandé">🔵 Recommandé</option>
+                  <option value="Critique">Critique (priorité rouge)</option>
+                  <option value="Important">Important (priorité orange)</option>
+                  <option value="Recommandé">Recommandé (priorité bleue)</option>
                 </select>
               </div>
             </div>
@@ -408,7 +421,10 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
           <div>
             <div className="flex justify-between items-center mb-4">
               <div>
-                <h3 className="text-xl font-bold text-gray-800">🎯 Conditions de déclenchement</h3>
+                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                  <Target className="w-5 h-5 text-indigo-500" />
+                  Conditions de déclenchement
+                </h3>
                 <p className="text-sm text-gray-600 mt-1">
                   Définissez dans quels cas cette règle doit s'activer automatiquement.
                 </p>
@@ -455,7 +471,11 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
 
                       return (
                         <p className="text-sm text-blue-900">
-                          <strong>💡 Logique :</strong> Cette règle se déclenchera si{' '}
+                          <strong className="inline-flex items-center gap-2">
+                            <Lightbulb className="w-4 h-4 text-amber-500" />
+                            Logique :
+                          </strong>{' '}
+                          Cette règle se déclenchera si{' '}
                           <strong className="text-blue-700">{logicDescription}</strong>{' '}
                           (logique {logicLabel}).
                         </p>
@@ -464,7 +484,11 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                   ) : (
                     <div className="space-y-2 text-sm text-blue-900">
                       <p>
-                        <strong>💡 Logique :</strong> La règle se déclenche lorsque{' '}
+                        <strong className="inline-flex items-center gap-2">
+                          <Lightbulb className="w-4 h-4 text-amber-500" />
+                          Logique :
+                        </strong>{' '}
+                        La règle se déclenche lorsque{' '}
                         <strong className="text-blue-700">chaque groupe de conditions</strong> ci-dessous est validé (logique globale <strong>ET</strong>).
                       </p>
                       <p>
@@ -985,7 +1009,10 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
           </div>
           {/* Équipes à déclencher */}
           <div>
-            <h3 className="text-xl font-bold text-gray-800 mb-4">👥 Équipes compliance à déclencher</h3>
+            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <Users className="w-5 h-5 text-indigo-500" />
+              Équipes compliance à déclencher
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {teams.map(team => (
                 <button
@@ -1019,7 +1046,10 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
 
           {/* Questions par équipe */}
           <div>
-            <h3 className="text-xl font-bold text-gray-800 mb-4">📝 Questions à préparer par équipe</h3>
+            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <FileText className="w-5 h-5 text-indigo-500" />
+              Questions à préparer par équipe
+            </h3>
             {editedRule.teams.length === 0 ? (
               <div className="text-sm text-gray-500 italic">
                 Sélectionnez au moins une équipe pour définir les questions.
@@ -1072,7 +1102,10 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
           {/* Risques */}
           <div>
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-gray-800">⚠️ Risques associés</h3>
+              <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-red-500" />
+                Risques associés
+              </h3>
               <button
                 onClick={addRisk}
                 className="flex items-center px-3 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-all text-sm font-medium"
@@ -1119,9 +1152,9 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                           onChange={(e) => updateRisk(idx, 'level', e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
                         >
-                          <option value="Faible">🟢 Faible</option>
-                          <option value="Moyen">🟠 Moyen</option>
-                          <option value="Élevé">🔴 Élevé</option>
+                          <option value="Faible">Faible (niveau vert)</option>
+                          <option value="Moyen">Moyen (niveau orange)</option>
+                          <option value="Élevé">Élevé (niveau rouge)</option>
                         </select>
                       </div>
 

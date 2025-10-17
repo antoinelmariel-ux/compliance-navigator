@@ -1,5 +1,14 @@
 import React, { useEffect, useRef, useState } from '../react.js';
-import { Plus, Trash2, GripVertical } from './icons.js';
+import {
+  Plus,
+  Trash2,
+  GripVertical,
+  Clipboard,
+  Compass,
+  Target,
+  Lightbulb,
+  CheckCircle
+} from './icons.js';
 import { applyConditionGroups, normalizeConditionGroups } from '../utils/conditionGroups.js';
 
 export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => {
@@ -302,7 +311,10 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
         <div className="px-8 py-6 space-y-8">
           {/* Informations de base */}
           <div>
-            <h3 className="text-xl font-bold text-gray-800 mb-4">📋 Informations de base</h3>
+            <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <Clipboard className="w-5 h-5 text-indigo-500" />
+              Informations de base
+            </h3>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Identifiant de la question</label>
@@ -367,8 +379,11 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
             {typeUsesOptions ? (
               <>
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xl font-bold text-gray-800">
-                    {questionType === 'multi_choice' ? '✅ Options de sélection multiple' : '✅ Options de réponse'}
+                  <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 text-emerald-600" />
+                    {questionType === 'multi_choice'
+                      ? 'Options de sélection multiple'
+                      : 'Options de réponse'}
                   </h3>
                   <button
                     onClick={addOption}
@@ -445,7 +460,10 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
 
           {/* Guidage contextuel */}
           <div>
-            <h3 className="text-xl font-bold text-gray-800 mb-3">🧭 Guidage contextuel</h3>
+            <h3 className="text-xl font-bold text-gray-800 mb-3 flex items-center gap-2">
+              <Compass className="w-5 h-5 text-indigo-500" />
+              Guidage contextuel
+            </h3>
             <p className="text-sm text-gray-600 mb-4">
               Renseignez les informations d'aide affichées au chef de projet pour expliquer la question.
             </p>
@@ -521,7 +539,10 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
           <div>
             <div className="flex justify-between items-center mb-4">
               <div>
-                <h3 className="text-xl font-bold text-gray-800">🎯 Conditions d'affichage</h3>
+                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                  <Target className="w-5 h-5 text-indigo-500" />
+                  Conditions d'affichage
+                </h3>
                 <p className="text-sm text-gray-600 mt-1">
                   Définissez quand cette question doit apparaître dans le questionnaire
                 </p>
@@ -566,7 +587,11 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
 
                       return (
                         <p className="text-sm text-blue-900">
-                          <strong>💡 Logique :</strong> Cette question s'affichera si{' '}
+                          <strong className="inline-flex items-center gap-2">
+                            <Lightbulb className="w-4 h-4 text-amber-500" />
+                            Logique :
+                          </strong>{' '}
+                          Cette question s'affichera si{' '}
                           <strong className="text-blue-700">{logicDescription}</strong>{' '}
                           (logique {logicLabel}).
                         </p>
@@ -575,7 +600,11 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                   ) : (
                     <div className="space-y-2 text-sm text-blue-900">
                       <p>
-                        <strong>💡 Logique :</strong> Cette question s'affiche lorsque{' '}
+                        <strong className="inline-flex items-center gap-2">
+                          <Lightbulb className="w-4 h-4 text-amber-500" />
+                          Logique :
+                        </strong>{' '}
+                        Cette question s'affiche lorsque{' '}
                         <strong className="text-blue-700">chaque groupe de conditions</strong> ci-dessous est validé (logique globale <strong>ET</strong>).
                       </p>
                       <p>
