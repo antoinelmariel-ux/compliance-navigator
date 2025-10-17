@@ -17,7 +17,7 @@ import { extractProjectName } from './utils/projects.js';
 import { createDemoProject } from './data/demoProject.js';
 import { exportProjectToFile } from './utils/projectExport.js';
 
-const APP_VERSION = 'v1.0.32';
+const APP_VERSION = 'v1.0.33';
 
 const restoreShowcaseQuestions = (currentQuestions, referenceQuestions = initialQuestions) => {
   if (!Array.isArray(currentQuestions)) {
@@ -557,6 +557,124 @@ export const App = () => {
     setScreen('questionnaire');
   }, [resetProjectState]);
 
+  const handleImportProject = useCallback((file) => {
+    if (!file) {
+      return;
+    }
+
+    if (typeof FileReader === 'undefined') {
+      if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+        console.warn('[projectImport] FileReader API indisponible dans cet environnement.');
+      }
+      if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+        window.alert('Votre navigateur ne permet pas d\'importer un projet depuis un fichier.');
+      }
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+      try {
+        const content = typeof event?.target?.result === 'string' ? event.target.result : '';
+
+        if (!content) {
+          throw new Error('EMPTY_FILE');
+        }
+
+        const parsed = JSON.parse(content);
+        const projectData = parsed?.project && typeof parsed.project === 'object' ? parsed.project : parsed;
+
+        if (!projectData || typeof projectData !== 'object') {
+          throw new Error('INVALID_PROJECT');
+        }
+
+        const importedAnswers = projectData.answers && typeof projectData.answers === 'object'
+          ? projectData.answers
+          : {};
+        const importedAnalysis = projectData.analysis && typeof projectData.analysis === 'object'
+          ? projectData.analysis
+          : null;
+        const importedName = typeof projectData.name === 'string' ? projectData.name.trim() : '';
+        const projectName = importedName.length > 0 ? importedName : 'Projet importé';
+        const importedTotalQuestions = Array.isArray(projectData?.questionnaire?.questionIds)
+          ? projectData.questionnaire.questionIds.length
+          : undefined;
+
+        const entry = handleSaveProject({
+          id: `project-${Date.now()}`,
+          projectName,
+          answers: importedAnswers,
+          analysis: importedAnalysis,
+          status: 'draft',
+          totalQuestions: importedTotalQuestions,
+          lastQuestionIndex: 0
+        });
+
+        if (!entry) {
+          throw new Error('SAVE_FAILED');
+        }
+
+        const relevantQuestions = questions.filter(question => shouldShowQuestion(question, importedAnswers));
+        const missingMandatory = relevantQuestions.filter(question => question.required && !isAnswerProvided(importedAnswers[question.id]));
+        const firstMissingId = missingMandatory[0]?.id;
+        const derivedAnalysis = entry.analysis
+          || (Object.keys(importedAnswers).length > 0 ? analyzeAnswers(importedAnswers, rules, riskLevelRules) : null);
+
+        const nextIndex = firstMissingId
+          ? Math.max(relevantQuestions.findIndex(question => question.id === firstMissingId), 0)
+          : relevantQuestions.length > 0
+            ? Math.min(entry.lastQuestionIndex ?? 0, relevantQuestions.length - 1)
+            : 0;
+
+        setAnswers(importedAnswers);
+        setAnalysis(derivedAnalysis);
+        setCurrentQuestionIndex(nextIndex);
+        setValidationError(null);
+        setActiveProjectId(entry.id);
+        setScreen('questionnaire');
+        setSaveFeedback({
+          status: 'success',
+          message: 'Projet importé en mode brouillon. Vous pouvez poursuivre sa saisie.'
+        });
+      } catch (error) {
+        if (typeof console !== 'undefined' && typeof console.error === 'function') {
+          console.error('[projectImport] Impossible de charger le projet :', error);
+        }
+        if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+          window.alert('Le fichier sélectionné est invalide. Veuillez vérifier le JSON exporté.');
+        }
+      }
+    };
+
+    reader.onerror = () => {
+      if (typeof console !== 'undefined' && typeof console.error === 'function') {
+        console.error('[projectImport] Échec de la lecture du fichier :', reader.error);
+      }
+      if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+        window.alert('Impossible de lire le fichier sélectionné. Veuillez réessayer.');
+      }
+    };
+
+    try {
+      reader.readAsText(file, 'utf-8');
+    } catch (error) {
+      if (typeof console !== 'undefined' && typeof console.error === 'function') {
+        console.error('[projectImport] Erreur inattendue lors de la lecture du fichier :', error);
+      }
+      if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+        window.alert('Une erreur est survenue lors de l\'import du projet.');
+      }
+    }
+  }, [
+    handleSaveProject,
+    questions,
+    rules,
+    riskLevelRules,
+    shouldShowQuestion,
+    analyzeAnswers
+  ]);
+
   const handleNext = useCallback(() => {
     if (currentQuestionIndex < activeQuestions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
@@ -1036,6 +1154,7 @@ export const App = () => {
               onOpenProject={handleOpenProject}
               onDeleteProject={handleDeleteProject}
               onShowProjectShowcase={handleShowProjectShowcase}
+              onImportProject={handleImportProject}
             />
           ) : screen === 'questionnaire' ? (
             <QuestionnaireScreen
