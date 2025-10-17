@@ -27,7 +27,7 @@ Prototype React monopage d'aide à la décision compliance lancé directement de
 ### Expérience utilisateur
 - **Guidage contextuel** : tutoriels intégrés et micro-contenus d'aide pour expliquer la logique des questions ou des règles qui s'affichent.
 - **Mode brouillon** : permettre aux chefs de projet de sauvegarder plusieurs scénarios de réponses et d'y revenir plus tard avant validation définitive.
-- **Accessibilité renforcée** : vérifier la conformité RGAA/WCAG (navigation clavier, contraste, lecteurs d'écran) et proposer un mode haute visibilité.
+- **Accessibilité renforcée** : vérifier la conformité RGAA/WCAG (navigation clavier, contraste, lecteurs d'écran).
 
 ### Collaboration et gouvernance
 - **Gestion multi-utilisateurs** : comptes personnalisés avec historique des parcours remplis et possibilité de commenter les réponses.

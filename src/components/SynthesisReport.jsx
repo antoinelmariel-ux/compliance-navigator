@@ -741,13 +741,6 @@ export const SynthesisReport = ({
                 <Sparkles className="w-4 h-4 mr-2" />
                 Vitrine du projet
               </button>
-              <button
-                type="button"
-                onClick={onRestart}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium text-gray-700 transition-all hv-button w-full sm:w-auto justify-center text-sm sm:text-base"
-              >
-                Nouveau projet
-              </button>
             </div>
           </div>
 

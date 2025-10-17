@@ -15,7 +15,7 @@ import { analyzeAnswers } from './utils/rules.js';
 import { extractProjectName } from './utils/projects.js';
 import { createDemoProject } from './data/demoProject.js';
 
-const APP_VERSION = 'v1.0.15';
+const APP_VERSION = 'v1.0.17';
 
 
 const isAnswerProvided = (value) => {
@@ -209,7 +209,6 @@ export const App = () => {
   const [analysis, setAnalysis] = useState(null);
   const [projects, setProjects] = useState(buildInitialProjectsState);
   const [activeProjectId, setActiveProjectId] = useState(null);
-  const [isHighVisibility, setIsHighVisibility] = useState(false);
   const [validationError, setValidationError] = useState(null);
   const [showcaseProjectContext, setShowcaseProjectContext] = useState(null);
 
@@ -257,7 +256,6 @@ export const App = () => {
     if (Array.isArray(savedState.questions)) setQuestions(savedState.questions);
     if (Array.isArray(savedState.rules)) setRules(savedState.rules);
     if (Array.isArray(savedState.teams)) setTeams(savedState.teams);
-    if (typeof savedState.isHighVisibility === 'boolean') setIsHighVisibility(savedState.isHighVisibility);
 
     setIsHydrated(true);
   }, []);
@@ -288,7 +286,6 @@ export const App = () => {
         questions,
         rules,
         teams,
-        isHighVisibility,
         projects,
         activeProjectId
       });
@@ -310,22 +307,10 @@ export const App = () => {
     questions,
     rules,
     teams,
-    isHighVisibility,
     projects,
     activeProjectId,
     isHydrated
   ]);
-
-  useEffect(() => {
-    if (typeof document === 'undefined') return;
-    const body = document.body;
-    if (!body) return;
-    if (isHighVisibility) {
-      body.classList.add('high-visibility');
-    } else {
-      body.classList.remove('high-visibility');
-    }
-  }, [isHighVisibility]);
 
   const activeQuestions = useMemo(
     () => questions.filter(q => shouldShowQuestion(q, answers)),
@@ -747,10 +732,6 @@ export const App = () => {
     }
   }, [currentQuestionIndex, handleSaveProject]);
 
-  const handleToggleHighVisibility = useCallback(() => {
-    setIsHighVisibility(prev => !prev);
-  }, []);
-
   const handleBackToQuestionnaire = useCallback(() => {
     if (unansweredMandatoryQuestions.length > 0) {
       const firstMissingId = unansweredMandatoryQuestions[0].id;
@@ -810,7 +791,7 @@ export const App = () => {
             <div
               className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3 lg:justify-end"
               role="group"
-              aria-label="Sélection du mode d'affichage"
+              aria-label="Sélection du mode d'utilisation"
             >
               {mode === 'user' && (
                 <button
@@ -827,19 +808,21 @@ export const App = () => {
                   Accueil projets
                 </button>
               )}
-              <button
-                type="button"
-                onClick={() => setMode('user')}
-                className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button ${
-                  mode === 'user'
-                    ? 'bg-indigo-600 text-white hv-button-primary'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-                aria-pressed={mode === 'user'}
-                aria-label="Basculer vers le mode chef de projet"
-              >
-                Mode Chef de Projet
-              </button>
+              {mode === 'admin' && (
+                <button
+                  type="button"
+                  onClick={() => setMode('user')}
+                  className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button ${
+                    mode === 'user'
+                      ? 'bg-indigo-600 text-white hv-button-primary'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                  aria-pressed={mode === 'user'}
+                  aria-label="Basculer vers le mode chef de projet"
+                >
+                  Mode Chef de Projet
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setMode('admin')}
@@ -852,17 +835,6 @@ export const App = () => {
                 aria-label="Basculer vers le mode back-office"
               >
                 Back-Office
-              </button>
-              <button
-                type="button"
-                onClick={handleToggleHighVisibility}
-                className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button hv-focus-ring ${
-                  isHighVisibility ? 'hv-button-primary' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-                aria-pressed={isHighVisibility}
-                aria-label="Activer ou désactiver le mode haute visibilité"
-              >
-                Mode haute visibilité {isHighVisibility ? 'activé' : 'désactivé'}
               </button>
             </div>
           </div>
