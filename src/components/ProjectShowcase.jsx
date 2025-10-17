@@ -586,34 +586,66 @@ export const ProjectShowcase = ({
           style={{ boxShadow: '20px 20px 60px rgba(2, 6, 23, 0.45), -18px -18px 50px rgba(148, 163, 184, 0.12)' }}
         >
           <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-          <div className="max-w-3xl">
-            {shouldShowPreview ? (
-              <>
-                <h2
-                  className="mt-6 text-5xl font-black leading-tight sm:text-6xl sm:leading-[1.05]"
-                  style={heroTitleStyle}
-                >
-                  {safeProjectName}
-                </h2>
-                {hasText(slogan) && (
-                  <p className="mt-5 text-2xl font-semibold text-indigo-200 sm:text-3xl" style={{ textShadow: '0 12px 40px rgba(79, 70, 229, 0.4)' }}>
-                    {renderTextWithLinks(slogan)}
+            <div className="max-w-3xl">
+              {shouldShowPreview ? (
+                <>
+                  <h2
+                    className="mt-6 text-5xl font-black leading-tight sm:text-6xl sm:leading-[1.05]"
+                    style={heroTitleStyle}
+                  >
+                    {safeProjectName}
+                  </h2>
+                  {hasText(slogan) && (
+                    <p className="mt-5 text-2xl font-semibold text-indigo-200 sm:text-3xl" style={{ textShadow: '0 12px 40px rgba(79, 70, 229, 0.4)' }}>
+                      {renderTextWithLinks(slogan)}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <>
+                  <p className="mt-6 text-[0.65rem] font-semibold uppercase tracking-[0.45em] text-indigo-200">Mode édition</p>
+                  <h2 className="mt-4 text-4xl font-bold text-white sm:text-5xl">
+                    Personnalisez la vitrine du projet
+                  </h2>
+                  <p className="mt-3 text-sm text-slate-300/80">
+                    Modifiez les informations via le formulaire ci-dessous. L'aperçu est temporairement masqué pendant l'édition.
                   </p>
-                )}
-              </>
-            ) : (
-              <>
-                <p className="mt-6 text-[0.65rem] font-semibold uppercase tracking-[0.45em] text-indigo-200">Mode édition</p>
-                <h2 className="mt-4 text-4xl font-bold text-white sm:text-5xl">
-                  Personnalisez la vitrine du projet
-                </h2>
-                <p className="mt-3 text-sm text-slate-300/80">
-                  Modifiez les informations via le formulaire ci-dessous. L'aperçu est temporairement masqué pendant l'édition.
-                </p>
-              </>
-            )}
-          </div>
+                </>
+              )}
+            </div>
             <div className="flex flex-wrap items-center gap-3 self-start lg:self-auto">
+              {canEdit && (
+                <div className="flex items-center gap-2">
+                  {isEditing ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleCancelEditing}
+                        className="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/10 px-4 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.45em] text-slate-200 transition hover:bg-white/20"
+                      >
+                        Annuler
+                      </button>
+                      <button
+                        type="submit"
+                        form={formId}
+                        className="inline-flex items-center justify-center rounded-full border border-indigo-400/60 bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-400 px-4 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.45em] text-white shadow-lg shadow-indigo-500/30 transition hover:brightness-110"
+                      >
+                        <CheckCircle className="mr-2 h-4 w-4" />
+                        Enregistrer
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleStartEditing}
+                      className="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/10 px-4 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.45em] text-indigo-200 transition hover:bg-white/20"
+                    >
+                      <Edit className="mr-2 h-4 w-4" />
+                      Editer
+                    </button>
+                  )}
+                </div>
+              )}
               <button
                 type="button"
                 onClick={onClose}
@@ -623,10 +655,10 @@ export const ProjectShowcase = ({
               >
                 <Close className="h-4 w-4" />
               </button>
-              </div>
             </div>
+          </div>
 
-            {isEditing && canEdit && (
+          {isEditing && canEdit && (
               <form
                 id={formId}
                 onSubmit={handleSubmitEdit}
@@ -988,38 +1020,6 @@ export const ProjectShowcase = ({
               </section>
             )}
 
-            {canEdit && (
-              <div className="mt-16 flex flex-col items-center justify-center gap-3 sm:flex-row sm:justify-end">
-                {isEditing ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={handleCancelEditing}
-                      className="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/10 px-5 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.45em] text-slate-200 transition hover:bg-white/20"
-                    >
-                      Annuler l'édition
-                    </button>
-                    <button
-                      type="submit"
-                      form={formId}
-                      className="inline-flex items-center justify-center rounded-full border border-indigo-400/60 bg-gradient-to-r from-indigo-500 via-sky-500 to-cyan-400 px-5 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.45em] text-white shadow-lg shadow-indigo-500/30 transition hover:brightness-110"
-                    >
-                      <CheckCircle className="mr-2 h-4 w-4" />
-                      Enregistrer
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleStartEditing}
-                    className="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/10 px-5 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.45em] text-indigo-200 transition hover:bg-white/20"
-                  >
-                    <Edit className="mr-2 h-4 w-4" />
-                    Modifier le contenu
-                  </button>
-                )}
-              </div>
-            )}
         </div>
       </div>
   );
