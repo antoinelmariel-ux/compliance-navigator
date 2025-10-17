@@ -129,19 +129,6 @@ export const HomeScreen = ({
                     <span>projet</span>
                   </span>
                 </button>
-                {hasProjects && (
-                  <button
-                    type="button"
-                    onClick={() => onOpenProject(sortedProjects[0]?.id)}
-                    className="inline-flex items-center justify-center gap-3 px-5 py-3 text-base font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-xl border border-indigo-200 transition-all hv-button hv-focus-ring"
-                  >
-                    <Eye className="w-5 h-5" aria-hidden="true" />
-                    <span className="flex flex-col leading-tight text-left">
-                      <span>Reprendre le</span>
-                      <span>dernier projet</span>
-                    </span>
-                  </button>
-                )}
                 <button
                   type="button"
                   onClick={handleTriggerImport}
