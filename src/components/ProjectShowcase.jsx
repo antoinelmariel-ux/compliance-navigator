@@ -61,16 +61,57 @@ const SHOWCASE_FIELD_CONFIG = [
   { id: 'launchDate', fallbackLabel: 'Date de lancement', fallbackType: 'date' }
 ];
 
+const ensureStringArrayUniqueness = (values) => {
+  const seen = new Set();
+  return values.filter(value => {
+    if (seen.has(value)) {
+      return false;
+    }
+    seen.add(value);
+    return true;
+  });
+};
+
+const normalizeMultiChoiceValue = (rawValue) => {
+  const normalizeEntry = (entry) => {
+    if (entry === null || entry === undefined) {
+      return '';
+    }
+
+    if (typeof entry === 'string') {
+      return entry.trim();
+    }
+
+    return String(entry).trim();
+  };
+
+  if (Array.isArray(rawValue)) {
+    const normalized = rawValue
+      .map(normalizeEntry)
+      .filter(entry => entry.length > 0);
+
+    return ensureStringArrayUniqueness(normalized);
+  }
+
+  if (typeof rawValue === 'string') {
+    const splitValues = rawValue
+      .split(/\r?\n|·|•|;|,/)
+      .map(entry => entry.replace(/^[-•\s]+/, '').trim())
+      .filter(entry => entry.length > 0);
+
+    return ensureStringArrayUniqueness(splitValues);
+  }
+
+  return [];
+};
+
 const formatValueForDraft = (type, rawValue) => {
   if (rawValue === null || rawValue === undefined) {
-    return '';
+    return type === 'multi_choice' ? [] : '';
   }
 
   if (type === 'multi_choice') {
-    if (Array.isArray(rawValue)) {
-      return rawValue.join('\n');
-    }
-    return String(rawValue);
+    return normalizeMultiChoiceValue(rawValue);
   }
 
   if (type === 'date') {
@@ -86,14 +127,7 @@ const formatValueForDraft = (type, rawValue) => {
 
 const formatValueForUpdate = (type, draftValue) => {
   if (type === 'multi_choice') {
-    if (typeof draftValue !== 'string') {
-      return [];
-    }
-
-    return draftValue
-      .split(/\r?\n|·|•|;|,/)
-      .map(entry => entry.replace(/^[-•\s]+/, '').trim())
-      .filter(entry => entry.length > 0);
+    return normalizeMultiChoiceValue(draftValue);
   }
 
   if (type === 'date') {
@@ -111,6 +145,25 @@ const formatValueForUpdate = (type, draftValue) => {
   return draftValue;
 };
 
+const areFieldValuesEqual = (type, previousValue, nextValue) => {
+  if (type === 'multi_choice') {
+    const previousArray = Array.isArray(previousValue)
+      ? previousValue
+      : normalizeMultiChoiceValue(previousValue);
+    const nextArray = Array.isArray(nextValue)
+      ? nextValue
+      : normalizeMultiChoiceValue(nextValue);
+
+    if (previousArray.length !== nextArray.length) {
+      return false;
+    }
+
+    return previousArray.every((entry, index) => entry === nextArray[index]);
+  }
+
+  return previousValue === nextValue;
+};
+
 const buildDraftValues = (fields, answers, fallbackProjectName) => {
   const draft = {};
 
@@ -119,7 +172,7 @@ const buildDraftValues = (fields, answers, fallbackProjectName) => {
     const fieldType = question?.type || field.fallbackType || 'text';
     const rawValue = getRawAnswer(answers, field.id);
     if (rawValue === undefined || rawValue === null) {
-      draft[field.id] = '';
+      draft[field.id] = fieldType === 'multi_choice' ? [] : '';
     } else {
       draft[field.id] = formatValueForDraft(fieldType, rawValue);
     }
@@ -361,11 +414,22 @@ export const ProjectShowcase = ({
     setIsEditing(false);
   }, [answers, editableFields, rawProjectName]);
 
-  const handleFieldChange = useCallback((fieldId, value) => {
-    setDraftValues(prev => ({
-      ...prev,
-      [fieldId]: value
-    }));
+  const handleFieldChange = useCallback((fieldId, valueOrUpdater) => {
+    setDraftValues(prev => {
+      const nextValue =
+        typeof valueOrUpdater === 'function'
+          ? valueOrUpdater(prev[fieldId], prev)
+          : valueOrUpdater;
+
+      if (prev[fieldId] === nextValue) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        [fieldId]: nextValue
+      };
+    });
   }, []);
 
   const handleSubmitEdit = useCallback(
@@ -385,10 +449,17 @@ export const ProjectShowcase = ({
         }
 
         const type = field.question?.type || field.fallbackType || 'text';
-        const previousValue = formatValueForDraft(type, getRawAnswer(answers, id) ?? '');
-        const nextValue = draftValues[id] ?? '';
+        const rawPreviousValue = getRawAnswer(answers, id);
+        const previousValue =
+          rawPreviousValue === undefined || rawPreviousValue === null
+            ? (type === 'multi_choice' ? [] : '')
+            : formatValueForDraft(type, rawPreviousValue);
+        const nextValue =
+          draftValues[id] !== undefined
+            ? draftValues[id]
+            : (type === 'multi_choice' ? [] : '');
 
-        if (previousValue === nextValue) {
+        if (areFieldValuesEqual(type, previousValue, nextValue)) {
           return;
         }
 
@@ -681,15 +752,22 @@ export const ProjectShowcase = ({
                     const question = field.question;
                     const type = question?.type || field.fallbackType || 'text';
                     const label = question?.question || field.fallbackLabel || fieldId;
-                    const value = draftValues[fieldId] ?? '';
+                    const fieldValue = draftValues[fieldId];
+                    const options = Array.isArray(question?.options) ? question.options : [];
                     const isLong = type === 'long_text';
                     const isMulti = type === 'multi_choice';
                     const isDate = type === 'date';
-                    const helperText = isMulti
-                      ? 'Indiquez une audience par ligne.'
-                      : ['problemPainPoints', 'solutionBenefits', 'teamCoreMembers'].includes(fieldId)
-                        ? 'Utilisez une ligne par élément pour une meilleure mise en forme.'
-                        : null;
+                    const isMultiWithOptions = isMulti && options.length > 0;
+                    const isMultiFreeform = isMulti && !isMultiWithOptions;
+                    const selectedValues = Array.isArray(fieldValue) ? fieldValue : [];
+                    const textValue = typeof fieldValue === 'string' ? fieldValue : '';
+                    const helperText = isMultiWithOptions
+                      ? 'Sélectionnez une ou plusieurs options.'
+                      : isMultiFreeform
+                        ? 'Indiquez une valeur par ligne.'
+                        : ['problemPainPoints', 'solutionBenefits', 'teamCoreMembers'].includes(fieldId)
+                          ? 'Utilisez une ligne par élément pour une meilleure mise en forme.'
+                          : null;
 
                     return (
                       <div key={fieldId} className={`${isLong || isMulti ? 'sm:col-span-2' : ''}`}>
@@ -703,17 +781,61 @@ export const ProjectShowcase = ({
                           <input
                             id={`showcase-edit-${fieldId}`}
                             type="date"
-                            value={value}
+                            value={typeof fieldValue === 'string' ? fieldValue : ''}
                             onChange={event => handleFieldChange(fieldId, event.target.value)}
                             className="mt-2 w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-400 focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-400/40"
                             style={{ boxShadow: neoInsetShadow }}
                           />
-                        ) : isLong || isMulti ? (
+                        ) : isMultiWithOptions ? (
+                          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                            {options.map((option, optionIndex) => {
+                              const optionId = `showcase-edit-${fieldId}-option-${optionIndex}`;
+                              const isChecked = selectedValues.includes(option);
+
+                              return (
+                                <label
+                                  key={optionId}
+                                  htmlFor={optionId}
+                                  className="flex items-center gap-3 rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 transition hover:border-indigo-300/60"
+                                  style={{ boxShadow: neoInsetShadow }}
+                                >
+                                  <input
+                                    id={optionId}
+                                    type="checkbox"
+                                    value={option}
+                                    checked={isChecked}
+                                    onChange={event => {
+                                      const { checked } = event.target;
+                                      handleFieldChange(fieldId, previousValue => {
+                                        const previousSelections = Array.isArray(previousValue) ? previousValue : [];
+                                        const selectionSet = new Set(previousSelections);
+
+                                        if (checked) {
+                                          selectionSet.add(option);
+                                        } else {
+                                          selectionSet.delete(option);
+                                        }
+
+                                        if (options.length > 0) {
+                                          return options.filter(choice => selectionSet.has(choice));
+                                        }
+
+                                        return Array.from(selectionSet);
+                                      });
+                                    }}
+                                    className="h-4 w-4 rounded border-white/30 bg-slate-950 text-indigo-400 focus:ring-indigo-400/40"
+                                  />
+                                  <span className="flex-1 text-sm text-slate-100">{option}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        ) : isLong || isMultiFreeform ? (
                           <textarea
                             id={`showcase-edit-${fieldId}`}
-                            value={value}
+                            value={textValue}
                             onChange={event => handleFieldChange(fieldId, event.target.value)}
-                            rows={isMulti ? 4 : 5}
+                            rows={isMultiFreeform ? 4 : 5}
                             className="mt-2 w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-400 focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-400/40"
                             style={{ boxShadow: neoInsetShadow }}
                           />
@@ -721,7 +843,7 @@ export const ProjectShowcase = ({
                           <input
                             id={`showcase-edit-${fieldId}`}
                             type="text"
-                            value={value}
+                            value={textValue}
                             onChange={event => handleFieldChange(fieldId, event.target.value)}
                             className="mt-2 w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-400 focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-400/40"
                             style={{ boxShadow: neoInsetShadow }}
