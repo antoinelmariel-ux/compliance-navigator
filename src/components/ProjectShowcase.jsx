@@ -1,12 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from '../react.js';
 import {
-  Rocket,
-  Calendar,
-  AlertTriangle,
   Close,
   CheckCircle,
   Edit,
-  Compass,
   Plus,
   Trash2
 } from './icons.js';
@@ -868,7 +864,6 @@ export const ProjectShowcase = ({
               <p className="aurora-eyebrow">Notre solution</p>
               <h2 className="aurora-section__title">Comment nous changeons la donne</h2>
             </div>
-            <Rocket className="aurora-section__icon" />
           </div>
           <div className="aurora-pillars">
             {hasText(solutionDescription) && (
@@ -908,7 +903,6 @@ export const ProjectShowcase = ({
                 <p className="aurora-eyebrow">Notre impact</p>
                 <h2 className="aurora-section__title">Délivrer le maximum de valeur</h2>
               </div>
-              <Compass className="aurora-section__icon" />
             </div>
             <div className="aurora-difference__layout">
               <div className="aurora-difference__text">{renderTextWithLinks(innovationProcess)}</div>
@@ -983,7 +977,6 @@ export const ProjectShowcase = ({
           )}
           {primaryRisk && (
             <div className="aurora-risk-halo" data-showcase-aside="risk">
-              <AlertTriangle className="aurora-risk-halo__icon" />
               <p className="aurora-risk-halo__label">Point de vigilance</p>
               <h4 className="aurora-risk-halo__title">{primaryRisk.title || 'Vigilance prioritaire'}</h4>
               <p className="aurora-risk-halo__text">{renderTextWithLinks(primaryRisk.description)}</p>
@@ -1057,7 +1050,6 @@ export const ProjectShowcase = ({
                 <p className="aurora-eyebrow">Feuille de route</p>
                 <h2 className="aurora-section__title">Les prochains jalons</h2>
               </div>
-              <Calendar className="aurora-section__icon" />
             </div>
             {runway && (
               <p className="aurora-roadmap__intro">
