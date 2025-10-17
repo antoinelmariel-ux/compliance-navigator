@@ -17,7 +17,7 @@ import { extractProjectName } from './utils/projects.js';
 import { createDemoProject } from './data/demoProject.js';
 import { exportProjectToFile } from './utils/projectExport.js';
 
-const APP_VERSION = 'v1.0.43';
+const APP_VERSION = 'v1.0.44';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -898,6 +898,67 @@ export const App = () => {
     setActiveProjectId(prev => (prev === projectId ? null : prev));
   }, []);
 
+  const handleDuplicateProject = useCallback((projectId) => {
+    if (!projectId) {
+      return;
+    }
+
+    setProjects(prevProjects => {
+      const sourceProject = prevProjects.find(project => project.id === projectId);
+      if (!sourceProject) {
+        return prevProjects;
+      }
+
+      const answersClone = sourceProject.answers && typeof sourceProject.answers === 'object'
+        ? JSON.parse(JSON.stringify(sourceProject.answers))
+        : {};
+
+      const relevantQuestions = questions.filter(question => shouldShowQuestion(question, answersClone));
+      const totalQuestions = relevantQuestions.length > 0
+        ? relevantQuestions.length
+        : typeof sourceProject.totalQuestions === 'number' && sourceProject.totalQuestions > 0
+          ? sourceProject.totalQuestions
+          : questions.length;
+
+      const answeredQuestionsCount = relevantQuestions.length > 0
+        ? relevantQuestions.filter(question => isAnswerProvided(answersClone[question.id])).length
+        : typeof sourceProject.answeredQuestions === 'number'
+          ? Math.min(sourceProject.answeredQuestions, totalQuestions || sourceProject.answeredQuestions)
+          : Object.keys(answersClone).length;
+
+      const computedAnalysis = Object.keys(answersClone).length > 0
+        ? analyzeAnswers(answersClone, rules, riskLevelRules)
+        : null;
+
+      const baseLastIndex = typeof sourceProject.lastQuestionIndex === 'number'
+        ? sourceProject.lastQuestionIndex
+        : 0;
+      const clampedLastIndex = totalQuestions > 0
+        ? Math.min(Math.max(baseLastIndex, 0), totalQuestions - 1)
+        : 0;
+
+      const baseName = typeof sourceProject.projectName === 'string' && sourceProject.projectName.trim().length > 0
+        ? sourceProject.projectName.trim()
+        : 'Projet sans nom';
+      const nameWithoutCopyPrefix = baseName.replace(/^\[Copie\]\s*/i, '').trim();
+      const duplicateBaseName = nameWithoutCopyPrefix.length > 0 ? nameWithoutCopyPrefix : baseName;
+
+      const duplicateEntry = {
+        id: `project-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        projectName: `[Copie] ${duplicateBaseName}`,
+        answers: answersClone,
+        analysis: computedAnalysis,
+        status: 'draft',
+        lastUpdated: new Date().toISOString(),
+        lastQuestionIndex: clampedLastIndex,
+        totalQuestions,
+        answeredQuestions: Math.min(answeredQuestionsCount, totalQuestions || answeredQuestionsCount)
+      };
+
+      return [duplicateEntry, ...prevProjects];
+    });
+  }, [analyzeAnswers, questions, riskLevelRules, rules, shouldShowQuestion]);
+
   const handleShowProjectShowcase = useCallback((projectId) => {
     if (!projectId) {
       return;
@@ -1346,6 +1407,7 @@ export const App = () => {
               onDeleteProject={handleDeleteProject}
               onShowProjectShowcase={handleShowProjectShowcase}
               onImportProject={handleImportProject}
+              onDuplicateProject={handleDuplicateProject}
             />
           ) : screen === 'questionnaire' ? (
             <QuestionnaireScreen

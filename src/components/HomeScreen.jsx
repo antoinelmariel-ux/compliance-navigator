@@ -13,7 +13,8 @@ import {
   AlertTriangle,
   Edit,
   Save,
-  Upload
+  Upload,
+  Copy
 } from './icons.js';
 
 const formatDate = (isoDate) => {
@@ -72,7 +73,8 @@ export const HomeScreen = ({
   onOpenProject,
   onDeleteProject,
   onShowProjectShowcase,
-  onImportProject
+  onImportProject,
+  onDuplicateProject
 }) => {
   const hasProjects = projects.length > 0;
   const fileInputRef = useRef(null);
@@ -248,16 +250,29 @@ export const HomeScreen = ({
                           Dernière mise à jour : {formatDate(project.lastUpdated || project.submittedAt)}
                         </p>
                       </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <span
-                          className={`px-3 py-1 text-xs font-semibold rounded-full border hv-badge ${projectStatus.className}`.trim()}
-                        >
-                          {projectStatus.label}
-                        </span>
-                        {complexity && (
-                          <span className={`px-3 py-1 text-xs font-semibold rounded-full border hv-badge ${complexityColors[complexity] || 'text-indigo-600'}`}>
-                            {complexity}
+                      <div className="flex items-start gap-3">
+                        <div className="flex flex-col items-end gap-2">
+                          <span
+                            className={`px-3 py-1 text-xs font-semibold rounded-full border hv-badge ${projectStatus.className}`.trim()}
+                          >
+                            {projectStatus.label}
                           </span>
+                          {complexity && (
+                            <span className={`px-3 py-1 text-xs font-semibold rounded-full border hv-badge ${complexityColors[complexity] || 'text-indigo-600'}`}>
+                              {complexity}
+                            </span>
+                          )}
+                        </div>
+                        {typeof onDuplicateProject === 'function' && (
+                          <button
+                            type="button"
+                            onClick={() => onDuplicateProject(project.id)}
+                            className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-indigo-200 text-indigo-600 hover:bg-indigo-50 transition-colors hv-button hv-focus-ring"
+                            aria-label={`Dupliquer le projet ${project.projectName || 'sans nom'}`}
+                            title="Dupliquer le projet"
+                          >
+                            <Copy className="w-4 h-4" aria-hidden="true" />
+                          </button>
                         )}
                       </div>
                     </div>
