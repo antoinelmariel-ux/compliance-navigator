@@ -1499,48 +1499,36 @@ export const ProjectShowcase = ({
     </form>
   ) : null;
 
-  const editBar = (
-    <div className={`aurora-edit-bar${isEditing ? ' aurora-edit-bar--editing' : ''}`}>
-      <div className="aurora-theme-pill">
-        <span className="aurora-theme-pill__label">{SHOWCASE_THEME.label}</span>
-        {SHOWCASE_THEME.description && (
-          <span className="aurora-theme-pill__description">{SHOWCASE_THEME.description}</span>
-        )}
-      </div>
-      <div className="aurora-edit-actions">
-        {canEdit && (
-          isEditing ? (
-            <>
-              <button type="button" onClick={handleCancelEditing} className="aurora-button aurora-button--ghost">
-                Annuler
-              </button>
-              <button type="submit" form={formId} className="aurora-button aurora-button--primary">
-                <CheckCircle className="aurora-button__icon" />
-                Enregistrer
-              </button>
-            </>
-          ) : (
-            <button type="button" onClick={handleStartEditing} className="aurora-button aurora-button--outline">
-              <Edit className="aurora-button__icon" />
-              Modifier
-            </button>
-          )
-        )}
+  const editBar =
+    canEdit && !isEditing ? (
+      <div className="aurora-edit-bar">
         <button
           type="button"
-          onClick={onClose}
-          className="aurora-close"
-          aria-label="Fermer la vitrine du projet"
-          ref={renderInStandalone ? undefined : closeButtonRef}
+          onClick={handleStartEditing}
+          className="aurora-button aurora-button--outline aurora-edit-bar__trigger"
         >
-          <Close className="h-4 w-4" />
+          <Edit className="aurora-button__icon" />
+          Modifier
         </button>
       </div>
-    </div>
-  );
+    ) : null;
+
+  const closeButton =
+    typeof onClose === 'function' ? (
+      <button
+        type="button"
+        onClick={onClose}
+        className="aurora-close"
+        aria-label="Fermer la vitrine du projet"
+        ref={renderInStandalone ? undefined : closeButtonRef}
+      >
+        <Close className="h-4 w-4" />
+      </button>
+    ) : null;
 
   const content = (
     <>
+      {closeButton}
       {editBar}
       {editPanel}
       {previewContent}
