@@ -492,7 +492,7 @@ const buildHeroHighlights = ({ targetAudience, runway }) => {
       id: 'audience',
       label: 'Audience cible',
       value: targetAudience,
-      caption: 'Les personas qui verront la promesse en premier.'
+      caption: ''
     });
   }
 
