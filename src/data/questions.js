@@ -156,17 +156,17 @@ export const initialQuestions =  [
   {
     id: 'innovationProcess',
     type: 'long_text',
-    question: 'Comment votre équipe transforme cette innovation en expérience fluide ?',
+    question: 'Quels objectifs derrière ce projet ?',
     options: [],
     required: false,
     conditions: [],
     conditionLogic: 'all',
     guidance: {
-      objective: 'Décrire le process ou l’architecture qui garantit une exécution sans friction.',
-      details: 'Cette réponse est mise en scène comme un mini schéma narratif.',
+      objective: 'Clarifier les objectifs stratégiques que le projet doit atteindre.',
+      details: 'Cette réponse est mise en scène comme un mini schéma narratif pour expliquer la finalité poursuivie.',
       tips: [
-        'Décrivez 3 étapes clés maximum pour garder la lecture fluide.',
-        'Mentionnez les outils, rituels ou partenaires qui rendent le parcours intuitif.'
+        'Formulez chaque objectif en décrivant le résultat attendu (ex. : +20 % d’adhésion).',
+        'Ajoutez une précision de délai ou d’indicateur de succès pour renforcer la crédibilité.'
       ]
     },
     showcase: {
