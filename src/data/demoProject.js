@@ -24,6 +24,11 @@ const demoProjectAnswers = {
     '• Taux de conformité validé dès le premier passage.\n• Score de satisfaction partenaires supérieur à 4/5.\n• +30 % d’engagement sur les contenus du reveal.',
   campaignKickoffDate: '2024-01-15',
   launchDate: '2024-04-15',
+  roadmapMilestones: [
+    { date: '2024-02-01', description: 'Signature du plan média avec les partenaires retail clés.' },
+    { date: '2024-03-04', description: 'Revue compliance finale et validation des assets localisés.' },
+    { date: '2024-03-25', description: 'Pré-lancement exclusif auprès des influenceurs premium.' }
+  ],
   teamLead: 'Clara Dupont — Head of Narrative Design',
   teamLeadTeam: 'Marketing',
   teamCoreMembers:

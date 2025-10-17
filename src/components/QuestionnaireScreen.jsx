@@ -1,5 +1,15 @@
 import React, { useEffect, useMemo, useState } from '../react.js';
-import { Info, Calendar, CheckCircle, ChevronLeft, ChevronRight, AlertTriangle, Save } from './icons.js';
+import {
+  Info,
+  Calendar,
+  CheckCircle,
+  ChevronLeft,
+  ChevronRight,
+  AlertTriangle,
+  Save,
+  Plus,
+  Trash2
+} from './icons.js';
 import { formatAnswer } from '../utils/questions.js';
 import { normalizeConditionGroups } from '../utils/conditionGroups.js';
 import { renderTextWithLinks } from '../utils/linkify.js';
@@ -8,6 +18,30 @@ const OPERATOR_LABELS = {
   equals: 'est égal à',
   not_equals: 'est différent de',
   contains: 'contient'
+};
+
+const normalizeMilestoneDrafts = (value) => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.map(item => ({
+    date: typeof item?.date === 'string' ? item.date : '',
+    description: typeof item?.description === 'string' ? item.description : ''
+  }));
+};
+
+const sanitizeMilestonesForAnswer = (drafts) => {
+  if (!Array.isArray(drafts)) {
+    return [];
+  }
+
+  return drafts
+    .map(item => ({
+      date: typeof item?.date === 'string' ? item.date.trim() : '',
+      description: typeof item?.description === 'string' ? item.description.trim() : ''
+    }))
+    .filter(entry => entry.date.length > 0 || entry.description.length > 0);
 };
 
 export const QuestionnaireScreen = ({
@@ -35,6 +69,7 @@ export const QuestionnaireScreen = ({
   const currentAnswer = answers[currentQuestion.id];
   const multiSelection = Array.isArray(currentAnswer) ? currentAnswer : [];
   const [showGuidance, setShowGuidance] = useState(false);
+  const [milestoneDrafts, setMilestoneDrafts] = useState(() => normalizeMilestoneDrafts(currentAnswer));
   const questionTextId = `question-${currentQuestion.id}`;
   const instructionsId = `instructions-${currentQuestion.id}`;
   const guidancePanelId = `guidance-${currentQuestion.id}`;
@@ -46,6 +81,14 @@ export const QuestionnaireScreen = ({
   useEffect(() => {
     setShowGuidance(false);
   }, [currentQuestion.id]);
+
+  useEffect(() => {
+    if (questionType === 'milestone_list') {
+      setMilestoneDrafts(normalizeMilestoneDrafts(currentAnswer));
+    } else {
+      setMilestoneDrafts([]);
+    }
+  }, [currentAnswer, currentQuestion.id, questionType]);
 
   const guidance = currentQuestion.guidance || {};
   const guidanceTips = useMemo(() => (
@@ -195,6 +238,108 @@ export const QuestionnaireScreen = ({
             })}
           </div>
         );
+      case 'milestone_list': {
+        const handleMilestoneUpdate = (updater) => {
+          setMilestoneDrafts(prev => {
+            const nextDrafts = typeof updater === 'function' ? updater(prev) : updater;
+            const sanitized = sanitizeMilestonesForAnswer(nextDrafts);
+            onAnswer(currentQuestion.id, sanitized);
+            return nextDrafts;
+          });
+        };
+
+        const handleMilestoneFieldChange = (index, field, value) => {
+          handleMilestoneUpdate(prev => {
+            const nextDrafts = prev.map((entry, entryIndex) => {
+              if (entryIndex !== index) {
+                return entry;
+              }
+
+              return {
+                ...entry,
+                [field]: value
+              };
+            });
+
+            return nextDrafts;
+          });
+        };
+
+        const handleMilestoneRemoval = (index) => {
+          handleMilestoneUpdate(prev => prev.filter((_, entryIndex) => entryIndex !== index));
+        };
+
+        const handleAddMilestone = () => {
+          handleMilestoneUpdate(prev => [...prev, { date: '', description: '' }]);
+        };
+
+        const emptyState = milestoneDrafts.length === 0;
+
+        return (
+          <div className="mb-8">
+            <fieldset className="space-y-4" aria-describedby={currentIndex === 0 ? instructionsId : undefined}>
+              <legend className="sr-only">{currentQuestion.question}</legend>
+              {emptyState && (
+                <p className="text-sm text-gray-600">
+                  Ajoutez vos prochains jalons pour préparer la feuille de route.
+                </p>
+              )}
+              {milestoneDrafts.map((entry, index) => {
+                const dateInputId = `${currentQuestion.id}-milestone-${index}-date`;
+                const descriptionInputId = `${currentQuestion.id}-milestone-${index}-description`;
+
+                return (
+                  <div
+                    key={`milestone-${index}`}
+                    className="p-4 border-2 border-gray-200 rounded-xl space-y-4 sm:space-y-0 sm:flex sm:items-end sm:gap-4"
+                  >
+                    <div className="sm:w-40">
+                      <label htmlFor={dateInputId} className="block text-sm font-medium text-gray-700 mb-2">
+                        Date du jalon
+                      </label>
+                      <input
+                        id={dateInputId}
+                        type="date"
+                        value={entry.date || ''}
+                        onChange={(event) => handleMilestoneFieldChange(index, 'date', event.target.value)}
+                        className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hv-focus-ring"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label htmlFor={descriptionInputId} className="block text-sm font-medium text-gray-700 mb-2">
+                        Description
+                      </label>
+                      <input
+                        id={descriptionInputId}
+                        type="text"
+                        value={entry.description || ''}
+                        onChange={(event) => handleMilestoneFieldChange(index, 'description', event.target.value)}
+                        className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hv-focus-ring"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleMilestoneRemoval(index)}
+                      className="inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Supprimer
+                    </button>
+                  </div>
+                );
+              })}
+            </fieldset>
+            <button
+              type="button"
+              onClick={handleAddMilestone}
+              className="mt-4 inline-flex items-center px-4 py-2 border-2 border-dashed border-indigo-300 rounded-xl text-indigo-700 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Ajouter un jalon
+            </button>
+          </div>
+        );
+      }
       case 'text':
         return (
           <div className="mb-8">

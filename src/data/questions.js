@@ -238,6 +238,28 @@ export const initialQuestions =  [
     }
   },
   {
+    id: 'roadmapMilestones',
+    type: 'milestone_list',
+    question: 'Quels jalons clés souhaitez-vous mettre en avant ?',
+    options: [],
+    required: false,
+    conditions: [],
+    conditionLogic: 'all',
+    guidance: {
+      objective: 'Projeter les étapes majeures à venir pour synchroniser les parties prenantes.',
+      details:
+        'Chaque jalon affichera une date et un descriptif dans la section feuille de route de la vitrine.',
+      tips: [
+        'Utilisez un format AAAA-MM-JJ pour les dates afin de faciliter la lecture.',
+        'Formulez des descriptions actionnables : validation, lancement partiel, publication clé, etc.'
+      ]
+    },
+    showcase: {
+      sections: ['timeline'],
+      usage: 'Liste de jalons personnalisés dans la section « Les prochains jalons ».'
+    }
+  },
+  {
     id: 'teamLead',
     type: 'text',
     question: 'Qui lead ce projet ?',

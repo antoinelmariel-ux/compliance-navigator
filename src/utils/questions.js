@@ -92,6 +92,42 @@ export const formatAnswer = (question, answer) => {
     }).format(parsed);
   }
 
+  if (questionType === 'milestone_list') {
+    const entries = Array.isArray(answer) ? answer : [];
+
+    const formattedEntries = entries
+      .map(item => {
+        const rawDate = typeof item?.date === 'string' ? item.date.trim() : '';
+        const rawDescription = typeof item?.description === 'string' ? item.description.trim() : '';
+
+        if (!rawDate && !rawDescription) {
+          return null;
+        }
+
+        let formattedDate = '';
+
+        if (rawDate) {
+          const parsed = new Date(rawDate);
+          formattedDate = Number.isNaN(parsed.getTime())
+            ? rawDate
+            : new Intl.DateTimeFormat('fr-FR', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric'
+            }).format(parsed);
+        }
+
+        if (formattedDate && rawDescription) {
+          return `${formattedDate} — ${rawDescription}`;
+        }
+
+        return formattedDate || rawDescription;
+      })
+      .filter(Boolean);
+
+    return formattedEntries.join('\n');
+  }
+
   if (questionType === 'multi_choice' && Array.isArray(answer)) {
     return answer.join(', ');
   }
