@@ -617,8 +617,8 @@ export const ProjectShowcase = ({
       <section className="aurora-section aurora-why" data-showcase-section="problem">
         <div className="aurora-section__inner aurora-section__inner--narrow">
           <div className="aurora-section__header">
-            <p className="aurora-eyebrow">Pourquoi maintenant</p>
-            <h2 className="aurora-section__title">Les signaux qui rendent l'action incontournable</h2>
+            <p className="aurora-eyebrow">Le problème</p>
+            <h2 className="aurora-section__title">Pourquoi ce projet doit exister</h2>
           </div>
           {problemPainPoints.length > 0 && (
             <div className="aurora-why__points">
@@ -641,21 +641,21 @@ export const ProjectShowcase = ({
         <div className="aurora-section__inner">
           <div className="aurora-section__header aurora-section__header--split">
             <div>
-              <p className="aurora-eyebrow">Notre réponse</p>
-              <h2 className="aurora-section__title">L'expérience Aurora au service du produit</h2>
+              <p className="aurora-eyebrow">Notre solution</p>
+              <h2 className="aurora-section__title">Comment nous changeons la donne</h2>
             </div>
             <Rocket className="aurora-section__icon" />
           </div>
           <div className="aurora-pillars">
             {hasText(solutionDescription) && (
               <div className="aurora-pillar">
-                <h3 className="aurora-pillar__title">Expérience proposée</h3>
+                <h3 className="aurora-pillar__title">En clair</h3>
                 <p className="aurora-pillar__text">{renderTextWithLinks(solutionDescription)}</p>
               </div>
             )}
             {solutionBenefits.length > 0 && (
               <div className="aurora-pillar">
-                <h3 className="aurora-pillar__title">Bénéfices clés</h3>
+                <h3 className="aurora-pillar__title">Bénéfices clefs</h3>
                 <ul className="aurora-pillar__list">
                   {solutionBenefits.map((benefit, index) => (
                     <li key={`${benefit}-${index}`} className="aurora-pillar__item">
@@ -668,7 +668,7 @@ export const ProjectShowcase = ({
             )}
             {hasText(solutionComparison) && (
               <div className="aurora-pillar">
-                <h3 className="aurora-pillar__title">Différenciation</h3>
+                <h3 className="aurora-pillar__title">Pourquoi c'est différent</h3>
                 <p className="aurora-pillar__text">{renderTextWithLinks(solutionComparison)}</p>
               </div>
             )}
@@ -681,8 +681,8 @@ export const ProjectShowcase = ({
           <div className="aurora-section__inner">
             <div className="aurora-section__header aurora-section__header--split">
               <div>
-                <p className="aurora-eyebrow">Notre différence</p>
-                <h2 className="aurora-section__title">Une innovation guidée par la lumière</h2>
+                <p className="aurora-eyebrow">Notre impact</p>
+                <h2 className="aurora-section__title">Délivrer le maximum de valeur</h2>
               </div>
               <Compass className="aurora-section__icon" />
             </div>
@@ -767,7 +767,7 @@ export const ProjectShowcase = ({
         <div className="aurora-section__inner">
           <div className="aurora-section__header">
             <p className="aurora-eyebrow">Équipe & alliances</p>
-            <h2 className="aurora-section__title">Les talents derrière la vision</h2>
+            <h2 className="aurora-section__title">L'équipe derrière le projet</h2>
           </div>
           <div className="aurora-team__layout">
             <div className="aurora-team__lead">
@@ -825,7 +825,7 @@ export const ProjectShowcase = ({
             <div className="aurora-section__header aurora-section__header--split">
               <div>
                 <p className="aurora-eyebrow">Feuille de route</p>
-                <h2 className="aurora-section__title">Tracer les prochains jalons</h2>
+                <h2 className="aurora-section__title">Les prochains jalons</h2>
               </div>
               <Calendar className="aurora-section__icon" />
             </div>
