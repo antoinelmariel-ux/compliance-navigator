@@ -17,7 +17,7 @@ import { extractProjectName } from './utils/projects.js';
 import { createDemoProject } from './data/demoProject.js';
 import { exportProjectToFile } from './utils/projectExport.js';
 
-const APP_VERSION = 'v1.0.41';
+const APP_VERSION = 'v1.0.42';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -831,8 +831,12 @@ export const App = () => {
 
     const projectAnswers = project.answers || {};
     const derivedQuestions = questions.filter(q => shouldShowQuestion(q, projectAnswers));
-    const derivedAnalysis = project.analysis
-      || (Object.keys(projectAnswers).length > 0 ? analyzeAnswers(projectAnswers, rules, riskLevelRules) : null);
+    const derivedAnalysis = Object.keys(projectAnswers).length > 0
+      ? analyzeAnswers(projectAnswers, rules, riskLevelRules)
+      : null;
+    const answeredQuestionsCount = derivedQuestions.length > 0
+      ? derivedQuestions.filter(question => isAnswerProvided(projectAnswers[question.id])).length
+      : Object.keys(projectAnswers).length;
     const missingMandatory = derivedQuestions.filter(question => question.required && !isAnswerProvided(projectAnswers[question.id]));
     const totalQuestions = derivedQuestions.length;
     const rawIndex = typeof project.lastQuestionIndex === 'number' ? project.lastQuestionIndex : 0;
@@ -848,6 +852,23 @@ export const App = () => {
     setCurrentQuestionIndex(startingIndex);
     setValidationError(null);
     setActiveProjectId(project.id);
+
+    setProjects(prevProjects => prevProjects.map(entry => {
+      if (entry.id !== project.id) {
+        return entry;
+      }
+
+      return {
+        ...entry,
+        analysis: derivedAnalysis,
+        totalQuestions,
+        answeredQuestions: Math.min(
+          answeredQuestionsCount,
+          totalQuestions || answeredQuestionsCount
+        ),
+        lastQuestionIndex: sanitizedIndex
+      };
+    }));
 
     if (project.status === 'draft') {
       setScreen('questionnaire');
@@ -889,11 +910,35 @@ export const App = () => {
 
     const projectAnswers = project.answers || {};
     const visibleQuestions = questions.filter(question => shouldShowQuestion(question, projectAnswers));
-    const projectAnalysis = project.analysis
-      || (Object.keys(projectAnswers).length > 0 ? analyzeAnswers(projectAnswers, rules, riskLevelRules) : null);
+    const projectAnalysis = Object.keys(projectAnswers).length > 0
+      ? analyzeAnswers(projectAnswers, rules, riskLevelRules)
+      : null;
+    const answeredQuestionsCount = visibleQuestions.length > 0
+      ? visibleQuestions.filter(question => isAnswerProvided(projectAnswers[question.id])).length
+      : Object.keys(projectAnswers).length;
     const relevantTeams = teams.filter(team => (projectAnalysis?.teams || []).includes(team.id));
     const timelineDetails = projectAnalysis?.timeline?.details || [];
     const derivedProjectName = project.projectName || extractProjectName(projectAnswers, questions);
+
+    setProjects(prevProjects => prevProjects.map(entry => {
+      if (entry.id !== project.id) {
+        return entry;
+      }
+
+      const totalQuestions = visibleQuestions.length > 0
+        ? visibleQuestions.length
+        : (project.totalQuestions || questions.length || 0);
+
+      return {
+        ...entry,
+        analysis: projectAnalysis,
+        totalQuestions,
+        answeredQuestions: Math.min(
+          answeredQuestionsCount,
+          totalQuestions || answeredQuestionsCount
+        )
+      };
+    }));
 
     setShowcaseProjectContext({
       projectId: project.id,
