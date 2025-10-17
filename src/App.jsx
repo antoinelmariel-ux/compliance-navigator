@@ -15,7 +15,7 @@ import { analyzeAnswers } from './utils/rules.js';
 import { extractProjectName } from './utils/projects.js';
 import { createDemoProject } from './data/demoProject.js';
 
-const APP_VERSION = 'v1.0.15';
+const APP_VERSION = 'v1.0.16';
 
 
 const isAnswerProvided = (value) => {
@@ -693,19 +693,21 @@ export const App = () => {
                   Accueil projets
                 </button>
               )}
-              <button
-                type="button"
-                onClick={() => setMode('user')}
-                className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button ${
-                  mode === 'user'
-                    ? 'bg-indigo-600 text-white hv-button-primary'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-                aria-pressed={mode === 'user'}
-                aria-label="Basculer vers le mode chef de projet"
-              >
-                Mode Chef de Projet
-              </button>
+              {mode === 'admin' && (
+                <button
+                  type="button"
+                  onClick={() => setMode('user')}
+                  className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button ${
+                    mode === 'user'
+                      ? 'bg-indigo-600 text-white hv-button-primary'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                  aria-pressed={mode === 'user'}
+                  aria-label="Basculer vers le mode chef de projet"
+                >
+                  Mode Chef de Projet
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setMode('admin')}
