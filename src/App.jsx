@@ -4,7 +4,7 @@ import { SynthesisReport } from './components/SynthesisReport.jsx';
 import { HomeScreen } from './components/HomeScreen.jsx';
 import { BackOffice } from './components/BackOffice.jsx';
 import { ProjectShowcase } from './components/ProjectShowcase.jsx';
-import { CheckCircle } from './components/icons.js';
+import { CheckCircle, Settings } from './components/icons.js';
 import { MandatoryQuestionsSummary } from './components/MandatoryQuestionsSummary.jsx';
 import { initialQuestions } from './data/questions.js';
 import { initialRules } from './data/rules.js';
@@ -17,7 +17,58 @@ import { extractProjectName } from './utils/projects.js';
 import { createDemoProject } from './data/demoProject.js';
 import { exportProjectToFile } from './utils/projectExport.js';
 
-const APP_VERSION = 'v1.0.33';
+const APP_VERSION = 'v1.0.34';
+
+const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
+const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
+
+const computeBackOfficePasswordDigest = async (value) => {
+  if (typeof value !== 'string' || value.length === 0) {
+    return '';
+  }
+
+  const globalCrypto =
+    typeof globalThis !== 'undefined' && typeof globalThis.crypto !== 'undefined'
+      ? globalThis.crypto
+      : undefined;
+
+  const hasSubtleCrypto =
+    !!globalCrypto?.subtle && typeof TextEncoder !== 'undefined';
+
+  if (hasSubtleCrypto) {
+    try {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(value);
+      const digest = await globalCrypto.subtle.digest('SHA-256', data);
+      return Array.from(new Uint8Array(digest))
+        .map(byte => byte.toString(16).padStart(2, '0'))
+        .join('');
+    } catch (error) {
+      // Fallback defined below
+    }
+  }
+
+  let hash = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
+  }
+
+  return hash.toString(16).padStart(8, '0');
+};
+
+const verifyBackOfficePassword = async (value) => {
+  const digest = await computeBackOfficePasswordDigest(value);
+
+  if (!digest) {
+    return false;
+  }
+
+  if (digest.length === BACK_OFFICE_PASSWORD_HASH.length) {
+    return digest === BACK_OFFICE_PASSWORD_HASH;
+  }
+
+  return digest === BACK_OFFICE_PASSWORD_FALLBACK_DIGEST;
+};
 
 const restoreShowcaseQuestions = (currentQuestions, referenceQuestions = initialQuestions) => {
   if (!Array.isArray(currentQuestions)) {
@@ -335,6 +386,8 @@ export const App = () => {
   const [riskLevelRules, setRiskLevelRules] = useState(initialRiskLevelRules);
   const [teams, setTeams] = useState(initialTeams);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [isBackOfficeUnlocked, setIsBackOfficeUnlocked] = useState(false);
+  const [backOfficeAuthError, setBackOfficeAuthError] = useState(null);
   const persistTimeoutRef = useRef(null);
   const previousScreenRef = useRef(null);
 
@@ -352,7 +405,11 @@ export const App = () => {
       : riskLevelRules;
     const fallbackQuestionsLength = resolveFallbackQuestionsLength(savedState, fallbackQuestions.length);
 
-    if (savedState.mode) setMode(savedState.mode);
+    if (savedState.mode === 'admin') {
+      setMode('user');
+    } else if (savedState.mode) {
+      setMode(savedState.mode);
+    }
     if (savedState.screen) setScreen(savedState.screen);
     if (typeof savedState.currentQuestionIndex === 'number' && savedState.currentQuestionIndex >= 0) {
       setCurrentQuestionIndex(savedState.currentQuestionIndex);
@@ -410,8 +467,10 @@ export const App = () => {
     }
 
     persistTimeoutRef.current = setTimeout(() => {
+      const modeToPersist = mode === 'admin' ? 'user' : mode;
+
       persistState({
-        mode,
+        mode: modeToPersist,
         screen,
         currentQuestionIndex,
         answers,
@@ -551,6 +610,47 @@ export const App = () => {
     setValidationError(null);
     setActiveProjectId(null);
   }, []);
+
+  const handleBackOfficeClick = useCallback(async () => {
+    if (mode === 'admin') {
+      return;
+    }
+
+    if (isBackOfficeUnlocked) {
+      setBackOfficeAuthError(null);
+      setMode('admin');
+      return;
+    }
+
+    if (typeof window === 'undefined' || typeof window.prompt !== 'function') {
+      setBackOfficeAuthError('La saisie du mot de passe est indisponible dans cet environnement.');
+      return;
+    }
+
+    const userInput = window.prompt('Veuillez saisir le mot de passe du back-office :');
+
+    if (userInput === null) {
+      setBackOfficeAuthError(null);
+      return;
+    }
+
+    const isValid = await verifyBackOfficePassword(userInput);
+
+    if (isValid) {
+      setIsBackOfficeUnlocked(true);
+      setBackOfficeAuthError(null);
+      setMode('admin');
+    } else {
+      setIsBackOfficeUnlocked(false);
+      setBackOfficeAuthError('Mot de passe incorrect. Veuillez réessayer.');
+    }
+  }, [
+    isBackOfficeUnlocked,
+    mode,
+    setMode,
+    setBackOfficeAuthError,
+    setIsBackOfficeUnlocked
+  ]);
 
   const handleCreateNewProject = useCallback(() => {
     resetProjectState();
@@ -1129,17 +1229,24 @@ export const App = () => {
               )}
               <button
                 type="button"
-                onClick={() => setMode('admin')}
-                className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button ${
+                onClick={handleBackOfficeClick}
+                className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button flex items-center justify-center ${
                   mode === 'admin'
                     ? 'bg-indigo-600 text-white hv-button-primary'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
                 aria-pressed={mode === 'admin'}
-                aria-label="Basculer vers le mode back-office"
+                aria-label="Accéder au back-office"
+                title="Accéder au back-office"
               >
-                Back-Office
+                <Settings className="text-lg sm:text-xl" />
+                <span className="sr-only">Back-office</span>
               </button>
+              {backOfficeAuthError && (
+                <p className="w-full text-sm text-red-600 sm:w-auto" role="alert">
+                  {backOfficeAuthError}
+                </p>
+              )}
             </div>
           </div>
         </div>
