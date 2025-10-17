@@ -2,7 +2,7 @@ export const initialQuestions =  [
   {
     id: 'projectName',
     type: 'text',
-    question: "Quel est le nom du projet ou de l'offre ?",
+    question: 'Quel est le nom du projet ?',
     options: [],
     required: true,
     conditions: [],
@@ -23,7 +23,7 @@ export const initialQuestions =  [
   {
     id: 'projectSlogan',
     type: 'text',
-    question: 'Quel slogan ou promesse courte souhaitez-vous mettre en avant ?',
+    question: 'Quel slogan pour votre projet ?',
     options: [],
     required: false,
     conditions: [],
@@ -44,7 +44,7 @@ export const initialQuestions =  [
   {
     id: 'targetAudience',
     type: 'multi_choice',
-    question: 'Quelles audiences doivent être convaincues en priorité ?',
+    question: "À qui s'adresse votre projet ?",
     options: [
       'Grand public / clients finaux',
       'Professionnels ou experts métiers',
@@ -71,16 +71,17 @@ export const initialQuestions =  [
   {
     id: 'problemPainPoints',
     type: 'long_text',
-    question: 'Listez 2 à 3 pain points concrets vécus par vos utilisateurs.',
+    question:
+      'Listez 2 à 3 besoins concrets vécus par vos utilisateurs et que votre projet vient solutionner.',
     options: [],
     required: true,
     conditions: [],
     conditionLogic: 'all',
     guidance: {
-      objective: 'Montrer que vous comprenez la réalité terrain de votre audience.',
-      details: 'Chaque pain point s’affichera comme un bullet point pour renforcer l’empathie.',
+      objective: 'Montrer que vous comprenez les besoins prioritaires de votre audience.',
+      details: 'Chaque besoin s’affichera comme un bullet point pour renforcer l’empathie.',
       tips: [
-        'Utilisez une ligne par pain point pour faciliter la lecture.',
+        'Utilisez une ligne par besoin pour faciliter la lecture.',
         'Décrivez la situation vécue plutôt que la solution souhaitée.'
       ]
     },
@@ -92,7 +93,7 @@ export const initialQuestions =  [
   {
     id: 'solutionDescription',
     type: 'long_text',
-    question: 'Décrivez en quoi consiste votre solution ou votre service.',
+    question: 'Décrivez en quoi consiste votre solution.',
     options: [],
     required: true,
     conditions: [],
@@ -134,7 +135,7 @@ export const initialQuestions =  [
   {
     id: 'solutionComparison',
     type: 'long_text',
-    question: 'En quoi votre approche se distingue-t-elle des alternatives actuelles ?',
+    question: 'En quoi cette solution se distingue-t-elle des alternatives actuelles ?',
     options: [],
     required: false,
     conditions: [],
@@ -176,17 +177,17 @@ export const initialQuestions =  [
   {
     id: 'visionStatement',
     type: 'long_text',
-    question: 'Quelle vision inspirante souhaitez-vous partager pour conclure la narration ?',
+    question: "Quels indicateurs allez-vous suivre pour mesurer l'impact du projet ?",
     options: [],
     required: false,
     conditions: [],
     conditionLogic: 'all',
     guidance: {
-      objective: 'Projeter votre audience sur le futur souhaité grâce au projet.',
-      details: 'Cette phrase finale apporte une touche émotionnelle dans la section “Potentiel & impact”.',
+      objective: 'Montrer comment vous suivrez concrètement la création de valeur.',
+      details: "Chaque indicateur s’affichera comme un point clé dans la section impact pour rassurer les parties prenantes.",
       tips: [
-        'Employez le futur ou le conditionnel pour ouvrir sur la suite.',
-        'Reliez la vision à l’impact sociétal, business ou humain que vous visez.'
+        'Listez une métrique par ligne (quantitative ou qualitative).',
+        'Précisez la cible ou la fréquence de suivi lorsque c’est pertinent.'
       ]
     },
     showcase: {
@@ -197,17 +198,17 @@ export const initialQuestions =  [
   {
     id: 'campaignKickoffDate',
     type: 'date',
-    question: 'Quand débutez-vous la préparation active de la campagne ?',
+    question: 'À quelle date allez-vous soumettre ce projet à la compliance ?',
     options: [],
     required: false,
     conditions: [],
     conditionLogic: 'all',
     guidance: {
-      objective: 'Poser le point de départ du run marketing.',
-      details: 'Cette date permet de calculer le runway entre préparation et lancement.',
+      objective: 'Poser le jalon officiel de passage en revue compliance.',
+      details: 'Cette date permet d’anticiper les échanges de validation et le temps de traitement.',
       tips: [
-        'Indiquez la date à laquelle vous souhaitez lancer la production des supports.',
-        'Mettez à jour la date si la préparation démarre plus tôt ou plus tard que prévu.'
+        'Indiquez la date d’envoi du dossier complet à la compliance.',
+        'Mettez à jour la date dès qu’un nouveau créneau est confirmé.'
       ]
     },
     showcase: {
@@ -218,14 +219,14 @@ export const initialQuestions =  [
   {
     id: 'launchDate',
     type: 'date',
-    question: 'Quelle est la date de lancement ou de reveal souhaitée ?',
+    question: 'Quelle est la date de lancement souhaitée ?',
     options: [],
     required: false,
     conditions: [],
     conditionLogic: 'all',
     guidance: {
       objective: 'Aligner toutes les parties prenantes sur la cible de lancement.',
-      details: 'Associée à la date de kick-off, cette information permet de vérifier la faisabilité du planning.',
+      details: 'Associée à la date de soumission compliance, cette information permet de vérifier la faisabilité du planning.',
       tips: [
         'Renseignez la première date de mise en avant (événement, publication, annonce).',
         'Si la date n’est pas figée, indiquez l’hypothèse la plus réaliste pour planifier les ressources.'
@@ -239,7 +240,7 @@ export const initialQuestions =  [
   {
     id: 'teamLead',
     type: 'text',
-    question: 'Qui porte la narration et coordonne le projet ?',
+    question: 'Qui lead ce projet ?',
     options: [],
     required: true,
     conditions: [],
@@ -258,9 +259,30 @@ export const initialQuestions =  [
     }
   },
   {
+    id: 'teamLeadTeam',
+    type: 'choice',
+    question: "Équipe à laquelle cette personne appartient",
+    options: ['Marketing', 'Médical', 'Accès', 'Vente'],
+    required: false,
+    conditions: [],
+    conditionLogic: 'all',
+    guidance: {
+      objective: 'Préciser le rattachement du lead pour fluidifier les validations.',
+      details: "Cette information s’affiche en complément du lead pour aider les interlocuteurs à identifier le bon canal.",
+      tips: [
+        'Sélectionnez l’équipe principale du lead.',
+        'Précisez une double appartenance dans vos notes internes si nécessaire.'
+      ]
+    },
+    showcase: {
+      sections: ['team'],
+      usage: 'Mention du rattachement du lead dans la section équipe.'
+    }
+  },
+  {
     id: 'teamCoreMembers',
     type: 'long_text',
-    question: 'Quels sont les membres clés qui incarnent le projet ?',
+    question: "Quels sont les membres de l'équipe projet ?",
     options: [],
     required: false,
     conditions: [],

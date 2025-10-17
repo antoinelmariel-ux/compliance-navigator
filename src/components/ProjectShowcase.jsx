@@ -47,17 +47,18 @@ const SHOWCASE_THEME = {
 
 const SHOWCASE_FIELD_CONFIG = [
   { id: 'projectName', fallbackLabel: 'Nom du projet', fallbackType: 'text' },
-  { id: 'projectSlogan', fallbackLabel: 'Slogan ou promesse', fallbackType: 'text' },
-  { id: 'targetAudience', fallbackLabel: 'Audiences principales', fallbackType: 'multi_choice' },
-  { id: 'problemPainPoints', fallbackLabel: 'Pain points', fallbackType: 'long_text' },
+  { id: 'projectSlogan', fallbackLabel: 'Slogan du projet', fallbackType: 'text' },
+  { id: 'targetAudience', fallbackLabel: 'Audience cible', fallbackType: 'multi_choice' },
+  { id: 'problemPainPoints', fallbackLabel: 'Besoins utilisateurs', fallbackType: 'long_text' },
   { id: 'solutionDescription', fallbackLabel: 'Description de la solution', fallbackType: 'long_text' },
   { id: 'solutionBenefits', fallbackLabel: 'Bénéfices clés', fallbackType: 'long_text' },
   { id: 'solutionComparison', fallbackLabel: 'Différenciation', fallbackType: 'long_text' },
   { id: 'innovationProcess', fallbackLabel: 'Processus innovation', fallbackType: 'long_text' },
-  { id: 'visionStatement', fallbackLabel: 'Vision', fallbackType: 'long_text' },
+  { id: 'visionStatement', fallbackLabel: "Indicateurs d'impact", fallbackType: 'long_text' },
   { id: 'teamLead', fallbackLabel: 'Lead du projet', fallbackType: 'text' },
+  { id: 'teamLeadTeam', fallbackLabel: 'Équipe du lead', fallbackType: 'text' },
   { id: 'teamCoreMembers', fallbackLabel: 'Membres clés', fallbackType: 'long_text' },
-  { id: 'campaignKickoffDate', fallbackLabel: 'Date de démarrage campagne', fallbackType: 'date' },
+  { id: 'campaignKickoffDate', fallbackLabel: 'Date de soumission compliance', fallbackType: 'date' },
   { id: 'launchDate', fallbackLabel: 'Date de lancement', fallbackType: 'date' }
 ];
 
@@ -314,6 +315,7 @@ const REQUIRED_SHOWCASE_QUESTION_IDS = [
   'innovationProcess',
   'visionStatement',
   'teamLead',
+  'teamLeadTeam',
   'teamCoreMembers',
   'campaignKickoffDate',
   'launchDate'
@@ -325,7 +327,7 @@ const buildHeroHighlights = ({ targetAudience, runway }) => {
   if (hasText(targetAudience)) {
     highlights.push({
       id: 'audience',
-      label: 'Audience principale',
+      label: 'Audience cible',
       value: targetAudience,
       caption: 'Les personas qui verront la promesse en premier.'
     });
@@ -490,9 +492,10 @@ export const ProjectShowcase = ({
 
   const innovationProcess = getFormattedAnswer(questions, answers, 'innovationProcess');
 
-  const visionStatement = getFormattedAnswer(questions, answers, 'visionStatement');
+  const impactIndicators = parseListAnswer(getRawAnswer(answers, 'visionStatement'));
 
   const teamLead = getFormattedAnswer(questions, answers, 'teamLead');
+  const teamLeadTeam = getFormattedAnswer(questions, answers, 'teamLeadTeam');
   const teamCoreMembers = parseListAnswer(getRawAnswer(answers, 'teamCoreMembers'));
 
   const runway = useMemo(() => computeRunway(answers), [answers]);
@@ -756,16 +759,18 @@ export const ProjectShowcase = ({
                     const options = Array.isArray(question?.options) ? question.options : [];
                     const isLong = type === 'long_text';
                     const isMulti = type === 'multi_choice';
+                    const isChoice = type === 'choice';
                     const isDate = type === 'date';
                     const isMultiWithOptions = isMulti && options.length > 0;
                     const isMultiFreeform = isMulti && !isMultiWithOptions;
+                    const isChoiceWithOptions = isChoice && options.length > 0;
                     const selectedValues = Array.isArray(fieldValue) ? fieldValue : [];
                     const textValue = typeof fieldValue === 'string' ? fieldValue : '';
                     const helperText = isMultiWithOptions
                       ? 'Sélectionnez une ou plusieurs options.'
                       : isMultiFreeform
                         ? 'Indiquez une valeur par ligne.'
-                        : ['problemPainPoints', 'solutionBenefits', 'teamCoreMembers'].includes(fieldId)
+                        : ['problemPainPoints', 'solutionBenefits', 'teamCoreMembers', 'visionStatement'].includes(fieldId)
                           ? 'Utilisez une ligne par élément pour une meilleure mise en forme.'
                           : null;
 
@@ -830,6 +835,21 @@ export const ProjectShowcase = ({
                               );
                             })}
                           </div>
+                        ) : isChoiceWithOptions ? (
+                          <select
+                            id={`showcase-edit-${fieldId}`}
+                            value={textValue}
+                            onChange={event => handleFieldChange(fieldId, event.target.value)}
+                            className="mt-2 w-full rounded-xl border border-white/10 bg-slate-950/60 px-3 py-2 text-sm text-slate-100 focus:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-400/40"
+                            style={{ boxShadow: neoInsetShadow }}
+                          >
+                            <option value="">Sélectionnez une option</option>
+                            {options.map(option => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))}
+                          </select>
                         ) : isLong || isMultiFreeform ? (
                           <textarea
                             id={`showcase-edit-${fieldId}`}
@@ -1027,14 +1047,16 @@ export const ProjectShowcase = ({
                         </div>
                       </div>
                     </div>
-                    {hasText(visionStatement) && (
+                    {impactIndicators.length > 0 && (
                       <div
                         data-showcase-element="vision-card"
                         className="rounded-3xl border border-white/10 bg-white/5 p-6 text-slate-200 backdrop-blur-xl"
                         style={{ boxShadow: neoCardShadow }}
                       >
-                        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.45em] text-indigo-200/80">Vision</p>
-                        <p className="mt-3 text-base leading-relaxed text-slate-200/90">{renderTextWithLinks(visionStatement)}</p>
+                        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.45em] text-indigo-200/80">
+                          Indicateurs d'impact
+                        </p>
+                        {renderList(impactIndicators)}
                       </div>
                     )}
                   </div>
@@ -1068,10 +1090,17 @@ export const ProjectShowcase = ({
                       <h3 className="mt-3 text-3xl font-bold text-white">Les talents derrière la vision</h3>
                     </div>
                     {hasText(teamLead) && (
-                      <p>
-                        <span className="font-semibold text-white">Lead du projet :</span>{' '}
-                        {renderTextWithLinks(teamLead)}
-                      </p>
+                      <div className="space-y-2">
+                        <p>
+                          <span className="font-semibold text-white">Lead du projet :</span>{' '}
+                          {renderTextWithLinks(teamLead)}
+                        </p>
+                        {hasText(teamLeadTeam) && (
+                          <p className="text-xs uppercase tracking-[0.25em] text-indigo-200/80">
+                            {`Équipe : ${teamLeadTeam}`}
+                          </p>
+                        )}
+                      </div>
                     )}
                     {teamCoreMembers.length > 0 && (
                       <div>

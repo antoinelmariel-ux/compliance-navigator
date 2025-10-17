@@ -11,7 +11,7 @@ const demoProjectAnswers = {
     'Partenaires ou prescripteurs'
   ],
   problemPainPoints:
-    '• Les équipes perdent 3 semaines à aligner leur message sur plusieurs canaux.\n• Les preuves clients sont dispersées et difficiles à valoriser.\n• Les partenaires ne disposent pas des bons outils pour activer leur réseau.',
+    '• Les équipes ont besoin d’un récit unifié pour coordonner leurs prises de parole.\n• Les preuves clients doivent être centralisées pour soutenir les validations compliance.\n• Les partenaires réclament des assets prêts à l’emploi pour activer rapidement leurs réseaux.',
   solutionDescription:
     "Nous construisons une narration immersive combinant démonstrations live, contenus interactifs et preuves sociales activables par chaque équipe locale.",
   solutionBenefits:
@@ -21,10 +21,11 @@ const demoProjectAnswers = {
   innovationProcess:
     '1. Sprint storytelling de 5 jours pour cadrer le pitch.\n2. Production collaborative des assets avec validations hebdomadaires.\n3. Activation omnicanale pilotée par un cockpit partagé.',
   visionStatement:
-    'En 2025, chaque lancement majeur du groupe proposera une expérience Aura pour générer engagement, confiance et ventes durables.',
+    '• Taux de conformité validé dès le premier passage.\n• Score de satisfaction partenaires supérieur à 4/5.\n• +30 % d’engagement sur les contenus du reveal.',
   campaignKickoffDate: '2024-01-15',
   launchDate: '2024-04-15',
   teamLead: 'Clara Dupont — Head of Narrative Design',
+  teamLeadTeam: 'Marketing',
   teamCoreMembers:
     'Lina Morel — Product marketing lead\nHugo Martin — Data & Growth strategist\nNoémie Laurent — Partnerships manager',
 };
