@@ -967,14 +967,18 @@
  /* background: linear-gradient(135deg, #02040a 0%, #0d1625 100%);*/
 }
 
+[data-showcase-theme='aurora'] .aurora-roadmap .aurora-section__title {
+  color: #0f172a;
+}
+
 [data-showcase-theme='aurora'] .aurora-roadmap__intro {
   font-size: 0.95rem;
-  color: rgba(203, 213, 225, 0.85);
+  color: rgba(15, 23, 42, 0.82);
 }
 
 [data-showcase-theme='aurora'] .aurora-roadmap__intro span {
   font-weight: 600;
-  color: #e0f2fe;
+  color: #075985;
 }
 
 [data-showcase-theme='aurora'] .aurora-roadmap__timeline {
