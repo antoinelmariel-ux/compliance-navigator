@@ -35,6 +35,7 @@ export const Rocket = createIcon('🚀');
 export const Compass = createIcon('🧭');
 export const Close = createIcon('✕');
 export const Download = createIcon('⬇️');
+export const Upload = createIcon('📂');
 export const Save = createIcon('💾');
 
 export { createIcon };

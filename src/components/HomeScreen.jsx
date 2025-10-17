@@ -1,4 +1,4 @@
-import React, { useMemo } from '../react.js';
+import React, { useMemo, useRef } from '../react.js';
 import {
   Plus,
   Target,
@@ -12,7 +12,8 @@ import {
   Sparkles,
   AlertTriangle,
   Edit,
-  Save
+  Save,
+  Upload
 } from './icons.js';
 
 const formatDate = (isoDate) => {
@@ -70,9 +71,11 @@ export const HomeScreen = ({
   onStartNewProject,
   onOpenProject,
   onDeleteProject,
-  onShowProjectShowcase
+  onShowProjectShowcase,
+  onImportProject
 }) => {
   const hasProjects = projects.length > 0;
+  const fileInputRef = useRef(null);
 
   const sortedProjects = useMemo(() => {
     return [...projects].sort((a, b) => {
@@ -81,6 +84,23 @@ export const HomeScreen = ({
       return dateB - dateA;
     });
   }, [projects]);
+
+  const handleTriggerImport = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleFileChange = (event) => {
+    const file = event?.target?.files?.[0];
+    if (file && typeof onImportProject === 'function') {
+      onImportProject(file);
+    }
+
+    if (event?.target) {
+      event.target.value = '';
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-blue-50 px-4 py-8 sm:px-8 hv-background">
@@ -116,7 +136,24 @@ export const HomeScreen = ({
                     Reprendre le dernier projet
                   </button>
                 )}
+                <button
+                  type="button"
+                  onClick={handleTriggerImport}
+                  className="inline-flex items-center justify-center px-5 py-3 text-base font-semibold text-indigo-600 bg-white hover:bg-indigo-50 rounded-xl border border-indigo-200 transition-all hv-button hv-focus-ring"
+                >
+                  <Upload className="w-5 h-5 mr-2" />
+                  Charger un projet
+                </button>
               </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="application/json"
+                onChange={handleFileChange}
+                className="hidden"
+                tabIndex={-1}
+                aria-hidden="true"
+              />
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm text-gray-600">
               <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-4 hv-surface" role="listitem">
