@@ -16,7 +16,7 @@ import { extractProjectName } from './utils/projects.js';
 import { createDemoProject } from './data/demoProject.js';
 import { exportProjectToFile } from './utils/projectExport.js';
 
-const APP_VERSION = 'v1.0.19';
+const APP_VERSION = 'v1.0.20';
 
 
 const isAnswerProvided = (value) => {

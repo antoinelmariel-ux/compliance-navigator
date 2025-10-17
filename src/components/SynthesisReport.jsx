@@ -395,7 +395,6 @@ export const SynthesisReport = ({
   onBack,
   onUpdateAnswers,
   onSubmitProject,
-  isExistingProject,
   onSaveDraft,
   saveFeedback,
   onDismissSaveFeedback
@@ -622,7 +621,7 @@ export const SynthesisReport = ({
                   className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition-all flex items-center justify-center hv-button hv-button-primary w-full sm:w-auto text-sm sm:text-base"
                 >
                   <CheckCircle className="w-4 h-4 mr-2" />
-                  {isExistingProject ? 'Mettre à jour le projet' : 'Enregistrer le projet'}
+                  Enregistrer le projet
                 </button>
               )}
               {onSaveDraft && (
