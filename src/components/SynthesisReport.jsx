@@ -475,15 +475,21 @@ const buildMailtoLink = ({ projectName, relevantTeams, body }) => {
 
   const toField = recipients.join(',');
   const subject = projectName || 'Projet compliance';
-  const params = new URLSearchParams();
-
-  params.set('subject', subject);
   const normalizedBody = (body || '').replace(/\r?\n/g, '\r\n');
-  params.set('body', normalizedBody);
+  const encodedParams = [];
 
-  const paramString = params.toString();
+  if (subject) {
+    encodedParams.push(`subject=${encodeURIComponent(subject)}`);
+  }
+
+  if (normalizedBody) {
+    encodedParams.push(`body=${encodeURIComponent(normalizedBody)}`);
+  }
+
   const prefix = toField ? `mailto:${toField}` : 'mailto:';
-  return `${prefix}?${paramString}`;
+  const query = encodedParams.join('&');
+
+  return query ? `${prefix}?${query}` : prefix;
 };
 
 export const SynthesisReport = ({
