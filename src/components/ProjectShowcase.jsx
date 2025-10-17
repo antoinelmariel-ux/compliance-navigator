@@ -221,39 +221,116 @@ const formatDate = (value) => {
   }).format(parsed);
 };
 
+const MS_IN_DAY = 24 * 60 * 60 * 1000;
+
 const computeRunway = (answers) => {
-  const startRaw = answers?.campaignKickoffDate;
-  const endRaw = answers?.launchDate;
+  const launchRaw = answers?.launchDate;
 
-  if (!startRaw || !endRaw) {
+  if (!launchRaw) {
     return null;
   }
 
-  const start = new Date(startRaw);
-  const end = new Date(endRaw);
+  const launchDate = new Date(launchRaw);
 
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+  if (Number.isNaN(launchDate.getTime())) {
     return null;
   }
 
-  const diffMs = end.getTime() - start.getTime();
-  if (diffMs <= 0) {
-    return null;
-  }
+  const today = new Date();
+  const todayNormalized = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const launchNormalized = new Date(
+    launchDate.getFullYear(),
+    launchDate.getMonth(),
+    launchDate.getDate()
+  );
 
-  const diffDays = diffMs / (1000 * 60 * 60 * 24);
-  const diffWeeks = diffDays / 7;
+  const diffMs = launchNormalized.getTime() - todayNormalized.getTime();
+  const diffInDays = Math.max(0, Math.round(diffMs / MS_IN_DAY));
+  const diffInWeeks = diffInDays / 7;
 
   return {
-    start,
-    end,
-    diffDays,
-    diffWeeks,
-    startLabel: formatDate(start),
-    endLabel: formatDate(end),
-    weeksLabel: `${Math.round(diffWeeks)} sem.`,
-    daysLabel: `${Math.round(diffDays)} j.`
+    launchDate: launchNormalized,
+    diffDays: diffInDays,
+    diffWeeks: diffInWeeks,
+    weeks: diffInWeeks,
+    days: diffInDays,
+    isToday: diffMs === 0,
+    isOverdue: diffMs < 0,
+    launchLabel: formatDate(launchNormalized),
+    weeksLabel: `${Math.round(diffInWeeks)} sem.`,
+    daysLabel: `${diffInDays} j.`
   };
+};
+
+const formatCountdownUnit = (value, unit) => {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return `0 ${unit}`;
+  }
+
+  const rounded = Math.max(0, Math.round(value));
+  return `${rounded} ${unit}`;
+};
+
+const useAnimatedCounter = (targetValue, options = {}) => {
+  const { duration = 1000 } = options;
+  const [displayValue, setDisplayValue] = useState(0);
+  const frameRef = useRef(null);
+  const previousTargetRef = useRef(null);
+
+  useEffect(() => {
+    if (frameRef.current) {
+      cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
+    }
+
+    if (typeof targetValue !== 'number' || Number.isNaN(targetValue)) {
+      previousTargetRef.current = null;
+      setDisplayValue(0);
+      return undefined;
+    }
+
+    const clampedTarget = Math.max(0, targetValue);
+
+    if (duration <= 0) {
+      setDisplayValue(clampedTarget);
+      previousTargetRef.current = clampedTarget;
+      return undefined;
+    }
+
+    if (previousTargetRef.current === clampedTarget) {
+      setDisplayValue(clampedTarget);
+      return undefined;
+    }
+
+    previousTargetRef.current = clampedTarget;
+    let start = null;
+
+    const step = (timestamp) => {
+      if (start === null) {
+        start = timestamp;
+      }
+
+      const progress = Math.min((timestamp - start) / duration, 1);
+      const easedProgress = 1 - Math.pow(1 - progress, 3);
+      const nextValue = clampedTarget * easedProgress;
+      setDisplayValue(nextValue);
+
+      if (progress < 1) {
+        frameRef.current = requestAnimationFrame(step);
+      }
+    };
+
+    frameRef.current = requestAnimationFrame(step);
+
+    return () => {
+      if (frameRef.current) {
+        cancelAnimationFrame(frameRef.current);
+        frameRef.current = null;
+      }
+    };
+  }, [targetValue, duration]);
+
+  return displayValue;
 };
 
 const computeTimelineSummary = (timelineDetails) => {
@@ -335,9 +412,13 @@ const buildHeroHighlights = ({ targetAudience, runway }) => {
   if (runway) {
     highlights.push({
       id: 'runway',
-      label: 'Runway avant lancement',
+      label: 'Compte à rebours avant lancement',
       value: `${runway.weeksLabel} (${runway.daysLabel})`,
-      caption: `Du ${runway.startLabel} au ${runway.endLabel}.`
+      caption: runway.isOverdue
+        ? `Lancement prévu le ${runway.launchLabel} (échéance atteinte).`
+        : runway.isToday
+          ? `Lancement prévu aujourd'hui (${runway.launchLabel}).`
+          : `Lancement prévu le ${runway.launchLabel}.`
     });
   }
 
@@ -480,7 +561,20 @@ export const ProjectShowcase = ({
   const teamLeadTeam = getFormattedAnswer(questions, answers, 'teamLeadTeam');
   const teamCoreMembers = parseListAnswer(getRawAnswer(answers, 'teamCoreMembers'));
 
-  const runway = useMemo(() => computeRunway(answers), [answers]);
+  const rawRunway = useMemo(() => computeRunway(answers), [answers]);
+  const animatedWeeks = useAnimatedCounter(rawRunway?.weeks ?? null, { duration: 1200 });
+  const animatedDays = useAnimatedCounter(rawRunway?.days ?? null, { duration: 1200 });
+  const runway = useMemo(() => {
+    if (!rawRunway) {
+      return null;
+    }
+
+    return {
+      ...rawRunway,
+      weeksLabel: formatCountdownUnit(animatedWeeks, 'sem.'),
+      daysLabel: formatCountdownUnit(animatedDays, 'j.')
+    };
+  }, [rawRunway, animatedWeeks, animatedDays]);
   const timelineSummary = useMemo(() => computeTimelineSummary(timelineDetails), [timelineDetails]);
   const primaryRisk = useMemo(() => getPrimaryRisk(analysis), [analysis]);
   const heroHighlights = useMemo(
@@ -732,9 +826,15 @@ export const ProjectShowcase = ({
             </div>
             {runway && (
               <div className="aurora-impact__card">
-                <p className="aurora-impact__label">Runway projet</p>
+                <p className="aurora-impact__label">Compte à rebours</p>
                 <p className="aurora-impact__value">{runway.weeksLabel}</p>
-                <p className="aurora-impact__caption">{`Du ${runway.startLabel} au ${runway.endLabel}`}</p>
+                <p className="aurora-impact__caption">
+                  {runway.isOverdue
+                    ? `Lancement prévu le ${runway.launchLabel} — échéance atteinte.`
+                    : runway.isToday
+                      ? `Dernière ligne droite : lancement aujourd'hui (${runway.launchLabel}).`
+                      : `Soit ${runway.daysLabel} restants avant le ${runway.launchLabel}.`}
+                </p>
               </div>
             )}
           </div>
@@ -831,7 +931,15 @@ export const ProjectShowcase = ({
             </div>
             {runway && (
               <p className="aurora-roadmap__intro">
-                Runway projet de <span>{runway.weeksLabel}</span> ({runway.daysLabel}) du {runway.startLabel} au {runway.endLabel}.
+                {runway.isOverdue ? (
+                  <>Le lancement prévu le {runway.launchLabel} a déjà eu lieu.</>
+                ) : runway.isToday ? (
+                  <>Dernière ligne droite : lancement aujourd'hui ({runway.launchLabel}).</>
+                ) : (
+                  <>
+                    Compte à rebours : <span>{runway.weeksLabel}</span> ({runway.daysLabel}) avant le lancement prévu le {runway.launchLabel}.
+                  </>
+                )}
               </p>
             )}
             {hasTimelineProfiles ? (
