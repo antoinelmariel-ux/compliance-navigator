@@ -1009,7 +1009,7 @@
 }
 
 [data-showcase-theme='aurora'] .aurora-roadmap::before {
-  background: linear-gradient(135deg, #02040a 0%, #0d1625 100%);
+ /* background: linear-gradient(135deg, #02040a 0%, #0d1625 100%);*/
 }
 
 [data-showcase-theme='aurora'] .aurora-roadmap__intro {
