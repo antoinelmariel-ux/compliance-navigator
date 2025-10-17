@@ -485,12 +485,6 @@
   letter-spacing: -0.015em;
 }
 
-[data-showcase-theme='aurora'] .aurora-section__icon {
-  width: clamp(3rem, 6vw, 3.5rem);
-  height: clamp(3rem, 6vw, 3.5rem);
-  color: rgba(148, 197, 255, 0.9);
-}
-
 [data-showcase-theme='aurora'] .aurora-hero::before {
   background: linear-gradient(135deg, #000000 0%, #090d15 45%, #0b1f2c 100%);
 }
@@ -829,14 +823,8 @@
   color: rgba(255, 247, 237, 0.95);
 }
 
-[data-showcase-theme='aurora'] .aurora-risk-halo__icon {
-  width: 2.8rem;
-  height: 2.8rem;
-  color: rgba(252, 211, 77, 0.95);
-}
-
 [data-showcase-theme='aurora'] .aurora-risk-halo__label {
-  margin-top: 0.75rem;
+  margin-top: 0;
   font-size: 0.68rem;
   letter-spacing: 0.42em;
   text-transform: uppercase;
