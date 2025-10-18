@@ -17,7 +17,7 @@ import { extractProjectName } from './utils/projects.js';
 import { createDemoProject } from './data/demoProject.js';
 import { exportProjectToFile } from './utils/projectExport.js';
 
-const APP_VERSION = 'v1.0.54';
+const APP_VERSION = 'v1.0.55';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -1311,11 +1311,7 @@ export const App = () => {
   }, [handleSaveProject]);
 
   const handleSaveDraft = useCallback((payload = {}) => {
-    const {
-      questions: questionsOverride,
-      lastQuestionIndex: payloadLastQuestionIndex,
-      ...otherPayload
-    } = payload || {};
+    const { lastQuestionIndex: payloadLastQuestionIndex, ...otherPayload } = payload || {};
 
     const entry = handleSaveProject({
       ...otherPayload,
@@ -1329,20 +1325,9 @@ export const App = () => {
     if (entry) {
       setValidationError(null);
 
-      const relevantTeamIds = Array.isArray(entry.analysis?.teams) ? entry.analysis.teams : [];
-      const relevantTeams = teams.filter(team => relevantTeamIds.includes(team.id));
-      const timelineByTeam = entry.analysis?.timeline?.byTeam || {};
-      const timelineDetails = entry.analysis?.timeline?.details || [];
-      const exportQuestions = Array.isArray(questionsOverride) ? questionsOverride : activeQuestions;
-
       const exported = exportProjectToFile({
         projectName: entry.projectName,
-        answers: entry.answers,
-        analysis: entry.analysis,
-        relevantTeams,
-        timelineByTeam,
-        timelineDetails,
-        questions: exportQuestions
+        answers: entry.answers
       });
 
       setSaveFeedback(
@@ -1357,7 +1342,7 @@ export const App = () => {
             }
       );
     }
-  }, [activeQuestions, currentQuestionIndex, handleSaveProject, teams]);
+  }, [currentQuestionIndex, handleSaveProject]);
 
   const handleDismissSaveFeedback = useCallback(() => {
     setSaveFeedback(null);

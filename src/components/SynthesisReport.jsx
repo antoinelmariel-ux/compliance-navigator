@@ -600,12 +600,7 @@ export const SynthesisReport = ({
     const emailText = buildPlainTextEmail(emailHtml);
     const projectExport = buildProjectExport({
       projectName: effectiveProjectName,
-      answers,
-      analysis,
-      relevantTeams,
-      timelineByTeam,
-      timelineDetails,
-      questions
+      answers
     });
 
     let projectJson = '';

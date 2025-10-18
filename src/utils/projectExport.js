@@ -70,46 +70,16 @@ export const getTeamPriority = (analysis, teamId) => {
   return bestPriority;
 };
 
-export const buildProjectExport = ({
-  projectName,
-  answers,
-  analysis,
-  relevantTeams = [],
-  timelineByTeam = {},
-  timelineDetails = [],
-  questions = []
-} = {}) => {
+export const buildProjectExport = ({ projectName, answers } = {}) => {
   const normalizedAnswers =
     answers && typeof answers === 'object' ? answers : {};
-
-  const teamsSnapshot = Array.isArray(relevantTeams)
-    ? relevantTeams.map(team => ({
-        id: team.id,
-        name: team.name,
-        contact: team.contact || null,
-        priority: getTeamPriority(analysis, team.id)
-      }))
-    : [];
-
-  const questionsSnapshot = Array.isArray(questions)
-    ? questions.map(question => question.id).filter(Boolean)
-    : [];
 
   return {
     version: 1,
     generatedAt: new Date().toISOString(),
     project: {
       name: projectName || 'Projet sans nom',
-      answers: normalizedAnswers,
-      analysis: analysis || null,
-      relevantTeams: teamsSnapshot,
-      timeline: {
-        byTeam: timelineByTeam || {},
-        details: Array.isArray(timelineDetails) ? timelineDetails : []
-      },
-      questionnaire: {
-        questionIds: questionsSnapshot
-      }
+      answers: normalizedAnswers
     }
   };
 };
@@ -185,23 +155,10 @@ export const downloadProjectJson = (projectData, { projectName } = {}) => {
   }
 };
 
-export const exportProjectToFile = ({
-  projectName,
-  answers,
-  analysis,
-  relevantTeams,
-  timelineByTeam,
-  timelineDetails,
-  questions
-} = {}) => {
+export const exportProjectToFile = ({ projectName, answers } = {}) => {
   const exportPayload = buildProjectExport({
     projectName,
-    answers,
-    analysis,
-    relevantTeams,
-    timelineByTeam,
-    timelineDetails,
-    questions
+    answers
   });
 
   return downloadProjectJson(exportPayload, { projectName });
