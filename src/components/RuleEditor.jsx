@@ -682,14 +682,6 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                               La règle sera valide si la durée entre les deux dates respecte les contraintes définies.
                                             </p>
 
-                                            <div className="mt-4 border border-indigo-200 rounded-lg bg-white/60 p-4">
-                                              <h4 className="text-sm font-semibold text-gray-700">
-                                                Scénarios de délais par compliance
-                                              </h4>
-                                              <p className="text-xs text-gray-600 mt-2">
-                                                La personnalisation des délais par compliance n'est plus disponible. Les contraintes définies ci-dessus s'appliquent à toutes les équipes.
-                                              </p>
-                                            </div>
                                           </>
                                         ) : (
                                           <div className="bg-white border border-dashed border-indigo-200 rounded-lg p-4 text-sm text-indigo-700">
