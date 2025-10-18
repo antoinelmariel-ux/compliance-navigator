@@ -411,7 +411,11 @@ export const QuestionnaireScreen = ({
               type="text"
               value={currentAnswer ?? ''}
               onChange={(e) => onAnswer(currentQuestion.id, e.target.value)}
-              placeholder="Saisissez une réponse en une ligne"
+              placeholder={
+                typeof currentQuestion.placeholder === 'string' && currentQuestion.placeholder.trim() !== ''
+                  ? currentQuestion.placeholder.trim()
+                  : 'Saisissez une réponse en une ligne'
+              }
               id={`${currentQuestion.id}-text`}
               className="w-full px-4 py-2.5 sm:py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hv-focus-ring"
             />
@@ -429,7 +433,11 @@ export const QuestionnaireScreen = ({
             <textarea
               value={currentAnswer ?? ''}
               onChange={(e) => onAnswer(currentQuestion.id, e.target.value)}
-              placeholder="Renseignez ici les informations détaillées..."
+              placeholder={
+                typeof currentQuestion.placeholder === 'string' && currentQuestion.placeholder.trim() !== ''
+                  ? currentQuestion.placeholder.trim()
+                  : 'Renseignez ici les informations détaillées...'
+              }
               rows={5}
               id={`${currentQuestion.id}-long-text`}
               className="w-full px-4 py-2.5 sm:py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-y hv-focus-ring"
