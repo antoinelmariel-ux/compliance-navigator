@@ -546,9 +546,9 @@
 [data-showcase-theme='aurora'] .aurora-hero-highlight {
   padding: 1.6rem;
   border-radius: 1.8rem;
-  background: rgba(15, 23, 42, 0.45);
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  box-shadow: 0 25px 55px rgba(2, 6, 23, 0.45);
+  background: linear-gradient(145deg, rgba(148, 197, 255, 0.18), rgba(15, 23, 42, 0.38));
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 0 22px 50px rgba(2, 6, 23, 0.32);
   backdrop-filter: blur(22px);
   animation: fadeRise 0.8s ease forwards;
   opacity: 0;
@@ -589,9 +589,9 @@
   gap: 1rem;
   padding: 1.1rem 1.4rem;
   border-radius: 1.5rem;
-  background: rgba(12, 18, 32, 0.6);
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  box-shadow: 0 20px 45px rgba(2, 6, 23, 0.32);
+  background: linear-gradient(140deg, rgba(96, 165, 250, 0.16), rgba(12, 18, 32, 0.42));
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  box-shadow: 0 18px 40px rgba(2, 6, 23, 0.26);
   animation: fadeRise 0.9s ease forwards;
   opacity: 0;
 }
@@ -622,9 +622,9 @@
 [data-showcase-theme='aurora'] .aurora-pillar {
   padding: 2rem;
   border-radius: 1.9rem;
-  background: rgba(1, 18, 26, 0.55);
-  border: 1px solid rgba(148, 197, 255, 0.25);
-  box-shadow: 0 32px 70px rgba(2, 30, 46, 0.45);
+  background: linear-gradient(150deg, rgba(148, 197, 255, 0.16), rgba(15, 23, 42, 0.4));
+  border: 1px solid rgba(148, 197, 255, 0.2);
+  box-shadow: 0 28px 60px rgba(2, 30, 46, 0.32);
   backdrop-filter: blur(18px);
 }
 
@@ -780,7 +780,7 @@
 }
 
 [data-showcase-theme='aurora'] .aurora-impact::before {
-  background: linear-gradient(135deg, #0b0d12 0%, #10151e 100%);
+  background: linear-gradient(140deg, rgba(56, 189, 248, 0.12), rgba(30, 64, 175, 0.32), rgba(2, 6, 23, 0.8));
 }
 
 [data-showcase-theme='aurora'] .aurora-impact__grid {
@@ -792,36 +792,44 @@
 [data-showcase-theme='aurora'] .aurora-impact__card {
   border-radius: 1.8rem;
   padding: 1.8rem;
-  background: rgba(6, 10, 20, 0.65);
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  box-shadow: 0 28px 65px rgba(2, 6, 23, 0.5);
+  background:
+    radial-gradient(circle at 12% 18%, rgba(191, 219, 254, 0.26), transparent 55%),
+    radial-gradient(circle at 88% 82%, rgba(165, 180, 252, 0.24), transparent 52%),
+    linear-gradient(155deg, rgba(30, 64, 175, 0.65), rgba(15, 118, 110, 0.55));
+  border: 1px solid rgba(148, 197, 255, 0.35);
+  box-shadow: 0 22px 55px rgba(30, 64, 175, 0.28);
+  color: rgba(15, 23, 42, 0.92);
 }
 
 [data-showcase-theme='aurora'] .aurora-impact__label {
   font-size: 0.7rem;
   letter-spacing: 0.4em;
   text-transform: uppercase;
-  color: rgba(165, 180, 252, 0.78);
+  color: rgba(79, 70, 229, 0.78);
 }
 
 [data-showcase-theme='aurora'] .aurora-impact__value {
   margin-top: 0.85rem;
   font-size: 1.9rem;
   font-weight: 600;
+  color: rgba(15, 23, 42, 0.96);
 }
 
 [data-showcase-theme='aurora'] .aurora-impact__caption {
   margin-top: 0.85rem;
   font-size: 0.85rem;
-  color: rgba(203, 213, 225, 0.78);
+  color: rgba(30, 41, 59, 0.72);
 }
 
 [data-showcase-theme='aurora'] .aurora-impact__vision {
   margin-top: 2.5rem;
   padding: 1.8rem;
   border-radius: 1.8rem;
-  background: rgba(6, 12, 24, 0.6);
-  border: 1px solid rgba(148, 163, 184, 0.24);
+  background:
+    radial-gradient(circle at 16% 22%, rgba(191, 219, 254, 0.25), transparent 50%),
+    linear-gradient(150deg, rgba(56, 189, 248, 0.24), rgba(30, 58, 138, 0.55));
+  border: 1px solid rgba(148, 197, 255, 0.32);
+  color: rgba(15, 23, 42, 0.9);
 }
 
 [data-showcase-theme='aurora'] .aurora-impact__vision-title {
@@ -840,7 +848,7 @@
   align-items: center;
   gap: 0.8rem;
   font-size: 0.95rem;
-  color: rgba(224, 236, 255, 0.88);
+  color: rgba(15, 23, 42, 0.78);
 }
 
 [data-showcase-theme='aurora'] .aurora-impact__vision-pulse {
@@ -1052,9 +1060,9 @@
 [data-showcase-theme='aurora'] .aurora-roadmap__budget {
   padding: 1.4rem 1.8rem;
   border-radius: 1.6rem;
-  background: rgba(6, 12, 24, 0.7);
-  border: 1px solid rgba(148, 163, 184, 0.32);
-  box-shadow: 0 20px 45px rgba(2, 6, 23, 0.35);
+  background: linear-gradient(150deg, rgba(59, 130, 246, 0.16), rgba(15, 23, 42, 0.4));
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  box-shadow: 0 18px 40px rgba(2, 6, 23, 0.26);
   text-align: right;
   max-width: 18rem;
 }
@@ -1105,9 +1113,9 @@
   min-width: 12rem;
   padding: 1.2rem 1.4rem;
   border-radius: 1.6rem;
-  background: rgba(6, 12, 24, 0.6);
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  box-shadow: 0 24px 60px rgba(2, 6, 23, 0.45);
+  background: linear-gradient(150deg, rgba(96, 165, 250, 0.16), rgba(15, 23, 42, 0.4));
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 0 22px 50px rgba(2, 6, 23, 0.32);
   animation: fadeRise 0.9s ease forwards;
   opacity: 0;
 }
@@ -1137,9 +1145,9 @@
   margin-top: 2.5rem;
   padding: 2rem;
   border-radius: 1.9rem;
-  background: rgba(6, 12, 24, 0.65);
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  box-shadow: 0 24px 60px rgba(2, 6, 23, 0.45);
+  background: linear-gradient(150deg, rgba(79, 70, 229, 0.14), rgba(15, 23, 42, 0.42));
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  box-shadow: 0 22px 52px rgba(2, 6, 23, 0.32);
 }
 
 [data-showcase-theme='aurora'] .aurora-roadmap__value {
