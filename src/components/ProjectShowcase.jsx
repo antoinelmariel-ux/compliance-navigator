@@ -575,6 +575,14 @@ export const ProjectShowcase = ({
   const normalizedTeams = Array.isArray(relevantTeams) ? relevantTeams : [];
   const complexity = analysis?.complexity || 'Modérée';
   const complexityDescription = analysis?.complexityRule?.description;
+  const riskScore = typeof analysis?.riskScore === 'number' && Number.isFinite(analysis.riskScore)
+    ? Math.max(0, analysis.riskScore)
+    : null;
+  const formattedRiskScore = riskScore === null
+    ? null
+    : Number.isInteger(riskScore)
+      ? riskScore.toString()
+      : riskScore.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
   const editableFields = useMemo(
     () =>
@@ -1068,6 +1076,11 @@ export const ProjectShowcase = ({
               <p className="aurora-impact__caption">
                 {complexityDescription || 'Basée sur les points de vigilance identifiés.'}
               </p>
+              {formattedRiskScore && (
+                <p className="aurora-impact__caption text-xs text-gray-500 mt-1">
+                  Score de risque : {formattedRiskScore}
+                </p>
+              )}
             </div>
             {runway && (
               <div className="aurora-impact__card">

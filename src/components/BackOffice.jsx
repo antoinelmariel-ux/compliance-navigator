@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from '../react.js';
+import { normalizeRiskWeighting } from '../utils/risk.js';
 import {
   Settings,
   Plus,
@@ -227,6 +228,66 @@ const PRIORITY_WEIGHTS = {
   'A réaliser': 1
 };
 
+const RISK_WEIGHT_FIELDS = [
+  {
+    key: 'low',
+    label: 'Risque faible',
+    description: 'Poids appliqué aux risques de criticité faible.'
+  },
+  {
+    key: 'medium',
+    label: 'Risque moyen',
+    description: 'Poids appliqué aux risques de criticité moyenne.'
+  },
+  {
+    key: 'high',
+    label: 'Risque élevé',
+    description: 'Poids appliqué aux risques de criticité élevée.'
+  }
+];
+
+const parseScoreValue = (value, fallback, { allowNull = false } = {}) => {
+  if (allowNull && (value === null || value === undefined || value === '')) {
+    return null;
+  }
+
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+
+  return parsed < 0 ? 0 : parsed;
+};
+
+const getRuleMinScoreValue = (rule) => parseScoreValue(
+  rule?.minScore !== undefined ? rule.minScore : rule?.minRisks,
+  0
+);
+
+const getRuleMaxScoreValue = (rule) => parseScoreValue(
+  rule?.maxScore !== undefined ? rule.maxScore : rule?.maxRisks,
+  null,
+  { allowNull: true }
+);
+
+const formatScoreValue = (value) => {
+  if (!Number.isFinite(value)) {
+    return '0';
+  }
+
+  if (Number.isInteger(value)) {
+    return value.toString();
+  }
+
+  return value.toLocaleString('fr-FR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2
+  });
+};
+
+const getPointUnit = (value) => (Math.abs(value - 1) < 1e-9 ? 'point' : 'points');
+
 const getHighestRiskPriority = (risks = []) => {
   if (!Array.isArray(risks) || risks.length === 0) {
     return null;
@@ -271,6 +332,8 @@ export const BackOffice = ({
   setRules,
   riskLevelRules,
   setRiskLevelRules,
+  riskWeights,
+  setRiskWeights,
   teams,
   setTeams
 }) => {
@@ -282,6 +345,37 @@ export const BackOffice = ({
   const [reorderAnnouncement, setReorderAnnouncement] = useState('');
   const safeRiskLevelRules = Array.isArray(riskLevelRules) ? riskLevelRules : [];
   const riskLevelRuleCount = safeRiskLevelRules.length;
+  const normalizedRiskWeights = useMemo(
+    () => normalizeRiskWeighting(riskWeights),
+    [riskWeights]
+  );
+
+  const handleRiskWeightChange = (key, rawValue) => {
+    if (typeof setRiskWeights !== 'function') {
+      return;
+    }
+
+    setRiskWeights(prevWeights => {
+      const base = typeof prevWeights === 'object' && prevWeights !== null
+        ? { ...prevWeights }
+        : {};
+
+      const parsed = Number.parseFloat(rawValue);
+
+      if (Number.isNaN(parsed)) {
+        return prevWeights;
+      }
+
+      const sanitized = parsed < 0 ? 0 : parsed;
+
+      if (base[key] === sanitized) {
+        return prevWeights;
+      }
+
+      base[key] = sanitized;
+      return base;
+    });
+  };
 
   const dataIntegrityIssues = useMemo(() => {
     const safeQuestions = Array.isArray(questions) ? questions : [];
@@ -805,11 +899,14 @@ export const BackOffice = ({
     const baseMinimum = lastRule
       ? Math.max(
         0,
-        Number.isFinite(lastRule?.maxRisks)
-          ? Math.floor(lastRule.maxRisks) + 1
-          : Number.isFinite(lastRule?.minRisks)
-            ? Math.floor(lastRule.minRisks) + 1
-            : safeRiskLevelRules.length
+        (() => {
+          const lastMax = getRuleMaxScoreValue(lastRule);
+          if (lastMax !== null) {
+            return lastMax + 1;
+          }
+          const lastMin = getRuleMinScoreValue(lastRule);
+          return lastMin + 1;
+        })()
       )
       : 0;
 
@@ -818,6 +915,8 @@ export const BackOffice = ({
       label: 'Nouveau niveau',
       minRisks: baseMinimum,
       maxRisks: null,
+      minScore: baseMinimum,
+      maxScore: null,
       description: ''
     };
 
@@ -843,15 +942,25 @@ export const BackOffice = ({
         updatedRule.label = value;
       } else if (field === 'description') {
         updatedRule.description = value;
-      } else if (field === 'minRisks') {
-        const parsed = Number.parseInt(value, 10);
-        updatedRule.minRisks = Number.isNaN(parsed) ? 0 : Math.max(0, parsed);
-      } else if (field === 'maxRisks') {
+      } else if (field === 'minRisks' || field === 'minScore') {
+        const parsed = Number.parseFloat(value);
+        const sanitized = Number.isNaN(parsed) ? 0 : Math.max(0, parsed);
+        updatedRule.minRisks = sanitized;
+        updatedRule.minScore = sanitized;
+      } else if (field === 'maxRisks' || field === 'maxScore') {
         if (value === '' || value === null) {
           updatedRule.maxRisks = null;
+          updatedRule.maxScore = null;
         } else {
-          const parsed = Number.parseInt(value, 10);
-          updatedRule.maxRisks = Number.isNaN(parsed) ? null : Math.max(0, parsed);
+          const parsed = Number.parseFloat(value);
+          if (Number.isNaN(parsed)) {
+            updatedRule.maxRisks = null;
+            updatedRule.maxScore = null;
+          } else {
+            const sanitized = Math.max(0, parsed);
+            updatedRule.maxRisks = sanitized;
+            updatedRule.maxScore = sanitized;
+          }
         }
       }
 
@@ -929,39 +1038,41 @@ export const BackOffice = ({
   };
 
   const formatRiskRangeLabel = (rule) => {
-    const min = Number.isFinite(rule?.minRisks) ? Math.max(0, Math.floor(rule.minRisks)) : 0;
-    const max = Number.isFinite(rule?.maxRisks) ? Math.max(0, Math.floor(rule.maxRisks)) : null;
+    const minScore = getRuleMinScoreValue(rule);
+    const maxScore = getRuleMaxScoreValue(rule);
 
-    if (max === null) {
-      return `≥ ${min} risque${min > 1 ? 's' : ''}`;
+    const minLabel = formatScoreValue(minScore);
+    const minUnit = getPointUnit(minScore);
+
+    if (maxScore === null) {
+      return `≥ ${minLabel} ${minUnit}`;
     }
 
-    if (min === max) {
-      return `${min} risque${min > 1 ? 's' : ''}`;
+    if (minScore === maxScore) {
+      return `${minLabel} ${getPointUnit(minScore)}`;
     }
 
-    return `${min} à ${max} risques`;
+    const maxLabel = formatScoreValue(maxScore);
+    return `${minLabel} à ${maxLabel} points`;
   };
 
   const getRiskLevelRuleIssues = (rule, index, rulesList) => {
     const issues = [];
-    const min = Number.isFinite(rule?.minRisks) ? Math.max(0, Math.floor(rule.minRisks)) : 0;
-    const max = Number.isFinite(rule?.maxRisks) ? Math.max(0, Math.floor(rule.maxRisks)) : null;
+    const min = getRuleMinScoreValue(rule);
+    const max = getRuleMaxScoreValue(rule);
 
     if (max !== null && max < min) {
-      issues.push('La borne maximale doit être supérieure ou égale à la borne minimale.');
+      issues.push('Le score maximal doit être supérieur ou égal au score minimal.');
     }
 
     if (index > 0) {
       const previous = rulesList[index - 1];
-      const previousMax = Number.isFinite(previous?.maxRisks)
-        ? Math.max(0, Math.floor(previous.maxRisks))
-        : null;
+      const previousMax = getRuleMaxScoreValue(previous);
 
       if (previousMax === null) {
-        issues.push('Le niveau précédent couvre déjà toutes les valeurs (maximum illimité). Ajustez-le avant d’ajouter ce palier.');
+        issues.push('Le niveau précédent couvre déjà tous les scores (maximum illimité). Ajustez-le avant d’ajouter ce palier.');
       } else if (min <= previousMax) {
-        issues.push(`La borne minimale doit être strictement supérieure à ${previousMax}, le maximum du niveau précédent.`);
+        issues.push(`Le score minimal doit être strictement supérieur à ${formatScoreValue(previousMax)}, le maximum du niveau précédent.`);
       }
     }
 
@@ -1710,12 +1821,40 @@ export const BackOffice = ({
                 <p className="flex items-start gap-2">
                   <Info className="w-5 h-5 mt-0.5" />
                   <span>
-                    Les niveaux sont évalués du haut vers le bas : le premier palier correspondant au nombre total de risques s’applique.
+                    Les niveaux sont évalués du haut vers le bas : le premier palier correspondant au score de risque total s’applique.
                   </span>
                 </p>
                 <p className="text-xs text-blue-700">
-                  Laissez la borne maximale vide pour couvrir toutes les valeurs supérieures à la borne minimale.
+                  Le score de risque additionne le poids de chaque risque selon sa criticité. Laissez la borne maximale vide pour couvrir toutes les valeurs supérieures à la borne minimale.
                 </p>
+              </div>
+
+              <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hv-surface space-y-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800">Pondération des criticités</h3>
+                  <p className="text-sm text-gray-600">
+                    Ajustez la valeur attribuée à chaque niveau de criticité pour recalculer le score de risque des projets.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                  {RISK_WEIGHT_FIELDS.map((field) => (
+                    <div key={field.key} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                      <label className="block text-sm font-medium text-gray-700 mb-2" htmlFor={`risk-weight-${field.key}`}>
+                        {field.label}
+                      </label>
+                      <input
+                        id={`risk-weight-${field.key}`}
+                        type="number"
+                        min="0"
+                        step="0.5"
+                        value={normalizedRiskWeights[field.key] ?? 0}
+                        onChange={(event) => handleRiskWeightChange(field.key, event.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm hv-focus-ring"
+                      />
+                      <p className="mt-2 text-xs text-gray-500">{field.description}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {riskLevelRuleCount === 0 ? (
@@ -1733,12 +1872,9 @@ export const BackOffice = ({
                     const rangeLabel = formatRiskRangeLabel(rule);
                     const issues = getRiskLevelRuleIssues(rule, index, safeRiskLevelRules);
                     const disableDelete = riskLevelRuleCount <= 1;
-                    const minValue = Number.isFinite(rule?.minRisks)
-                      ? Math.max(0, Math.floor(rule.minRisks))
-                      : 0;
-                    const maxValue = Number.isFinite(rule?.maxRisks)
-                      ? Math.max(0, Math.floor(rule.maxRisks))
-                      : '';
+                    const minValue = getRuleMinScoreValue(rule);
+                    const maxScoreValue = getRuleMaxScoreValue(rule);
+                    const maxValue = maxScoreValue === null ? '' : maxScoreValue;
 
                     return (
                       <article key={ruleId} className="border border-gray-200 rounded-xl p-6 bg-white shadow-sm hv-surface">
@@ -1804,14 +1940,15 @@ export const BackOffice = ({
                               className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1"
                               htmlFor={minInputId}
                             >
-                              Borne minimale (nombre de risques)
+                              Score minimal
                             </label>
                             <input
                               id={minInputId}
                               type="number"
                               min="0"
+                              step="0.5"
                               value={minValue}
-                              onChange={(event) => updateRiskLevelRuleField(index, 'minRisks', event.target.value)}
+                              onChange={(event) => updateRiskLevelRuleField(index, 'minScore', event.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm hv-focus-ring"
                             />
                           </div>
@@ -1820,19 +1957,20 @@ export const BackOffice = ({
                               className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1"
                               htmlFor={maxInputId}
                             >
-                              Borne maximale
+                              Score maximal (optionnel)
                             </label>
                             <input
                               id={maxInputId}
                               type="number"
                               min="0"
+                              step="0.5"
                               placeholder="Illimitée"
                               value={maxValue}
-                              onChange={(event) => updateRiskLevelRuleField(index, 'maxRisks', event.target.value)}
+                              onChange={(event) => updateRiskLevelRuleField(index, 'maxScore', event.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm hv-focus-ring"
                             />
                             <p className="mt-1 text-xs text-gray-500">
-                              Laisser vide pour couvrir toutes les valeurs au-delà de la borne minimale.
+                              Laisser vide pour couvrir tous les scores au-delà du minimum.
                             </p>
                           </div>
                           <div>

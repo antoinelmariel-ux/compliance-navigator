@@ -72,6 +72,20 @@ const formatRequirementValue = (requirement) => {
   return '-';
 };
 
+const formatRiskScore = (score) => {
+  if (typeof score !== 'number' || Number.isNaN(score)) {
+    return null;
+  }
+
+  const sanitized = Math.max(0, score);
+  const hasDecimals = Math.abs(sanitized - Math.round(sanitized)) > 0.0001;
+
+  return formatNumber(sanitized, {
+    minimumFractionDigits: hasDecimals ? 1 : 0,
+    maximumFractionDigits: hasDecimals ? 2 : 0
+  });
+};
+
 const formatRiskTimingViolation = (violation) => {
   if (!violation) {
     return '';
@@ -496,6 +510,8 @@ export const SynthesisReport = ({
     Faible: 'text-green-600'
   };
 
+  const formattedRiskScore = formatRiskScore(analysis?.riskScore);
+
   const timelineByTeam = analysis?.timeline?.byTeam || {};
   const timelineDetails = analysis?.timeline?.details || [];
   const firstTimelineDetail = timelineDetails.find(detail => detail.diff);
@@ -830,6 +846,11 @@ export const SynthesisReport = ({
             {analysis?.complexityRule?.description && (
               <p className="mt-3 bg-white border border-gray-200 rounded-lg p-3 text-sm text-gray-600 hv-surface">
                 {analysis.complexityRule.description}
+              </p>
+            )}
+            {formattedRiskScore && (
+              <p className="mt-3 text-sm text-gray-500">
+                Score de risque total : {formattedRiskScore}
               </p>
             )}
           </section>
