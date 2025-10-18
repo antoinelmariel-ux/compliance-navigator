@@ -1299,7 +1299,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                     <p className="text-xs font-medium text-gray-600">
                                       Associer au non-respect d'un délai minimum
                                     </p>
-                                    <p className="text-[11px] text-gray-500">
+                                    <p className="text-[10px] text-gray-500 leading-snug">
                                       Utilise deux questions de type « date » pour vérifier le délai réel.
                                     </p>
                                   </div>
@@ -1544,7 +1544,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                             <p className="text-xs font-medium text-gray-600">
                               Associer au non-respect d'un délai minimum
                             </p>
-                            <p className="text-[11px] text-gray-500">
+                            <p className="text-[10px] text-gray-500 leading-snug">
                               Utilise deux questions de type « date » pour vérifier le délai réel.
                             </p>
                           </div>
