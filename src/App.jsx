@@ -9,6 +9,7 @@ import { MandatoryQuestionsSummary } from './components/MandatoryQuestionsSummar
 import { initialQuestions } from './data/questions.js';
 import { initialRules } from './data/rules.js';
 import { initialRiskLevelRules } from './data/riskLevelRules.js';
+import { initialRiskWeights } from './data/riskWeights.js';
 import { initialTeams } from './data/teams.js';
 import { loadPersistedState, persistState } from './utils/storage.js';
 import { shouldShowQuestion } from './utils/questions.js';
@@ -16,8 +17,9 @@ import { analyzeAnswers } from './utils/rules.js';
 import { extractProjectName } from './utils/projects.js';
 import { createDemoProject } from './data/demoProject.js';
 import { exportProjectToFile } from './utils/projectExport.js';
+import { normalizeRiskWeighting } from './utils/risk.js';
 
-const APP_VERSION = 'v1.0.62';
+const APP_VERSION = 'v1.0.63';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -353,6 +355,9 @@ const buildInitialProjectsState = () => {
   const fallbackRiskLevelRules = Array.isArray(savedState.riskLevelRules)
     ? savedState.riskLevelRules
     : initialRiskLevelRules;
+  const fallbackRiskWeights = savedState && typeof savedState.riskWeights === 'object'
+    ? normalizeRiskWeighting(savedState.riskWeights)
+    : initialRiskWeights;
   const fallbackQuestionsLength = resolveFallbackQuestionsLength(savedState, fallbackQuestions.length);
 
   const normalizedProjects = normalizeProjectsCollection(savedState.projects, fallbackQuestionsLength)
@@ -365,7 +370,8 @@ const buildInitialProjectsState = () => {
   return [createDemoProject({
     questions: fallbackQuestions,
     rules: fallbackRules,
-    riskLevelRules: fallbackRiskLevelRules
+    riskLevelRules: fallbackRiskLevelRules,
+    riskWeights: fallbackRiskWeights
   })];
 };
 
@@ -384,6 +390,7 @@ export const App = () => {
   const [questions, setQuestions] = useState(() => restoreShowcaseQuestions(initialQuestions));
   const [rules, setRules] = useState(initialRules);
   const [riskLevelRules, setRiskLevelRules] = useState(initialRiskLevelRules);
+  const [riskWeights, setRiskWeights] = useState(() => normalizeRiskWeighting(initialRiskWeights));
   const [teams, setTeams] = useState(initialTeams);
   const [isHydrated, setIsHydrated] = useState(false);
   const [isBackOfficeUnlocked, setIsBackOfficeUnlocked] = useState(false);
@@ -403,6 +410,9 @@ export const App = () => {
     const fallbackRiskLevelRules = Array.isArray(savedState.riskLevelRules)
       ? savedState.riskLevelRules
       : riskLevelRules;
+    const fallbackRiskWeights = savedState && typeof savedState.riskWeights === 'object'
+      ? normalizeRiskWeighting(savedState.riskWeights)
+      : riskWeights;
     const fallbackQuestionsLength = resolveFallbackQuestionsLength(savedState, fallbackQuestions.length);
 
     if (savedState.mode === 'admin') {
@@ -424,7 +434,8 @@ export const App = () => {
         setProjects([createDemoProject({
           questions: fallbackQuestions,
           rules: fallbackRules,
-          riskLevelRules: fallbackRiskLevelRules
+          riskLevelRules: fallbackRiskLevelRules,
+          riskWeights: fallbackRiskWeights
         })]);
       }
     } else if (Array.isArray(savedState.submittedProjects)) {
@@ -435,7 +446,8 @@ export const App = () => {
         setProjects([createDemoProject({
           questions: fallbackQuestions,
           rules: fallbackRules,
-          riskLevelRules: fallbackRiskLevelRules
+          riskLevelRules: fallbackRiskLevelRules,
+          riskWeights: fallbackRiskWeights
         })]);
       }
     }
@@ -445,6 +457,9 @@ export const App = () => {
     }
     if (Array.isArray(savedState.rules)) setRules(savedState.rules);
     if (Array.isArray(savedState.riskLevelRules)) setRiskLevelRules(savedState.riskLevelRules);
+    if (savedState && typeof savedState.riskWeights === 'object') {
+      setRiskWeights(normalizeRiskWeighting(savedState.riskWeights));
+    }
     if (Array.isArray(savedState.teams)) setTeams(savedState.teams);
 
     setIsHydrated(true);
@@ -478,6 +493,7 @@ export const App = () => {
         questions,
         rules,
         riskLevelRules,
+        riskWeights,
         teams,
         projects,
         activeProjectId
@@ -500,6 +516,7 @@ export const App = () => {
     questions,
     rules,
     riskLevelRules,
+    riskWeights,
     teams,
     projects,
     activeProjectId,
@@ -617,7 +634,7 @@ export const App = () => {
     });
 
     if (sanitizedResult) {
-      setAnalysis(analyzeAnswers(sanitizedResult, rules, riskLevelRules));
+      setAnalysis(analyzeAnswers(sanitizedResult, rules, riskLevelRules, riskWeights));
       setValidationError(null);
     }
   }, [
@@ -625,6 +642,7 @@ export const App = () => {
     isActiveProjectDraft,
     questions,
     riskLevelRules,
+    riskWeights,
     rules,
     shouldShowQuestion
   ]);
@@ -745,7 +763,7 @@ export const App = () => {
         const missingMandatory = relevantQuestions.filter(question => question.required && !isAnswerProvided(importedAnswers[question.id]));
         const firstMissingId = missingMandatory[0]?.id;
         const derivedAnalysis = entry.analysis
-          || (Object.keys(importedAnswers).length > 0 ? analyzeAnswers(importedAnswers, rules, riskLevelRules) : null);
+          || (Object.keys(importedAnswers).length > 0 ? analyzeAnswers(importedAnswers, rules, riskLevelRules, riskWeights) : null);
 
         const nextIndex = firstMissingId
           ? Math.max(relevantQuestions.findIndex(question => question.id === firstMissingId), 0)
@@ -797,6 +815,7 @@ export const App = () => {
     questions,
     rules,
     riskLevelRules,
+    riskWeights,
     shouldShowQuestion,
     analyzeAnswers
   ]);
@@ -819,7 +838,7 @@ export const App = () => {
       return;
     }
 
-    const result = analyzeAnswers(answers, rules, riskLevelRules);
+    const result = analyzeAnswers(answers, rules, riskLevelRules, riskWeights);
     setAnalysis(result);
     setValidationError(null);
     setScreen('synthesis');
@@ -829,6 +848,7 @@ export const App = () => {
     answers,
     currentQuestionIndex,
     riskLevelRules,
+    riskWeights,
     rules,
     unansweredMandatoryQuestions
   ]);
@@ -858,7 +878,7 @@ export const App = () => {
     const projectAnswers = project.answers || {};
     const derivedQuestions = questions.filter(q => shouldShowQuestion(q, projectAnswers));
     const derivedAnalysis = Object.keys(projectAnswers).length > 0
-      ? analyzeAnswers(projectAnswers, rules, riskLevelRules)
+      ? analyzeAnswers(projectAnswers, rules, riskLevelRules, riskWeights)
       : null;
     const answeredQuestionsCount = derivedQuestions.length > 0
       ? derivedQuestions.filter(question => isAnswerProvided(projectAnswers[question.id])).length
@@ -911,6 +931,7 @@ export const App = () => {
     projects,
     questions,
     riskLevelRules,
+    riskWeights,
     rules,
     shouldShowQuestion
   ]);
@@ -953,7 +974,7 @@ export const App = () => {
           : Object.keys(answersClone).length;
 
       const computedAnalysis = Object.keys(answersClone).length > 0
-        ? analyzeAnswers(answersClone, rules, riskLevelRules)
+        ? analyzeAnswers(answersClone, rules, riskLevelRules, riskWeights)
         : null;
 
       const baseLastIndex = typeof sourceProject.lastQuestionIndex === 'number'
@@ -983,7 +1004,7 @@ export const App = () => {
 
       return [duplicateEntry, ...prevProjects];
     });
-  }, [analyzeAnswers, questions, riskLevelRules, rules, shouldShowQuestion]);
+  }, [analyzeAnswers, questions, riskLevelRules, riskWeights, rules, shouldShowQuestion]);
 
   const openProjectShowcase = useCallback((context = {}) => {
     const {
@@ -1004,7 +1025,7 @@ export const App = () => {
       : questions.filter(question => shouldShowQuestion(question, answersSource));
     const computedAnalysis = providedAnalysis
       || (Object.keys(answersSource).length > 0
-        ? analyzeAnswers(answersSource, rules, riskLevelRules)
+        ? analyzeAnswers(answersSource, rules, riskLevelRules, riskWeights)
         : null);
     const relevantTeamsList = Array.isArray(providedRelevantTeams) && providedRelevantTeams.length > 0
       ? providedRelevantTeams
@@ -1067,6 +1088,7 @@ export const App = () => {
     projects,
     questions,
     riskLevelRules,
+    riskWeights,
     rules,
     screen,
     shouldShowQuestion,
@@ -1142,7 +1164,7 @@ export const App = () => {
         ? relevantQuestions.filter(question => isAnswerProvided(nextAnswers[question.id])).length
         : Object.keys(nextAnswers).length;
 
-      const updatedAnalysis = analyzeAnswers(nextAnswers, rules, riskLevelRules);
+      const updatedAnalysis = analyzeAnswers(nextAnswers, rules, riskLevelRules, riskWeights);
       const timelineDetails = updatedAnalysis?.timeline?.details || [];
       const relevantTeamsIds = Array.isArray(updatedAnalysis?.teams) ? updatedAnalysis.teams : [];
       const relevantTeams = teams.filter(team => relevantTeamsIds.includes(team.id));
@@ -1198,6 +1220,7 @@ export const App = () => {
     extractProjectName,
     questions,
     riskLevelRules,
+    riskWeights,
     rules,
     showcaseProjectContext,
     shouldShowQuestion,
@@ -1242,7 +1265,7 @@ export const App = () => {
     if (payload.analysis && typeof payload.analysis === 'object') {
       computedAnalysis = payload.analysis;
     } else if (Object.keys(sanitizedAnswers).length > 0) {
-      computedAnalysis = analyzeAnswers(sanitizedAnswers, rules, riskLevelRules);
+      computedAnalysis = analyzeAnswers(sanitizedAnswers, rules, riskLevelRules, riskWeights);
     }
 
     if (status === 'submitted' && !computedAnalysis) {
@@ -1297,6 +1320,7 @@ export const App = () => {
     extractProjectName,
     questions,
     riskLevelRules,
+    riskWeights,
     rules,
     shouldShowQuestion,
     upsertProject
@@ -1383,11 +1407,11 @@ export const App = () => {
       return;
     }
 
-    const result = analyzeAnswers(answers, rules, riskLevelRules);
+    const result = analyzeAnswers(answers, rules, riskLevelRules, riskWeights);
     setAnalysis(result);
     setValidationError(null);
     setScreen('synthesis');
-  }, [analyzeAnswers, answers, riskLevelRules, rules, unansweredMandatoryQuestions]);
+  }, [analyzeAnswers, answers, riskLevelRules, riskWeights, rules, unansweredMandatoryQuestions]);
 
   return (
     <div className="min-h-screen">
@@ -1562,6 +1586,8 @@ export const App = () => {
             setRules={setRules}
             riskLevelRules={riskLevelRules}
             setRiskLevelRules={setRiskLevelRules}
+            riskWeights={riskWeights}
+            setRiskWeights={setRiskWeights}
             teams={teams}
             setTeams={setTeams}
           />

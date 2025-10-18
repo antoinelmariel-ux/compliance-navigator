@@ -1,11 +1,12 @@
 import { normalizeAnswerForComparison } from './questions.js';
 import { normalizeConditionGroups } from './conditionGroups.js';
 import { sanitizeRuleCondition } from './ruleConditions.js';
+import { getRiskWeightKey, normalizeRiskWeighting } from './risk.js';
 
 const DEFAULT_COMPLEXITY_RULES = [
-  { id: 'default_low', label: 'Faible', minRisks: 0, maxRisks: 1 },
-  { id: 'default_medium', label: 'Modérée', minRisks: 2, maxRisks: 3 },
-  { id: 'default_high', label: 'Élevée', minRisks: 4, maxRisks: null }
+  { id: 'default_low', label: 'Faible', minRisks: 0, maxRisks: 1, minScore: 0, maxScore: 1 },
+  { id: 'default_medium', label: 'Modérée', minRisks: 2, maxRisks: 3, minScore: 2, maxScore: 3 },
+  { id: 'default_high', label: 'Élevée', minRisks: 4, maxRisks: null, minScore: 4, maxScore: null }
 ];
 
 const normalizeRiskLevelRules = (rules) => {
@@ -13,14 +14,31 @@ const normalizeRiskLevelRules = (rules) => {
     return DEFAULT_COMPLEXITY_RULES;
   }
 
+  const sanitizeScore = (input, fallback, { allowNull = false } = {}) => {
+    if (allowNull && (input === null || input === undefined || input === '')) {
+      return null;
+    }
+
+    const parsed = Number(input);
+
+    if (!Number.isFinite(parsed)) {
+      return fallback;
+    }
+
+    return parsed < 0 ? 0 : parsed;
+  };
+
   return rules
     .map((rule, index) => {
-      const minRisks = Number.isFinite(rule?.minRisks)
-        ? Math.max(0, Math.floor(rule.minRisks))
-        : 0;
-      const maxRisks = Number.isFinite(rule?.maxRisks)
-        ? Math.max(0, Math.floor(rule.maxRisks))
-        : null;
+      const minScore = sanitizeScore(
+        rule?.minScore !== undefined ? rule.minScore : rule?.minRisks,
+        0
+      );
+      const maxScore = sanitizeScore(
+        rule?.maxScore !== undefined ? rule.maxScore : rule?.maxRisks,
+        null,
+        { allowNull: true }
+      );
 
       return {
         id: rule?.id || `risk_level_${index + 1}`,
@@ -30,17 +48,19 @@ const normalizeRiskLevelRules = (rules) => {
         description: typeof rule?.description === 'string'
           ? rule.description.trim()
           : '',
-        minRisks,
-        maxRisks
+        minScore,
+        maxScore,
+        minRisks: minScore,
+        maxRisks: maxScore
       };
     })
     .sort((a, b) => {
-      if (a.minRisks !== b.minRisks) {
-        return a.minRisks - b.minRisks;
+      if (a.minScore !== b.minScore) {
+        return a.minScore - b.minScore;
       }
 
-      const aMax = a.maxRisks === null ? Number.POSITIVE_INFINITY : a.maxRisks;
-      const bMax = b.maxRisks === null ? Number.POSITIVE_INFINITY : b.maxRisks;
+      const aMax = a.maxScore === null ? Number.POSITIVE_INFINITY : a.maxScore;
+      const bMax = b.maxScore === null ? Number.POSITIVE_INFINITY : b.maxScore;
 
       if (aMax !== bMax) {
         return aMax - bMax;
@@ -50,24 +70,24 @@ const normalizeRiskLevelRules = (rules) => {
     });
 };
 
-const resolveComplexityLevel = (riskCount, riskLevelRules) => {
+const resolveComplexityLevel = (riskScore, riskLevelRules) => {
   const normalizedRules = normalizeRiskLevelRules(riskLevelRules);
   const firstRule = normalizedRules[0];
 
   for (let index = 0; index < normalizedRules.length; index += 1) {
     const rule = normalizedRules[index];
-    const matchesMinimum = riskCount >= rule.minRisks;
+    const matchesMinimum = riskScore >= rule.minScore;
     const matchesMaximum =
-      rule.maxRisks === null || rule.maxRisks === undefined
+      rule.maxScore === null || rule.maxScore === undefined
         ? true
-        : riskCount <= rule.maxRisks;
+        : riskScore <= rule.maxScore;
 
     if (matchesMinimum && matchesMaximum) {
       return { label: rule.label, rule };
     }
   }
 
-  const fallback = riskCount < (firstRule?.minRisks ?? 0)
+  const fallback = riskScore < (firstRule?.minScore ?? 0)
     ? firstRule
     : normalizedRules[normalizedRules.length - 1];
   return { label: fallback?.label || 'Modérée', rule: fallback || null };
@@ -387,7 +407,8 @@ export const evaluateRule = (rule, answers) => {
   return { triggered, timingContexts };
 };
 
-export const analyzeAnswers = (answers, rules, riskLevelRules) => {
+export const analyzeAnswers = (answers, rules, riskLevelRules, riskWeighting) => {
+  const normalizedRiskWeighting = normalizeRiskWeighting(riskWeighting);
   const evaluations = rules.map(rule => ({ rule, evaluation: evaluateRule(rule, answers) }));
 
   const teamsSet = new Set();
@@ -425,11 +446,15 @@ export const analyzeAnswers = (answers, rules, riskLevelRules) => {
             timingConstraint
           };
 
+          const weightKey = getRiskWeightKey(baseRisk.level);
+          const weight = normalizedRiskWeighting[weightKey] ?? normalizedRiskWeighting.low;
+          const weightedRisk = { ...baseRisk, weight };
+
           if (!timingConstraint.enabled) {
             if (preferredTeam) {
               teamsSet.add(preferredTeam);
             }
-            return baseRisk;
+            return weightedRisk;
           }
 
           const diff = computeTimingDiff(timingConstraint, answers);
@@ -456,7 +481,7 @@ export const analyzeAnswers = (answers, rules, riskLevelRules) => {
           }
 
           return {
-            ...baseRisk,
+            ...weightedRisk,
             timingViolation: {
               startQuestion: timingConstraint.startQuestion,
               endQuestion: timingConstraint.endQuestion,
@@ -533,13 +558,19 @@ export const analyzeAnswers = (answers, rules, riskLevelRules) => {
     });
   });
 
-  const { label: complexity, rule: complexityRule } = resolveComplexityLevel(allRisks.length, riskLevelRules);
+  const riskScore = allRisks.reduce((total, risk) => {
+    const contribution = Number.isFinite(risk?.weight) ? risk.weight : 0;
+    return total + contribution;
+  }, 0);
+
+  const { label: complexity, rule: complexityRule } = resolveComplexityLevel(riskScore, riskLevelRules);
 
   return {
     triggeredRules: evaluations.filter(({ evaluation }) => evaluation.triggered).map(({ rule }) => rule),
     teams: Array.from(teamsSet),
     questions: allQuestions,
     risks: allRisks,
+    riskScore,
     timeline: {
       byTeam: timelineByTeam,
       details: timingDetails
