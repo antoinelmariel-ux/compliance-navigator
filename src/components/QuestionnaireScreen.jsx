@@ -147,6 +147,16 @@ export const QuestionnaireScreen = ({
 
       const normalizedPreviousDrafts = normalizeMilestoneDrafts(previousDrafts);
 
+      if (
+        normalizedPreviousDrafts.length > normalizedAnswer.length &&
+        areMilestoneDraftsEqual(
+          sanitizeMilestonesForAnswer(normalizedPreviousDrafts),
+          normalizedAnswer
+        )
+      ) {
+        return previousDrafts;
+      }
+
       if (areMilestoneDraftsEqual(normalizedPreviousDrafts, normalizedAnswer)) {
         return previousDrafts;
       }
