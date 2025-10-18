@@ -4,49 +4,42 @@ import { initialRiskLevelRules } from './riskLevelRules.js';
 import { analyzeAnswers } from '../utils/rules.js';
 
 const demoProjectAnswers = {
-  projectName: 'Campagne Aura',
-  projectSlogan: 'Synchroniser chaque prise de parole autour d’Aura',
-  targetAudience: [
-    'Grand public / clients finaux',
-    'Décideurs internes / sponsors',
-    'Investisseurs',
-    'Partenaires ou prescripteurs'
-  ],
+  projectName: 'Plasma360',
+  projectSlogan: 'Du don à la vie : découvrez comment chaque goutte de plasma devient un traitement vital',
+  targetAudience: ['Grand public', 'Patients', 'Professionnels de santé'],
   problemPainPoints:
-    '• Les contenus de lancement varient selon les pays et génèrent des allers-retours compliance.\n• Les données d’impact sont dispersées et ralentissent les validations investisseurs.\n• Les partenaires retail manquent d’assets co-brandés prêts à diffuser.',
+    'Les professionnels de santé manquent souvent de supports pédagogiques simples et fiables pour expliquer à leurs patients comment les médicaments dérivés du plasma sont fabriqués.\nLe grand public a une perception floue du lien entre le don de plasma et la production de traitements : le processus industriel leur semble abstrait.',
   solutionDescription:
-    'Aura consolide une narration immersive avec démonstrations interactives, argumentaires validés et assets localisables en quelques clics.',
+    'Plasma360 est une plateforme web immersive et éducative qui raconte le parcours du plasma, depuis le don jusqu’au médicament final.\nLe site propose :\n- Une expérience interactive et visuelle retraçant étape par étape le processus de fractionnement.\n- Deux parcours de navigation : un mode grand public, simple et narratif, et un mode professionnel, plus technique et structuré.\n- Des vidéos immersives tournées sur les sites du LFB.\n- Une bibliothèque de contenus avec infographies, fiches explicatives et ressources téléchargeables.',
   solutionBenefits:
-    '• 40 % de réduction du temps de validation compliance grâce à un kit unique par audience.\n• +28 % d’intention d’achat mesurée lors des tests de storytelling.\n• Activation partenaires accélérée avec 20 assets prêts à l’emploi dès J+30.',
+    'Une meilleure compréhension du rôle du LFB et de la valeur du plasma comme matière première vitale.\nUne valorisation du savoir-faire industriel français, avec des contenus authentiques et validés.\nUn outil de communication réutilisable pour la formation, la sensibilisation et les relations institutionnelles.\nUn renforcement de la confiance entre le LFB, les professionnels de santé et le grand public.',
   solutionComparison:
-    'Contrairement aux précédentes campagnes fragmentées, Aura s’appuie sur des scripts unifiés et une bibliothèque certifiée compliance accessible par chaque marché.',
+    'Plasma360 se distingue par son format interactif et immersif, là où la plupart des ressources actuelles se limitent à des documents statiques ou des vidéos isolées.\nLe site proposera une double lecture adaptée à chaque public, des contenus validés scientifiquement et un ancrage fort sur le savoir-faire industriel français.',
   innovationProcess:
-    '• Aligner 100 % des messages clés sur un récit validé par la compliance avant la phase média.\n• Industrialiser la production d’assets localisés pour 8 pays en moins de 6 semaines.\n• Outiller les partenaires avec un kit d’activation prêt à diffuser dès le pré-lancement.',
+    'Renforcer la compréhension et la confiance envers les médicaments dérivés du plasma.\nValoriser la mission sociétale et le rôle industriel du LFB.\nAccroître la notoriété du LFB auprès des professionnels et du grand public.\nCréer un actif digital durable, réutilisable pour la formation et la communication.',
   visionStatement:
-    '• Taux de conformité validé dès la première revue.\n• Score d’adhésion partenaires supérieur à 4,5/5.\n• +30 % d’engagement sur les contenus reveal à J+7.',
-  campaignKickoffDate: '2024-01-22',
-  launchDate: '2024-04-22',
+    'Nombre de visiteurs uniques mensuels.\nTemps moyen passé sur les pages.\nTaux de complétion du parcours interactif.\nNombre de téléchargements de ressources et de quiz complétés.\nMentions ou citations du site sur les réseaux sociaux et dans la presse spécialisée.',
+  campaignKickoffDate: '2025-11-03',
+  launchDate: '2025-12-20',
   roadmapMilestones: [
     {
-      date: '2024-02-05',
-      description: 'Atelier de cadrage narratif et validation des claims compliance.'
-    },
-    {
-      date: '2024-03-08',
-      description: 'Production localisée des assets et revue investisseurs avec l’équipe Growth.'
-    },
-    {
-      date: '2024-04-05',
-      description: 'Pré-lancement partenaires : kit co-brandé et plan média finalisé.'
+      date: '2025-10-01',
+      description: 'Validation du concept et du budget'
     }
   ],
-  teamLead: 'Clara Dupont — Head of Narrative Design & Compliance',
+  teamLead: 'Bertrand Darieux',
   teamLeadTeam: 'Marketing',
   teamCoreMembers:
-    'Sofia Bernard — Storytelling & Brand lead\nHugo Martin — Growth & Impact strategist\nNoémie Laurent — Partnerships manager\nYanis Delcourt — Product Experience producer',
+    'Julien Morel - Directeur du site de production de Lille\nClaire Martin - Responsable Médicale\nSophie Leclerc - Responsable Communication Digitale\nStudio Nova - Agence de communication scientifique et design interactif',
+  q9: ['Support d\'information / sensibilisation'],
+  q11: ['Site internet', 'Communication sur les réseaux sociaux'],
+  q3: ['Oui - Données personnelles standard'],
+  q13: 'Oui',
+  q10: ['Prestataire de service', 'Professionnel de santé (via contrat à mettre en place)'],
+  q12: '30'
 };
 
-const DEMO_TIMESTAMP = '2024-05-02T10:00:00.000Z';
+const DEMO_TIMESTAMP = '2025-10-18T09:58:20.033Z';
 
 export const createDemoProject = ({
   questions = initialQuestions,
