@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from '../react.js';
-import { Settings, Plus, Edit, Trash2, Eye, Info, GripVertical, Download, ArrowUp, ArrowDown } from './icons.js';
+import { Settings, Plus, Edit, Trash2, Eye, Info, GripVertical, Download, ArrowUp, ArrowDown, Copy } from './icons.js';
 import { QuestionEditor } from './QuestionEditor.jsx';
 import { RuleEditor } from './RuleEditor.jsx';
 import { renderTextWithLinks } from '../utils/linkify.js';
@@ -333,6 +333,40 @@ export const BackOffice = ({
     return candidate;
   };
 
+  const cloneData = (value) => {
+    if (Array.isArray(value)) {
+      return value.map((item) => cloneData(item));
+    }
+    if (value && typeof value === 'object') {
+      const cloned = {};
+      Object.keys(value).forEach((key) => {
+        cloned[key] = cloneData(value[key]);
+      });
+      return cloned;
+    }
+    return value;
+  };
+
+  const getDuplicateId = (items, baseId, fallbackPrefix) => {
+    const existingIds = new Set(items.map((item) => item.id));
+    const rawBase = typeof baseId === 'string' ? baseId.trim() : '';
+    const sanitizedBase = rawBase !== '' ? rawBase.replace(/\s+/g, '_') : '';
+
+    if (sanitizedBase) {
+      let candidate = `${sanitizedBase}_copy`;
+      let counter = 2;
+
+      while (existingIds.has(candidate)) {
+        candidate = `${sanitizedBase}_copy${counter}`;
+        counter += 1;
+      }
+
+      return candidate;
+    }
+
+    return getNextId(items, fallbackPrefix);
+  };
+
   const addRiskLevelRule = () => {
     if (typeof setRiskLevelRules !== 'function') {
       return;
@@ -597,6 +631,31 @@ export const BackOffice = ({
     setQuestions(questions.filter((question) => question.id !== id));
   };
 
+  const duplicateQuestion = (id) => {
+    const originalIndex = questions.findIndex((question) => question.id === id);
+    if (originalIndex < 0) {
+      return;
+    }
+
+    const originalQuestion = questions[originalIndex];
+    const duplicateId = getDuplicateId(questions, originalQuestion?.id, 'q');
+    const copiedQuestion = cloneData(originalQuestion || {});
+
+    copiedQuestion.id = duplicateId;
+    copiedQuestion.question = typeof originalQuestion?.question === 'string' && originalQuestion.question.trim() !== ''
+      ? `${originalQuestion.question} (copie)`
+      : `Copie de ${duplicateId}`;
+
+    const updatedQuestions = questions.slice();
+    updatedQuestions.splice(originalIndex + 1, 0, copiedQuestion);
+
+    setQuestions(updatedQuestions);
+    setEditingQuestion(copiedQuestion);
+
+    const sourceLabel = originalQuestion?.id || 'question d’origine';
+    setReorderAnnouncement(`La question ${duplicateId} a été créée à partir de ${sourceLabel} et placée en position ${originalIndex + 2} sur ${updatedQuestions.length}.`);
+  };
+
   const saveQuestion = (updatedQuestion) => {
     const index = questions.findIndex((question) => question.id === updatedQuestion.id);
 
@@ -632,6 +691,28 @@ export const BackOffice = ({
     if (editingRule && editingRule.id === id) {
       setEditingRule(null);
     }
+  };
+
+  const duplicateRule = (id) => {
+    const originalIndex = rules.findIndex((rule) => rule.id === id);
+    if (originalIndex < 0) {
+      return;
+    }
+
+    const originalRule = rules[originalIndex];
+    const duplicateId = getDuplicateId(rules, originalRule?.id, 'rule');
+    const copiedRule = cloneData(originalRule || {});
+
+    copiedRule.id = duplicateId;
+    copiedRule.name = typeof originalRule?.name === 'string' && originalRule.name.trim() !== ''
+      ? `${originalRule.name} (copie)`
+      : `Copie de ${duplicateId}`;
+
+    const updatedRules = rules.slice();
+    updatedRules.splice(originalIndex + 1, 0, copiedRule);
+
+    setRules(updatedRules);
+    setEditingRule(copiedRule);
   };
 
   const saveRule = (updatedRule) => {
@@ -815,6 +896,15 @@ export const BackOffice = ({
                         </button>
                         <button
                           type="button"
+                          onClick={() => duplicateQuestion(question.id)}
+                          className="p-2 text-indigo-600 hover:bg-indigo-50 rounded hv-button"
+                          aria-label={`Dupliquer la question ${question.id}`}
+                          title={`Dupliquer la question ${question.id}`}
+                        >
+                          <Copy className="w-5 h-5" />
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => setEditingQuestion(question)}
                           className="p-2 text-indigo-600 hover:bg-indigo-50 rounded hv-button"
                           aria-label={`Modifier la question ${question.id}`}
@@ -979,6 +1069,15 @@ export const BackOffice = ({
                           aria-label={`Afficher la règle ${rule.name}`}
                         >
                           <Eye className="w-5 h-5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => duplicateRule(rule.id)}
+                          className="p-2 text-indigo-600 hover:bg-indigo-50 rounded hv-button"
+                          aria-label={`Dupliquer la règle ${rule.name}`}
+                          title={`Dupliquer la règle ${rule.name}`}
+                        >
+                          <Copy className="w-5 h-5" />
                         </button>
                         <button
                           type="button"
