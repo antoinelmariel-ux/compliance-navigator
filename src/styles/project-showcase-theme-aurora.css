@@ -689,6 +689,21 @@
   color: rgba(15, 23, 42, 0.85);
 }
 
+[data-showcase-theme='aurora'] .aurora-difference__text-section + .aurora-difference__text-section {
+  margin-top: 1.75rem;
+}
+
+[data-showcase-theme='aurora'] .aurora-difference__text-section .aurora-eyebrow {
+  display: block;
+  margin-bottom: 0.75rem;
+  color: rgba(79, 70, 229, 0.75);
+}
+
+[data-showcase-theme='aurora'] .aurora-difference__text-content {
+  white-space: pre-wrap;
+  color: rgba(15, 23, 42, 0.85);
+}
+
 [data-showcase-theme='aurora'] .aurora-difference__timeline {
   display: grid;
   gap: 1rem;
