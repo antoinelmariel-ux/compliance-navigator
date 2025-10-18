@@ -43,7 +43,7 @@ export const initialRules = [
         "description": "Communication non conforme aux bonnes pratiques promotionnelles",
         "level": "Moyen",
         "mitigation": "Validation BPP avant tout déploiement",
-        "priority": "Critique",
+        "priority": "A particulièrement anticiper",
         "teamId": "bpp"
       }
     ],
@@ -116,7 +116,7 @@ export const initialRules = [
         "description": "Déclaration hors délai",
         "level": "Élevé",
         "mitigation": "",
-        "priority": "Critique",
+        "priority": "A particulièrement anticiper",
         "teamId": "privacy"
       }
     ]

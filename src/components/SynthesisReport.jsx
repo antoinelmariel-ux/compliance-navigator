@@ -479,9 +479,9 @@ export const SynthesisReport = ({
     : '';
 
   const priorityColors = {
-    Critique: 'bg-red-100 text-red-800 border-red-300',
-    Important: 'bg-orange-100 text-orange-800 border-orange-300',
-    Recommandé: 'bg-blue-100 text-blue-800 border-blue-300'
+    'A particulièrement anticiper': 'bg-red-100 text-red-800 border-red-300',
+    'A anticiper': 'bg-orange-100 text-orange-800 border-orange-300',
+    'A réaliser': 'bg-blue-100 text-blue-800 border-blue-300'
   };
 
   const riskColors = {

@@ -222,9 +222,9 @@ const getTeamLabel = (teamId, teams) => {
 };
 
 const PRIORITY_WEIGHTS = {
-  Critique: 3,
-  Important: 2,
-  Recommandé: 1
+  'A particulièrement anticiper': 3,
+  'A anticiper': 2,
+  'A réaliser': 1
 };
 
 const getHighestRiskPriority = (risks = []) => {
@@ -253,11 +253,11 @@ const getHighestRiskPriority = (risks = []) => {
 
 const getPriorityBadgeClasses = (priority) => {
   switch (priority) {
-    case 'Critique':
+    case 'A particulièrement anticiper':
       return 'bg-red-100 text-red-800 border border-red-200';
-    case 'Important':
+    case 'A anticiper':
       return 'bg-orange-100 text-orange-800 border border-orange-200';
-    case 'Recommandé':
+    case 'A réaliser':
       return 'bg-blue-100 text-blue-800 border border-blue-200';
     default:
       return 'bg-gray-100 text-gray-700 border border-gray-200';
@@ -1648,7 +1648,7 @@ export const BackOffice = ({
                           <ul className="space-y-1">
                             {risks.map((risk, index) => {
                               const riskDescription = risk && risk.description ? risk.description : 'Risque non renseigné';
-                              const riskPriority = risk?.priority || 'Recommandé';
+                              const riskPriority = risk?.priority || 'A réaliser';
                               const riskTeamLabel = risk?.teamId ? getTeamLabel(risk.teamId, teams) : 'Équipe non renseignée';
 
                               return (
