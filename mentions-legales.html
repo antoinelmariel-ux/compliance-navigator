@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mentions légales · Compliance Advisor</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+    />
+    <link rel="stylesheet" href="./src/styles/project-showcase.css" />
+    <link rel="stylesheet" href="./src/styles/project-showcase-theme-aurora.css" />
+  </head>
+  <body class="bg-gray-100 text-gray-900">
+    <header class="bg-white border-b border-gray-200">
+      <div class="max-w-5xl mx-auto px-4 py-6">
+        <p class="text-sm text-indigo-600 font-semibold uppercase tracking-wide">
+          Compliance Advisor
+        </p>
+        <h1 class="text-3xl font-bold text-gray-900 mt-1">Mentions légales</h1>
+        <p class="text-sm text-gray-500 mt-2">Version v1.0.45</p>
+      </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 py-10 space-y-12">
+      <section>
+        <h2 class="text-xl font-semibold text-gray-900">Éditeur du site</h2>
+        <p class="mt-3 text-gray-700 leading-relaxed">
+          Le présent site est édité par Compliance Advisor, solution dédiée à l'accompagnement
+          des organisations dans leur démarche de conformité réglementaire et opérationnelle.
+        </p>
+        <div class="mt-4 text-gray-700 leading-relaxed space-y-1">
+          <p><span class="font-semibold">Responsable de la publication :</span> Jeanne Dupont</p>
+          <p><span class="font-semibold">Adresse :</span> 42 avenue de la Réglementation, 75000 Paris, France</p>
+          <p><span class="font-semibold">Courriel :</span> contact@compliance-advisor.fr</p>
+          <p><span class="font-semibold">Téléphone :</span> +33 (0)1 23 45 67 89</p>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="text-xl font-semibold text-gray-900">Hébergement</h2>
+        <div class="mt-3 text-gray-700 leading-relaxed space-y-1">
+          <p><span class="font-semibold">Hébergeur :</span> Hébergement &amp; Cloud Services</p>
+          <p><span class="font-semibold">Adresse :</span> 128 boulevard du Numérique, 69000 Lyon, France</p>
+          <p><span class="font-semibold">Téléphone :</span> +33 (0)4 56 78 90 12</p>
+        </div>
+      </section>
+
+      <section>
+        <h2 class="text-xl font-semibold text-gray-900">Propriété intellectuelle</h2>
+        <p class="mt-3 text-gray-700 leading-relaxed">
+          L'ensemble du contenu présent sur ce site, incluant de façon non limitative les textes,
+          images, graphismes, logos et icônes, est la propriété exclusive de Compliance Advisor ou
+          fait l'objet d'une autorisation d'utilisation. Toute reproduction, représentation,
+          modification, publication ou adaptation, totale ou partielle, de ces éléments est
+          strictement interdite, sauf autorisation écrite préalable de Compliance Advisor.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-xl font-semibold text-gray-900">Responsabilité</h2>
+        <p class="mt-3 text-gray-700 leading-relaxed">
+          Compliance Advisor met tout en œuvre pour assurer l'exactitude et la mise à jour des
+          informations diffusées sur le site. Néanmoins, la société ne peut garantir l'exactitude,
+          la précision ou l'exhaustivité des informations mises à disposition et décline toute
+          responsabilité en cas d'erreur ou d'omission. L'utilisateur reconnaît utiliser ces
+          informations sous sa responsabilité exclusive.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-xl font-semibold text-gray-900">Protection des données personnelles</h2>
+        <p class="mt-3 text-gray-700 leading-relaxed">
+          Les données collectées via le site sont traitées dans le respect de la réglementation
+          applicable et notamment du Règlement Général sur la Protection des Données (RGPD). Pour
+          toute question relative à la protection des données ou pour exercer vos droits,
+          contactez-nous à l'adresse <a href="mailto:privacy@compliance-advisor.fr" class="text-indigo-600 hover:text-indigo-500">privacy@compliance-advisor.fr</a>.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-xl font-semibold text-gray-900">Cookies</h2>
+        <p class="mt-3 text-gray-700 leading-relaxed">
+          Ce site peut utiliser des cookies ou traceurs destinés à améliorer l'expérience
+          utilisateur, mesurer l'audience ou proposer des contenus adaptés. Vous pouvez configurer
+          votre navigateur pour refuser les cookies. Certaines fonctionnalités du site pourraient
+          toutefois être limitées en cas de désactivation.
+        </p>
+      </section>
+    </main>
+
+    <footer class="bg-white border-t border-gray-200 mt-16" aria-label="Pied de page">
+      <div class="max-w-5xl mx-auto px-4 py-6 text-sm text-gray-500 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <p>&copy; <span id="legal-current-year"></span> Compliance Advisor. Tous droits réservés.</p>
+        <p class="text-gray-400">Version v1.0.45</p>
+        <a href="/" class="text-indigo-600 hover:text-indigo-500">Retourner à l'application</a>
+      </div>
+    </footer>
+    <script>
+      document.getElementById('legal-current-year').textContent = new Date().getFullYear();
+    </script>
+  </body>
+</html>

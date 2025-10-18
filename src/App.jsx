@@ -1476,7 +1476,15 @@ export const App = () => {
 
       <footer className="bg-white border-t border-gray-200 mt-10" aria-label="Pied de page">
         <p className="text-xs text-gray-400 text-center py-4">
-          Compliance Advisor · Version {APP_VERSION}
+          Compliance Advisor · Version {APP_VERSION} ·{' '}
+          <a
+            href="/mentions-legales.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-gray-500"
+          >
+            Mentions légales
+          </a>
         </p>
       </footer>
     </div>
