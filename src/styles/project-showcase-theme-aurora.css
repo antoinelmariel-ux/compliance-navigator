@@ -881,6 +881,13 @@
   line-height: 1.7;
 }
 
+[data-showcase-theme='aurora'] .aurora-risk-halo__note {
+  margin-top: 0.85rem;
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: rgba(255, 228, 196, 0.9);
+}
+
 [data-showcase-theme='aurora'] .aurora-risk-halo__priority {
   margin-top: 1.25rem;
   font-size: 0.75rem;

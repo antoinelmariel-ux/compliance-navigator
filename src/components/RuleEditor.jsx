@@ -18,6 +18,7 @@ import {
   createEmptyTimingCondition
 } from '../utils/ruleConditions.js';
 import { ensureOperatorForType, getOperatorOptionsForType } from '../utils/operatorOptions.js';
+import { sanitizeRiskTimingConstraint } from '../utils/rules.js';
 
 const RISK_PRIORITY_OPTIONS = ['Critique', 'Important', 'Recommandé'];
 
@@ -46,7 +47,10 @@ const normalizeRiskEntry = (risk, availableTeams = []) => {
     normalized.teamId = fallbackTeam || '';
   }
 
-  return normalized;
+  return {
+    ...normalized,
+    timingConstraint: sanitizeRiskTimingConstraint(normalized?.timingConstraint)
+  };
 };
 
 const normalizeRiskList = (risks, availableTeams = []) => {
@@ -425,7 +429,8 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
       level: 'Moyen',
       mitigation: '',
       priority: 'Recommandé',
-      teamId: fallbackTeam
+      teamId: fallbackTeam,
+      timingConstraint: sanitizeRiskTimingConstraint()
     }, teamsForRisk);
 
     const existingRisks = Array.isArray(editedRule.risks) ? editedRule.risks : [];
@@ -447,6 +452,21 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
     setEditedRule({
       ...editedRule,
       risks: editedRule.risks.filter((_, i) => i !== index)
+    });
+  };
+
+  const updateRiskTimingConstraint = (index, updates) => {
+    setEditedRule(prev => {
+      const currentRisks = Array.isArray(prev.risks) ? [...prev.risks] : [];
+      const baseRisk = normalizeRiskEntry(currentRisks[index] || {}, prev.teams);
+      const mergedConstraint = {
+        ...baseRisk.timingConstraint,
+        ...(typeof updates === 'function' ? updates(baseRisk.timingConstraint) : updates)
+      };
+      baseRisk.timingConstraint = sanitizeRiskTimingConstraint(mergedConstraint);
+      currentRisks[index] = baseRisk;
+      const normalizedRisks = normalizeRiskList(currentRisks, prev.teams);
+      return { ...prev, risks: normalizedRisks };
     });
   };
 
@@ -1233,56 +1253,62 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
               </div>
             ) : (
               <div className="space-y-3">
-                {editedRule.risks.map((risk, idx) => (
-                  <div key={idx} className="bg-gradient-to-r from-red-50 to-orange-50 rounded-lg p-4 border border-red-200">
-                    <div className="flex items-center mb-3">
-                      <span className="text-sm font-semibold text-gray-700">Risque {idx + 1}</span>
-                      <button
-                        onClick={() => deleteRisk(idx)}
-                        className="p-1 text-red-600 hover:bg-red-50 rounded transition-all ml-auto"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                {editedRule.risks.map((risk, idx) => {
+                  const timingConstraint = sanitizeRiskTimingConstraint(risk.timingConstraint);
+                  const hasDateQuestions = dateQuestions.length >= 2;
+                  const toggleDisabled = !hasDateQuestions && !timingConstraint.enabled;
+                  const isToggleChecked = Boolean(timingConstraint.enabled);
 
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Description du risque</label>
-                        <input
-                          type="text"
-                          value={risk.description}
-                          onChange={(e) => updateRisk(idx, 'description', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
-                          placeholder="Ex: Non-conformité RGPD sur les données de santé"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Équipe référente</label>
-                        <select
-                          value={risk.teamId}
-                          onChange={(e) => updateRisk(idx, 'teamId', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
-                          disabled={editedRule.teams.length === 0}
+                  return (
+                    <div key={idx} className="bg-gradient-to-r from-red-50 to-orange-50 rounded-lg p-4 border border-red-200">
+                      <div className="flex items-center mb-3">
+                        <span className="text-sm font-semibold text-gray-700">Risque {idx + 1}</span>
+                        <button
+                          onClick={() => deleteRisk(idx)}
+                          className="p-1 text-red-600 hover:bg-red-50 rounded transition-all ml-auto"
                         >
-                          {editedRule.teams.length === 0 ? (
-                            <option value="">Aucune équipe disponible</option>
-                          ) : (
-                            <>
-                              {editedRule.teams.map(teamId => (
-                                <option key={teamId} value={teamId}>
-                                  {teams.find(team => team.id === teamId)?.name || teamId}
-                                </option>
-                              ))}
-                            </>
-                          )}
-                        </select>
-                        {editedRule.teams.length === 0 && (
-                          <p className="text-xs text-gray-500 mt-1 italic">
-                            Sélectionnez une équipe dans la section précédente pour associer ce risque.
-                          </p>
-                        )}
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
+
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Description du risque</label>
+                          <input
+                            type="text"
+                            value={risk.description}
+                            onChange={(e) => updateRisk(idx, 'description', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                            placeholder="Ex: Non-conformité RGPD sur les données de santé"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">Équipe référente</label>
+                          <select
+                            value={risk.teamId}
+                            onChange={(e) => updateRisk(idx, 'teamId', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                            disabled={editedRule.teams.length === 0}
+                          >
+                            {editedRule.teams.length === 0 ? (
+                              <option value="">Aucune équipe disponible</option>
+                            ) : (
+                              <>
+                                {editedRule.teams.map(teamId => (
+                                  <option key={teamId} value={teamId}>
+                                    {teams.find(team => team.id === teamId)?.name || teamId}
+                                  </option>
+                                ))}
+                              </>
+                            )}
+                          </select>
+                          {editedRule.teams.length === 0 && (
+                            <p className="text-xs text-gray-500 mt-1 italic">
+                              Sélectionnez une équipe dans la section précédente pour associer ce risque.
+                            </p>
+                          )}
+                        </div>
 
                       <div>
                         <label className="block text-xs font-medium text-gray-600 mb-1">Niveau de criticité</label>
@@ -1322,9 +1348,111 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                           placeholder="Ex: Réaliser une DPIA et héberger sur un serveur HDS"
                         />
                       </div>
+
+                      <div className="border-t border-red-100 pt-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-xs font-medium text-gray-600">
+                              Associer au non-respect d'un délai minimum
+                            </p>
+                            <p className="text-[11px] text-gray-500">
+                              Utilise deux questions de type « date » pour vérifier le délai réel.
+                            </p>
+                          </div>
+                          <label className={`inline-flex items-center gap-2 text-xs font-medium ${toggleDisabled ? 'text-gray-400' : 'text-gray-700'}`}>
+                            <input
+                              type="checkbox"
+                              className="rounded border-gray-300 text-red-500 focus:ring-red-400"
+                              checked={isToggleChecked}
+                              onChange={(event) => updateRiskTimingConstraint(idx, { enabled: event.target.checked })}
+                              disabled={toggleDisabled}
+                            />
+                            <span>{isToggleChecked ? 'Activé' : 'Désactivé'}</span>
+                          </label>
+                        </div>
+
+                        {!hasDateQuestions ? (
+                          <p className="mt-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                            Ajoutez au moins deux questions de type date pour pouvoir contrôler un délai minimum.
+                          </p>
+                        ) : isToggleChecked ? (
+                          <div className="mt-3 space-y-3">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">Date de départ</label>
+                                <select
+                                  value={timingConstraint.startQuestion}
+                                  onChange={(e) => updateRiskTimingConstraint(idx, { startQuestion: e.target.value })}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                                >
+                                  <option value="">Sélectionner...</option>
+                                  {dateQuestions.map(question => (
+                                    <option key={question.id} value={question.id}>
+                                      {question.id} – {question.question || 'Question sans intitulé'}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">Date de fin</label>
+                                <select
+                                  value={timingConstraint.endQuestion}
+                                  onChange={(e) => updateRiskTimingConstraint(idx, { endQuestion: e.target.value })}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                                >
+                                  <option value="">Sélectionner...</option>
+                                  {dateQuestions.map(question => (
+                                    <option key={question.id} value={question.id}>
+                                      {question.id} – {question.question || 'Question sans intitulé'}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">Minimum (semaines)</label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.1"
+                                  value={timingConstraint.minimumWeeks ?? ''}
+                                  onChange={(e) => {
+                                    const rawValue = e.target.value;
+                                    updateRiskTimingConstraint(idx, { minimumWeeks: rawValue === '' ? undefined : Number(rawValue) });
+                                  }}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                                  placeholder="Ex: 4"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">Minimum (jours)</label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="1"
+                                  value={timingConstraint.minimumDays ?? ''}
+                                  onChange={(e) => {
+                                    const rawValue = e.target.value;
+                                    updateRiskTimingConstraint(idx, { minimumDays: rawValue === '' ? undefined : Number(rawValue) });
+                                  }}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                                  placeholder="Ex: 90"
+                                />
+                              </div>
+                            </div>
+
+                            <p className="text-[11px] text-gray-500">
+                              Le risque sera signalé si le délai réel est inférieur à l'un des minimums renseignés.
+                            </p>
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

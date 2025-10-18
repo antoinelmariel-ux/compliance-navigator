@@ -72,6 +72,40 @@ const formatRequirementValue = (requirement) => {
   return '-';
 };
 
+const formatRiskTimingViolation = (violation) => {
+  if (!violation) {
+    return '';
+  }
+
+  const actualParts = [];
+  if (typeof violation.actualWeeks === 'number') {
+    actualParts.push(formatWeeksValue(violation.actualWeeks));
+  }
+  if (typeof violation.actualDays === 'number') {
+    actualParts.push(formatDaysValue(violation.actualDays));
+  }
+
+  const requiredParts = [];
+  if (typeof violation.requiredWeeks === 'number') {
+    requiredParts.push(`${formatNumber(violation.requiredWeeks)} sem.`);
+  }
+  if (typeof violation.requiredDays === 'number') {
+    requiredParts.push(`${formatNumber(violation.requiredDays)} j.`);
+  }
+
+  if (actualParts.length === 0 && requiredParts.length === 0) {
+    return '';
+  }
+
+  const actualText = actualParts.length > 0 ? actualParts.join(' / ') : 'non calculé';
+
+  if (requiredParts.length === 0) {
+    return `Délai constaté : ${actualText}.`;
+  }
+
+  return `Délai constaté : ${actualText} – minimum requis : ${requiredParts.join(' / ')}`;
+};
+
 const computeTeamTimeline = (timelineByTeam, teamId) => {
   const entries = timelineByTeam[teamId] || [];
   if (entries.length === 0) {
@@ -280,6 +314,8 @@ const buildEmailHtml = ({
           </h2>
           ${risks
             .map(risk => {
+              const timingInfo = formatRiskTimingViolation(risk.timingViolation);
+
               return `
                 <div style="border:1px solid #fee2e2; border-radius:12px; padding:16px; margin-bottom:12px; background-color:#fef2f2;">
                   <div style="font-size:15px; font-weight:600; color:#b91c1c;">
@@ -288,6 +324,9 @@ const buildEmailHtml = ({
                   <p style="margin:8px 0 4px; font-size:14px; color:#4b5563;">
                     <strong>Description :</strong> ${formatAsHtmlText(risk.description)}
                   </p>
+                  ${timingInfo
+                    ? `<p style="margin:0 0 6px; font-size:13px; color:#b91c1c;">${escapeHtml(timingInfo)}</p>`
+                    : ''}
                   <p style="margin:0; font-size:14px; color:#4b5563;">
                     <strong>Mitigation :</strong> ${formatAsHtmlText(risk.mitigation)}
                   </p>
@@ -954,20 +993,26 @@ export const SynthesisReport = ({
               Risques identifiés ({analysis.risks.length})
             </h2>
             <div className="space-y-3">
-              {analysis.risks.map((risk, idx) => (
-                <div key={idx} className={`p-4 rounded-xl border hv-surface ${riskColors[risk.level]}`} role="article" aria-label={`Risque ${risk.level}`}>
-                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                    <span className="text-sm font-semibold text-gray-700">{risk.level}</span>
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold border hv-badge ${priorityColors[risk.priority]}`}>
-                      {risk.priority}
-                    </span>
-                  </div>
-                  <p className="text-gray-800 font-medium">{renderTextWithLinks(risk.description)}</p>
-                  <p className="text-xs text-gray-600 mt-2">
-                    <span className="font-semibold text-gray-700">Équipe référente :</span>{' '}
-                    {(() => {
-                      const associatedTeam = teams.find(team => {
-                        if (risk.teamId) {
+              {analysis.risks.map((risk, idx) => {
+                const timingViolationMessage = formatRiskTimingViolation(risk.timingViolation);
+
+                return (
+                  <div key={idx} className={`p-4 rounded-xl border hv-surface ${riskColors[risk.level]}`} role="article" aria-label={`Risque ${risk.level}`}>
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                      <span className="text-sm font-semibold text-gray-700">{risk.level}</span>
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold border hv-badge ${priorityColors[risk.priority]}`}>
+                        {risk.priority}
+                      </span>
+                    </div>
+                    <p className="text-gray-800 font-medium">{renderTextWithLinks(risk.description)}</p>
+                    {timingViolationMessage && (
+                      <p className="text-xs text-red-600 mt-2">{timingViolationMessage}</p>
+                    )}
+                    <p className="text-xs text-gray-600 mt-2">
+                      <span className="font-semibold text-gray-700">Équipe référente :</span>{' '}
+                      {(() => {
+                        const associatedTeam = teams.find(team => {
+                          if (risk.teamId) {
                           return team.id === risk.teamId;
                         }
                         if (Array.isArray(risk.teams)) {
@@ -990,13 +1035,14 @@ export const SynthesisReport = ({
 
                       return 'Non renseignée';
                     })()}
-                  </p>
-                  <p className="text-sm text-gray-600 mt-2">
-                    <span className="font-semibold text-gray-700">Mitigation :</span>{' '}
-                    {renderTextWithLinks(risk.mitigation)}
-                  </p>
-                </div>
-              ))}
+                    </p>
+                    <p className="text-sm text-gray-600 mt-2">
+                      <span className="font-semibold text-gray-700">Mitigation :</span>{' '}
+                      {renderTextWithLinks(risk.mitigation)}
+                    </p>
+                  </div>
+                );
+              })}
             </div>
           </section>
         </div>
