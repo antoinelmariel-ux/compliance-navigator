@@ -466,6 +466,48 @@ const getPrimaryRisk = (analysis) => {
   }, null);
 };
 
+const formatTimingValue = (value, unit, { maximumFractionDigits = 1, minimumFractionDigits = 0 } = {}) => {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return null;
+  }
+
+  const formatter = new Intl.NumberFormat('fr-FR', {
+    maximumFractionDigits,
+    minimumFractionDigits
+  });
+
+  const formatted = formatter.format(value);
+  return unit === 'weeks' ? `${formatted} sem.` : `${formatted} j.`;
+};
+
+const formatTimingViolationSummary = (violation) => {
+  if (!violation) {
+    return '';
+  }
+
+  const actualParts = [
+    formatTimingValue(violation.actualWeeks, 'weeks'),
+    formatTimingValue(violation.actualDays, 'days', { maximumFractionDigits: 0 })
+  ].filter(Boolean);
+
+  const requiredParts = [
+    formatTimingValue(violation.requiredWeeks, 'weeks'),
+    formatTimingValue(violation.requiredDays, 'days', { maximumFractionDigits: 0 })
+  ].filter(Boolean);
+
+  if (actualParts.length === 0 && requiredParts.length === 0) {
+    return '';
+  }
+
+  const actualText = actualParts.length > 0 ? actualParts.join(' / ') : 'non calculé';
+
+  if (requiredParts.length === 0) {
+    return `Délai constaté : ${actualText}.`;
+  }
+
+  return `Délai constaté : ${actualText} · Minimum requis : ${requiredParts.join(' / ')}`;
+};
+
 const REQUIRED_SHOWCASE_QUESTION_IDS = [
   'projectName',
   'projectSlogan',
@@ -720,6 +762,10 @@ export const ProjectShowcase = ({
 
     return null;
   }, [primaryRisk, relevantTeams]);
+  const primaryRiskTimingMessage = useMemo(
+    () => formatTimingViolationSummary(primaryRisk?.timingViolation),
+    [primaryRisk]
+  );
   const heroHighlights = useMemo(
     () =>
       buildHeroHighlights({
@@ -1038,6 +1084,9 @@ export const ProjectShowcase = ({
               <p className="aurora-risk-halo__label">Point de vigilance</p>
               <h4 className="aurora-risk-halo__title">{primaryRisk.title || 'Vigilance prioritaire'}</h4>
               <p className="aurora-risk-halo__text">{renderTextWithLinks(primaryRisk.description)}</p>
+              {primaryRiskTimingMessage && (
+                <p className="aurora-risk-halo__note">{primaryRiskTimingMessage}</p>
+              )}
               <p className="aurora-risk-halo__priority">Priorité : {primaryRisk.priority}</p>
               {primaryRiskTeam && (
                 <p className="aurora-risk-halo__priority">Équipe référente : {primaryRiskTeam}</p>

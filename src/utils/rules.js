@@ -73,6 +73,33 @@ const resolveComplexityLevel = (riskCount, riskLevelRules) => {
   return { label: fallback?.label || 'Modérée', rule: fallback || null };
 };
 
+const toOptionalNonNegativeNumber = (value) => {
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+
+  const parsed = Number(value);
+  if (Number.isNaN(parsed) || !Number.isFinite(parsed)) {
+    return undefined;
+  }
+
+  return parsed < 0 ? 0 : parsed;
+};
+
+const sanitizeRiskTimingConstraint = (constraint = {}) => {
+  const enabled = Boolean(constraint?.enabled);
+  const startQuestion = typeof constraint?.startQuestion === 'string' ? constraint.startQuestion : '';
+  const endQuestion = typeof constraint?.endQuestion === 'string' ? constraint.endQuestion : '';
+
+  return {
+    enabled,
+    startQuestion,
+    endQuestion,
+    minimumWeeks: toOptionalNonNegativeNumber(constraint?.minimumWeeks),
+    minimumDays: toOptionalNonNegativeNumber(constraint?.minimumDays)
+  };
+};
+
 const matchesCondition = (condition, answers) => {
   if (!condition || !condition.question) {
     return true;
@@ -380,27 +407,71 @@ export const analyzeAnswers = (answers, rules, riskLevelRules) => {
         allQuestions[teamId].push(...questions);
       });
 
-      allRisks.push(
-        ...rule.risks.map(risk => {
+      const processedRisks = (Array.isArray(rule.risks) ? rule.risks : [])
+        .map(risk => {
           const ruleTeams = Array.isArray(rule.teams) ? rule.teams : [];
           const preferredTeam = typeof risk?.teamId === 'string' && risk.teamId
             ? risk.teamId
             : (ruleTeams[0] || '');
+          const timingConstraint = sanitizeRiskTimingConstraint(risk?.timingConstraint);
+
+          const baseRisk = {
+            ...risk,
+            priority: risk?.priority || 'Recommandé',
+            teamId: preferredTeam,
+            teams: preferredTeam ? [preferredTeam] : [],
+            ruleId: rule.id,
+            ruleName: rule.name,
+            timingConstraint
+          };
+
+          if (!timingConstraint.enabled) {
+            if (preferredTeam) {
+              teamsSet.add(preferredTeam);
+            }
+            return baseRisk;
+          }
+
+          const diff = computeTimingDiff(timingConstraint, answers);
+          if (!diff) {
+            return null;
+          }
+
+          const requiredWeeks = typeof timingConstraint.minimumWeeks === 'number'
+            ? timingConstraint.minimumWeeks
+            : undefined;
+          const requiredDays = typeof timingConstraint.minimumDays === 'number'
+            ? timingConstraint.minimumDays
+            : undefined;
+
+          const meetsWeeks = requiredWeeks === undefined || diff.diffInWeeks >= requiredWeeks;
+          const meetsDays = requiredDays === undefined || diff.diffInDays >= requiredDays;
+
+          if (meetsWeeks && meetsDays) {
+            return null;
+          }
 
           if (preferredTeam) {
             teamsSet.add(preferredTeam);
           }
 
           return {
-            ...risk,
-            priority: risk?.priority || 'Recommandé',
-            teamId: preferredTeam,
-            teams: preferredTeam ? [preferredTeam] : [],
-            ruleId: rule.id,
-            ruleName: rule.name
+            ...baseRisk,
+            timingViolation: {
+              startQuestion: timingConstraint.startQuestion,
+              endQuestion: timingConstraint.endQuestion,
+              requiredWeeks,
+              requiredDays,
+              actualWeeks: diff.diffInWeeks,
+              actualDays: diff.diffInDays,
+              meetsWeeks,
+              meetsDays
+            }
           };
         })
-      );
+        .filter(Boolean);
+
+      allRisks.push(...processedRisks);
     }
 
     evaluation.timingContexts.forEach(context => {
@@ -478,4 +549,11 @@ export const analyzeAnswers = (answers, rules, riskLevelRules) => {
   };
 };
 
-export { matchesCondition, matchesConditionGroup, computeTimingDiff, normalizeTimingRequirement, getActiveTimelineProfiles };
+export {
+  matchesCondition,
+  matchesConditionGroup,
+  computeTimingDiff,
+  normalizeTimingRequirement,
+  getActiveTimelineProfiles,
+  sanitizeRiskTimingConstraint
+};
