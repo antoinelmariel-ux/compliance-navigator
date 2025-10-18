@@ -17,7 +17,7 @@ import { extractProjectName } from './utils/projects.js';
 import { createDemoProject } from './data/demoProject.js';
 import { exportProjectToFile } from './utils/projectExport.js';
 
-const APP_VERSION = 'v1.0.44';
+const APP_VERSION = 'v1.0.45';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -1033,6 +1033,17 @@ export const App = () => {
     previousScreenRef.current = null;
   }, []);
 
+  const handleReturnToComplianceReport = useCallback(() => {
+    if (!showcaseProjectContext?.projectId) {
+      return;
+    }
+
+    const { projectId } = showcaseProjectContext;
+    setShowcaseProjectContext(null);
+    previousScreenRef.current = null;
+    handleOpenProject(projectId);
+  }, [handleOpenProject, showcaseProjectContext]);
+
   const handleUpdateProjectShowcaseAnswers = useCallback((updates) => {
     if (!showcaseProjectContext || !showcaseProjectContext.projectId) {
       return;
@@ -1342,6 +1353,17 @@ export const App = () => {
               role="group"
               aria-label="Sélection du mode d'utilisation"
             >
+              {mode === 'user' && screen === 'showcase' && showcaseProjectContext && (
+                <button
+                  type="button"
+                  onClick={handleReturnToComplianceReport}
+                  className="w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button bg-indigo-600 text-white hv-button-primary"
+                  aria-label="Revenir au rapport compliance du projet"
+                  title="Revenir au rapport compliance du projet"
+                >
+                  Rapport compliance
+                </button>
+              )}
               {mode === 'user' && (
                 <button
                   type="button"
