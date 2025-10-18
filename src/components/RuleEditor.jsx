@@ -19,6 +19,44 @@ import {
 } from '../utils/ruleConditions.js';
 import { ensureOperatorForType, getOperatorOptionsForType } from '../utils/operatorOptions.js';
 
+const RISK_PRIORITY_OPTIONS = ['Critique', 'Important', 'Recommandé'];
+
+const normalizeRiskEntry = (risk, availableTeams = []) => {
+  const safeTeams = Array.isArray(availableTeams) ? availableTeams : [];
+  const fallbackTeam = safeTeams[0] || '';
+
+  const normalized = {
+    description: '',
+    level: 'Moyen',
+    mitigation: '',
+    priority: 'Recommandé',
+    teamId: fallbackTeam,
+    ...risk
+  };
+
+  if (!RISK_PRIORITY_OPTIONS.includes(normalized.priority)) {
+    normalized.priority = 'Recommandé';
+  }
+
+  if (normalized.level !== 'Faible' && normalized.level !== 'Moyen' && normalized.level !== 'Élevé') {
+    normalized.level = 'Moyen';
+  }
+
+  if (!safeTeams.includes(normalized.teamId)) {
+    normalized.teamId = fallbackTeam || '';
+  }
+
+  return normalized;
+};
+
+const normalizeRiskList = (risks, availableTeams = []) => {
+  if (!Array.isArray(risks)) {
+    return [];
+  }
+
+  return risks.map((risk) => normalizeRiskEntry(risk, availableTeams));
+};
+
 export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
   const overlayRef = useRef(null);
   const titleRef = useRef(null);
@@ -72,16 +110,20 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
   };
 
   const buildRuleState = (source) => {
+    const sanitizedSource = source || {};
+    const { priority: _discardedPriority, ...rest } = sanitizedSource;
+    const teamsList = Array.isArray(rest.teams) ? rest.teams : [];
+
     const base = {
-      ...source,
-      conditionLogic: source.conditionLogic === 'any' ? 'any' : 'all',
-      conditions: Array.isArray(source.conditions)
-        ? source.conditions.map(sanitizeRuleCondition)
+      ...rest,
+      conditionLogic: rest.conditionLogic === 'any' ? 'any' : 'all',
+      conditions: Array.isArray(rest.conditions)
+        ? rest.conditions.map(sanitizeRuleCondition)
         : [],
-      conditionGroups: Array.isArray(source.conditionGroups) ? source.conditionGroups : [],
-      teams: Array.isArray(source.teams) ? source.teams : [],
-      questions: source.questions || {},
-      risks: Array.isArray(source.risks) ? source.risks : []
+      conditionGroups: Array.isArray(rest.conditionGroups) ? rest.conditionGroups : [],
+      teams: teamsList,
+      questions: rest.questions || {},
+      risks: normalizeRiskList(rest.risks, teamsList)
     };
 
     const groups = sanitizeConditionGroups(normalizeRuleConditionGroups(base));
@@ -349,7 +391,8 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
     const newTeams = currentTeams.includes(teamId)
       ? currentTeams.filter(t => t !== teamId)
       : [...currentTeams, teamId];
-    setEditedRule({ ...editedRule, teams: newTeams });
+    const normalizedRisks = normalizeRiskList(editedRule.risks, newTeams);
+    setEditedRule({ ...editedRule, teams: newTeams, risks: normalizedRisks });
   };
 
   const addQuestionForTeam = (teamId) => {
@@ -375,16 +418,29 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
   };
 
   const addRisk = () => {
+    const teamsForRisk = Array.isArray(editedRule.teams) ? editedRule.teams : [];
+    const fallbackTeam = teamsForRisk[0] || '';
+    const newRisk = normalizeRiskEntry({
+      description: '',
+      level: 'Moyen',
+      mitigation: '',
+      priority: 'Recommandé',
+      teamId: fallbackTeam
+    }, teamsForRisk);
+
+    const existingRisks = Array.isArray(editedRule.risks) ? editedRule.risks : [];
     setEditedRule({
       ...editedRule,
-      risks: [...editedRule.risks, { description: '', level: 'Moyen', mitigation: '' }]
+      risks: [...existingRisks, newRisk]
     });
   };
 
   const updateRisk = (index, field, value) => {
-    const newRisks = [...editedRule.risks];
-    newRisks[index][field] = value;
-    setEditedRule({ ...editedRule, risks: newRisks });
+    const currentRisks = Array.isArray(editedRule.risks) ? [...editedRule.risks] : [];
+    const baseRisk = normalizeRiskEntry(currentRisks[index] || {}, editedRule.teams);
+    currentRisks[index] = { ...baseRisk, [field]: value };
+    const normalizedRisks = normalizeRiskList(currentRisks, editedRule.teams);
+    setEditedRule({ ...editedRule, risks: normalizedRisks });
   };
 
   const deleteRisk = (index) => {
@@ -429,7 +485,10 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
               </button>
               <button
                 type="button"
-                onClick={() => onSave(applyRuleConditionGroups(editedRule, conditionGroups))}
+                onClick={() => {
+                  const normalizedRisks = normalizeRiskList(editedRule.risks, editedRule.teams);
+                  onSave(applyRuleConditionGroups({ ...editedRule, risks: normalizedRisks }, conditionGroups));
+                }}
                 className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-all hv-button hv-button-primary"
               >
                 Enregistrer
@@ -455,19 +514,6 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   placeholder="Ex: Projet digital avec données de santé"
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Niveau de priorité</label>
-                <select
-                  value={editedRule.priority}
-                  onChange={(e) => setEditedRule({ ...editedRule, priority: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                >
-                  <option value="Critique">Critique (priorité rouge)</option>
-                  <option value="Important">Important (priorité orange)</option>
-                  <option value="Recommandé">Recommandé (priorité bleue)</option>
-                </select>
               </div>
             </div>
           </div>
@@ -1212,6 +1258,33 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                       </div>
 
                       <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Équipe référente</label>
+                        <select
+                          value={risk.teamId}
+                          onChange={(e) => updateRisk(idx, 'teamId', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                          disabled={editedRule.teams.length === 0}
+                        >
+                          {editedRule.teams.length === 0 ? (
+                            <option value="">Aucune équipe disponible</option>
+                          ) : (
+                            <>
+                              {editedRule.teams.map(teamId => (
+                                <option key={teamId} value={teamId}>
+                                  {teams.find(team => team.id === teamId)?.name || teamId}
+                                </option>
+                              ))}
+                            </>
+                          )}
+                        </select>
+                        {editedRule.teams.length === 0 && (
+                          <p className="text-xs text-gray-500 mt-1 italic">
+                            Sélectionnez une équipe dans la section précédente pour associer ce risque.
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
                         <label className="block text-xs font-medium text-gray-600 mb-1">Niveau de criticité</label>
                         <select
                           value={risk.level}
@@ -1221,6 +1294,21 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                           <option value="Faible">Faible (niveau vert)</option>
                           <option value="Moyen">Moyen (niveau orange)</option>
                           <option value="Élevé">Élevé (niveau rouge)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Priorité du risque</label>
+                        <select
+                          value={risk.priority}
+                          onChange={(e) => updateRisk(idx, 'priority', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                        >
+                          {RISK_PRIORITY_OPTIONS.map(option => (
+                            <option key={option} value={option}>
+                              {option}
+                            </option>
+                          ))}
                         </select>
                       </div>
 

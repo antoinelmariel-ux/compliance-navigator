@@ -698,6 +698,28 @@ export const ProjectShowcase = ({
     [answers]
   );
   const primaryRisk = useMemo(() => getPrimaryRisk(analysis), [analysis]);
+  const primaryRiskTeam = useMemo(() => {
+    if (!primaryRisk) {
+      return null;
+    }
+
+    const availableTeams = Array.isArray(relevantTeams) ? relevantTeams : [];
+
+    if (primaryRisk.teamId) {
+      const matchingTeam = availableTeams.find(team => team.id === primaryRisk.teamId);
+      return matchingTeam ? matchingTeam.name : primaryRisk.teamId;
+    }
+
+    if (Array.isArray(primaryRisk.teams)) {
+      const fallbackTeamId = primaryRisk.teams.find(teamId => typeof teamId === 'string' && teamId.length > 0);
+      if (fallbackTeamId) {
+        const matchingTeam = availableTeams.find(team => team.id === fallbackTeamId);
+        return matchingTeam ? matchingTeam.name : fallbackTeamId;
+      }
+    }
+
+    return null;
+  }, [primaryRisk, relevantTeams]);
   const heroHighlights = useMemo(
     () =>
       buildHeroHighlights({
@@ -1017,6 +1039,9 @@ export const ProjectShowcase = ({
               <h4 className="aurora-risk-halo__title">{primaryRisk.title || 'Vigilance prioritaire'}</h4>
               <p className="aurora-risk-halo__text">{renderTextWithLinks(primaryRisk.description)}</p>
               <p className="aurora-risk-halo__priority">Priorité : {primaryRisk.priority}</p>
+              {primaryRiskTeam && (
+                <p className="aurora-risk-halo__priority">Équipe référente : {primaryRiskTeam}</p>
+              )}
             </div>
           )}
         </div>
