@@ -424,7 +424,10 @@ const computeTimelineSummary = (timelineDetails) => {
     return null;
   }
 
-  const detailWithDiff = timelineDetails.find(detail => Boolean(detail?.diff));
+  const detailWithDiff = timelineDetails.find(
+    (detail) => Boolean(detail?.diff) && detail?.satisfied === false
+  );
+
   if (!detailWithDiff) {
     return null;
   }
@@ -437,9 +440,30 @@ const computeTimelineSummary = (timelineDetails) => {
     ruleName: detailWithDiff.ruleName,
     satisfied: detailWithDiff.satisfied,
     weeks,
-    days,
-    profiles: Array.isArray(detailWithDiff.profiles) ? detailWithDiff.profiles : []
+    days
   };
+};
+
+const extractTimelineProfiles = (timelineDetails) => {
+  if (!Array.isArray(timelineDetails)) {
+    return [];
+  }
+
+  const detailWithProfiles = timelineDetails.find(
+    (detail) => Array.isArray(detail?.profiles) && detail.profiles.length > 0
+  );
+
+  if (!detailWithProfiles) {
+    return [];
+  }
+
+  return detailWithProfiles.profiles
+    .map((profile) => ({
+      id: profile?.id ?? null,
+      label: typeof profile?.label === 'string' ? profile.label : '',
+      description: typeof profile?.description === 'string' ? profile.description : ''
+    }))
+    .filter(profile => profile.label.length > 0 || profile.description.length > 0);
 };
 
 const REQUIRED_SHOWCASE_QUESTION_IDS = [
@@ -667,6 +691,7 @@ export const ProjectShowcase = ({
     };
   }, [rawRunway, animatedWeeks, animatedDays]);
   const timelineSummary = useMemo(() => computeTimelineSummary(timelineDetails), [timelineDetails]);
+  const timelineProfiles = useMemo(() => extractTimelineProfiles(timelineDetails), [timelineDetails]);
   const manualMilestones = useMemo(
     () => buildManualMilestones(getRawAnswer(answers, 'roadmapMilestones')),
     [answers]
@@ -759,19 +784,19 @@ export const ProjectShowcase = ({
   }, [renderInStandalone]);
 
 
-  const hasTimelineProfiles = Array.isArray(timelineSummary?.profiles) && timelineSummary.profiles.length > 0;
+  const hasTimelineProfiles = Array.isArray(timelineProfiles) && timelineProfiles.length > 0;
   const hasManualMilestones = manualMilestones.length > 0;
   const timelineProfileEntries = useMemo(() => {
     if (!hasTimelineProfiles) {
       return [];
     }
 
-    return timelineSummary.profiles.map((profile, index) => ({
+    return timelineProfiles.map((profile, index) => ({
       id: profile.id || `profile-${index}`,
       label: profile.label,
       description: profile.description || ''
     }));
-  }, [hasTimelineProfiles, timelineSummary]);
+  }, [hasTimelineProfiles, timelineProfiles]);
 
   const manualTimelineEntries = useMemo(
     () =>
@@ -799,7 +824,7 @@ export const ProjectShowcase = ({
     [timelineProfileEntries, manualTimelineEntries]
   );
   const hasTimelineEntries = timelineEntries.length > 0;
-  const hasTimelineSection = Boolean(runway || timelineSummary || hasManualMilestones);
+  const hasTimelineSection = Boolean(runway || timelineSummary || hasManualMilestones || hasTimelineProfiles);
   const shouldShowTimelineSummary = Boolean(timelineSummary && !hasTimelineProfiles);
 
   const previewContent = shouldShowPreview ? (
