@@ -18,6 +18,15 @@ const normalizeAnswerForComparison = (answer) => {
   return answer;
 };
 
+const toNumber = (value) => {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isNaN(parsed) ? null : parsed;
+};
+
 const evaluateQuestionCondition = (condition, answers) => {
   const rawAnswer = answers[condition.question];
   if (Array.isArray(rawAnswer) && rawAnswer.length === 0) return false;
@@ -44,6 +53,34 @@ const evaluateQuestionCondition = (condition, answers) => {
         return answer.includes(condition.value);
       }
       return false;
+    case 'lt':
+    case 'lte':
+    case 'gt':
+    case 'gte': {
+      if (Array.isArray(answer)) {
+        return false;
+      }
+
+      const answerNumber = toNumber(answer);
+      const expectedNumber = toNumber(condition.value);
+
+      if (answerNumber === null || expectedNumber === null) {
+        return false;
+      }
+
+      switch (condition.operator) {
+        case 'lt':
+          return answerNumber < expectedNumber;
+        case 'lte':
+          return answerNumber <= expectedNumber;
+        case 'gt':
+          return answerNumber > expectedNumber;
+        case 'gte':
+          return answerNumber >= expectedNumber;
+        default:
+          return false;
+      }
+    }
     default:
       return false;
   }

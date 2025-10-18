@@ -10,6 +10,7 @@ import {
   CheckCircle
 } from './icons.js';
 import { applyConditionGroups, normalizeConditionGroups } from '../utils/conditionGroups.js';
+import { ensureOperatorForType, getOperatorOptionsForType } from '../utils/operatorOptions.js';
 
 export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => {
   const ensureGuidance = (guidance) => {
@@ -34,6 +35,24 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
     return '';
   };
 
+  const sanitizeConditionGroups = (groups) => {
+    return Array.isArray(groups)
+      ? groups.map(group => ({
+          ...group,
+          conditions: Array.isArray(group.conditions)
+            ? group.conditions.map(condition => {
+                const question = allQuestions.find(q => q.id === condition?.question);
+                const questionType = question?.type || 'choice';
+                return {
+                  ...condition,
+                  operator: ensureOperatorForType(questionType, condition?.operator)
+                };
+              })
+            : []
+        }))
+      : [];
+  };
+
   const buildQuestionState = (source) => {
     const base = {
       ...source,
@@ -43,7 +62,7 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
       placeholder: typeof source.placeholder === 'string' ? source.placeholder : ''
     };
 
-    const groups = normalizeConditionGroups(base);
+    const groups = sanitizeConditionGroups(normalizeConditionGroups(base));
     return applyConditionGroups(base, groups);
   };
 
@@ -173,7 +192,7 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
   const updateConditionGroupsState = (updater) => {
     setEditedQuestion(prev => {
       const currentGroups = Array.isArray(prev.conditionGroups) ? prev.conditionGroups : [];
-      const nextGroups = updater(currentGroups);
+      const nextGroups = sanitizeConditionGroups(updater(currentGroups));
       return applyConditionGroups(prev, nextGroups);
     });
   };
@@ -218,7 +237,19 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
       const target = updated[groupIndex] || { logic: 'all', conditions: [] };
       const conditions = [...(target.conditions || [])];
       const condition = { ...conditions[conditionIndex] };
-      condition[field] = value;
+
+      if (field === 'question') {
+        condition.question = value;
+      } else if (field === 'operator') {
+        condition.operator = value;
+      } else {
+        condition[field] = value;
+      }
+
+      const linkedQuestion = allQuestions.find(q => q.id === condition.question);
+      const linkedType = linkedQuestion?.type || 'choice';
+      condition.operator = ensureOperatorForType(linkedType, condition.operator);
+
       conditions[conditionIndex] = condition;
       updated[groupIndex] = { ...target, conditions };
       return updated;
@@ -756,15 +787,23 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                                       <label className="block text-xs font-medium text-gray-600 mb-1">
                                         Opérateur
                                       </label>
-                                      <select
-                                        value={condition.operator}
-                                        onChange={(e) => updateConditionInGroup(groupIdx, idx, 'operator', e.target.value)}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500"
-                                      >
-                                        <option value="equals">Est égal à (=)</option>
-                                        <option value="not_equals">Est différent de (≠)</option>
-                                        <option value="contains">Contient</option>
-                                      </select>
+                                      {(() => {
+                                        const selectedQuestion = allQuestions.find(q => q.id === condition.question);
+                                        const selectedType = selectedQuestion?.type || 'choice';
+                                        const operatorOptions = getOperatorOptionsForType(selectedType);
+                                        const operatorValue = ensureOperatorForType(selectedType, condition.operator);
+                                        return (
+                                          <select
+                                            value={operatorValue}
+                                            onChange={(e) => updateConditionInGroup(groupIdx, idx, 'operator', e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500"
+                                          >
+                                            {operatorOptions.map(option => (
+                                              <option key={option.value} value={option.value}>{option.label}</option>
+                                            ))}
+                                          </select>
+                                        );
+                                      })()}
                                     </div>
 
                                     <div>

@@ -17,7 +17,11 @@ import { renderTextWithLinks } from '../utils/linkify.js';
 const OPERATOR_LABELS = {
   equals: 'est égal à',
   not_equals: 'est différent de',
-  contains: 'contient'
+  contains: 'contient',
+  lt: 'est inférieur à',
+  lte: 'est inférieur ou égal à',
+  gt: 'est supérieur à',
+  gte: 'est supérieur ou égal à'
 };
 
 const normalizeMilestoneDrafts = (value) => {
