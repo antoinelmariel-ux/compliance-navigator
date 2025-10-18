@@ -402,6 +402,9 @@ export const SynthesisReport = ({
   teams,
   questions,
   projectStatus,
+  projectId,
+  projectName: providedProjectName,
+  onOpenProjectShowcase,
   isProjectEditable = true,
   onRestart,
   onBack,
@@ -461,7 +464,11 @@ export const SynthesisReport = ({
   const hasTimelineData =
     Object.keys(timelineByTeam).length > 0 || Boolean(firstTimelineDetail);
 
-  const projectName = extractProjectName(answers, questions);
+  const extractedProjectName = extractProjectName(answers, questions);
+  const effectiveProjectName =
+    typeof providedProjectName === 'string' && providedProjectName.trim().length > 0
+      ? providedProjectName.trim()
+      : extractedProjectName;
 
   const scrollShowcaseIntoView = useCallback(() => {
     const node = showcaseFallbackRef.current;
@@ -506,6 +513,20 @@ export const SynthesisReport = ({
   }, [attachmentReminder]);
 
   const handleOpenShowcase = useCallback(() => {
+    if (typeof onOpenProjectShowcase === 'function') {
+      onOpenProjectShowcase({
+        projectId,
+        projectName: effectiveProjectName,
+        status: projectStatus,
+        answers,
+        analysis,
+        relevantTeams,
+        questions,
+        timelineDetails
+      });
+      return;
+    }
+
     setIsShowcaseFallbackOpen(true);
 
     if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
@@ -515,7 +536,18 @@ export const SynthesisReport = ({
     } else {
       scrollShowcaseIntoView();
     }
-  }, [scrollShowcaseIntoView]);
+  }, [
+    analysis,
+    answers,
+    effectiveProjectName,
+    onOpenProjectShowcase,
+    projectId,
+    projectStatus,
+    questions,
+    relevantTeams,
+    scrollShowcaseIntoView,
+    timelineDetails
+  ]);
 
   const handleCloseShowcase = useCallback(() => {
     setIsShowcaseFallbackOpen(false);
@@ -531,13 +563,13 @@ export const SynthesisReport = ({
     }
 
     onSubmitProject({
-      projectName,
+      projectName: effectiveProjectName,
       answers,
       analysis,
       relevantTeams,
       timelineDetails
     });
-  }, [analysis, answers, onSubmitProject, projectName, relevantTeams, timelineDetails]);
+  }, [analysis, answers, effectiveProjectName, onSubmitProject, relevantTeams, timelineDetails]);
 
   const handleDownloadProject = useCallback(() => {
     if (!onSaveDraft) {
@@ -545,7 +577,7 @@ export const SynthesisReport = ({
     }
 
     onSaveDraft({
-      projectName,
+      projectName: effectiveProjectName,
       answers,
       analysis,
       questions,
@@ -553,11 +585,11 @@ export const SynthesisReport = ({
       timelineDetails,
       lastQuestionIndex: questions.length > 0 ? questions.length - 1 : 0
     });
-  }, [analysis, answers, onSaveDraft, projectName, questions, relevantTeams, timelineDetails]);
+  }, [analysis, answers, effectiveProjectName, onSaveDraft, questions, relevantTeams, timelineDetails]);
 
   const handleSubmitByEmail = useCallback(async () => {
     const emailHtml = buildEmailHtml({
-      projectName,
+      projectName: effectiveProjectName,
       questions,
       answers,
       analysis,
@@ -567,7 +599,7 @@ export const SynthesisReport = ({
     });
     const emailText = buildPlainTextEmail(emailHtml);
     const projectExport = buildProjectExport({
-      projectName,
+      projectName: effectiveProjectName,
       answers,
       analysis,
       relevantTeams,
@@ -596,9 +628,9 @@ export const SynthesisReport = ({
       );
     }
 
-    const fileNameBase = sanitizeFileName(projectName || 'Projet compliance');
+    const fileNameBase = sanitizeFileName(effectiveProjectName || 'Projet compliance');
     const fileName = `${fileNameBase}.json`;
-    const subject = projectName || 'Projet compliance';
+    const subject = effectiveProjectName || 'Projet compliance';
 
     if (typeof navigator !== 'undefined' && typeof navigator.share === 'function' && typeof File === 'function') {
       try {
@@ -629,18 +661,18 @@ export const SynthesisReport = ({
       }
     }
 
-    downloadProjectJson(projectJson, { projectName });
+    downloadProjectJson(projectJson, { projectName: effectiveProjectName });
     setAttachmentReminder({ fileName });
 
     const fallbackBody = `${emailText}\n\nFichier du projet : ${fileName}\nLe fichier JSON a été téléchargé automatiquement ; merci de l'ajouter en pièce jointe avant envoi.`;
-    const mailtoLink = buildMailtoLink({ projectName, relevantTeams, body: fallbackBody });
+    const mailtoLink = buildMailtoLink({ projectName: effectiveProjectName, relevantTeams, body: fallbackBody });
     if (typeof window !== 'undefined') {
       window.location.href = mailtoLink;
     }
   }, [
     analysis,
     answers,
-    projectName,
+    effectiveProjectName,
     questions,
     relevantTeams,
     timelineByTeam,
@@ -949,7 +981,7 @@ export const SynthesisReport = ({
       {isShowcaseFallbackOpen && (
         <div ref={showcaseFallbackRef}>
           <ProjectShowcase
-            projectName={projectName}
+            projectName={effectiveProjectName}
             onClose={handleCloseShowcase}
             analysis={analysis}
             relevantTeams={relevantTeams}
