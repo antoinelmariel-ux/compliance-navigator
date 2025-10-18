@@ -304,7 +304,7 @@ export const HomeScreen = ({
                         onClick={() => onOpenProject(project.id)}
                         className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all hv-button ${
                           isDraft
-                            ? 'bg-amber-500 text-white hover:bg-amber-600'
+                            ? 'hv-button-draft text-white'
                             : 'bg-indigo-600 text-white hover:bg-indigo-700 hv-button-primary'
                         }`}
                       >
