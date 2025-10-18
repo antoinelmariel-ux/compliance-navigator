@@ -1,5 +1,19 @@
-import React, { useEffect, useState } from '../react.js';
-import { Settings, Plus, Edit, Trash2, Eye, Info, GripVertical, Download, ArrowUp, ArrowDown, Copy } from './icons.js';
+import React, { useEffect, useMemo, useState } from '../react.js';
+import {
+  Settings,
+  Plus,
+  Edit,
+  Trash2,
+  Eye,
+  Info,
+  GripVertical,
+  Download,
+  ArrowUp,
+  ArrowDown,
+  Copy,
+  AlertTriangle,
+  CheckCircle
+} from './icons.js';
 import { QuestionEditor } from './QuestionEditor.jsx';
 import { RuleEditor } from './RuleEditor.jsx';
 import { renderTextWithLinks } from '../utils/linkify.js';
@@ -221,6 +235,364 @@ export const BackOffice = ({
   const [reorderAnnouncement, setReorderAnnouncement] = useState('');
   const safeRiskLevelRules = Array.isArray(riskLevelRules) ? riskLevelRules : [];
   const riskLevelRuleCount = safeRiskLevelRules.length;
+
+  const dataIntegrityIssues = useMemo(() => {
+    const safeQuestions = Array.isArray(questions) ? questions : [];
+    const safeRules = Array.isArray(rules) ? rules : [];
+    const safeTeams = Array.isArray(teams) ? teams : [];
+
+    const questionMap = new Map();
+    safeQuestions.forEach((question) => {
+      if (question?.id) {
+        questionMap.set(question.id, question);
+      }
+    });
+
+    const questionIds = new Set(questionMap.keys());
+
+    const questionOptionMap = new Map();
+    questionMap.forEach((question, id) => {
+      if (Array.isArray(question?.options) && question.options.length > 0) {
+        const normalizedOptions = question.options
+          .map((option) => {
+            if (
+              typeof option === 'string' ||
+              typeof option === 'number' ||
+              typeof option === 'boolean'
+            ) {
+              return String(option);
+            }
+            return null;
+          })
+          .filter(Boolean);
+
+        if (normalizedOptions.length > 0) {
+          questionOptionMap.set(id, new Set(normalizedOptions));
+        }
+      }
+    });
+
+    const teamIds = new Set(
+      safeTeams
+        .map((team) => (team?.id ? team.id : null))
+        .filter(Boolean)
+    );
+
+    const issues = [];
+    let issueIndex = 0;
+
+    const pushIssue = ({ scope, context, message, severity = 'warning' }) => {
+      issueIndex += 1;
+      issues.push({
+        id: `integrity-${issueIndex}`,
+        scope,
+        context,
+        message,
+        severity
+      });
+    };
+
+    const formatConditionPosition = (groupIndex, conditionIndex) => {
+      return `groupe ${groupIndex + 1}, condition ${conditionIndex + 1}`;
+    };
+
+    const getQuestionLabel = (questionId) => {
+      const reference = questionMap.get(questionId);
+      if (!reference) {
+        return questionId || 'Question inconnue';
+      }
+      return reference.question || reference.id || questionId;
+    };
+
+    const collectInvalidOptionValues = (value, optionsSet) => {
+      if (!optionsSet || optionsSet.size === 0) {
+        return [];
+      }
+
+      const invalidValues = [];
+      const inspectValue = (candidate) => {
+        if (candidate === null || candidate === undefined) {
+          return;
+        }
+        if (
+          typeof candidate !== 'string' &&
+          typeof candidate !== 'number' &&
+          typeof candidate !== 'boolean'
+        ) {
+          return;
+        }
+
+        const normalizedCandidate = String(candidate);
+        if (!optionsSet.has(normalizedCandidate)) {
+          invalidValues.push(normalizedCandidate);
+        }
+      };
+
+      if (Array.isArray(value)) {
+        value.forEach(inspectValue);
+      } else {
+        inspectValue(value);
+      }
+
+      return invalidValues;
+    };
+
+    safeQuestions.forEach((question) => {
+      const groups = normalizeConditionGroups(question);
+      const context = `Question « ${question.question || question.id || 'Sans titre'} »`;
+
+      groups.forEach((group, groupIndex) => {
+        const conditions = Array.isArray(group?.conditions) ? group.conditions : [];
+
+        conditions.forEach((condition, conditionIndex) => {
+          if (!condition) {
+            return;
+          }
+
+          const position = formatConditionPosition(groupIndex, conditionIndex);
+          const targetId = condition.question;
+
+          if (!targetId) {
+            pushIssue({
+              scope: 'questions',
+              context,
+              message: `La condition ${position} n'indique aucune question de référence. Sélectionnez une question cible ou retirez cette condition.`
+            });
+            return;
+          }
+
+          if (!questionIds.has(targetId)) {
+            pushIssue({
+              scope: 'questions',
+              context,
+              message: `La condition ${position} référence la question « ${targetId} » qui n'existe plus. Mettez à jour le ciblage ou supprimez cette condition.`
+            });
+            return;
+          }
+
+          const optionsSet = questionOptionMap.get(targetId);
+          if (optionsSet && optionsSet.size > 0) {
+            const invalidValues = collectInvalidOptionValues(condition.value, optionsSet);
+
+            if (invalidValues.length > 0) {
+              const formattedValues = invalidValues.map((value) => `« ${value} »`).join(', ');
+              const targetLabel = getQuestionLabel(targetId);
+
+              pushIssue({
+                scope: 'questions',
+                context,
+                message: `La condition ${position} utilise ${formattedValues} qui ne fait pas partie des options disponibles pour « ${targetLabel} ». Ajustez la valeur attendue.`
+              });
+            }
+          }
+        });
+      });
+    });
+
+    safeRules.forEach((rule) => {
+      const ruleLabel = rule?.name || rule?.id || 'Règle';
+      const context = `Règle « ${ruleLabel} »`;
+      const groups = normalizeConditionGroups(rule, sanitizeRuleCondition);
+
+      groups.forEach((group, groupIndex) => {
+        const conditions = Array.isArray(group?.conditions) ? group.conditions : [];
+
+        conditions.forEach((condition, conditionIndex) => {
+          if (!condition) {
+            return;
+          }
+
+          const position = formatConditionPosition(groupIndex, conditionIndex);
+
+          if (condition.type === 'timing') {
+            if (!condition.startQuestion) {
+              pushIssue({
+                scope: 'rules',
+                context,
+                message: `La condition temporelle ${position} ne définit pas de question de départ. Sélectionnez une question d'origine.`
+              });
+            } else if (!questionIds.has(condition.startQuestion)) {
+              pushIssue({
+                scope: 'rules',
+                context,
+                message: `La question de départ « ${condition.startQuestion} » utilisée dans la condition temporelle ${position} n'existe plus.`
+              });
+            }
+
+            if (!condition.endQuestion) {
+              pushIssue({
+                scope: 'rules',
+                context,
+                message: `La condition temporelle ${position} ne définit pas de question d'arrivée. Sélectionnez une question de fin.`
+              });
+            } else if (!questionIds.has(condition.endQuestion)) {
+              pushIssue({
+                scope: 'rules',
+                context,
+                message: `La question de fin « ${condition.endQuestion} » utilisée dans la condition temporelle ${position} n'existe plus.`
+              });
+            }
+
+            if (Array.isArray(condition.complianceProfiles)) {
+              condition.complianceProfiles.forEach((profile, profileIndex) => {
+                const profileLabel = profile?.label || profile?.id || `Profil ${profileIndex + 1}`;
+                const profileContext = `Règle « ${ruleLabel} » · Profil « ${profileLabel} »`;
+                const requirements = profile?.requirements;
+
+                if (requirements && typeof requirements === 'object') {
+                  Object.keys(requirements).forEach((teamId) => {
+                    if (!teamIds.has(teamId)) {
+                      pushIssue({
+                        scope: 'teams',
+                        context: profileContext,
+                        message: `Le besoin de délai fait référence à l'équipe « ${teamId} » qui n'existe plus. Mettez à jour la configuration des équipes.`
+                      });
+                    }
+                  });
+                }
+
+                const profileConditions = Array.isArray(profile?.conditions) ? profile.conditions : [];
+                profileConditions.forEach((profileCondition, profileConditionIndex) => {
+                  if (!profileCondition) {
+                    return;
+                  }
+
+                  const profilePosition = `condition ${profileConditionIndex + 1}`;
+                  const targetId = profileCondition.question;
+
+                  if (!targetId) {
+                    pushIssue({
+                      scope: 'rules',
+                      context: profileContext,
+                      message: `La ${profilePosition} du profil ne cible aucune question.`
+                    });
+                    return;
+                  }
+
+                  if (!questionIds.has(targetId)) {
+                    pushIssue({
+                      scope: 'rules',
+                      context: profileContext,
+                      message: `La ${profilePosition} du profil référence la question « ${targetId} » qui n'existe plus.`
+                    });
+                    return;
+                  }
+
+                  const optionsSet = questionOptionMap.get(targetId);
+                  if (optionsSet && optionsSet.size > 0) {
+                    const invalidValues = collectInvalidOptionValues(profileCondition.value, optionsSet);
+
+                    if (invalidValues.length > 0) {
+                      const formattedValues = invalidValues.map((value) => `« ${value} »`).join(', ');
+                      const targetLabel = getQuestionLabel(targetId);
+
+                      pushIssue({
+                        scope: 'rules',
+                        context: profileContext,
+                        message: `La ${profilePosition} du profil utilise ${formattedValues} qui n'appartient pas aux options disponibles pour « ${targetLabel} ». Ajustez la valeur attendue.`
+                      });
+                    }
+                  }
+                });
+              });
+            }
+
+            return;
+          }
+
+          const targetId = condition.question;
+
+          if (!targetId) {
+            pushIssue({
+              scope: 'rules',
+              context,
+              message: `La condition ${position} n'indique aucune question de référence. Complétez la configuration ou supprimez cette condition.`
+            });
+            return;
+          }
+
+          if (!questionIds.has(targetId)) {
+            pushIssue({
+              scope: 'rules',
+              context,
+              message: `La condition ${position} référence la question « ${targetId} » qui n'existe plus. Mettez à jour la condition.`
+            });
+            return;
+          }
+
+          const optionsSet = questionOptionMap.get(targetId);
+          if (optionsSet && optionsSet.size > 0) {
+            const invalidValues = collectInvalidOptionValues(condition.value, optionsSet);
+
+            if (invalidValues.length > 0) {
+              const formattedValues = invalidValues.map((value) => `« ${value} »`).join(', ');
+              const targetLabel = getQuestionLabel(targetId);
+
+              pushIssue({
+                scope: 'rules',
+                context,
+                message: `La condition ${position} utilise ${formattedValues} qui ne sont pas proposés par « ${targetLabel} ». Ajustez la valeur ou les options.`
+              });
+            }
+          }
+        });
+      });
+
+      const ruleTeams = Array.isArray(rule?.teams) ? rule.teams : [];
+      ruleTeams.forEach((teamId) => {
+        if (!teamId) {
+          return;
+        }
+
+        if (!teamIds.has(teamId)) {
+          pushIssue({
+            scope: 'teams',
+            context,
+            message: `L'équipe « ${teamId} » n'existe plus dans le référentiel. Retirez-la de la règle ou ajoutez l'équipe correspondante.`
+          });
+        }
+      });
+
+      if (rule?.questions && typeof rule.questions === 'object') {
+        Object.keys(rule.questions).forEach((teamId) => {
+          if (!teamIds.has(teamId)) {
+            pushIssue({
+              scope: 'teams',
+              context,
+              message: `La section d'accompagnement « ${teamId} » n'est associée à aucune équipe existante. Renommez la clé ou créez l'équipe correspondante.`
+            });
+          }
+        });
+      }
+    });
+
+    return issues;
+  }, [questions, rules, teams]);
+
+  const dataIntegritySummary = useMemo(() => {
+    if (!dataIntegrityIssues || dataIntegrityIssues.length === 0) {
+      return [];
+    }
+
+    const labels = {
+      questions: 'Questions',
+      rules: 'Règles',
+      teams: 'Équipes',
+      general: 'Général'
+    };
+
+    const counts = dataIntegrityIssues.reduce((accumulator, issue) => {
+      const key = issue.scope || 'general';
+      const current = accumulator[key] || 0;
+      return { ...accumulator, [key]: current + 1 };
+    }, {});
+
+    return Object.entries(counts).map(([scope, count]) => ({
+      scope,
+      count,
+      label: labels[scope] || 'Autres'
+    }));
+  }, [dataIntegrityIssues]);
 
   useEffect(() => {
     if (!reorderAnnouncement || typeof window === 'undefined') {
@@ -786,6 +1158,60 @@ export const BackOffice = ({
               </button>
             </div>
           </header>
+
+          <section
+            className="mb-6"
+            aria-label="Détection des incohérences"
+            aria-live="polite"
+          >
+            {dataIntegrityIssues.length > 0 ? (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-6 h-6 text-amber-600 mt-1" />
+                  <div className="flex-1 space-y-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm font-semibold text-amber-900">
+                        {dataIntegrityIssues.length} incohérence
+                        {dataIntegrityIssues.length > 1 ? 's' : ''} détectée
+                        {dataIntegrityIssues.length > 1 ? 's' : ''} dans la configuration.
+                      </p>
+                      {dataIntegritySummary.map((entry) => (
+                        <span
+                          key={entry.scope}
+                          className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800"
+                        >
+                          {entry.label} · {entry.count}
+                        </span>
+                      ))}
+                    </div>
+                    <ul className="space-y-2 text-sm text-amber-900">
+                      {dataIntegrityIssues.map((issue) => (
+                        <li
+                          key={issue.id}
+                          className="rounded-lg border border-amber-200 bg-white/60 p-3"
+                        >
+                          <p className="font-medium">{issue.context}</p>
+                          <p className="mt-1 leading-snug">{issue.message}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                <CheckCircle className="w-6 h-6 text-emerald-600 mt-1" />
+                <div>
+                  <p className="text-sm font-semibold text-emerald-800">
+                    Aucune incohérence détectée dans les données de configuration.
+                  </p>
+                  <p className="mt-1 text-xs text-emerald-700">
+                    Les conditions, équipes et références sont alignées.
+                  </p>
+                </div>
+              </div>
+            )}
+          </section>
 
           <nav className="flex flex-wrap gap-2 border-b border-gray-200 pb-2 mb-6" role="tablist" aria-label="Navigation back-office">
             {tabDefinitions.map((tab) => (
