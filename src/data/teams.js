@@ -1,32 +1,50 @@
-export const initialTeams =  [
+export const initialTeams = [
   {
-    id: 'story',
-    name: 'Storytelling & Brand',
-    contact: 'story@company.com',
-    expertise: 'Narration marketing, tonalité éditoriale et cohérence du message'
+    "id": "bpp",
+    "name": "Bonnes Pratiques Promotionnelles",
+    "contact": "bpp@lfb.com",
+    "expertise": "Conformité réglementaire des communications pour éviter tout risque de promotion non adaptée"
   },
   {
-    id: 'product',
-    name: 'Produit & Expérience',
-    contact: 'product@company.com',
-    expertise: 'Démonstrations produit, scénarios d’usage et maquettes immersives'
+    "id": "it",
+    "name": "IT & Sécurité",
+    "contact": "it-security@lfb.com",
+    "expertise": "Évaluer la sécurité et la robustesse technique du projet"
   },
   {
-    id: 'growth',
-    name: 'Growth & Impact',
-    contact: 'growth@company.com',
-    expertise: 'Données marché, KPIs business et preuves de traction'
+    "id": "legal",
+    "name": "Juridique",
+    "contact": "legal@lfb.com",
+    "expertise": "Sécuriser les aspects contractuels et la conformité réglementaire des documents et relations"
   },
   {
-    id: 'press',
-    name: 'Relations Presse & Influence',
-    contact: 'press@company.com',
-    expertise: 'Diffusion médiatique, social media et gestion des messages sensibles'
+    "id": "privacy",
+    "name": "Privacy & RGPD",
+    "contact": "privacy@lfb.com",
+    "expertise": "Protection des données personnelles et conformité RGPD"
   },
   {
-    id: 'partners',
-    name: 'Partenariats stratégiques',
-    contact: 'partners@company.com',
-    expertise: 'Alliances business, co-marketing et activation prescripteurs'
+    "id": "procurement",
+    "name": "Achat",
+    "contact": "achat@company.com",
+    "expertise": "Garantir que les prestataires respectent les procédures éthiques et financières"
+  },
+  {
+    "id": "pv",
+    "name": "Pharmacovigilance",
+    "contact": "pv@company.com",
+    "expertise": "Garantir la remontée des événements indésirables liés à un produit"
+  },
+  {
+    "id": "com",
+    "name": "Communication",
+    "contact": "communication@company.com",
+    "expertise": "S’assurer du respect des guidelines visuelles et de la réputation de l’entreprise"
+  },
+  {
+    "id": "Ethics",
+    "name": "Ethique & Compliance",
+    "contact": "ethique@company.com",
+    "expertise": "Garantir la conformité globale du projet à la réglementation interne et externe (dont Loi d'Encadrement des Avantages)"
   }
 ];
