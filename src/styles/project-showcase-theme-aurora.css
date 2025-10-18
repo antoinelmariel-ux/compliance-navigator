@@ -1049,6 +1049,36 @@
   color: #075985;
 }
 
+[data-showcase-theme='aurora'] .aurora-roadmap__budget {
+  padding: 1.4rem 1.8rem;
+  border-radius: 1.6rem;
+  background: rgba(6, 12, 24, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.32);
+  box-shadow: 0 20px 45px rgba(2, 6, 23, 0.35);
+  text-align: right;
+  max-width: 18rem;
+}
+
+[data-showcase-theme='aurora'] .aurora-roadmap__budget-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(148, 163, 184, 0.78);
+}
+
+[data-showcase-theme='aurora'] .aurora-roadmap__budget-value {
+  margin-top: 0.5rem;
+  font-size: 1.55rem;
+  font-weight: 600;
+  color: #0ea5e9;
+}
+
+[data-showcase-theme='aurora'] .aurora-roadmap__budget-caption {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: rgba(226, 232, 240, 0.75);
+}
+
 [data-showcase-theme='aurora'] .aurora-roadmap__timeline {
   margin-top: 2.5rem;
   position: relative;
