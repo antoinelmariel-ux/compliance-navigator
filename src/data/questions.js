@@ -416,7 +416,7 @@ export const initialQuestions = [
     }
   },
   {
-    "id": "q12",
+    "id": "BUDGET",
     "type": "number",
     "question": "Quel est le coût estimé du projet ? (en K€)",
     "options": [],
@@ -429,6 +429,12 @@ export const initialQuestions = [
       "objective": "",
       "details": "",
       "tips": []
+    },
+    "showcase": {
+      "sections": [
+        "impact"
+      ],
+      "usage": "Carte « Budget estimé » dans la section impact."
     }
   },
   {

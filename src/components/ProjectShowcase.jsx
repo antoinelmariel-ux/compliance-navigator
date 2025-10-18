@@ -51,7 +51,7 @@ const SHOWCASE_FIELD_CONFIG = [
   { id: 'solutionComparison', fallbackLabel: 'Différenciation', fallbackType: 'long_text' },
   { id: 'innovationProcess', fallbackLabel: 'Processus innovation', fallbackType: 'long_text' },
   { id: 'visionStatement', fallbackLabel: "Indicateurs d'impact", fallbackType: 'long_text' },
-  { id: 'q12', fallbackLabel: 'Budget estimé (K€)', fallbackType: 'number' },
+  { id: 'BUDGET', fallbackLabel: 'Budget estimé (K€)', fallbackType: 'number' },
   { id: 'teamLead', fallbackLabel: 'Lead du projet', fallbackType: 'text' },
   { id: 'teamLeadTeam', fallbackLabel: 'Équipe du lead', fallbackType: 'text' },
   { id: 'teamCoreMembers', fallbackLabel: 'Membres clés', fallbackType: 'long_text' },
@@ -522,7 +522,7 @@ const REQUIRED_SHOWCASE_QUESTION_IDS = [
   'solutionComparison',
   'innovationProcess',
   'visionStatement',
-  'q12',
+  'BUDGET',
   'teamLead',
   'teamLeadTeam',
   'teamCoreMembers',
@@ -713,7 +713,7 @@ export const ProjectShowcase = ({
     () => parseListAnswer(getRawAnswer(answers, 'visionStatement')),
     [answers]
   );
-  const budgetEstimate = getFormattedAnswer(questions, answers, 'q12');
+  const budgetEstimate = getFormattedAnswer(questions, answers, 'BUDGET');
 
   const formattedBudgetEstimate = useMemo(() => {
     if (!hasText(budgetEstimate)) {

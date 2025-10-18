@@ -37,7 +37,7 @@ const demoProjectAnswers = {
   q3: ['Oui - Données personnelles standard'],
   q13: 'Oui',
   q10: ['Prestataire de service', 'Professionnel de santé (via contrat à mettre en place)'],
-  q12: '30'
+  BUDGET: '30'
 };
 
 const DEMO_TIMESTAMP = '2025-10-18T09:58:20.033Z';
