@@ -51,6 +51,7 @@ const SHOWCASE_FIELD_CONFIG = [
   { id: 'solutionComparison', fallbackLabel: 'Différenciation', fallbackType: 'long_text' },
   { id: 'innovationProcess', fallbackLabel: 'Processus innovation', fallbackType: 'long_text' },
   { id: 'visionStatement', fallbackLabel: "Indicateurs d'impact", fallbackType: 'long_text' },
+  { id: 'q12', fallbackLabel: 'Budget estimé (K€)', fallbackType: 'number' },
   { id: 'teamLead', fallbackLabel: 'Lead du projet', fallbackType: 'text' },
   { id: 'teamLeadTeam', fallbackLabel: 'Équipe du lead', fallbackType: 'text' },
   { id: 'teamCoreMembers', fallbackLabel: 'Membres clés', fallbackType: 'long_text' },
@@ -475,6 +476,7 @@ const REQUIRED_SHOWCASE_QUESTION_IDS = [
   'solutionComparison',
   'innovationProcess',
   'visionStatement',
+  'q12',
   'teamLead',
   'teamLeadTeam',
   'teamCoreMembers',
@@ -652,8 +654,21 @@ export const ProjectShowcase = ({
   const solutionComparison = getFormattedAnswer(questions, answers, 'solutionComparison');
 
   const innovationProcess = getFormattedAnswer(questions, answers, 'innovationProcess');
+  const visionStatement = getFormattedAnswer(questions, answers, 'visionStatement');
+  const budgetEstimate = getFormattedAnswer(questions, answers, 'q12');
 
-  const impactIndicators = parseListAnswer(getRawAnswer(answers, 'visionStatement'));
+  const formattedBudgetEstimate = useMemo(() => {
+    if (!hasText(budgetEstimate)) {
+      return '';
+    }
+
+    const trimmed = budgetEstimate.trim();
+    if (/[€]/i.test(trimmed)) {
+      return trimmed;
+    }
+
+    return `${trimmed} K€`;
+  }, [budgetEstimate]);
 
   const teamLead = getFormattedAnswer(questions, answers, 'teamLead');
   const teamLeadTeam = getFormattedAnswer(questions, answers, 'teamLeadTeam');
@@ -908,7 +923,7 @@ export const ProjectShowcase = ({
         </div>
       </section>
 
-      {hasText(innovationProcess) && (
+      {(hasText(innovationProcess) || hasText(visionStatement)) && (
         <section className="aurora-section aurora-difference" data-showcase-section="innovation">
           <div className="aurora-section__inner">
             <div className="aurora-section__header aurora-section__header--split">
@@ -918,7 +933,24 @@ export const ProjectShowcase = ({
               </div>
             </div>
             <div className="aurora-difference__layout">
-              <div className="aurora-difference__text">{renderTextWithLinks(innovationProcess)}</div>
+              <div className="aurora-difference__text">
+                {hasText(innovationProcess) && (
+                  <div className="aurora-difference__text-section">
+                    <p className="aurora-eyebrow">Objectifs</p>
+                    <div className="aurora-difference__text-content">
+                      {renderTextWithLinks(innovationProcess)}
+                    </div>
+                  </div>
+                )}
+                {hasText(visionStatement) && (
+                  <div className="aurora-difference__text-section">
+                    <p className="aurora-eyebrow">KPIs</p>
+                    <div className="aurora-difference__text-content">
+                      {renderTextWithLinks(visionStatement)}
+                    </div>
+                  </div>
+                )}
+              </div>
               {innovationProcessSteps.length > 0 && (
                 <ul className="aurora-difference__timeline">
                   {innovationProcessSteps.map((step, index) => (
@@ -941,7 +973,6 @@ export const ProjectShowcase = ({
       <section className="aurora-section aurora-impact" data-showcase-section="evidence">
         <div className="aurora-section__inner">
           <div className="aurora-section__header">
-            <p className="aurora-eyebrow">Impact & preuves</p>
             <h2 className="aurora-section__title">Les repères qui donnent confiance</h2>
           </div>
           <div className="aurora-impact__grid">
@@ -954,6 +985,13 @@ export const ProjectShowcase = ({
                     ? 'Runway suffisant pour activer les relais.'
                     : 'Runway à renforcer pour sécuriser la diffusion.'}
                 </p>
+              </div>
+            )}
+            {hasText(formattedBudgetEstimate) && (
+              <div className="aurora-impact__card">
+                <p className="aurora-impact__label">Budget estimé</p>
+                <p className="aurora-impact__value">{formattedBudgetEstimate}</p>
+                <p className="aurora-impact__caption">Montant total projeté pour l'initiative.</p>
               </div>
             )}
             <div className="aurora-impact__card">
@@ -977,19 +1015,6 @@ export const ProjectShowcase = ({
               </div>
             )}
           </div>
-          {impactIndicators.length > 0 && (
-            <div className="aurora-impact__vision">
-              <h3 className="aurora-impact__vision-title">Indicateurs d'impact</h3>
-              <ul className="aurora-impact__vision-list">
-                {impactIndicators.map((indicator, index) => (
-                  <li key={`${indicator}-${index}`} className="aurora-impact__vision-item">
-                    <span className="aurora-impact__vision-pulse" />
-                    <span>{renderTextWithLinks(indicator)}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
           {primaryRisk && (
             <div className="aurora-risk-halo" data-showcase-aside="risk">
               <p className="aurora-risk-halo__label">Point de vigilance</p>
