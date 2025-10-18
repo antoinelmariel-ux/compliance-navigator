@@ -68,8 +68,8 @@ export const initialRules = [
     ]
   },
   {
-    "id": "rule2",
-    "name": "Projet avec données de santé",
+    "id": "rule3",
+    "name": "Données de santé",
     "conditions": [
       {
         "type": "question",
@@ -85,39 +85,6 @@ export const initialRules = [
         "complianceProfiles": []
       }
     ],
-    "teams": [
-      "privacy",
-      "it",
-      "quality",
-      "legal"
-    ],
-    "questions": {
-      "privacy": [
-        "Une DPIA a-t-elle été réalisée ?",
-        "Les consentements sont-ils conformes RGPD ?",
-        "Il conviendra de mettre à jour le registre des traitements de données",
-        "Où sont hébergés les données ? (Europe ?)"
-      ],
-      "it": [
-        "L'hébergement est-il certifié HDS ?",
-        "Le chiffrement des données est-il implémenté ?"
-      ],
-      "quality": [
-        "Les processus respectent-ils les GxP applicables ?"
-      ],
-      "legal": [
-        "Les clauses contractuelles incluent-elles les garanties RGPD ?"
-      ]
-    },
-    "risks": [
-      {
-        "description": "Non-conformité RGPD - Données de santé sensibles",
-        "level": "Élevé",
-        "mitigation": "Si le traitement de données se fait en dehors d'un référentiel existant, un délai de 6 mois minimum sera nécessaire avant de lancer le projet"
-      }
-    ],
-    "priority": "Critique",
-    "conditionLogic": "all",
     "conditionGroups": [
       {
         "logic": "all",
@@ -137,6 +104,19 @@ export const initialRules = [
           }
         ]
       }
-    ]
+    ],
+    "conditionLogic": "all",
+    "teams": [
+      "privacy"
+    ],
+    "questions": {},
+    "risks": [
+      {
+        "description": "Déclaration hors délai",
+        "level": "Élevé",
+        "mitigation": ""
+      }
+    ],
+    "priority": "Critique"
   }
 ];
