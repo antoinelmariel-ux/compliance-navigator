@@ -18,7 +18,11 @@ import {
   createEmptyTimingCondition
 } from '../utils/ruleConditions.js';
 import { ensureOperatorForType, getOperatorOptionsForType } from '../utils/operatorOptions.js';
-import { sanitizeRiskTimingConstraint } from '../utils/rules.js';
+import {
+  sanitizeRiskTimingConstraint,
+  sanitizeTeamQuestionEntry,
+  sanitizeTeamQuestionsByTeam
+} from '../utils/rules.js';
 
 const RISK_PRIORITY_OPTIONS = [
   'A réaliser',
@@ -130,7 +134,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
         : [],
       conditionGroups: Array.isArray(rest.conditionGroups) ? rest.conditionGroups : [],
       teams: teamsList,
-      questions: rest.questions || {},
+      questions: sanitizeTeamQuestionsByTeam(rest.questions || {}),
       risks: normalizeRiskList(rest.risks, teamsList)
     };
 
@@ -404,25 +408,69 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
   };
 
   const addQuestionForTeam = (teamId) => {
-    setEditedRule({
-      ...editedRule,
-      questions: {
-        ...editedRule.questions,
-        [teamId]: [...(editedRule.questions[teamId] || []), '']
-      }
+    setEditedRule(prev => {
+      const currentQuestions = typeof prev.questions === 'object' && prev.questions !== null
+        ? { ...prev.questions }
+        : {};
+      const existing = Array.isArray(currentQuestions[teamId])
+        ? [...currentQuestions[teamId]]
+        : [];
+      existing.push(sanitizeTeamQuestionEntry({ text: '' }));
+      currentQuestions[teamId] = existing;
+      return { ...prev, questions: currentQuestions };
     });
   };
 
   const updateTeamQuestion = (teamId, index, value) => {
-    const newQuestions = { ...editedRule.questions };
-    newQuestions[teamId][index] = value;
-    setEditedRule({ ...editedRule, questions: newQuestions });
+    setEditedRule(prev => {
+      const currentQuestions = typeof prev.questions === 'object' && prev.questions !== null
+        ? { ...prev.questions }
+        : {};
+      const existing = Array.isArray(currentQuestions[teamId])
+        ? [...currentQuestions[teamId]]
+        : [];
+      const currentEntry = sanitizeTeamQuestionEntry(existing[index] || {});
+      existing[index] = { ...currentEntry, text: value };
+      currentQuestions[teamId] = existing;
+      return { ...prev, questions: currentQuestions };
+    });
   };
 
   const deleteTeamQuestion = (teamId, index) => {
-    const newQuestions = { ...editedRule.questions };
-    newQuestions[teamId] = newQuestions[teamId].filter((_, i) => i !== index);
-    setEditedRule({ ...editedRule, questions: newQuestions });
+    setEditedRule(prev => {
+      const currentQuestions = typeof prev.questions === 'object' && prev.questions !== null
+        ? { ...prev.questions }
+        : {};
+      const existing = Array.isArray(currentQuestions[teamId])
+        ? currentQuestions[teamId].filter((_, i) => i !== index)
+        : [];
+      currentQuestions[teamId] = existing;
+      return { ...prev, questions: currentQuestions };
+    });
+  };
+
+  const updateTeamQuestionTiming = (teamId, index, updates) => {
+    setEditedRule(prev => {
+      const currentQuestions = typeof prev.questions === 'object' && prev.questions !== null
+        ? { ...prev.questions }
+        : {};
+      const existing = Array.isArray(currentQuestions[teamId])
+        ? [...currentQuestions[teamId]]
+        : [];
+      const currentEntry = sanitizeTeamQuestionEntry(existing[index] || {});
+      const mergedConstraint = {
+        ...currentEntry.timingConstraint,
+        ...(typeof updates === 'function'
+          ? updates(currentEntry.timingConstraint)
+          : updates)
+      };
+      existing[index] = {
+        ...currentEntry,
+        timingConstraint: sanitizeRiskTimingConstraint(mergedConstraint)
+      };
+      currentQuestions[teamId] = existing;
+      return { ...prev, questions: currentQuestions };
+    });
   };
 
   const addRisk = () => {
@@ -511,7 +559,16 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                 type="button"
                 onClick={() => {
                   const normalizedRisks = normalizeRiskList(editedRule.risks, editedRule.teams);
-                  onSave(applyRuleConditionGroups({ ...editedRule, risks: normalizedRisks }, conditionGroups));
+                  onSave(
+                    applyRuleConditionGroups(
+                      {
+                        ...editedRule,
+                        questions: sanitizeTeamQuestionsByTeam(editedRule.questions),
+                        risks: normalizedRisks
+                      },
+                      conditionGroups
+                    )
+                  );
                 }}
                 className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-all hv-button hv-button-primary"
               >
@@ -1208,23 +1265,151 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                     </div>
                     {(editedRule.questions[teamId] || []).length > 0 ? (
                       <div className="space-y-2">
-                        {(editedRule.questions[teamId] || []).map((questionText, idx) => (
-                          <div key={idx} className="flex items-center space-x-2">
-                            <input
-                              type="text"
-                              value={questionText}
-                              onChange={(e) => updateTeamQuestion(teamId, idx, e.target.value)}
-                              className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm"
-                              placeholder="Question pour l'équipe..."
-                            />
-                            <button
-                              onClick={() => deleteTeamQuestion(teamId, idx)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded transition-all"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ))}
+                        {(editedRule.questions[teamId] || []).map((questionEntry, idx) => {
+                          const sanitizedEntry = sanitizeTeamQuestionEntry(questionEntry);
+                          const timingConstraint = sanitizeRiskTimingConstraint(
+                            sanitizedEntry.timingConstraint
+                          );
+                          const hasDateQuestions = dateQuestions.length >= 2;
+                          const toggleDisabled = !hasDateQuestions && !timingConstraint.enabled;
+                          const isToggleChecked = Boolean(timingConstraint.enabled);
+
+                          return (
+                            <div key={idx} className="border border-gray-200 rounded-lg p-3 bg-white space-y-3">
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="text"
+                                  value={sanitizedEntry.text}
+                                  onChange={(e) => updateTeamQuestion(teamId, idx, e.target.value)}
+                                  className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm"
+                                  placeholder="Question pour l'équipe..."
+                                />
+                                <button
+                                  onClick={() => deleteTeamQuestion(teamId, idx)}
+                                  className="p-2 text-red-600 hover:bg-red-50 rounded transition-all"
+                                  aria-label="Supprimer la question"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+
+                              <div className="border-t border-gray-100 pt-3">
+                                <div className="flex items-center justify-between gap-3">
+                                  <div>
+                                    <p className="text-xs font-medium text-gray-600">
+                                      Associer au non-respect d'un délai minimum
+                                    </p>
+                                    <p className="text-[11px] text-gray-500">
+                                      Utilise deux questions de type « date » pour vérifier le délai réel.
+                                    </p>
+                                  </div>
+                                  <label
+                                    className={`inline-flex items-center gap-2 text-xs font-medium ${
+                                      toggleDisabled ? 'text-gray-400' : 'text-gray-700'
+                                    }`}
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                      checked={isToggleChecked}
+                                      onChange={(event) =>
+                                        updateTeamQuestionTiming(teamId, idx, { enabled: event.target.checked })
+                                      }
+                                      disabled={toggleDisabled}
+                                    />
+                                    <span>{isToggleChecked ? 'Activé' : 'Désactivé'}</span>
+                                  </label>
+                                </div>
+
+                                {!hasDateQuestions ? (
+                                  <p className="mt-2 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                                    Ajoutez au moins deux questions de type date pour pouvoir contrôler un délai minimum.
+                                  </p>
+                                ) : isToggleChecked ? (
+                                  <div className="mt-3 space-y-3">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                      <div>
+                                        <label className="block text-xs font-medium text-gray-600 mb-1">Date de départ</label>
+                                        <select
+                                          value={timingConstraint.startQuestion}
+                                          onChange={(e) =>
+                                            updateTeamQuestionTiming(teamId, idx, { startQuestion: e.target.value })
+                                          }
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                                        >
+                                          <option value="">Sélectionner...</option>
+                                          {dateQuestions.map(question => (
+                                            <option key={question.id} value={question.id}>
+                                              {question.id} – {question.question || 'Question sans intitulé'}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs font-medium text-gray-600 mb-1">Date de fin</label>
+                                        <select
+                                          value={timingConstraint.endQuestion}
+                                          onChange={(e) =>
+                                            updateTeamQuestionTiming(teamId, idx, { endQuestion: e.target.value })
+                                          }
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                                        >
+                                          <option value="">Sélectionner...</option>
+                                          {dateQuestions.map(question => (
+                                            <option key={question.id} value={question.id}>
+                                              {question.id} – {question.question || 'Question sans intitulé'}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                      <div>
+                                        <label className="block text-xs font-medium text-gray-600 mb-1">Minimum (semaines)</label>
+                                        <input
+                                          type="number"
+                                          min="0"
+                                          step="0.1"
+                                          value={timingConstraint.minimumWeeks ?? ''}
+                                          onChange={(e) => {
+                                            const rawValue = e.target.value;
+                                            updateTeamQuestionTiming(teamId, idx, {
+                                              minimumWeeks: rawValue === '' ? undefined : Number(rawValue)
+                                            });
+                                          }}
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                                          placeholder="Ex: 4"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs font-medium text-gray-600 mb-1">Minimum (jours)</label>
+                                        <input
+                                          type="number"
+                                          min="0"
+                                          step="1"
+                                          value={timingConstraint.minimumDays ?? ''}
+                                          onChange={(e) => {
+                                            const rawValue = e.target.value;
+                                            updateTeamQuestionTiming(teamId, idx, {
+                                              minimumDays: rawValue === '' ? undefined : Number(rawValue)
+                                            });
+                                          }}
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                                          placeholder="Ex: 90"
+                                        />
+                                      </div>
+                                    </div>
+
+                                    <p className="text-[11px] text-gray-500">
+                                      La question sera affichée uniquement si le délai constaté est inférieur au minimum défini.
+                                    </p>
+                                  </div>
+                                ) : null}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     ) : (
                       <p className="text-sm text-gray-500 italic">Aucune question définie</p>

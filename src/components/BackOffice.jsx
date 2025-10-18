@@ -19,7 +19,11 @@ import { QuestionEditor } from './QuestionEditor.jsx';
 import { RuleEditor } from './RuleEditor.jsx';
 import { renderTextWithLinks } from '../utils/linkify.js';
 import { normalizeConditionGroups } from '../utils/conditionGroups.js';
-import { normalizeTimingRequirement } from '../utils/rules.js';
+import {
+  normalizeTimingRequirement,
+  sanitizeRiskTimingConstraint,
+  sanitizeTeamQuestionEntry
+} from '../utils/rules.js';
 import { sanitizeRuleCondition } from '../utils/ruleConditions.js';
 
 const QUESTION_TYPE_META = {
@@ -418,6 +422,12 @@ export const BackOffice = ({
         .map((team) => (team?.id ? team.id : null))
         .filter(Boolean)
     );
+    const teamNameMap = new Map();
+    safeTeams.forEach(team => {
+      if (team?.id) {
+        teamNameMap.set(team.id, team?.name || team.id);
+      }
+    });
 
     const issues = [];
     let issueIndex = 0;
@@ -695,14 +705,71 @@ export const BackOffice = ({
       });
 
       if (rule?.questions && typeof rule.questions === 'object') {
-        Object.keys(rule.questions).forEach((teamId) => {
+        Object.entries(rule.questions).forEach(([teamId, teamQuestions]) => {
           if (!teamIds.has(teamId)) {
             pushIssue({
               scope: 'teams',
               context,
               message: `La section d'accompagnement « ${teamId} » n'est associée à aucune équipe existante. Renommez la clé ou créez l'équipe correspondante.`
             });
+            return;
           }
+
+          const entries = Array.isArray(teamQuestions) ? teamQuestions : [];
+          entries.forEach((questionEntry, questionIndex) => {
+            const sanitizedEntry = sanitizeTeamQuestionEntry(questionEntry);
+            const questionLabel = sanitizedEntry.text ? sanitizedEntry.text : `Question ${questionIndex + 1}`;
+            const questionContext = `Règle « ${ruleLabel} » · ${teamNameMap.get(teamId) || teamId} · ${questionLabel}`;
+            const timingConstraint = sanitizeRiskTimingConstraint(sanitizedEntry.timingConstraint);
+
+            if (timingConstraint.enabled) {
+              if (!timingConstraint.startQuestion) {
+                pushIssue({
+                  scope: 'rules',
+                  context: questionContext,
+                  message: `Le contrôle de délai ne définit pas de question de départ. Sélectionnez une question de début.`
+                });
+              } else if (!questionIds.has(timingConstraint.startQuestion)) {
+                pushIssue({
+                  scope: 'rules',
+                  context: questionContext,
+                  message: `La question de départ « ${timingConstraint.startQuestion} » utilisée pour le délai n'existe plus.`
+                });
+              } else {
+                const startQuestion = questionMap.get(timingConstraint.startQuestion);
+                if ((startQuestion?.type || 'choice') !== 'date') {
+                  pushIssue({
+                    scope: 'rules',
+                    context: questionContext,
+                    message: `La question de départ « ${timingConstraint.startQuestion} » n'est pas de type date. Choisissez une question de type date.`
+                  });
+                }
+              }
+
+              if (!timingConstraint.endQuestion) {
+                pushIssue({
+                  scope: 'rules',
+                  context: questionContext,
+                  message: `Le contrôle de délai ne définit pas de question d'arrivée. Sélectionnez une question de fin.`
+                });
+              } else if (!questionIds.has(timingConstraint.endQuestion)) {
+                pushIssue({
+                  scope: 'rules',
+                  context: questionContext,
+                  message: `La question de fin « ${timingConstraint.endQuestion} » utilisée pour le délai n'existe plus.`
+                });
+              } else {
+                const endQuestion = questionMap.get(timingConstraint.endQuestion);
+                if ((endQuestion?.type || 'choice') !== 'date') {
+                  pushIssue({
+                    scope: 'rules',
+                    context: questionContext,
+                    message: `La question de fin « ${timingConstraint.endQuestion} » n'est pas de type date. Choisissez une question de type date.`
+                  });
+                }
+              }
+            }
+          });
         });
       }
     });

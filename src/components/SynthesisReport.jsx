@@ -120,6 +120,57 @@ const formatRiskTimingViolation = (violation) => {
   return `Délai constaté : ${actualText} – minimum requis : ${requiredParts.join(' / ')}`;
 };
 
+const resolveQuestionLabel = (questionBank, questionId) => {
+  if (!questionId) {
+    return '';
+  }
+
+  const collection = Array.isArray(questionBank) ? questionBank : [];
+  const match = collection.find(question => question?.id === questionId);
+
+  return match?.question || questionId;
+};
+
+const normalizeTeamQuestionForDisplay = (entry) => {
+  if (typeof entry === 'string') {
+    return { text: entry, timingViolation: null };
+  }
+
+  if (entry && typeof entry === 'object') {
+    return {
+      text: typeof entry.text === 'string' ? entry.text : '',
+      timingViolation:
+        entry.timingViolation && typeof entry.timingViolation === 'object'
+          ? entry.timingViolation
+          : null
+    };
+  }
+
+  return { text: '', timingViolation: null };
+};
+
+const formatTeamQuestionTimingMessage = (questionBank, violation) => {
+  if (!violation) {
+    return '';
+  }
+
+  const base = formatRiskTimingViolation(violation);
+  if (!base) {
+    return '';
+  }
+
+  const startLabel = resolveQuestionLabel(questionBank, violation.startQuestion);
+  const endLabel = resolveQuestionLabel(questionBank, violation.endQuestion);
+
+  if (startLabel || endLabel) {
+    const safeStart = startLabel || violation.startQuestion || 'début';
+    const safeEnd = endLabel || violation.endQuestion || 'fin';
+    return `Délai entre « ${safeStart} » et « ${safeEnd} » — ${base}`;
+  }
+
+  return base;
+};
+
 const computeTeamTimeline = (timelineByTeam, teamId) => {
   const entries = timelineByTeam[teamId] || [];
   if (entries.length === 0) {
@@ -293,13 +344,25 @@ const buildEmailHtml = ({
               const teamQuestions = analysis.questions?.[team.id] || [];
               const contact = team.contact ? `<span style="color:#4b5563;"> | Contact : ${escapeHtml(team.contact)}</span>` : '';
 
-              const questionsHtml = Array.isArray(teamQuestions) && teamQuestions.length
+              const formattedTeamQuestions = Array.isArray(teamQuestions)
+                ? teamQuestions
+                    .map(normalizeTeamQuestionForDisplay)
+                    .filter(question => (question.text || '').trim().length > 0)
+                : [];
+
+              const questionsHtml = formattedTeamQuestions.length
                 ? `
                     <div style="margin-top:8px;">
                       <span style="font-size:13px; color:#4b5563; font-weight:600;">Points à préparer :</span>
                       <ul style="margin:8px 0 0; padding-left:18px; list-style-type:disc; color:#4b5563; font-size:13px;">
-                        ${teamQuestions
-                          .map(question => `<li>${escapeHtml(question)}</li>`)
+                        ${formattedTeamQuestions
+                          .map(question => {
+                            const timingMessage = formatTeamQuestionTimingMessage(questions, question.timingViolation);
+                            const timingHtml = timingMessage
+                              ? `<div style="margin-top:4px; font-size:12px; color:#b45309;">⚠️ ${escapeHtml(timingMessage)}</div>`
+                              : '';
+                            return `<li>${escapeHtml(question.text)}${timingHtml}</li>`;
+                          })
                           .join('')}
                       </ul>
                     </div>
@@ -969,6 +1032,11 @@ export const SynthesisReport = ({
               {relevantTeams.map(team => {
                 const teamPriority = getTeamPriority(analysis, team.id);
                 const teamQuestions = analysis.questions?.[team.id];
+                const formattedTeamQuestions = Array.isArray(teamQuestions)
+                  ? teamQuestions
+                      .map(normalizeTeamQuestionForDisplay)
+                      .filter(question => (question.text || '').trim().length > 0)
+                  : [];
 
                 return (
                   <div key={team.id} className="bg-white rounded-xl p-6 border-2 border-gray-200 hover:border-indigo-300 transition-all hv-surface" role="article" aria-label={`Équipe ${team.name}`}>
@@ -988,16 +1056,24 @@ export const SynthesisReport = ({
                       {renderTextWithLinks(team.contact)}
                     </div>
 
-                      {teamQuestions && (
-                        <div className="mt-4">
-                          <h4 className="text-sm font-semibold text-gray-800 mb-2">Points à préparer :</h4>
-                          <ul className="space-y-1">
-                            {teamQuestions.map((question, idx) => (
-                            <li key={idx} className="text-sm text-gray-700 flex">
-                              <span className="text-indigo-500 mr-2">•</span>
-                              <span>{renderTextWithLinks(question)}</span>
-                            </li>
-                          ))}
+                    {formattedTeamQuestions.length > 0 && (
+                      <div className="mt-4">
+                        <h4 className="text-sm font-semibold text-gray-800 mb-2">Points à préparer :</h4>
+                        <ul className="space-y-1">
+                          {formattedTeamQuestions.map((question, idx) => {
+                            const timingMessage = formatTeamQuestionTimingMessage(questions, question.timingViolation);
+                            return (
+                              <li key={idx} className="text-sm text-gray-700 flex flex-col">
+                                <div className="flex">
+                                  <span className="text-indigo-500 mr-2">•</span>
+                                  <span>{renderTextWithLinks(question.text)}</span>
+                                </div>
+                                {timingMessage && (
+                                  <span className="ml-5 text-xs text-amber-600 mt-1">⚠️ {timingMessage}</span>
+                                )}
+                              </li>
+                            );
+                          })}
                         </ul>
                       </div>
                     )}

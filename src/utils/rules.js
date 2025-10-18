@@ -106,7 +106,7 @@ const toOptionalNonNegativeNumber = (value) => {
   return parsed < 0 ? 0 : parsed;
 };
 
-const sanitizeRiskTimingConstraint = (constraint = {}) => {
+const sanitizeTimingConstraint = (constraint = {}) => {
   const enabled = Boolean(constraint?.enabled);
   const startQuestion = typeof constraint?.startQuestion === 'string' ? constraint.startQuestion : '';
   const endQuestion = typeof constraint?.endQuestion === 'string' ? constraint.endQuestion : '';
@@ -118,6 +118,50 @@ const sanitizeRiskTimingConstraint = (constraint = {}) => {
     minimumWeeks: toOptionalNonNegativeNumber(constraint?.minimumWeeks),
     minimumDays: toOptionalNonNegativeNumber(constraint?.minimumDays)
   };
+};
+
+const sanitizeRiskTimingConstraint = (constraint = {}) => sanitizeTimingConstraint(constraint);
+
+const sanitizeTeamQuestionEntry = (entry) => {
+  if (typeof entry === 'string') {
+    return {
+      text: entry,
+      timingConstraint: sanitizeTimingConstraint()
+    };
+  }
+
+  if (!entry || typeof entry !== 'object') {
+    return {
+      text: '',
+      timingConstraint: sanitizeTimingConstraint()
+    };
+  }
+
+  const { text, timingConstraint, ...rest } = entry;
+
+  return {
+    ...rest,
+    text: typeof text === 'string' ? text : '',
+    timingConstraint: sanitizeTimingConstraint(timingConstraint)
+  };
+};
+
+const sanitizeTeamQuestionsByTeam = (input) => {
+  if (!input || typeof input !== 'object') {
+    return {};
+  }
+
+  return Object.entries(input).reduce((accumulator, [teamId, questions]) => {
+    if (!teamId) {
+      return accumulator;
+    }
+
+    const entries = Array.isArray(questions)
+      ? questions.map(sanitizeTeamQuestionEntry)
+      : [];
+
+    return { ...accumulator, [teamId]: entries };
+  }, {});
 };
 
 const matchesCondition = (condition, answers) => {
@@ -422,10 +466,80 @@ export const analyzeAnswers = (answers, rules, riskLevelRules, riskWeighting) =>
       rule.teams.forEach(teamId => teamsSet.add(teamId));
 
       Object.entries(rule.questions).forEach(([teamId, questions]) => {
-        if (!allQuestions[teamId]) {
-          allQuestions[teamId] = [];
+        if (!teamId) {
+          return;
         }
-        allQuestions[teamId].push(...questions);
+
+        const entries = Array.isArray(questions)
+          ? questions.map(sanitizeTeamQuestionEntry)
+          : [];
+
+        entries.forEach(entry => {
+          if (!entry) {
+            return;
+          }
+
+          const rawText = typeof entry.text === 'string' ? entry.text : '';
+          const trimmedText = rawText.trim();
+          const timingConstraint = sanitizeTimingConstraint(entry.timingConstraint);
+
+          if (timingConstraint.enabled) {
+            const diff = computeTimingDiff(timingConstraint, answers);
+
+            if (!diff) {
+              return;
+            }
+
+            if (trimmedText.length === 0) {
+              return;
+            }
+
+            const requiredWeeks = typeof timingConstraint.minimumWeeks === 'number'
+              ? timingConstraint.minimumWeeks
+              : undefined;
+            const requiredDays = typeof timingConstraint.minimumDays === 'number'
+              ? timingConstraint.minimumDays
+              : undefined;
+            const meetsWeeks = requiredWeeks === undefined || diff.diffInWeeks >= requiredWeeks;
+            const meetsDays = requiredDays === undefined || diff.diffInDays >= requiredDays;
+
+            if (meetsWeeks && meetsDays) {
+              return;
+            }
+
+            if (!allQuestions[teamId]) {
+              allQuestions[teamId] = [];
+            }
+
+            allQuestions[teamId].push({
+              text: rawText,
+              timingViolation: {
+                startQuestion: timingConstraint.startQuestion,
+                endQuestion: timingConstraint.endQuestion,
+                requiredWeeks,
+                requiredDays,
+                actualWeeks: diff.diffInWeeks,
+                actualDays: diff.diffInDays,
+                meetsWeeks,
+                meetsDays
+              }
+            });
+
+            teamsSet.add(teamId);
+            return;
+          }
+
+          if (trimmedText.length === 0) {
+            return;
+          }
+
+          if (!allQuestions[teamId]) {
+            allQuestions[teamId] = [];
+          }
+
+          allQuestions[teamId].push({ text: rawText, timingViolation: null });
+          teamsSet.add(teamId);
+        });
       });
 
       const processedRisks = (Array.isArray(rule.risks) ? rule.risks : [])
@@ -586,5 +700,8 @@ export {
   computeTimingDiff,
   normalizeTimingRequirement,
   getActiveTimelineProfiles,
-  sanitizeRiskTimingConstraint
+  sanitizeRiskTimingConstraint,
+  sanitizeTimingConstraint,
+  sanitizeTeamQuestionEntry,
+  sanitizeTeamQuestionsByTeam
 };
