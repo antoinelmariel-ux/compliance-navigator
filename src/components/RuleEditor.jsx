@@ -669,7 +669,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                                 >
                                                   <option value="">Sélectionner...</option>
                                                   {dateQuestions.map(q => (
-                                                    <option key={q.id} value={q.id}>{q.id} - {q.question.substring(0, 40)}...</option>
+                                                    <option key={q.id} value={q.id}>{q.id} - {q.question ?? ''}</option>
                                                   ))}
                                                 </select>
                                               </div>
@@ -683,7 +683,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                                 >
                                                   <option value="">Sélectionner...</option>
                                                   {dateQuestions.map(q => (
-                                                    <option key={q.id} value={q.id}>{q.id} - {q.question.substring(0, 40)}...</option>
+                                                    <option key={q.id} value={q.id}>{q.id} - {q.question ?? ''}</option>
                                                   ))}
                                                 </select>
                                               </div>
@@ -850,7 +850,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                                                         <option value="">Sélectionner...</option>
                                                                         {questions.map(question => (
                                                                           <option key={question.id} value={question.id}>
-                                                                            {question.id} - {question.question.substring(0, 45)}...
+                                                                            {question.id} - {question.question ?? ''}
                                                                           </option>
                                                                         ))}
                                                                       </select>
@@ -983,7 +983,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                           >
                                             <option value="">Sélectionner...</option>
                                             {questions.map(q => (
-                                              <option key={q.id} value={q.id}>{q.id} - {q.question.substring(0, 30)}...</option>
+                                              <option key={q.id} value={q.id}>{q.id} - {q.question ?? ''}</option>
                                             ))}
                                           </select>
                                         </div>
