@@ -448,7 +448,11 @@ const getPrimaryRisk = (analysis) => {
     return null;
   }
 
-  const priorityWeight = { Critique: 3, Important: 2, Recommandé: 1 };
+  const priorityWeight = {
+    'A particulièrement anticiper': 3,
+    'A anticiper': 2,
+    'A réaliser': 1
+  };
 
   return risks.reduce((acc, risk) => {
     if (!acc) {

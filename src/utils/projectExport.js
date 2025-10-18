@@ -25,19 +25,19 @@ export const sanitizeFileName = (value, fallback = 'projet-compliance') => {
 
 export const getTeamPriority = (analysis, teamId) => {
   if (!analysis) {
-    return 'Recommandé';
+    return 'A réaliser';
   }
 
   const priorityWeights = {
-    Recommandé: 1,
-    Important: 2,
-    Critique: 3
+    'A réaliser': 1,
+    'A anticiper': 2,
+    'A particulièrement anticiper': 3
   };
 
   const getWeight = (priority) => priorityWeights[priority] || 0;
 
   const risks = Array.isArray(analysis.risks) ? analysis.risks : [];
-  let bestPriority = 'Recommandé';
+  let bestPriority = 'A réaliser';
 
   risks.forEach(risk => {
     const associatedTeams = new Set();
@@ -54,7 +54,7 @@ export const getTeamPriority = (analysis, teamId) => {
       return;
     }
 
-    const riskPriority = risk?.priority || 'Recommandé';
+    const riskPriority = risk?.priority || 'A réaliser';
     if (getWeight(riskPriority) > getWeight(bestPriority)) {
       bestPriority = riskPriority;
     }

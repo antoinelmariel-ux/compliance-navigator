@@ -417,7 +417,7 @@ export const analyzeAnswers = (answers, rules, riskLevelRules) => {
 
           const baseRisk = {
             ...risk,
-            priority: risk?.priority || 'Recommandé',
+            priority: risk?.priority || 'A réaliser',
             teamId: preferredTeam,
             teams: preferredTeam ? [preferredTeam] : [],
             ruleId: rule.id,

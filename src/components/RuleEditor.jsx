@@ -20,7 +20,11 @@ import {
 import { ensureOperatorForType, getOperatorOptionsForType } from '../utils/operatorOptions.js';
 import { sanitizeRiskTimingConstraint } from '../utils/rules.js';
 
-const RISK_PRIORITY_OPTIONS = ['Critique', 'Important', 'Recommandé'];
+const RISK_PRIORITY_OPTIONS = [
+  'A réaliser',
+  'A anticiper',
+  'A particulièrement anticiper'
+];
 
 const normalizeRiskEntry = (risk, availableTeams = []) => {
   const safeTeams = Array.isArray(availableTeams) ? availableTeams : [];
@@ -30,13 +34,13 @@ const normalizeRiskEntry = (risk, availableTeams = []) => {
     description: '',
     level: 'Moyen',
     mitigation: '',
-    priority: 'Recommandé',
+    priority: 'A réaliser',
     teamId: fallbackTeam,
     ...risk
   };
 
   if (!RISK_PRIORITY_OPTIONS.includes(normalized.priority)) {
-    normalized.priority = 'Recommandé';
+    normalized.priority = 'A réaliser';
   }
 
   if (normalized.level !== 'Faible' && normalized.level !== 'Moyen' && normalized.level !== 'Élevé') {
@@ -428,7 +432,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
       description: '',
       level: 'Moyen',
       mitigation: '',
-      priority: 'Recommandé',
+      priority: 'A réaliser',
       teamId: fallbackTeam,
       timingConstraint: sanitizeRiskTimingConstraint()
     }, teamsForRisk);
