@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from '../react.js';
 import {
   FileText,
-  Calendar,
   Users,
   AlertTriangle,
   Send,
@@ -58,18 +57,6 @@ const formatDaysValue = (days) => {
   }
 
   return `${formatNumber(Math.round(days))} j.`;
-};
-
-const formatRequirementValue = (requirement) => {
-  if (requirement.requiredWeeks !== undefined) {
-    return `${formatNumber(requirement.requiredWeeks)} sem.`;
-  }
-
-  if (requirement.requiredDays !== undefined) {
-    return `${formatNumber(requirement.requiredDays)} j.`;
-  }
-
-  return '-';
 };
 
 const formatRiskScore = (score) => {
@@ -171,35 +158,6 @@ const formatTeamQuestionTimingMessage = (questionBank, violation) => {
   return base;
 };
 
-const computeTeamTimeline = (timelineByTeam, teamId) => {
-  const entries = timelineByTeam[teamId] || [];
-  if (entries.length === 0) {
-    return null;
-  }
-
-  const actualWeeks = entries[0].actualWeeks;
-  const actualDays = entries[0].actualDays;
-  const meetsAll = entries.every(entry => entry.satisfied);
-  const strictestRequirement = entries.reduce((acc, entry) => {
-    const requirementWeeks =
-      entry.requiredWeeks !== undefined
-        ? entry.requiredWeeks
-        : entry.requiredDays !== undefined
-          ? entry.requiredDays / 7
-          : 0;
-
-    return requirementWeeks > acc ? requirementWeeks : acc;
-  }, 0);
-
-  return {
-    entries,
-    actualWeeks,
-    actualDays,
-    meetsAll,
-    strictestRequirement
-  };
-};
-
 const formatAsHtmlText = (value) => {
   return escapeHtml(value).replace(/\r?\n/g, '<br />');
 };
@@ -209,9 +167,7 @@ const buildEmailHtml = ({
   questions,
   answers,
   analysis,
-  relevantTeams,
-  timelineByTeam,
-  timelineDetails
+  relevantTeams
 }) => {
   const title = projectName || 'Projet sans nom';
   const answeredQuestions = questions.filter(question => {
@@ -232,8 +188,6 @@ const buildEmailHtml = ({
   });
 
   const risks = Array.isArray(analysis?.risks) ? analysis.risks : [];
-  const firstTimelineDetail = timelineDetails.find(detail => detail.diff);
-  const hasTimelineData = Object.keys(timelineByTeam).length > 0 || Boolean(firstTimelineDetail);
 
   const overviewSection = answeredQuestions.length
     ? `
@@ -261,73 +215,6 @@ const buildEmailHtml = ({
                 .join('')}
             </tbody>
           </table>
-        </div>
-      `
-    : '';
-
-  const timelineSection = hasTimelineData
-    ? `
-        <div style="margin-bottom:24px;">
-          <h2 style="font-size:18px; font-weight:600; color:#1f2937; margin-bottom:12px;">
-            Délais compliance recommandés
-          </h2>
-          <div style="background-color:#eef2ff; border:1px solid #c7d2fe; border-radius:12px; padding:16px; color:#312e81; font-size:14px; margin-bottom:16px;">
-            ${firstTimelineDetail?.diff
-              ? `Buffer projet : <strong>${escapeHtml(
-                  formatWeeksValue(firstTimelineDetail.diff.diffInWeeks)
-                )}</strong> (${escapeHtml(formatDaysValue(firstTimelineDetail.diff.diffInDays))})`
-              : 'Dates projet incomplètes : les délais sont fournis à titre indicatif.'}
-          </div>
-          ${relevantTeams
-            .map(team => {
-              const timelineInfo = computeTeamTimeline(timelineByTeam, team.id);
-              const teamName = escapeHtml(team.name);
-
-              if (!timelineInfo) {
-                return `
-                  <div style="border:1px solid #e5e7eb; border-radius:12px; padding:16px; margin-bottom:12px; background-color:#ffffff;">
-                    <h3 style="margin:0 0 8px; font-size:16px; font-weight:600; color:#1f2937;">${teamName}</h3>
-                    <p style="margin:0; font-size:14px; color:#4b5563;">Aucune exigence de délai configurée.</p>
-                  </div>
-                `;
-              }
-
-              const entriesHtml = timelineInfo.entries
-                .map(entry => {
-                  const statusColor = entry.satisfied ? '#059669' : '#dc2626';
-                  const statusLabel = entry.satisfied ? 'Délai respecté' : 'Délai insuffisant';
-                  const requirementLabel = escapeHtml(formatRequirementValue(entry));
-                  const profileLabel = escapeHtml(entry.profileLabel);
-
-                  return `
-                    <li style="margin-bottom:6px;">
-                      <span style="font-weight:600; color:#1f2937;">${profileLabel}</span>
-                      <span style="color:#4b5563;"> — ${requirementLabel}</span>
-                      <span style="color:${statusColor}; font-weight:600;"> (${statusLabel})</span>
-                    </li>
-                  `;
-                })
-                .join('');
-
-              return `
-                <div style="border:1px solid #e5e7eb; border-radius:12px; padding:16px; margin-bottom:12px; background-color:#ffffff;">
-                  <h3 style="margin:0 0 8px; font-size:16px; font-weight:600; color:#1f2937;">${teamName}</h3>
-                  <p style="margin:0; font-size:14px; color:#4b5563;">
-                    Buffer actuel : <strong>${escapeHtml(formatWeeksValue(timelineInfo.actualWeeks))}</strong>
-                    (${escapeHtml(formatDaysValue(timelineInfo.actualDays))})
-                  </p>
-                  <p style="margin:4px 0 10px; font-size:14px; color:#4b5563;">
-                    Exigence la plus stricte : <strong>${escapeHtml(
-                      formatWeeksValue(timelineInfo.strictestRequirement)
-                    )}</strong>
-                  </p>
-                  <ul style="margin:0; padding-left:18px; list-style-type:disc; color:#4b5563; font-size:13px;">
-                    ${entriesHtml}
-                  </ul>
-                </div>
-              `;
-            })
-            .join('')}
         </div>
       `
     : '';
@@ -437,7 +324,6 @@ const buildEmailHtml = ({
               Bonjour équipe Compliance, un nouveau projet a été soumis pour revue. Vous trouverez ci-dessous les informations principales.
             </p>
             ${overviewSection}
-            ${timelineSection}
             ${teamSection}
             ${riskSection}
           </div>
@@ -575,12 +461,7 @@ export const SynthesisReport = ({
 
   const formattedRiskScore = formatRiskScore(analysis?.riskScore);
 
-  const timelineByTeam = analysis?.timeline?.byTeam || {};
   const timelineDetails = analysis?.timeline?.details || [];
-  const firstTimelineDetail = timelineDetails.find(detail => detail.diff);
-
-  const hasTimelineData =
-    Object.keys(timelineByTeam).length > 0 || Boolean(firstTimelineDetail);
 
   const extractedProjectName = extractProjectName(answers, questions);
   const effectiveProjectName =
@@ -711,9 +592,7 @@ export const SynthesisReport = ({
       questions,
       answers,
       analysis,
-      relevantTeams,
-      timelineByTeam,
-      timelineDetails
+      relevantTeams
     });
     const emailText = buildPlainTextEmail(emailHtml);
     const projectExport = buildProjectExport({
@@ -788,7 +667,6 @@ export const SynthesisReport = ({
     effectiveProjectName,
     questions,
     relevantTeams,
-    timelineByTeam,
     timelineDetails,
     setAttachmentReminder
   ]);
@@ -918,109 +796,6 @@ export const SynthesisReport = ({
             )}
           </section>
 
-          {hasTimelineData && (
-            <section className="mb-8" aria-labelledby="timeline-heading">
-              <h2 id="timeline-heading" className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-                <Calendar className="w-6 h-6 mr-2 text-indigo-600" />
-                Délais compliance recommandés
-              </h2>
-                {firstTimelineDetail?.diff ? (
-                <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 mb-4 text-sm text-gray-700 hv-surface">
-                  <span className="font-semibold text-gray-800">Buffer projet calculé :</span>{' '}
-                  {formatWeeksValue(firstTimelineDetail.diff.diffInWeeks)}
-                  {' '}({formatDaysValue(firstTimelineDetail.diff.diffInDays)}) entre la soumission et le lancement.
-                </div>
-              ) : (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-4 text-sm text-yellow-800 hv-surface" role="status" aria-live="polite">
-                  Les dates projet ne sont pas complètes. Les exigences de délais sont indiquées à titre informatif.
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {relevantTeams.map(team => {
-                  const timelineInfo = computeTeamTimeline(timelineByTeam, team.id);
-
-                  if (!timelineInfo) {
-                    return (
-                      <div key={team.id} className="bg-white rounded-xl border border-gray-200 p-5 hv-surface">
-                        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between mb-2">
-                          <h3 className="text-lg font-bold text-gray-800">{team.name}</h3>
-                          <span className="px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-600 border border-gray-200 hv-badge">
-                            Pas d'exigence
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-600">
-                          Aucun délai spécifique n'a été configuré pour cette équipe dans le back-office.
-                        </p>
-                      </div>
-                    );
-                  }
-
-                  const statusClasses = timelineInfo.meetsAll
-                    ? 'bg-green-50 text-green-700 border-green-200'
-                    : 'bg-red-50 text-red-700 border-red-200';
-
-                  return (
-                    <div key={team.id} className="bg-white rounded-xl border border-gray-200 p-5 hv-surface" role="article" aria-label={`Exigences de délai pour ${team.name}`}>
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-3">
-                        <div>
-                          <h3 className="text-lg font-bold text-gray-800">{team.name}</h3>
-                          <p className="text-xs text-gray-500">{team.expertise}</p>
-                        </div>
-                        <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${statusClasses} self-start sm:self-auto`}>
-                          {timelineInfo.meetsAll ? 'Délai suffisant' : 'Délai insuffisant'}
-                        </span>
-                      </div>
-
-                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm text-gray-700 mb-3 hv-surface">
-                        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                          <span className="font-medium text-gray-800">Buffer actuel</span>
-                          <span>{formatWeeksValue(timelineInfo.actualWeeks)} ({formatDaysValue(timelineInfo.actualDays)})</span>
-                        </div>
-                        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between mt-2 sm:mt-1">
-                          <span className="text-gray-600">Exigence la plus stricte</span>
-                          <span>{formatWeeksValue(timelineInfo.strictestRequirement)}</span>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        {timelineInfo.entries.map(entry => {
-                          const requirementLabel = formatRequirementValue(entry);
-                          return (
-                            <div
-                              key={`${entry.profileId}-${entry.requiredWeeks ?? entry.requiredDays ?? 'req'}`}
-                              className={`border rounded-lg p-3 text-sm hv-surface ${entry.satisfied ? 'border-green-200 bg-green-50 text-green-800' : 'border-orange-200 bg-orange-50 text-orange-800'}`}
-                            >
-                              <div className="flex justify-between items-center mb-1">
-                                <span className="font-semibold">{entry.profileLabel}</span>
-                                <span className="font-mono text-xs">{requirementLabel}</span>
-                              </div>
-                              {entry.description && (
-                                <p className="text-xs opacity-80">{renderTextWithLinks(entry.description)}</p>
-                              )}
-                              <div className="mt-2 text-xs font-semibold">
-                                {entry.satisfied ? (
-                                  <span className="inline-flex items-center gap-2 text-emerald-700">
-                                    <CheckCircle className="w-4 h-4" />
-                                    Délai respecté
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center gap-2 text-amber-700">
-                                    <AlertTriangle className="w-4 h-4" />
-                                    Prévoir un délai supplémentaire
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          )}
 
           {/* Équipes à solliciter */}
           <section className="mb-8" aria-labelledby="teams-heading">
