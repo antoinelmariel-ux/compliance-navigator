@@ -30,6 +30,10 @@ const QUESTION_TYPE_META = {
     label: 'Choix multiples',
     description: 'Permet de sélectionner plusieurs réponses.'
   },
+  milestone_list: {
+    label: 'Liste de jalons',
+    description: 'Collecte des jalons avec une date et une description.'
+  },
   date: {
     label: 'Date',
     description: 'Attend la sélection d\'une date précise.'
