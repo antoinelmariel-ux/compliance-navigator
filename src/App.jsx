@@ -17,7 +17,7 @@ import { extractProjectName } from './utils/projects.js';
 import { createDemoProject } from './data/demoProject.js';
 import { exportProjectToFile } from './utils/projectExport.js';
 
-const APP_VERSION = 'v1.0.46';
+const APP_VERSION = 'v1.0.47';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -559,6 +559,13 @@ export const App = () => {
     }
   }, [screen]);
 
+  const activeProject = useMemo(
+    () => projects.find(project => project.id === activeProjectId) || null,
+    [projects, activeProjectId]
+  );
+
+  const isActiveProjectDraft = activeProject ? activeProject.status === 'draft' : true;
+
   const handleAnswer = useCallback((questionId, answer) => {
     setAnswers(prevAnswers => {
       const nextAnswers = { ...prevAnswers, [questionId]: answer };
@@ -586,6 +593,10 @@ export const App = () => {
   }, [questions]);
 
   const handleUpdateAnswers = useCallback((updates) => {
+    if (!isActiveProjectDraft) {
+      return;
+    }
+
     let sanitizedResult = null;
 
     setAnswers(prevAnswers => {
@@ -601,7 +612,14 @@ export const App = () => {
       setAnalysis(analyzeAnswers(sanitizedResult, rules, riskLevelRules));
       setValidationError(null);
     }
-  }, [analyzeAnswers, questions, riskLevelRules, rules, shouldShowQuestion]);
+  }, [
+    analyzeAnswers,
+    isActiveProjectDraft,
+    questions,
+    riskLevelRules,
+    rules,
+    shouldShowQuestion
+  ]);
 
   const resetProjectState = useCallback(() => {
     setAnswers({});
@@ -1004,6 +1022,7 @@ export const App = () => {
     setShowcaseProjectContext({
       projectId: project.id,
       projectName: derivedProjectName,
+      status: project.status || 'submitted',
       answers: projectAnswers,
       analysis: projectAnalysis,
       relevantTeams,
@@ -1045,7 +1064,11 @@ export const App = () => {
   }, [handleOpenProject, showcaseProjectContext]);
 
   const handleUpdateProjectShowcaseAnswers = useCallback((updates) => {
-    if (!showcaseProjectContext || !showcaseProjectContext.projectId) {
+    if (
+      !showcaseProjectContext ||
+      !showcaseProjectContext.projectId ||
+      showcaseProjectContext.status !== 'draft'
+    ) {
       return;
     }
 
@@ -1054,7 +1077,7 @@ export const App = () => {
 
     setProjects(prevProjects => {
       const project = prevProjects.find(entry => entry.id === projectId);
-      if (!project) {
+      if (!project || project.status !== 'draft') {
         return prevProjects;
       }
 
@@ -1459,27 +1482,40 @@ export const App = () => {
               analysis={analysis}
               teams={teams}
               questions={activeQuestions}
+              projectStatus={activeProject?.status || null}
+              isProjectEditable={isActiveProjectDraft}
               onRestart={handleRestart}
               onBack={handleBackToQuestionnaire}
-              onUpdateAnswers={handleUpdateAnswers}
+              onUpdateAnswers={isActiveProjectDraft ? handleUpdateAnswers : undefined}
               onSubmitProject={handleSubmitProject}
               isExistingProject={Boolean(activeProjectId)}
-              onSaveDraft={handleSaveDraft}
+              onSaveDraft={isActiveProjectDraft ? handleSaveDraft : undefined}
               saveFeedback={saveFeedback}
               onDismissSaveFeedback={handleDismissSaveFeedback}
             />
           ) : screen === 'showcase' ? (
             showcaseProjectContext ? (
-              <ProjectShowcase
-                projectName={showcaseProjectContext.projectName}
-                onClose={handleCloseProjectShowcase}
-                analysis={showcaseProjectContext.analysis}
-                relevantTeams={showcaseProjectContext.relevantTeams}
-                questions={showcaseProjectContext.questions}
-                answers={showcaseProjectContext.answers}
-                timelineDetails={showcaseProjectContext.timelineDetails}
-                onUpdateAnswers={handleUpdateProjectShowcaseAnswers}
-              />
+              <div className="space-y-4">
+                {showcaseProjectContext.status !== 'draft' && (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 hv-surface">
+                    Ce projet n'est pas en mode brouillon. La vitrine est consultable en lecture seule.
+                  </div>
+                )}
+                <ProjectShowcase
+                  projectName={showcaseProjectContext.projectName}
+                  onClose={handleCloseProjectShowcase}
+                  analysis={showcaseProjectContext.analysis}
+                  relevantTeams={showcaseProjectContext.relevantTeams}
+                  questions={showcaseProjectContext.questions}
+                  answers={showcaseProjectContext.answers}
+                  timelineDetails={showcaseProjectContext.timelineDetails}
+                  onUpdateAnswers={
+                    showcaseProjectContext.status === 'draft'
+                      ? handleUpdateProjectShowcaseAnswers
+                      : undefined
+                  }
+                />
+              </div>
             ) : null
           ) : null
         ) : (

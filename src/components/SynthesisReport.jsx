@@ -401,6 +401,8 @@ export const SynthesisReport = ({
   analysis,
   teams,
   questions,
+  projectStatus,
+  isProjectEditable = true,
   onRestart,
   onBack,
   onUpdateAnswers,
@@ -416,6 +418,23 @@ export const SynthesisReport = ({
   const relevantTeams = teams.filter(team => (analysis?.teams || []).includes(team.id));
   const hasSaveFeedback = Boolean(saveFeedback?.message);
   const isSaveSuccess = saveFeedback?.status === 'success';
+
+  const normalizedProjectStatus =
+    typeof projectStatus === 'string' ? projectStatus.toLowerCase() : null;
+  const statusLabelMap = {
+    draft: 'Brouillon',
+    submitted: 'Soumis'
+  };
+  const statusClassMap = {
+    draft: 'bg-amber-100 text-amber-800 border border-amber-200',
+    submitted: 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+  };
+  const projectStatusLabel = normalizedProjectStatus
+    ? statusLabelMap[normalizedProjectStatus] || projectStatus
+    : null;
+  const projectStatusClasses = normalizedProjectStatus
+    ? statusClassMap[normalizedProjectStatus] || 'bg-gray-100 text-gray-700 border border-gray-200'
+    : '';
 
   const priorityColors = {
     Critique: 'bg-red-100 text-red-800 border-red-300',
@@ -634,7 +653,21 @@ export const SynthesisReport = ({
       <div className="max-w-6xl mx-auto">
         <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 mb-6 hv-surface" role="region" aria-label="Synthèse du projet">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-6">
-            <h1 className="text-3xl font-bold text-gray-800 sm:text-4xl">Rapport de Compliance</h1>
+            <div className="flex flex-col gap-2">
+              <h1 className="text-3xl font-bold text-gray-800 sm:text-4xl">Rapport de Compliance</h1>
+              {projectStatusLabel && (
+                <span
+                  className={`inline-flex items-center self-start rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${projectStatusClasses}`}
+                >
+                  Statut : {projectStatusLabel}
+                </span>
+              )}
+              {!isProjectEditable && (
+                <p className="text-sm text-gray-500">
+                  Ce projet n'est pas en mode brouillon. Les modifications sont désactivées dans cette vue.
+                </p>
+              )}
+            </div>
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3 w-full lg:w-auto">
               {onBack && (
                 <button
