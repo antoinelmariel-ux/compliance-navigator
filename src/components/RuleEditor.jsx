@@ -1103,7 +1103,6 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                     </div>
                     <div>
                       <div className="font-semibold text-gray-800">{team.name}</div>
-                      <div className="text-xs text-gray-500">{team.id}</div>
                     </div>
                   </div>
                 </button>
