@@ -231,7 +231,7 @@ export const BackOffice = ({
   teams,
   setTeams
 }) => {
-  const [activeTab, setActiveTab] = useState('questions');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [editingRule, setEditingRule] = useState(null);
   const [editingQuestion, setEditingQuestion] = useState(null);
   const [draggedQuestionIndex, setDraggedQuestionIndex] = useState(null);
@@ -952,6 +952,11 @@ export const BackOffice = ({
 
   const tabDefinitions = [
     {
+      id: 'dashboard',
+      label: 'Dashboard',
+      panelId: 'backoffice-tabpanel-dashboard'
+    },
+    {
       id: 'questions',
       label: `Questions (${questions.length})`,
       panelId: 'backoffice-tabpanel-questions'
@@ -1237,6 +1242,25 @@ export const BackOffice = ({
               </button>
             ))}
           </nav>
+
+          {activeTab === 'dashboard' && (
+            <section
+              id="backoffice-tabpanel-dashboard"
+              role="tabpanel"
+              aria-labelledby="backoffice-tab-dashboard"
+              className="space-y-4"
+            >
+              <div className="rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/60 p-6 text-center text-indigo-700">
+                <h2 className="text-2xl font-bold text-indigo-900">Dashboard</h2>
+                <p className="mt-2 text-sm">
+                  Cette section proposera prochainement des indicateurs clés pour analyser les projets soumis.
+                </p>
+                <p className="mt-1 text-xs text-indigo-600">
+                  Revenez bientôt pour suivre vos KPIs et faciliter vos prises de décision.
+                </p>
+              </div>
+            </section>
+          )}
 
           {activeTab === 'questions' && (
             <section id="backoffice-tabpanel-questions" role="tabpanel" aria-labelledby="backoffice-tab-questions" className="space-y-4">
