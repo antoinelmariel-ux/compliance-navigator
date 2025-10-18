@@ -820,7 +820,7 @@ export const ProjectShowcase = ({
       <section className="aurora-section aurora-hero" data-showcase-section="hero">
         <div className="aurora-section__inner">
           <div className="aurora-hero__copy">
-            <p className="aurora-eyebrow">Immersion</p>
+            
             <h1 className="aurora-hero__title">{safeProjectName}</h1>
             {hasText(slogan) && (
               <p className="aurora-hero__subtitle">{renderTextWithLinks(slogan)}</p>
