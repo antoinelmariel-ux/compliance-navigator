@@ -563,6 +563,7 @@ export const BackOffice = ({
     conditions: [],
     conditionLogic: 'all',
     conditionGroups: [],
+    placeholder: '',
     guidance: {
       objective: '',
       details: '',

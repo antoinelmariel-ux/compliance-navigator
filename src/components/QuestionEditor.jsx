@@ -24,12 +24,23 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
     };
   };
 
+  const getDefaultPlaceholder = (type) => {
+    if (type === 'text') {
+      return 'Saisissez une réponse en une ligne';
+    }
+    if (type === 'long_text') {
+      return 'Renseignez ici les informations détaillées...';
+    }
+    return '';
+  };
+
   const buildQuestionState = (source) => {
     const base = {
       ...source,
       type: source.type || 'choice',
       options: source.options || [],
-      guidance: ensureGuidance(source.guidance)
+      guidance: ensureGuidance(source.guidance),
+      placeholder: typeof source.placeholder === 'string' ? source.placeholder : ''
     };
 
     const groups = normalizeConditionGroups(base);
@@ -114,7 +125,12 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
     setEditedQuestion(prev => ({
       ...prev,
       type: newType,
-      options: []
+      options: [],
+      placeholder: (newType === 'text' || newType === 'long_text')
+        ? (prev.placeholder && prev.placeholder.trim() !== ''
+          ? prev.placeholder
+          : getDefaultPlaceholder(newType))
+        : ''
     }));
   };
 
@@ -359,6 +375,32 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                   Choisissez le format adapté : liste simple ou multiple, date, jalons structurés, valeurs numériques, URL, fichier ou zone de texte libre.
                 </p>
               </div>
+
+              {(questionType === 'text' || questionType === 'long_text') && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Placeholder du champ</label>
+                  {questionType === 'long_text' ? (
+                    <textarea
+                      value={editedQuestion.placeholder || ''}
+                      onChange={(e) => setEditedQuestion(prev => ({ ...prev, placeholder: e.target.value }))}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      rows="2"
+                      placeholder={getDefaultPlaceholder(questionType)}
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      value={editedQuestion.placeholder || ''}
+                      onChange={(e) => setEditedQuestion(prev => ({ ...prev, placeholder: e.target.value }))}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      placeholder={getDefaultPlaceholder(questionType)}
+                    />
+                  )}
+                  <p className="text-xs text-gray-500 mt-1">
+                    Personnalisez le texte indicatif affiché dans le champ de réponse. Laissez vide pour utiliser la formulation par défaut.
+                  </p>
+                </div>
+              )}
 
               <div className="flex items-center">
                 <input
