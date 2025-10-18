@@ -18,8 +18,10 @@ import { extractProjectName } from './utils/projects.js';
 import { createDemoProject } from './data/demoProject.js';
 import { exportProjectToFile } from './utils/projectExport.js';
 import { normalizeRiskWeighting } from './utils/risk.js';
+import { normalizeProjectEntry, normalizeProjectsCollection } from './utils/projectNormalization.js';
+import { loadSubmittedProjectsFromDirectory } from './utils/externalProjectsLoader.js';
 
-const APP_VERSION = 'v1.0.68';
+const APP_VERSION = 'v1.0.69';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -126,54 +128,6 @@ const isAnswerProvided = (value) => {
   }
 
   return value !== null && value !== undefined;
-};
-
-const normalizeProjectEntry = (project = {}, fallbackQuestionsLength = initialQuestions.length) => {
-  const answers = typeof project.answers === 'object' && project.answers !== null ? project.answers : {};
-  const computedTotalQuestions =
-    typeof project.totalQuestions === 'number' && project.totalQuestions > 0
-      ? project.totalQuestions
-      : fallbackQuestionsLength > 0
-        ? fallbackQuestionsLength
-        : Object.keys(answers).length;
-
-  const answeredQuestionsCount =
-    typeof project.answeredQuestions === 'number'
-      ? project.answeredQuestions
-      : Object.keys(answers).length;
-
-  let lastQuestionIndex =
-    typeof project.lastQuestionIndex === 'number'
-      ? project.lastQuestionIndex
-      : computedTotalQuestions > 0
-        ? computedTotalQuestions - 1
-        : 0;
-
-  if (computedTotalQuestions > 0) {
-    lastQuestionIndex = Math.min(Math.max(lastQuestionIndex, 0), computedTotalQuestions - 1);
-  }
-
-  const lastUpdated = project.lastUpdated || project.submittedAt || null;
-  const submittedAt = project.submittedAt || project.lastUpdated || null;
-
-  return {
-    status: 'submitted',
-    ...project,
-    status: project.status || 'submitted',
-    lastUpdated,
-    submittedAt,
-    totalQuestions: computedTotalQuestions,
-    answeredQuestions: Math.min(answeredQuestionsCount, computedTotalQuestions || answeredQuestionsCount),
-    lastQuestionIndex
-  };
-};
-
-const normalizeProjectsCollection = (projects, fallbackQuestionsLength = initialQuestions.length) => {
-  if (!Array.isArray(projects)) {
-    return null;
-  }
-
-  return projects.map(project => normalizeProjectEntry(project, fallbackQuestionsLength));
 };
 
 const findQuestionById = (questions, id) => {
@@ -382,6 +336,7 @@ export const App = () => {
   const [answers, setAnswers] = useState({});
   const [analysis, setAnalysis] = useState(null);
   const [projects, setProjects] = useState(buildInitialProjectsState);
+  const projectsRef = useRef(projects);
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [validationError, setValidationError] = useState(null);
   const [saveFeedback, setSaveFeedback] = useState(null);
@@ -397,6 +352,87 @@ export const App = () => {
   const [backOfficeAuthError, setBackOfficeAuthError] = useState(null);
   const persistTimeoutRef = useRef(null);
   const previousScreenRef = useRef(null);
+
+  useEffect(() => {
+    projectsRef.current = projects;
+  }, [projects]);
+
+  const synchronizeExternalProjects = useCallback(async () => {
+    const existingProjects = Array.isArray(projectsRef.current) ? projectsRef.current : [];
+
+    const fallbackQuestionsLength = questions.length;
+
+    const externalProjects = await loadSubmittedProjectsFromDirectory({
+      questions,
+      rules,
+      riskLevelRules,
+      riskWeights,
+      fallbackQuestionsLength,
+      existingProjects
+    });
+
+    const externalSources = new Set(externalProjects.map(entry => entry.sourceId));
+
+    setProjects(prevProjects => {
+      const baseProjects = Array.isArray(prevProjects) ? prevProjects : [];
+      const preserved = baseProjects.filter(project => (
+        !project?.externalSourceId || externalSources.has(project.externalSourceId)
+      ));
+
+      const bySource = new Map();
+      preserved.forEach(project => {
+        if (project && project.externalSourceId) {
+          bySource.set(project.externalSourceId, project);
+        }
+      });
+
+      let changed = preserved.length !== baseProjects.length;
+      const nextProjects = preserved.slice();
+
+      externalProjects.forEach(entry => {
+        const { project, sourceId, checksum } = entry;
+        if (!project || !sourceId) {
+          return;
+        }
+
+        const existing = bySource.get(sourceId);
+        if (!existing) {
+          nextProjects.push(project);
+          changed = true;
+          return;
+        }
+
+        const existingChecksum = existing.externalSourceChecksum;
+        if (existingChecksum && existingChecksum === checksum) {
+          return;
+        }
+
+        const index = nextProjects.findIndex(item => item?.externalSourceId === sourceId);
+        if (index !== -1) {
+          nextProjects[index] = project;
+        } else {
+          nextProjects.push(project);
+        }
+        changed = true;
+      });
+
+      return changed ? nextProjects : baseProjects;
+    });
+  }, [questions, riskLevelRules, riskWeights, rules]);
+
+  useEffect(() => {
+    const loadExternal = async () => {
+      try {
+        await synchronizeExternalProjects();
+      } catch (error) {
+        if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+          console.warn('Impossible de synchroniser les projets externes :', error);
+        }
+      }
+    };
+
+    loadExternal();
+  }, [synchronizeExternalProjects]);
 
   useEffect(() => {
     const savedState = loadPersistedState();

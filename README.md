@@ -57,6 +57,7 @@ Aucune étape de build n'est nécessaire :
 - **`src/utils`** : expose les fonctions d'aide (évaluation des conditions, formatage des rapports, filtres de recherche).
 - **`src/styles`** : héberge la configuration Tailwind et les styles globaux complémentaires.
 - **`index.html`** : point d'entrée statique configurant Babel Standalone, Tailwind et montant l'application.
+- **`submitted-projects/`** : dossier surveillé automatiquement. Ajoutez-y des fichiers JSON de projets pour qu'ils apparaissent dans l'accueil avec le statut « Soumis ».
 
 ## Tests et qualité
 - **Validation manuelle** : ouvrir `index.html` et parcourir le questionnaire Chef de Projet pour vérifier l'enchaînement des questions, la génération de synthèse et les recommandations affichées.
