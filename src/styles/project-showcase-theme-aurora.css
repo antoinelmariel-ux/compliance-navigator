@@ -45,6 +45,7 @@
   justify-content: flex-end;
   width: 100%;
   margin: 1rem 0 2rem;
+  padding-right: 1rem;
 }
 
 [data-showcase-theme='aurora'] .aurora-edit-bar__trigger {
