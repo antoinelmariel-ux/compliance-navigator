@@ -21,7 +21,7 @@ import { normalizeRiskWeighting } from './utils/risk.js';
 import { normalizeProjectEntry, normalizeProjectsCollection } from './utils/projectNormalization.js';
 import { loadSubmittedProjectsFromDirectory } from './utils/externalProjectsLoader.js';
 
-const APP_VERSION = 'v1.0.77';
+const APP_VERSION = 'v1.0.76';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -803,43 +803,9 @@ export const App = () => {
   ]);
 
   useEffect(() => {
-    if (!isBackOfficePasswordModalOpen) {
-      return;
-    }
-
-    const input = backOfficePasswordInputRef.current;
-
-    if (!input) {
-      return;
-    }
-
-    try {
-      input.focus({ preventScroll: true });
-    } catch (error) {
-      try {
-        input.focus();
-      } catch (focusError) {
-        // Ignore focus errors (e.g. unsupported focus options)
-      }
-    }
-
-    const valueLength = typeof input.value === 'string' ? input.value.length : 0;
-
-    if (input.type !== 'password' && typeof input.select === 'function') {
-      try {
-        input.select();
-        return;
-      } catch (error) {
-        // Some input types may not support select(); fall back to setSelectionRange.
-      }
-    }
-
-    if (typeof input.setSelectionRange === 'function') {
-      try {
-        input.setSelectionRange(0, valueLength);
-      } catch (error) {
-        // Ignore selection errors for input types that do not support text selection.
-      }
+    if (isBackOfficePasswordModalOpen && backOfficePasswordInputRef.current) {
+      backOfficePasswordInputRef.current.focus();
+      backOfficePasswordInputRef.current.select();
     }
   }, [
     isBackOfficePasswordModalOpen
