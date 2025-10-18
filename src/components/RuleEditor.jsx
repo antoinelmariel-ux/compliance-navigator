@@ -17,6 +17,7 @@ import {
   createEmptyQuestionCondition,
   createEmptyTimingCondition
 } from '../utils/ruleConditions.js';
+import { ensureOperatorForType, getOperatorOptionsForType } from '../utils/operatorOptions.js';
 
 export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
   const overlayRef = useRef(null);
@@ -32,6 +33,44 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
     }
   }, []);
 
+  const sanitizeConditionGroups = (groups) => {
+    return Array.isArray(groups)
+      ? groups.map(group => ({
+          ...group,
+          conditions: Array.isArray(group.conditions)
+            ? group.conditions.map(condition => {
+                if (condition?.type === 'timing') {
+                  const profiles = Array.isArray(condition.complianceProfiles)
+                    ? condition.complianceProfiles.map(profile => ({
+                        ...profile,
+                        conditions: Array.isArray(profile.conditions)
+                          ? profile.conditions.map(profileCondition => {
+                              const question = questions.find(q => q.id === profileCondition?.question);
+                              const questionType = question?.type || 'choice';
+                              return {
+                                ...profileCondition,
+                                operator: ensureOperatorForType(questionType, profileCondition?.operator)
+                              };
+                            })
+                          : []
+                      }))
+                    : [];
+
+                  return { ...condition, complianceProfiles: profiles };
+                }
+
+                const question = questions.find(q => q.id === condition?.question);
+                const questionType = question?.type || 'choice';
+                return {
+                  ...condition,
+                  operator: ensureOperatorForType(questionType, condition?.operator)
+                };
+              })
+            : []
+        }))
+      : [];
+  };
+
   const buildRuleState = (source) => {
     const base = {
       ...source,
@@ -45,7 +84,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
       risks: Array.isArray(source.risks) ? source.risks : []
     };
 
-    const groups = normalizeRuleConditionGroups(base);
+    const groups = sanitizeConditionGroups(normalizeRuleConditionGroups(base));
     return applyRuleConditionGroups(base, groups);
   };
 
@@ -62,7 +101,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
   const updateConditionGroupsState = (updater) => {
     setEditedRule(prev => {
       const currentGroups = Array.isArray(prev.conditionGroups) ? prev.conditionGroups : [];
-      const nextGroups = updater(currentGroups);
+      const nextGroups = sanitizeConditionGroups(updater(currentGroups));
       return applyRuleConditionGroups(prev, nextGroups);
     });
   };
@@ -97,9 +136,14 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
     const currentCondition = sanitizeRuleCondition(
       conditions[conditionIndex] || createEmptyQuestionCondition()
     );
-    const nextCondition = sanitizeRuleCondition(
+    const updatedCondition = sanitizeRuleCondition(
       updater ? updater(currentCondition) || currentCondition : currentCondition
     );
+    const question = questions.find(q => q.id === updatedCondition.question);
+    const questionType = question?.type || 'choice';
+    const nextCondition = updatedCondition.type === 'timing'
+      ? updatedCondition
+      : { ...updatedCondition, operator: ensureOperatorForType(questionType, updatedCondition.operator) };
     conditions[conditionIndex] = nextCondition;
     updated[groupIndex] = { ...target, conditions };
     return updated;
@@ -235,10 +279,21 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
           profileConditions[conditionIdx] = { question: '', operator: 'equals', value: '' };
         }
 
-        profileConditions[conditionIdx] = {
-          ...profileConditions[conditionIdx],
-          [field]: value
-        };
+        const nextCondition = { ...profileConditions[conditionIdx] };
+
+        if (field === 'question') {
+          nextCondition.question = value;
+        } else if (field === 'operator') {
+          nextCondition.operator = value;
+        } else {
+          nextCondition[field] = value;
+        }
+
+        const linkedQuestion = questions.find(q => q.id === nextCondition.question);
+        const linkedType = linkedQuestion?.type || 'choice';
+        nextCondition.operator = ensureOperatorForType(linkedType, nextCondition.operator);
+
+        profileConditions[conditionIdx] = nextCondition;
 
         profile.conditions = profileConditions;
         profiles[profileIndex] = profile;
@@ -803,15 +858,21 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
 
                                                                     <div className="md:col-span-3">
                                                                       <label className="block text-xs font-medium text-gray-600 mb-1">Opérateur</label>
-                                                                      <select
-                                                                        value={profileCondition.operator}
-                                                                        onChange={(e) => updateTimingProfileCondition(groupIdx, conditionIdx, profileIdx, conditionIdx2, 'operator', e.target.value)}
-                                                                        className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-indigo-500"
-                                                                      >
-                                                                        <option value="equals">Est égal à (=)</option>
-                                                                        <option value="not_equals">Est différent de (≠)</option>
-                                                                        <option value="contains">Contient</option>
-                                                                      </select>
+                                                                      {(() => {
+                                                                        const operatorOptions = getOperatorOptionsForType(conditionQuestionType);
+                                                                        const operatorValue = ensureOperatorForType(conditionQuestionType, profileCondition.operator);
+                                                                        return (
+                                                                          <select
+                                                                            value={operatorValue}
+                                                                            onChange={(e) => updateTimingProfileCondition(groupIdx, conditionIdx, profileIdx, conditionIdx2, 'operator', e.target.value)}
+                                                                            className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-indigo-500"
+                                                                          >
+                                                                            {operatorOptions.map(option => (
+                                                                              <option key={option.value} value={option.value}>{option.label}</option>
+                                                                            ))}
+                                                                          </select>
+                                                                        );
+                                                                      })()}
                                                                     </div>
 
                                                                     <div className="md:col-span-3">
@@ -929,15 +990,21 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
 
                                         <div>
                                           <label className="block text-xs font-medium text-gray-600 mb-1">Opérateur</label>
-                                          <select
-                                            value={condition.operator}
-                                            onChange={(e) => updateConditionField(groupIdx, conditionIdx, 'operator', e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
-                                          >
-                                            <option value="equals">Est égal à (=)</option>
-                                            <option value="not_equals">Est différent de (≠)</option>
-                                            <option value="contains">Contient</option>
-                                          </select>
+                                          {(() => {
+                                            const operatorOptions = getOperatorOptionsForType(selectedQuestionType);
+                                            const operatorValue = ensureOperatorForType(selectedQuestionType, condition.operator);
+                                            return (
+                                              <select
+                                                value={operatorValue}
+                                                onChange={(e) => updateConditionField(groupIdx, conditionIdx, 'operator', e.target.value)}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                                              >
+                                                {operatorOptions.map(option => (
+                                                  <option key={option.value} value={option.value}>{option.label}</option>
+                                                ))}
+                                              </select>
+                                            );
+                                          })()}
                                         </div>
 
                                         <div>

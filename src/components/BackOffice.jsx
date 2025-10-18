@@ -47,6 +47,27 @@ const getQuestionTypeMeta = (type) => {
   return QUESTION_TYPE_META[key] || QUESTION_TYPE_META.choice;
 };
 
+const formatOperatorSymbol = (operator) => {
+  switch (operator) {
+    case 'equals':
+      return '=';
+    case 'not_equals':
+      return '≠';
+    case 'contains':
+      return 'contient';
+    case 'lt':
+      return '<';
+    case 'lte':
+      return '≤';
+    case 'gt':
+      return '>';
+    case 'gte':
+      return '≥';
+    default:
+      return operator || '=';
+  }
+};
+
 const buildConditionSummary = (question, allQuestions) => {
   const conditionGroups = normalizeConditionGroups(question);
   const summaries = [];
@@ -68,13 +89,7 @@ const buildConditionSummary = (question, allQuestions) => {
 
       const refQuestion = allQuestions.find((item) => item.id === condition.question);
       const label = refQuestion ? refQuestion.question : `Question ${condition.question}`;
-      const operator = condition.operator === 'equals'
-        ? '='
-        : condition.operator === 'not_equals'
-          ? '≠'
-          : condition.operator === 'contains'
-            ? 'contient'
-            : (condition.operator || '=');
+      const operator = formatOperatorSymbol(condition.operator);
 
       const value = typeof condition.value === 'string' ? condition.value : JSON.stringify(condition.value);
       const connector = conditionIndex > 0 ? (group.logic === 'any' ? 'OU' : 'ET') : '';
@@ -141,13 +156,7 @@ const buildRuleConditionSummary = (rule, questions) => {
 
       const refQuestion = questions.find((item) => item.id === condition.question);
       const label = refQuestion ? `${refQuestion.id} – ${refQuestion.question}` : `Question ${condition.question}`;
-      const operator = condition.operator === 'equals'
-        ? '='
-        : condition.operator === 'not_equals'
-          ? '≠'
-          : condition.operator === 'contains'
-            ? 'contient'
-            : (condition.operator || '=');
+      const operator = formatOperatorSymbol(condition.operator);
       const value = typeof condition.value === 'string' ? condition.value : JSON.stringify(condition.value);
 
       items.push({

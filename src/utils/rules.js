@@ -87,6 +87,15 @@ const matchesCondition = (condition, answers) => {
   const operator = condition.operator || 'equals';
   const expected = condition.value;
 
+  const toNumber = (value) => {
+    if (value === null || value === undefined || value === '') {
+      return null;
+    }
+
+    const parsed = Number(value);
+    return Number.isNaN(parsed) ? null : parsed;
+  };
+
   switch (operator) {
     case 'equals':
       if (Array.isArray(answer)) {
@@ -106,6 +115,34 @@ const matchesCondition = (condition, answers) => {
         return answer.toLowerCase().includes(String(expected).toLowerCase());
       }
       return false;
+    case 'lt':
+    case 'lte':
+    case 'gt':
+    case 'gte': {
+      if (Array.isArray(answer)) {
+        return false;
+      }
+
+      const answerNumber = toNumber(answer);
+      const expectedNumber = toNumber(expected);
+
+      if (answerNumber === null || expectedNumber === null) {
+        return false;
+      }
+
+      switch (operator) {
+        case 'lt':
+          return answerNumber < expectedNumber;
+        case 'lte':
+          return answerNumber <= expectedNumber;
+        case 'gt':
+          return answerNumber > expectedNumber;
+        case 'gte':
+          return answerNumber >= expectedNumber;
+        default:
+          return false;
+      }
+    }
     default:
       return false;
   }
