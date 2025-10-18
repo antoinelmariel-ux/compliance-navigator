@@ -17,7 +17,7 @@ import { extractProjectName } from './utils/projects.js';
 import { createDemoProject } from './data/demoProject.js';
 import { exportProjectToFile } from './utils/projectExport.js';
 
-const APP_VERSION = 'v1.0.47';
+const APP_VERSION = 'v1.0.48';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -564,6 +564,14 @@ export const App = () => {
     [projects, activeProjectId]
   );
 
+  const activeProjectName = useMemo(() => {
+    if (typeof activeProject?.projectName === 'string' && activeProject.projectName.trim().length > 0) {
+      return activeProject.projectName.trim();
+    }
+
+    return extractProjectName(answers, questions);
+  }, [activeProject, answers, questions]);
+
   const isActiveProjectDraft = activeProject ? activeProject.status === 'draft' : true;
 
   const handleAnswer = useCallback((questionId, answer) => {
@@ -977,57 +985,80 @@ export const App = () => {
     });
   }, [analyzeAnswers, questions, riskLevelRules, rules, shouldShowQuestion]);
 
-  const handleShowProjectShowcase = useCallback((projectId) => {
-    if (!projectId) {
-      return;
-    }
+  const openProjectShowcase = useCallback((context = {}) => {
+    const {
+      projectId = null,
+      projectName: providedProjectName,
+      status: providedStatus,
+      answers: providedAnswers,
+      analysis: providedAnalysis,
+      relevantTeams: providedRelevantTeams,
+      questions: providedQuestions,
+      timelineDetails: providedTimelineDetails
+    } = context || {};
 
-    const project = projects.find(item => item.id === projectId);
-    if (!project) {
-      return;
-    }
+    const project = projectId ? projects.find(item => item.id === projectId) : null;
+    const answersSource = providedAnswers || project?.answers || {};
+    const visibleQuestions = Array.isArray(providedQuestions) && providedQuestions.length > 0
+      ? providedQuestions
+      : questions.filter(question => shouldShowQuestion(question, answersSource));
+    const computedAnalysis = providedAnalysis
+      || (Object.keys(answersSource).length > 0
+        ? analyzeAnswers(answersSource, rules, riskLevelRules)
+        : null);
+    const relevantTeamsList = Array.isArray(providedRelevantTeams) && providedRelevantTeams.length > 0
+      ? providedRelevantTeams
+      : teams.filter(team => (computedAnalysis?.teams || []).includes(team.id));
+    const timelineDetailsList = Array.isArray(providedTimelineDetails)
+      ? providedTimelineDetails
+      : computedAnalysis?.timeline?.details || [];
 
-    const projectAnswers = project.answers || {};
-    const visibleQuestions = questions.filter(question => shouldShowQuestion(question, projectAnswers));
-    const projectAnalysis = Object.keys(projectAnswers).length > 0
-      ? analyzeAnswers(projectAnswers, rules, riskLevelRules)
-      : null;
+    const normalizedProjectName = typeof providedProjectName === 'string' && providedProjectName.trim().length > 0
+      ? providedProjectName.trim()
+      : (typeof project?.projectName === 'string' && project.projectName.trim().length > 0
+        ? project.projectName.trim()
+        : extractProjectName(answersSource, questions));
+
+    const resolvedProjectName = normalizedProjectName && normalizedProjectName.length > 0
+      ? normalizedProjectName
+      : 'Projet sans nom';
+    const resolvedStatus = providedStatus || project?.status || 'submitted';
+
     const answeredQuestionsCount = visibleQuestions.length > 0
-      ? visibleQuestions.filter(question => isAnswerProvided(projectAnswers[question.id])).length
-      : Object.keys(projectAnswers).length;
-    const relevantTeams = teams.filter(team => (projectAnalysis?.teams || []).includes(team.id));
-    const timelineDetails = projectAnalysis?.timeline?.details || [];
-    const derivedProjectName = project.projectName || extractProjectName(projectAnswers, questions);
+      ? visibleQuestions.filter(question => isAnswerProvided(answersSource[question.id])).length
+      : Object.keys(answersSource).length;
 
-    setProjects(prevProjects => prevProjects.map(entry => {
-      if (entry.id !== project.id) {
-        return entry;
-      }
+    const totalQuestions = visibleQuestions.length > 0
+      ? visibleQuestions.length
+      : project?.totalQuestions || questions.length || 0;
 
-      const totalQuestions = visibleQuestions.length > 0
-        ? visibleQuestions.length
-        : (project.totalQuestions || questions.length || 0);
+    if (projectId) {
+      setProjects(prevProjects => prevProjects.map(entry => {
+        if (entry.id !== projectId) {
+          return entry;
+        }
 
-      return {
-        ...entry,
-        analysis: projectAnalysis,
-        totalQuestions,
-        answeredQuestions: Math.min(
-          answeredQuestionsCount,
-          totalQuestions || answeredQuestionsCount
-        )
-      };
-    }));
+        return {
+          ...entry,
+          analysis: computedAnalysis,
+          totalQuestions,
+          answeredQuestions: Math.min(
+            answeredQuestionsCount,
+            totalQuestions || answeredQuestionsCount
+          )
+        };
+      }));
+    }
 
     setShowcaseProjectContext({
-      projectId: project.id,
-      projectName: derivedProjectName,
-      status: project.status || 'submitted',
-      answers: projectAnswers,
-      analysis: projectAnalysis,
-      relevantTeams,
+      projectId: projectId || null,
+      projectName: resolvedProjectName,
+      status: resolvedStatus,
+      answers: answersSource,
+      analysis: computedAnalysis,
+      relevantTeams: relevantTeamsList,
       questions: visibleQuestions.length > 0 ? visibleQuestions : questions,
-      timelineDetails
+      timelineDetails: timelineDetailsList
     });
     previousScreenRef.current = screen;
     setScreen('showcase');
@@ -1041,6 +1072,23 @@ export const App = () => {
     shouldShowQuestion,
     teams
   ]);
+
+  const handleShowProjectShowcase = useCallback((projectId) => {
+    if (!projectId) {
+      return;
+    }
+
+    openProjectShowcase({ projectId });
+  }, [openProjectShowcase]);
+
+  const handleOpenActiveProjectShowcase = useCallback((payload = {}) => {
+    const projectId = payload?.projectId || activeProjectId || null;
+
+    openProjectShowcase({
+      ...payload,
+      projectId
+    });
+  }, [activeProjectId, openProjectShowcase]);
 
   const handleCloseProjectShowcase = useCallback(() => {
     setShowcaseProjectContext(null);
@@ -1483,6 +1531,9 @@ export const App = () => {
               teams={teams}
               questions={activeQuestions}
               projectStatus={activeProject?.status || null}
+              projectId={activeProjectId}
+              projectName={activeProjectName}
+              onOpenProjectShowcase={handleOpenActiveProjectShowcase}
               isProjectEditable={isActiveProjectDraft}
               onRestart={handleRestart}
               onBack={handleBackToQuestionnaire}
