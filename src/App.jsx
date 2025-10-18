@@ -21,7 +21,7 @@ import { normalizeRiskWeighting } from './utils/risk.js';
 import { normalizeProjectEntry, normalizeProjectsCollection } from './utils/projectNormalization.js';
 import { loadSubmittedProjectsFromDirectory } from './utils/externalProjectsLoader.js';
 
-const APP_VERSION = 'v1.0.76';
+const APP_VERSION = 'v1.0.75';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -350,12 +350,8 @@ export const App = () => {
   const [isHydrated, setIsHydrated] = useState(false);
   const [isBackOfficeUnlocked, setIsBackOfficeUnlocked] = useState(false);
   const [backOfficeAuthError, setBackOfficeAuthError] = useState(null);
-  const [isBackOfficePasswordModalOpen, setIsBackOfficePasswordModalOpen] = useState(false);
-  const [backOfficePasswordInput, setBackOfficePasswordInput] = useState('');
-  const [isVerifyingBackOfficePassword, setIsVerifyingBackOfficePassword] = useState(false);
   const persistTimeoutRef = useRef(null);
   const previousScreenRef = useRef(null);
-  const backOfficePasswordInputRef = useRef(null);
 
   useEffect(() => {
     projectsRef.current = projects;
@@ -695,7 +691,7 @@ export const App = () => {
     setActiveProjectId(null);
   }, []);
 
-  const handleBackOfficeClick = useCallback(() => {
+  const handleBackOfficeClick = useCallback(async () => {
     if (mode === 'admin') {
       return;
     }
@@ -706,109 +702,34 @@ export const App = () => {
       return;
     }
 
-    setBackOfficeAuthError(null);
-    setBackOfficePasswordInput('');
-    setIsVerifyingBackOfficePassword(false);
-    setIsBackOfficePasswordModalOpen(true);
+    if (typeof window === 'undefined' || typeof window.prompt !== 'function') {
+      setBackOfficeAuthError('La saisie du mot de passe est indisponible dans cet environnement.');
+      return;
+    }
+
+    const userInput = window.prompt('Veuillez saisir le mot de passe du back-office :');
+
+    if (userInput === null) {
+      setBackOfficeAuthError(null);
+      return;
+    }
+
+    const isValid = await verifyBackOfficePassword(userInput);
+
+    if (isValid) {
+      setIsBackOfficeUnlocked(true);
+      setBackOfficeAuthError(null);
+      setMode('admin');
+    } else {
+      setIsBackOfficeUnlocked(false);
+      setBackOfficeAuthError('Mot de passe incorrect. Veuillez réessayer.');
+    }
   }, [
     isBackOfficeUnlocked,
     mode,
     setMode,
     setBackOfficeAuthError,
-    setBackOfficePasswordModalOpen,
-    setBackOfficePasswordInput,
-    setIsVerifyingBackOfficePassword
-  ]);
-
-  const handleBackOfficePasswordCancel = useCallback(() => {
-    setIsBackOfficePasswordModalOpen(false);
-    setBackOfficePasswordInput('');
-    setIsVerifyingBackOfficePassword(false);
-    setBackOfficeAuthError(null);
-  }, [
-    setBackOfficeAuthError,
-    setBackOfficePasswordModalOpen,
-    setBackOfficePasswordInput,
-    setIsVerifyingBackOfficePassword
-  ]);
-
-  const handleBackOfficePasswordChange = useCallback((event) => {
-    setBackOfficePasswordInput(event.target.value);
-    if (backOfficeAuthError) {
-      setBackOfficeAuthError(null);
-    }
-  }, [backOfficeAuthError]);
-
-  const handleBackOfficePasswordSubmit = useCallback(async (event) => {
-    event.preventDefault();
-
-    const trimmedValue = backOfficePasswordInput.trim();
-
-    if (!trimmedValue) {
-      setBackOfficeAuthError('Veuillez saisir le mot de passe.');
-      return;
-    }
-
-    setIsVerifyingBackOfficePassword(true);
-
-    try {
-      const isValid = await verifyBackOfficePassword(trimmedValue);
-
-      if (isValid) {
-        setIsBackOfficeUnlocked(true);
-        setBackOfficeAuthError(null);
-        setIsBackOfficePasswordModalOpen(false);
-        setBackOfficePasswordInput('');
-        setMode('admin');
-      } else {
-        setIsBackOfficeUnlocked(false);
-        setBackOfficeAuthError('Mot de passe incorrect. Veuillez réessayer.');
-      }
-    } catch (error) {
-      setBackOfficeAuthError('Une erreur est survenue lors de la vérification du mot de passe. Veuillez réessayer.');
-    } finally {
-      setIsVerifyingBackOfficePassword(false);
-    }
-  }, [
-    backOfficePasswordInput,
-    setIsBackOfficeUnlocked,
-    setBackOfficeAuthError,
-    setIsBackOfficePasswordModalOpen,
-    setBackOfficePasswordInput,
-    setMode,
-    setIsVerifyingBackOfficePassword,
-    verifyBackOfficePassword
-  ]);
-
-  useEffect(() => {
-    if (!isBackOfficePasswordModalOpen) {
-      return;
-    }
-
-    const handleKeyDown = (event) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        handleBackOfficePasswordCancel();
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [
-    handleBackOfficePasswordCancel,
-    isBackOfficePasswordModalOpen
-  ]);
-
-  useEffect(() => {
-    if (isBackOfficePasswordModalOpen && backOfficePasswordInputRef.current) {
-      backOfficePasswordInputRef.current.focus();
-      backOfficePasswordInputRef.current.select();
-    }
-  }, [
-    isBackOfficePasswordModalOpen
+    setIsBackOfficeUnlocked
   ]);
 
   const handleCreateNewProject = useCallback(() => {
@@ -1530,69 +1451,6 @@ export const App = () => {
 
   return (
     <div className="min-h-screen">
-      {isBackOfficePasswordModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 px-4 py-6">
-          <div
-            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="back-office-password-title"
-          >
-            <form className="space-y-5" onSubmit={handleBackOfficePasswordSubmit}>
-              <div className="space-y-1">
-                <h2 id="back-office-password-title" className="text-lg font-semibold text-gray-900">
-                  Accès au back-office
-                </h2>
-                <p className="text-sm text-gray-500">
-                  Veuillez saisir le mot de passe du back-office pour continuer.
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="back-office-password-input" className="text-sm font-medium text-gray-700">
-                  Mot de passe
-                </label>
-                <input
-                  id="back-office-password-input"
-                  ref={backOfficePasswordInputRef}
-                  type="password"
-                  autoComplete="current-password"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:opacity-70"
-                  value={backOfficePasswordInput}
-                  onChange={handleBackOfficePasswordChange}
-                  disabled={isVerifyingBackOfficePassword}
-                  aria-describedby={backOfficeAuthError ? 'back-office-password-error' : undefined}
-                  required
-                />
-              </div>
-
-              {backOfficeAuthError && (
-                <p id="back-office-password-error" className="text-sm text-red-600" role="alert">
-                  {backOfficeAuthError}
-                </p>
-              )}
-
-              <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-                <button
-                  type="button"
-                  onClick={handleBackOfficePasswordCancel}
-                  className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:ring-offset-2 sm:w-auto"
-                  disabled={isVerifyingBackOfficePassword}
-                >
-                  Annuler
-                </button>
-                <button
-                  type="submit"
-                  className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto"
-                  disabled={isVerifyingBackOfficePassword}
-                >
-                  {isVerifyingBackOfficePassword ? 'Vérification…' : 'Valider'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
       <nav className="bg-white shadow-sm border-b border-gray-200 hv-surface">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 py-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -1667,7 +1525,7 @@ export const App = () => {
                 <Settings className="text-lg sm:text-xl" />
                 <span className="sr-only">Back-office</span>
               </button>
-              {backOfficeAuthError && !isBackOfficePasswordModalOpen && (
+              {backOfficeAuthError && (
                 <p className="w-full text-sm text-red-600 sm:w-auto" role="alert">
                   {backOfficeAuthError}
                 </p>
