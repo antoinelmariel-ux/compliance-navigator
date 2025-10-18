@@ -777,7 +777,7 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                                         <option value="">Sélectionner...</option>
                                         {availableQuestions.map(q => (
                                           <option key={q.id} value={q.id}>
-                                            {q.id} - {q.question.substring(0, 30)}...
+                                            {q.id} - {q.question ?? ''}
                                           </option>
                                         ))}
                                       </select>
