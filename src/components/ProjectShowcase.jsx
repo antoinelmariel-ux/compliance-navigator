@@ -442,76 +442,6 @@ const computeTimelineSummary = (timelineDetails) => {
   };
 };
 
-const getPrimaryRisk = (analysis) => {
-  const risks = Array.isArray(analysis?.risks) ? analysis.risks : [];
-  if (risks.length === 0) {
-    return null;
-  }
-
-  const priorityWeight = {
-    'A particulièrement anticiper': 3,
-    'A anticiper': 2,
-    'A réaliser': 1
-  };
-
-  return risks.reduce((acc, risk) => {
-    if (!acc) {
-      return risk;
-    }
-
-    const currentWeight = priorityWeight[risk.priority] || 0;
-    const bestWeight = priorityWeight[acc.priority] || 0;
-
-    if (currentWeight > bestWeight) {
-      return risk;
-    }
-
-    return acc;
-  }, null);
-};
-
-const formatTimingValue = (value, unit, { maximumFractionDigits = 1, minimumFractionDigits = 0 } = {}) => {
-  if (typeof value !== 'number' || Number.isNaN(value)) {
-    return null;
-  }
-
-  const formatter = new Intl.NumberFormat('fr-FR', {
-    maximumFractionDigits,
-    minimumFractionDigits
-  });
-
-  const formatted = formatter.format(value);
-  return unit === 'weeks' ? `${formatted} sem.` : `${formatted} j.`;
-};
-
-const formatTimingViolationSummary = (violation) => {
-  if (!violation) {
-    return '';
-  }
-
-  const actualParts = [
-    formatTimingValue(violation.actualWeeks, 'weeks'),
-    formatTimingValue(violation.actualDays, 'days', { maximumFractionDigits: 0 })
-  ].filter(Boolean);
-
-  const requiredParts = [
-    formatTimingValue(violation.requiredWeeks, 'weeks'),
-    formatTimingValue(violation.requiredDays, 'days', { maximumFractionDigits: 0 })
-  ].filter(Boolean);
-
-  if (actualParts.length === 0 && requiredParts.length === 0) {
-    return '';
-  }
-
-  const actualText = actualParts.length > 0 ? actualParts.join(' / ') : 'non calculé';
-
-  if (requiredParts.length === 0) {
-    return `Délai constaté : ${actualText}.`;
-  }
-
-  return `Délai constaté : ${actualText} · Minimum requis : ${requiredParts.join(' / ')}`;
-};
-
 const REQUIRED_SHOWCASE_QUESTION_IDS = [
   'projectName',
   'projectSlogan',
@@ -573,16 +503,6 @@ export const ProjectShowcase = ({
   const rawProjectName = typeof projectName === 'string' ? projectName.trim() : '';
   const safeProjectName = rawProjectName.length > 0 ? rawProjectName : 'Votre projet';
   const normalizedTeams = Array.isArray(relevantTeams) ? relevantTeams : [];
-  const complexity = analysis?.complexity || 'Modérée';
-  const complexityDescription = analysis?.complexityRule?.description;
-  const riskScore = typeof analysis?.riskScore === 'number' && Number.isFinite(analysis.riskScore)
-    ? Math.max(0, analysis.riskScore)
-    : null;
-  const formattedRiskScore = riskScore === null
-    ? null
-    : Number.isInteger(riskScore)
-      ? riskScore.toString()
-      : riskScore.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
   const editableFields = useMemo(
     () =>
@@ -750,33 +670,6 @@ export const ProjectShowcase = ({
   const manualMilestones = useMemo(
     () => buildManualMilestones(getRawAnswer(answers, 'roadmapMilestones')),
     [answers]
-  );
-  const primaryRisk = useMemo(() => getPrimaryRisk(analysis), [analysis]);
-  const primaryRiskTeam = useMemo(() => {
-    if (!primaryRisk) {
-      return null;
-    }
-
-    const availableTeams = Array.isArray(relevantTeams) ? relevantTeams : [];
-
-    if (primaryRisk.teamId) {
-      const matchingTeam = availableTeams.find(team => team.id === primaryRisk.teamId);
-      return matchingTeam ? matchingTeam.name : primaryRisk.teamId;
-    }
-
-    if (Array.isArray(primaryRisk.teams)) {
-      const fallbackTeamId = primaryRisk.teams.find(teamId => typeof teamId === 'string' && teamId.length > 0);
-      if (fallbackTeamId) {
-        const matchingTeam = availableTeams.find(team => team.id === fallbackTeamId);
-        return matchingTeam ? matchingTeam.name : fallbackTeamId;
-      }
-    }
-
-    return null;
-  }, [primaryRisk, relevantTeams]);
-  const primaryRiskTimingMessage = useMemo(
-    () => formatTimingViolationSummary(primaryRisk?.timingViolation),
-    [primaryRisk]
   );
   const heroHighlights = useMemo(
     () =>
@@ -1046,73 +939,6 @@ export const ProjectShowcase = ({
         </section>
       )}
 
-      <section className="aurora-section aurora-impact" data-showcase-section="evidence">
-        <div className="aurora-section__inner">
-          <div className="aurora-section__header">
-            <h2 className="aurora-section__title">Les repères qui donnent confiance</h2>
-          </div>
-          <div className="aurora-impact__grid">
-            {timelineSummary && (
-              <div className="aurora-impact__card">
-                <p className="aurora-impact__label">Préparation au lancement</p>
-                <p className="aurora-impact__value">{`${timelineSummary.weeks} sem.`}</p>
-                <p className="aurora-impact__caption">
-                  {timelineSummary.satisfied
-                    ? 'Runway suffisant pour activer les relais.'
-                    : 'Runway à renforcer pour sécuriser la diffusion.'}
-                </p>
-              </div>
-            )}
-            {hasText(formattedBudgetEstimate) && (
-              <div className="aurora-impact__card">
-                <p className="aurora-impact__label">Budget estimé</p>
-                <p className="aurora-impact__value">{formattedBudgetEstimate}</p>
-                <p className="aurora-impact__caption">Montant total projeté pour l'initiative.</p>
-              </div>
-            )}
-            <div className="aurora-impact__card">
-              <p className="aurora-impact__label">Complexité estimée</p>
-              <p className="aurora-impact__value">{complexity}</p>
-              <p className="aurora-impact__caption">
-                {complexityDescription || 'Basée sur les points de vigilance identifiés.'}
-              </p>
-              {formattedRiskScore && (
-                <p className="aurora-impact__caption text-xs text-gray-500 mt-1">
-                  Score de risque : {formattedRiskScore}
-                </p>
-              )}
-            </div>
-            {runway && (
-              <div className="aurora-impact__card">
-                <p className="aurora-impact__label">Compte à rebours</p>
-                <p className="aurora-impact__value">{runway.weeksLabel}</p>
-                <p className="aurora-impact__caption">
-                  {runway.isOverdue
-                    ? `Lancement prévu le ${runway.launchLabel} — échéance atteinte.`
-                    : runway.isToday
-                      ? `Dernière ligne droite : lancement aujourd'hui (${runway.launchLabel}).`
-                      : `Soit ${runway.daysLabel} restants avant le ${runway.launchLabel}.`}
-                </p>
-              </div>
-            )}
-          </div>
-          {primaryRisk && (
-            <div className="aurora-risk-halo" data-showcase-aside="risk">
-              <p className="aurora-risk-halo__label">Point de vigilance</p>
-              <h4 className="aurora-risk-halo__title">{primaryRisk.title || 'Vigilance prioritaire'}</h4>
-              <p className="aurora-risk-halo__text">{renderTextWithLinks(primaryRisk.description)}</p>
-              {primaryRiskTimingMessage && (
-                <p className="aurora-risk-halo__note">{primaryRiskTimingMessage}</p>
-              )}
-              <p className="aurora-risk-halo__priority">Priorité : {primaryRisk.priority}</p>
-              {primaryRiskTeam && (
-                <p className="aurora-risk-halo__priority">Équipe référente : {primaryRiskTeam}</p>
-              )}
-            </div>
-          )}
-        </div>
-      </section>
-
       <section className="aurora-section aurora-team" data-showcase-section="team">
         <div className="aurora-section__inner">
           <div className="aurora-section__header">
@@ -1177,6 +1003,13 @@ export const ProjectShowcase = ({
                 <p className="aurora-eyebrow">Feuille de route</p>
                 <h2 className="aurora-section__title">Les prochains jalons</h2>
               </div>
+              {hasText(formattedBudgetEstimate) && (
+                <div className="aurora-roadmap__budget">
+                  <p className="aurora-roadmap__budget-label">Budget estimé</p>
+                  <p className="aurora-roadmap__budget-value">{formattedBudgetEstimate}</p>
+                  <p className="aurora-roadmap__budget-caption">Montant total projeté pour l'initiative.</p>
+                </div>
+              )}
             </div>
             {runway && (
               <p className="aurora-roadmap__intro">
