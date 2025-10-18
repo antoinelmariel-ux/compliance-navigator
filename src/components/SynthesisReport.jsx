@@ -1047,10 +1047,6 @@ export const SynthesisReport = ({
                       </span>
                     </div>
                     <p className="text-sm text-gray-600 mb-3">{renderTextWithLinks(team.expertise)}</p>
-                    <div className="flex items-center text-sm text-gray-500">
-                      <Calendar className="w-4 h-4 mr-2" />
-                      <span>À solliciter en phase de conception</span>
-                    </div>
                     <div className="mt-2 text-sm text-indigo-600 font-medium flex items-center gap-2">
                       <Mail className="w-4 h-4" />
                       {renderTextWithLinks(team.contact)}
