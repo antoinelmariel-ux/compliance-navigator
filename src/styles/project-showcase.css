@@ -13,6 +13,12 @@
 :is([data-showcase-scope], [data-showcase-scope] *)[class*="text-indigo-200/70"] { color: rgba(199, 210, 254, 0.7); }
 :is([data-showcase-scope], [data-showcase-scope] *)[class*="text-indigo-200/80"] { color: rgba(199, 210, 254, 0.8); }
 :is([data-showcase-scope], [data-showcase-scope] *)[class*="text-indigo-200/90"] { color: rgba(199, 210, 254, 0.9); }
+:is([data-showcase-scope], [data-showcase-scope] *)[class*="text-indigo-600"] { color: #003158; }
+:is([data-showcase-scope], [data-showcase-scope] *)[class*="hover:text-indigo-600"]:hover { color: #003158; }
+:is([data-showcase-scope], [data-showcase-scope] *)[class*="focus:text-indigo-600"]:focus { color: #003158; }
+.text-indigo-600 { color: #003158 !important; }
+.hover\:text-indigo-600:hover { color: #003158 !important; }
+.focus\:text-indigo-600:focus { color: #003158 !important; }
 :is([data-showcase-scope], [data-showcase-scope] *)[class*="text-amber-100/90"] { color: rgba(254, 243, 199, 0.9); }
 :is([data-showcase-scope], [data-showcase-scope] *)[class*="text-amber-200/90"] { color: rgba(253, 230, 138, 0.9); }
 
