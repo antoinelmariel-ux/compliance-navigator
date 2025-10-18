@@ -655,6 +655,10 @@ export const ProjectShowcase = ({
 
   const innovationProcess = getFormattedAnswer(questions, answers, 'innovationProcess');
   const visionStatement = getFormattedAnswer(questions, answers, 'visionStatement');
+  const visionStatementEntries = useMemo(
+    () => parseListAnswer(getRawAnswer(answers, 'visionStatement')),
+    [answers]
+  );
   const budgetEstimate = getFormattedAnswer(questions, answers, 'q12');
 
   const formattedBudgetEstimate = useMemo(() => {
@@ -701,11 +705,6 @@ export const ProjectShowcase = ({
         runway
       }),
     [targetAudience, runway]
-  );
-
-  const innovationProcessSteps = useMemo(
-    () => parseListAnswer(getRawAnswer(answers, 'innovationProcess')),
-    [answers]
   );
 
   const teamMemberCards = useMemo(
@@ -933,37 +932,34 @@ export const ProjectShowcase = ({
               </div>
             </div>
             <div className="aurora-difference__layout">
-              <div className="aurora-difference__text">
-                {hasText(innovationProcess) && (
+              {hasText(innovationProcess) && (
+                <div className="aurora-difference__text">
                   <div className="aurora-difference__text-section">
                     <p className="aurora-eyebrow">Objectifs</p>
                     <div className="aurora-difference__text-content">
                       {renderTextWithLinks(innovationProcess)}
                     </div>
                   </div>
-                )}
-                {hasText(visionStatement) && (
-                  <div className="aurora-difference__text-section">
-                    <p className="aurora-eyebrow">KPIs</p>
-                    <div className="aurora-difference__text-content">
+                </div>
+              )}
+              {(visionStatementEntries.length > 0 || hasText(visionStatement)) && (
+                <div className="aurora-difference__metrics">
+                  <p className="aurora-eyebrow">KPIs</p>
+                  {visionStatementEntries.length > 0 ? (
+                    <ul className="aurora-difference__metrics-list">
+                      {visionStatementEntries.map((entry, index) => (
+                        <li key={`kpi-${index}`} className="aurora-difference__metrics-item">
+                          <span className="aurora-difference__metrics-bullet" />
+                          <span>{renderTextWithLinks(entry)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="aurora-difference__metrics-text">
                       {renderTextWithLinks(visionStatement)}
                     </div>
-                  </div>
-                )}
-              </div>
-              {innovationProcessSteps.length > 0 && (
-                <ul className="aurora-difference__timeline">
-                  {innovationProcessSteps.map((step, index) => (
-                    <li
-                      key={`${step}-${index}`}
-                      className="aurora-difference__step"
-                      style={{ animationDelay: `${index * 0.14}s` }}
-                    >
-                      <span className="aurora-difference__node" />
-                      <span className="aurora-difference__label">{renderTextWithLinks(step)}</span>
-                    </li>
-                  ))}
-                </ul>
+                  )}
+                </div>
               )}
             </div>
           </div>
