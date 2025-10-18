@@ -1,7 +1,13 @@
 export const STORAGE_KEY = 'complianceAdvisorState';
+// Désactivation temporaire de la persistance locale.
+const ENABLE_PERSISTENCE = false;
 
 export const loadPersistedState = () => {
-  if (typeof window === 'undefined' || !window.localStorage) {
+  if (
+    !ENABLE_PERSISTENCE ||
+    typeof window === 'undefined' ||
+    !window.localStorage
+  ) {
     return null;
   }
 
@@ -18,7 +24,11 @@ export const loadPersistedState = () => {
 };
 
 export const persistState = (state) => {
-  if (typeof window === 'undefined' || !window.localStorage) {
+  if (
+    !ENABLE_PERSISTENCE ||
+    typeof window === 'undefined' ||
+    !window.localStorage
+  ) {
     return;
   }
 
