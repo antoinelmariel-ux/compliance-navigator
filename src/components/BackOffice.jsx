@@ -221,6 +221,49 @@ const getTeamLabel = (teamId, teams) => {
   return teamId;
 };
 
+const PRIORITY_WEIGHTS = {
+  Critique: 3,
+  Important: 2,
+  Recommandé: 1
+};
+
+const getHighestRiskPriority = (risks = []) => {
+  if (!Array.isArray(risks) || risks.length === 0) {
+    return null;
+  }
+
+  let bestPriority = null;
+
+  risks.forEach((risk) => {
+    const priority = risk?.priority;
+    if (!priority) {
+      return;
+    }
+
+    const currentWeight = PRIORITY_WEIGHTS[priority] || 0;
+    const bestWeight = PRIORITY_WEIGHTS[bestPriority] || 0;
+
+    if (!bestPriority || currentWeight > bestWeight) {
+      bestPriority = priority;
+    }
+  });
+
+  return bestPriority;
+};
+
+const getPriorityBadgeClasses = (priority) => {
+  switch (priority) {
+    case 'Critique':
+      return 'bg-red-100 text-red-800 border border-red-200';
+    case 'Important':
+      return 'bg-orange-100 text-orange-800 border border-orange-200';
+    case 'Recommandé':
+      return 'bg-blue-100 text-blue-800 border border-blue-200';
+    default:
+      return 'bg-gray-100 text-gray-700 border border-gray-200';
+  }
+};
+
 export const BackOffice = ({
   questions,
   setQuestions,
@@ -1068,8 +1111,7 @@ export const BackOffice = ({
       conditionLogic: 'all',
       teams: [],
       questions: {},
-      risks: [],
-      priority: 'Important'
+      risks: []
     };
 
     setRules([...rules, newRule]);
@@ -1097,6 +1139,7 @@ export const BackOffice = ({
     copiedRule.name = typeof originalRule?.name === 'string' && originalRule.name.trim() !== ''
       ? `${originalRule.name} (copie)`
       : `Copie de ${duplicateId}`;
+    delete copiedRule.priority;
 
     const updatedRules = rules.slice();
     updatedRules.splice(originalIndex + 1, 0, copiedRule);
@@ -1513,6 +1556,7 @@ export const BackOffice = ({
                 const conditionSummary = buildRuleConditionSummary(rule, questions);
                 const teamLabels = Array.isArray(rule.teams) ? rule.teams.map((teamId) => getTeamLabel(teamId, teams)) : [];
                 const risks = Array.isArray(rule.risks) ? rule.risks : [];
+                const highestRiskPriority = getHighestRiskPriority(risks);
 
                 return (
                   <article key={rule.id} className="border border-gray-200 rounded-xl p-6 bg-white shadow-sm hv-surface">
@@ -1520,7 +1564,11 @@ export const BackOffice = ({
                       <div className="space-y-1">
                         <div className="flex items-center space-x-3 text-sm text-gray-500">
                           <span className="bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full font-semibold">{rule.id}</span>
-                          <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full">Priorité : {rule.priority || 'N/A'}</span>
+                          <span className={`px-2 py-1 rounded-full font-semibold ${getPriorityBadgeClasses(highestRiskPriority)}`}>
+                            {highestRiskPriority
+                              ? `Priorité principale : ${highestRiskPriority}`
+                              : 'Priorité non renseignée'}
+                          </span>
                         </div>
                         <h3 className="text-xl font-semibold text-gray-800">{rule.name}</h3>
                       </div>
@@ -1598,12 +1646,30 @@ export const BackOffice = ({
                         <h4 className="font-semibold text-gray-800">Risques identifiés</h4>
                         {risks.length > 0 ? (
                           <ul className="space-y-1">
-                            {risks.map((risk, index) => (
-                              <li key={`${rule.id}-risk-${index}`} className="flex items-start space-x-2">
-                                <span className="text-red-500 mt-1">•</span>
-                                <span>{risk && risk.description ? risk.description : 'Risque non renseigné'}</span>
-                              </li>
-                            ))}
+                            {risks.map((risk, index) => {
+                              const riskDescription = risk && risk.description ? risk.description : 'Risque non renseigné';
+                              const riskPriority = risk?.priority || 'Recommandé';
+                              const riskTeamLabel = risk?.teamId ? getTeamLabel(risk.teamId, teams) : 'Équipe non renseignée';
+
+                              return (
+                                <li key={`${rule.id}-risk-${index}`} className="space-y-1">
+                                  <div className="flex items-start space-x-2">
+                                    <span className="text-red-500 mt-1">•</span>
+                                    <span>{riskDescription}</span>
+                                  </div>
+                                  <div className="text-xs text-gray-500 flex flex-wrap gap-2 pl-4">
+                                    <span className="inline-flex items-center gap-1">
+                                      <strong className="font-semibold text-gray-600">Équipe :</strong>
+                                      <span>{riskTeamLabel}</span>
+                                    </span>
+                                    <span className="inline-flex items-center gap-1">
+                                      <strong className="font-semibold text-gray-600">Priorité :</strong>
+                                      <span>{riskPriority}</span>
+                                    </span>
+                                  </div>
+                                </li>
+                              );
+                            })}
                           </ul>
                         ) : (
                           <p className="text-xs text-gray-500 italic">Aucun risque documenté.</p>

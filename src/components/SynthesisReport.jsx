@@ -963,6 +963,34 @@ export const SynthesisReport = ({
                     </span>
                   </div>
                   <p className="text-gray-800 font-medium">{renderTextWithLinks(risk.description)}</p>
+                  <p className="text-xs text-gray-600 mt-2">
+                    <span className="font-semibold text-gray-700">Équipe référente :</span>{' '}
+                    {(() => {
+                      const associatedTeam = teams.find(team => {
+                        if (risk.teamId) {
+                          return team.id === risk.teamId;
+                        }
+                        if (Array.isArray(risk.teams)) {
+                          return risk.teams.includes(team.id);
+                        }
+                        return false;
+                      });
+
+                      if (associatedTeam) {
+                        return associatedTeam.name;
+                      }
+
+                      if (risk.teamId) {
+                        return risk.teamId;
+                      }
+
+                      if (Array.isArray(risk.teams) && risk.teams.length > 0) {
+                        return risk.teams[0];
+                      }
+
+                      return 'Non renseignée';
+                    })()}
+                  </p>
                   <p className="text-sm text-gray-600 mt-2">
                     <span className="font-semibold text-gray-700">Mitigation :</span>{' '}
                     {renderTextWithLinks(risk.mitigation)}

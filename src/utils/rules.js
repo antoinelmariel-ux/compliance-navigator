@@ -381,13 +381,25 @@ export const analyzeAnswers = (answers, rules, riskLevelRules) => {
       });
 
       allRisks.push(
-        ...rule.risks.map(risk => ({
-          ...risk,
-          priority: rule.priority,
-          ruleId: rule.id,
-          ruleName: rule.name,
-          teams: Array.isArray(rule.teams) ? [...rule.teams] : []
-        }))
+        ...rule.risks.map(risk => {
+          const ruleTeams = Array.isArray(rule.teams) ? rule.teams : [];
+          const preferredTeam = typeof risk?.teamId === 'string' && risk.teamId
+            ? risk.teamId
+            : (ruleTeams[0] || '');
+
+          if (preferredTeam) {
+            teamsSet.add(preferredTeam);
+          }
+
+          return {
+            ...risk,
+            priority: risk?.priority || 'Recommandé',
+            teamId: preferredTeam,
+            teams: preferredTeam ? [preferredTeam] : [],
+            ruleId: rule.id,
+            ruleName: rule.name
+          };
+        })
       );
     }
 

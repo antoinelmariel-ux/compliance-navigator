@@ -40,30 +40,23 @@ export const getTeamPriority = (analysis, teamId) => {
   let bestPriority = 'Recommandé';
 
   risks.forEach(risk => {
-    if (!Array.isArray(risk.teams) || !risk.teams.includes(teamId)) {
+    const associatedTeams = new Set();
+
+    if (risk?.teamId) {
+      associatedTeams.add(risk.teamId);
+    }
+
+    if (Array.isArray(risk?.teams)) {
+      risk.teams.forEach(team => associatedTeams.add(team));
+    }
+
+    if (!associatedTeams.has(teamId)) {
       return;
     }
 
-    if (getWeight(risk.priority) > getWeight(bestPriority)) {
-      bestPriority = risk.priority;
-    }
-  });
-
-  if (bestPriority !== 'Recommandé') {
-    return bestPriority;
-  }
-
-  const triggeredRules = Array.isArray(analysis.triggeredRules)
-    ? analysis.triggeredRules
-    : [];
-
-  triggeredRules.forEach(rule => {
-    if (!Array.isArray(rule.teams) || !rule.teams.includes(teamId)) {
-      return;
-    }
-
-    if (getWeight(rule.priority) > getWeight(bestPriority)) {
-      bestPriority = rule.priority;
+    const riskPriority = risk?.priority || 'Recommandé';
+    if (getWeight(riskPriority) > getWeight(bestPriority)) {
+      bestPriority = riskPriority;
     }
   });
 
