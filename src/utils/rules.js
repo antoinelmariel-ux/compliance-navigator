@@ -328,26 +328,6 @@ const normalizeTimingRequirement = (value) => {
   return {};
 };
 
-const getActiveTimelineProfiles = (condition, answers) => {
-  const profiles = Array.isArray(condition.complianceProfiles)
-    ? condition.complianceProfiles
-    : [];
-
-  if (profiles.length === 0) {
-    return [];
-  }
-
-  const matching = profiles.filter(profile =>
-    matchesConditionGroup(profile.conditions, answers, profile.conditionLogic)
-  );
-
-  if (matching.length > 0) {
-    return matching;
-  }
-
-  return profiles.filter(profile => !profile.conditions || profile.conditions.length === 0);
-};
-
 export const evaluateRule = (rule, answers) => {
   const timingContexts = [];
   const conditionGroups = normalizeConditionGroups(rule, sanitizeRuleCondition);
@@ -367,18 +347,7 @@ export const evaluateRule = (rule, answers) => {
       return false;
     }
 
-    const activeProfiles = getActiveTimelineProfiles(condition, answers);
-    const normalizedProfiles = activeProfiles.map(profile => ({
-      id: profile.id || `profile_${Date.now()}`,
-      label: profile.label || 'Exigence de timing',
-      description: profile.description || '',
-      requirements: Object.fromEntries(
-        Object.entries(profile.requirements || {}).map(([teamId, value]) => [
-          teamId,
-          normalizeTimingRequirement(value)
-        ])
-      )
-    }));
+    const normalizedProfiles = [];
 
     let satisfied = true;
 
@@ -699,7 +668,6 @@ export {
   matchesConditionGroup,
   computeTimingDiff,
   normalizeTimingRequirement,
-  getActiveTimelineProfiles,
   sanitizeRiskTimingConstraint,
   sanitizeTimingConstraint,
   sanitizeTeamQuestionEntry,
