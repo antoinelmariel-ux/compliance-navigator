@@ -14,3 +14,13 @@ L'ajout d'une question, d'une règle ou d'une équipe génère un identifiant ba
 Dans le rapport de synthèse, la fonction `getTeamPriority` recherche un risque associé à une équipe, mais la condition fournie à `Array.prototype.find` n'utilise pas la variable de boucle `risk` : elle retourne simplement la vérité de `analysis.questions?.[teamId]`. Dès qu'une équipe possède des questions, le premier risque de la liste est renvoyé, quel que soit son lien réel avec l'équipe.【F:src/components/SynthesisReport.jsx†L103-L109】
 
 **Impact possible :** l'interface peut afficher une priorité erronée (ex. « Critique ») pour des équipes qui ne sont pas concernées par les risques identifiés, induisant les utilisateurs en erreur sur l'urgence des actions à mener.
+
+## 4. Type `milestone_list` mal identifié dans le back-office
+La table de correspondance `QUESTION_TYPE_META` ne déclare pas le type `milestone_list`. Lorsqu'une question vitrine de type jalons est affichée dans le back-office, `getQuestionTypeMeta` retombe sur la définition par défaut « Liste de choix », avec un libellé et une description incohérents avec le véritable comportement du champ.【F:src/components/BackOffice.jsx†L10-L47】
+
+**Impact possible :** les administrateurs risquent de retirer ou modifier ces questions en pensant qu'il s'agit de simples listes déroulantes, ce qui compromet l'expérience vitrine et peut conduire à supprimer des attributs indispensables à la génération de la feuille de route.
+
+## 5. Conditions basées sur les jalons jamais satisfaites
+Les réponses `milestone_list` sont persistées comme tableaux d'objets `{ date, description }`. Le constructeur de conditions du back-office capture pourtant des valeurs textuelles pour ces questions, puis l'évaluation (`shouldShowQuestion`) vérifie l'appartenance avec `Array.prototype.includes`, impossible à satisfaire avec des objets et des chaînes mélangés.【F:src/components/QuestionEditor.jsx†L767-L858】【F:src/components/QuestionnaireScreen.jsx†L71-L156】【F:src/utils/questions.js†L30-L109】
+
+**Impact possible :** toute logique conditionnelle ou règle qui dépend de jalons ne se déclenchera jamais, empêchant l'affichage progressif de questions ou l'application de règles métiers fondées sur les délais planifiés.
