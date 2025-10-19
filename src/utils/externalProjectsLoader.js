@@ -7,40 +7,34 @@ const DIRECTORY_PATH = './submitted-projects/';
 const MANIFEST_CANDIDATES = ['index.json', 'manifest.json', 'projects.json'];
 
 const createStaticDirectorySnapshot = () => {
-  if (typeof import.meta === 'undefined' || typeof import.meta.glob !== 'function') {
+  const globalSnapshot =
+    typeof globalThis !== 'undefined' &&
+    globalThis.__COMPLIANCE_NAVIGATOR_SUBMITTED_PROJECTS__;
+
+  if (
+    !globalSnapshot ||
+    typeof globalSnapshot !== 'object' ||
+    Array.isArray(globalSnapshot)
+  ) {
     return { files: [], payloads: new Map() };
   }
 
-  try {
-    const modules = import.meta.glob('../submitted-projects/*.json', { eager: true });
-    const files = [];
-    const payloads = new Map();
+  const files = Array.isArray(globalSnapshot.files)
+    ? globalSnapshot.files.filter(item => typeof item === 'string')
+    : [];
 
-    Object.entries(modules).forEach(([modulePath, moduleValue]) => {
-      const match = modulePath.match(/submitted-projects\/(.+\.json)$/i);
-      if (!match) {
+  const payloads = new Map();
+  if (globalSnapshot.payloads && typeof globalSnapshot.payloads === 'object') {
+    Object.entries(globalSnapshot.payloads).forEach(([key, value]) => {
+      if (typeof key !== 'string' || !key) {
         return;
       }
 
-      const relativePath = match[1];
-      const payload =
-        moduleValue && typeof moduleValue === 'object' && 'default' in moduleValue
-          ? moduleValue.default
-          : moduleValue;
-
-      files.push(relativePath);
-      if (payload) {
-        payloads.set(relativePath, payload);
-      }
+      payloads.set(key, value);
     });
-
-    return { files, payloads };
-  } catch (error) {
-    if (typeof console !== 'undefined' && typeof console.warn === 'function') {
-      console.warn('[externalProjectsLoader] Snapshot local échoué :', error);
-    }
-    return { files: [], payloads: new Map() };
   }
+
+  return { files, payloads };
 };
 
 const fetchJson = async (url) => {
