@@ -223,7 +223,13 @@ export const HomeScreen = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6" role="list">
               {sortedProjects.map(project => {
                 const complexity = project.analysis?.complexity;
-                const teamsCount = project.analysis?.relevantTeams?.length ?? 0;
+                const relevantTeams = project.analysis?.relevantTeams;
+                const analysisTeamIds = project.analysis?.teams;
+                const teamsCount = Array.isArray(relevantTeams)
+                  ? relevantTeams.length
+                  : Array.isArray(analysisTeamIds)
+                    ? analysisTeamIds.length
+                    : 0;
                 const risksCount = project.analysis?.risks?.length ?? 0;
                 const projectStatus = statusStyles[project.status] || statusStyles.submitted;
                 const progress = computeProgress(project);
