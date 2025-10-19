@@ -566,18 +566,32 @@ export const analyzeAnswers = (answers, rules, riskLevelRules, riskWeighting) =>
             teamsSet.add(preferredTeam);
           }
 
+          const timingViolation = {
+            startQuestion: timingConstraint.startQuestion,
+            endQuestion: timingConstraint.endQuestion,
+            requiredWeeks,
+            requiredDays,
+            actualWeeks: diff.diffInWeeks,
+            actualDays: diff.diffInDays,
+            meetsWeeks,
+            meetsDays
+          };
+
+          timingDetails.push({
+            ruleId: rule.id,
+            ruleName: rule.name,
+            riskId: risk?.id ?? null,
+            riskDescription: typeof risk?.description === 'string' ? risk.description : '',
+            satisfied: false,
+            diff,
+            profiles: [],
+            source: 'risk',
+            timingViolation
+          });
+
           return {
             ...weightedRisk,
-            timingViolation: {
-              startQuestion: timingConstraint.startQuestion,
-              endQuestion: timingConstraint.endQuestion,
-              requiredWeeks,
-              requiredDays,
-              actualWeeks: diff.diffInWeeks,
-              actualDays: diff.diffInDays,
-              meetsWeeks,
-              meetsDays
-            }
+            timingViolation
           };
         })
       .filter(Boolean);

@@ -435,9 +435,13 @@ const computeTimelineSummary = (timelineDetails) => {
   const diff = detailWithDiff.diff;
   const weeks = Math.round(diff.diffInWeeks);
   const days = Math.round(diff.diffInDays);
+  const riskLabel = typeof detailWithDiff.riskDescription === 'string'
+    ? detailWithDiff.riskDescription.trim()
+    : '';
+  const summaryLabel = riskLabel.length > 0 ? riskLabel : detailWithDiff.ruleName;
 
   return {
-    ruleName: detailWithDiff.ruleName,
+    ruleName: summaryLabel,
     satisfied: detailWithDiff.satisfied,
     weeks,
     days
