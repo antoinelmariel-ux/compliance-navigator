@@ -6,6 +6,43 @@ import { sanitizeFileName } from './projectExport.js';
 const DIRECTORY_PATH = './submitted-projects/';
 const MANIFEST_CANDIDATES = ['index.json', 'manifest.json', 'projects.json'];
 
+const createStaticDirectorySnapshot = () => {
+  if (typeof import.meta === 'undefined' || typeof import.meta.glob !== 'function') {
+    return { files: [], payloads: new Map() };
+  }
+
+  try {
+    const modules = import.meta.glob('../submitted-projects/*.json', { eager: true });
+    const files = [];
+    const payloads = new Map();
+
+    Object.entries(modules).forEach(([modulePath, moduleValue]) => {
+      const match = modulePath.match(/submitted-projects\/(.+\.json)$/i);
+      if (!match) {
+        return;
+      }
+
+      const relativePath = match[1];
+      const payload =
+        moduleValue && typeof moduleValue === 'object' && 'default' in moduleValue
+          ? moduleValue.default
+          : moduleValue;
+
+      files.push(relativePath);
+      if (payload) {
+        payloads.set(relativePath, payload);
+      }
+    });
+
+    return { files, payloads };
+  } catch (error) {
+    if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+      console.warn('[externalProjectsLoader] Snapshot local échoué :', error);
+    }
+    return { files: [], payloads: new Map() };
+  }
+};
+
 const fetchJson = async (url) => {
   try {
     const response = await fetch(url, { cache: 'no-cache' });
@@ -74,6 +111,10 @@ const deduplicate = (items) => {
 
   return result;
 };
+
+const STATIC_DIRECTORY_SNAPSHOT = createStaticDirectorySnapshot();
+const STATIC_DIRECTORY_FILES = deduplicate(STATIC_DIRECTORY_SNAPSHOT.files);
+const STATIC_DIRECTORY_PAYLOADS = STATIC_DIRECTORY_SNAPSHOT.payloads;
 
 const extractFilesFromManifest = (manifest) => {
   if (!manifest) {
@@ -293,7 +334,15 @@ const loadProjectsFromFiles = async (files, context) => {
     }
 
     const url = `${DIRECTORY_PATH}${relativePath}`;
-    const payload = await fetchJson(url);
+    let payload = await fetchJson(url);
+    if (!payload && STATIC_DIRECTORY_PAYLOADS.has(relativePath)) {
+      try {
+        payload = JSON.parse(JSON.stringify(STATIC_DIRECTORY_PAYLOADS.get(relativePath)));
+      } catch (error) {
+        payload = STATIC_DIRECTORY_PAYLOADS.get(relativePath);
+      }
+    }
+
     if (!payload) {
       continue;
     }
@@ -341,7 +390,11 @@ const discoverProjectFiles = async () => {
   }
 
   const htmlListing = await fetchText(DIRECTORY_PATH);
-  const files = htmlListing ? extractFilesFromDirectoryListing(htmlListing) : [];
+  const discoveredFiles = htmlListing
+    ? extractFilesFromDirectoryListing(htmlListing)
+    : [];
+  const files = deduplicate([...discoveredFiles, ...STATIC_DIRECTORY_FILES]);
+
   return { files, inlineProjects: [] };
 };
 
