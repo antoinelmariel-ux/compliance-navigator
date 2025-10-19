@@ -431,70 +431,34 @@ export const analyzeAnswers = (answers, rules, riskLevelRules, riskWeighting) =>
   const timingDetails = [];
 
   evaluations.forEach(({ rule, evaluation }) => {
-    if (evaluation.triggered) {
-      rule.teams.forEach(teamId => teamsSet.add(teamId));
+    if (!evaluation.triggered) {
+      return;
+    }
 
-      Object.entries(rule.questions).forEach(([teamId, questions]) => {
-        if (!teamId) {
+    rule.teams.forEach(teamId => teamsSet.add(teamId));
+
+    Object.entries(rule.questions).forEach(([teamId, questions]) => {
+      if (!teamId) {
+        return;
+      }
+
+      const entries = Array.isArray(questions)
+        ? questions.map(sanitizeTeamQuestionEntry)
+        : [];
+
+      entries.forEach(entry => {
+        if (!entry) {
           return;
         }
 
-        const entries = Array.isArray(questions)
-          ? questions.map(sanitizeTeamQuestionEntry)
-          : [];
+        const rawText = typeof entry.text === 'string' ? entry.text : '';
+        const trimmedText = rawText.trim();
+        const timingConstraint = sanitizeTimingConstraint(entry.timingConstraint);
 
-        entries.forEach(entry => {
-          if (!entry) {
-            return;
-          }
+        if (timingConstraint.enabled) {
+          const diff = computeTimingDiff(timingConstraint, answers);
 
-          const rawText = typeof entry.text === 'string' ? entry.text : '';
-          const trimmedText = rawText.trim();
-          const timingConstraint = sanitizeTimingConstraint(entry.timingConstraint);
-
-          if (timingConstraint.enabled) {
-            const diff = computeTimingDiff(timingConstraint, answers);
-
-            if (!diff) {
-              return;
-            }
-
-            if (trimmedText.length === 0) {
-              return;
-            }
-
-            const requiredWeeks = typeof timingConstraint.minimumWeeks === 'number'
-              ? timingConstraint.minimumWeeks
-              : undefined;
-            const requiredDays = typeof timingConstraint.minimumDays === 'number'
-              ? timingConstraint.minimumDays
-              : undefined;
-            const meetsWeeks = requiredWeeks === undefined || diff.diffInWeeks >= requiredWeeks;
-            const meetsDays = requiredDays === undefined || diff.diffInDays >= requiredDays;
-
-            if (meetsWeeks && meetsDays) {
-              return;
-            }
-
-            if (!allQuestions[teamId]) {
-              allQuestions[teamId] = [];
-            }
-
-            allQuestions[teamId].push({
-              text: rawText,
-              timingViolation: {
-                startQuestion: timingConstraint.startQuestion,
-                endQuestion: timingConstraint.endQuestion,
-                requiredWeeks,
-                requiredDays,
-                actualWeeks: diff.diffInWeeks,
-                actualDays: diff.diffInDays,
-                meetsWeeks,
-                meetsDays
-              }
-            });
-
-            teamsSet.add(teamId);
+          if (!diff) {
             return;
           }
 
@@ -502,22 +466,61 @@ export const analyzeAnswers = (answers, rules, riskLevelRules, riskWeighting) =>
             return;
           }
 
+          const requiredWeeks = typeof timingConstraint.minimumWeeks === 'number'
+            ? timingConstraint.minimumWeeks
+            : undefined;
+          const requiredDays = typeof timingConstraint.minimumDays === 'number'
+            ? timingConstraint.minimumDays
+            : undefined;
+          const meetsWeeks = requiredWeeks === undefined || diff.diffInWeeks >= requiredWeeks;
+          const meetsDays = requiredDays === undefined || diff.diffInDays >= requiredDays;
+
+          if (meetsWeeks && meetsDays) {
+            return;
+          }
+
           if (!allQuestions[teamId]) {
             allQuestions[teamId] = [];
           }
 
-          allQuestions[teamId].push({ text: rawText, timingViolation: null });
-          teamsSet.add(teamId);
-        });
-      });
+          allQuestions[teamId].push({
+            text: rawText,
+            timingViolation: {
+              startQuestion: timingConstraint.startQuestion,
+              endQuestion: timingConstraint.endQuestion,
+              requiredWeeks,
+              requiredDays,
+              actualWeeks: diff.diffInWeeks,
+              actualDays: diff.diffInDays,
+              meetsWeeks,
+              meetsDays
+            }
+          });
 
-      const processedRisks = (Array.isArray(rule.risks) ? rule.risks : [])
-        .map(risk => {
-          const ruleTeams = Array.isArray(rule.teams) ? rule.teams : [];
-          const preferredTeam = typeof risk?.teamId === 'string' && risk.teamId
-            ? risk.teamId
-            : (ruleTeams[0] || '');
-          const timingConstraint = sanitizeRiskTimingConstraint(risk?.timingConstraint);
+          teamsSet.add(teamId);
+          return;
+        }
+
+        if (trimmedText.length === 0) {
+          return;
+        }
+
+        if (!allQuestions[teamId]) {
+          allQuestions[teamId] = [];
+        }
+
+        allQuestions[teamId].push({ text: rawText, timingViolation: null });
+        teamsSet.add(teamId);
+      });
+    });
+
+    const processedRisks = (Array.isArray(rule.risks) ? rule.risks : [])
+      .map(risk => {
+        const ruleTeams = Array.isArray(rule.teams) ? rule.teams : [];
+        const preferredTeam = typeof risk?.teamId === 'string' && risk.teamId
+          ? risk.teamId
+          : (ruleTeams[0] || '');
+        const timingConstraint = sanitizeRiskTimingConstraint(risk?.timingConstraint);
 
           const baseRisk = {
             ...risk,
@@ -577,10 +580,9 @@ export const analyzeAnswers = (answers, rules, riskLevelRules, riskWeighting) =>
             }
           };
         })
-        .filter(Boolean);
+      .filter(Boolean);
 
-      allRisks.push(...processedRisks);
-    }
+    allRisks.push(...processedRisks);
 
     evaluation.timingContexts.forEach(context => {
       if (!context || !context.diff) {
