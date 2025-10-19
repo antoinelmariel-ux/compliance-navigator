@@ -1054,7 +1054,11 @@ export const ProjectShowcase = ({
               </p>
             )}
             {shouldShowTimelineSummary && (
-              <div className="aurora-roadmap__summary">
+              <div
+                className={`aurora-roadmap__summary ${
+                  timelineSummary.satisfied ? 'aurora-roadmap__summary--ok' : 'aurora-roadmap__summary--alert'
+                }`}
+              >
                 <p className="aurora-roadmap__label">{timelineSummary.ruleName}</p>
                 <p className="aurora-roadmap__value">{timelineSummary.weeks} semaines ({timelineSummary.days} jours)</p>
                 <p className="aurora-roadmap__caption">
