@@ -118,5 +118,50 @@ export const initialRules = [
         "teamId": "privacy"
       }
     ]
+  },
+  {
+    "id": "rule4",
+    "name": "Rémunération PDS",
+    "conditions": [
+      {
+        "type": "question",
+        "question": "q10",
+        "operator": "equals",
+        "value": "Professionnel de santé (via contrat à mettre en place)"
+      }
+    ],
+    "conditionGroups": [
+      {
+        "logic": "all",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "q10",
+            "operator": "equals",
+            "value": "Professionnel de santé (via contrat à mettre en place)"
+          }
+        ]
+      }
+    ],
+    "conditionLogic": "all",
+    "teams": [
+      "Ethics"
+    ],
+    "questions": {},
+    "risks": [
+      {
+        "description": "Déclaration/Autorisation du contrat avec un PDS",
+        "level": "Moyen",
+        "mitigation": "Si le contrat avec le PDS est > à 2000€, il convient de soumettre la demande l'autorisation à l'instance ordinale au moins 8 semaines avant le début du contrat. En dessous de 2000€, c'est un régime de déclaration (8 jours ouvrables).",
+        "priority": "A particulièrement anticiper",
+        "teamId": "Ethics",
+        "timingConstraint": {
+          "enabled": true,
+          "startQuestion": "campaignKickoffDate",
+          "endQuestion": "launchDate",
+          "minimumWeeks": 10
+        }
+      }
+    ]
   }
 ];
