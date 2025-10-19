@@ -5,66 +5,100 @@ import { sanitizeFileName } from './projectExport.js';
 
 const DIRECTORY_PATH = './submitted-projects/';
 const MANIFEST_CANDIDATES = ['index.json', 'manifest.json', 'projects.json'];
+const SEQUENTIAL_PREFIX = 'projet';
+const SEQUENTIAL_MAX_ATTEMPTS = 100;
+const SEQUENTIAL_MAX_CONSECUTIVE_MISSES = 5;
 
-const createStaticDirectorySnapshot = () => {
-  const globalSnapshot =
-    typeof globalThis !== 'undefined' &&
-    globalThis.__COMPLIANCE_NAVIGATOR_SUBMITTED_PROJECTS__;
+const parseJsonSafely = (value) => {
+  try {
+    return JSON.parse(value);
+  } catch (error) {
+    if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+      console.warn('[externalProjectsLoader] JSON illisible :', error);
+    }
+    return null;
+  }
+};
 
-  if (
-    !globalSnapshot ||
-    typeof globalSnapshot !== 'object' ||
-    Array.isArray(globalSnapshot)
-  ) {
-    return { files: [], payloads: new Map() };
+const fetchWithXhr = (url) => {
+  if (typeof XMLHttpRequest === 'undefined') {
+    return Promise.resolve(null);
   }
 
-  const files = Array.isArray(globalSnapshot.files)
-    ? globalSnapshot.files.filter(item => typeof item === 'string')
-    : [];
+  return new Promise(resolve => {
+    try {
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', url, true);
+      xhr.responseType = 'text';
 
-  const payloads = new Map();
-  if (globalSnapshot.payloads && typeof globalSnapshot.payloads === 'object') {
-    Object.entries(globalSnapshot.payloads).forEach(([key, value]) => {
-      if (typeof key !== 'string' || !key) {
-        return;
+      xhr.onreadystatechange = () => {
+        if (xhr.readyState !== 4) {
+          return;
+        }
+
+        if (
+          (xhr.status >= 200 && xhr.status < 300) ||
+          (xhr.status === 0 && typeof xhr.responseText === 'string')
+        ) {
+          resolve(xhr.responseText);
+          return;
+        }
+
+        resolve(null);
+      };
+
+      xhr.onerror = () => resolve(null);
+      xhr.send(null);
+    } catch (error) {
+      if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+        console.warn('[externalProjectsLoader] Requête XHR impossible :', url, error);
       }
-
-      payloads.set(key, value);
-    });
-  }
-
-  return { files, payloads };
+      resolve(null);
+    }
+  });
 };
 
 const fetchJson = async (url) => {
-  try {
-    const response = await fetch(url, { cache: 'no-cache' });
-    if (!response.ok) {
-      return null;
+  if (typeof fetch === 'function') {
+    try {
+      const response = await fetch(url, { cache: 'no-cache' });
+      if (response && response.ok) {
+        return await response.json();
+      }
+
+      if (response && response.status && response.status >= 400) {
+        return null;
+      }
+    } catch (error) {
+      if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+        console.warn('[externalProjectsLoader] Échec du fetch JSON :', url, error);
+      }
     }
-    return await response.json();
-  } catch (error) {
-    if (typeof console !== 'undefined' && typeof console.warn === 'function') {
-      console.warn('[externalProjectsLoader] JSON introuvable :', url, error);
-    }
-    return null;
   }
+
+  const fallback = await fetchWithXhr(url);
+  return fallback ? parseJsonSafely(fallback) : null;
 };
 
 const fetchText = async (url) => {
-  try {
-    const response = await fetch(url, { cache: 'no-cache' });
-    if (!response.ok) {
-      return null;
+  if (typeof fetch === 'function') {
+    try {
+      const response = await fetch(url, { cache: 'no-cache' });
+      if (response && response.ok) {
+        return await response.text();
+      }
+
+      if (response && response.status && response.status >= 400) {
+        return null;
+      }
+    } catch (error) {
+      if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+        console.warn('[externalProjectsLoader] Échec du fetch texte :', url, error);
+      }
     }
-    return await response.text();
-  } catch (error) {
-    if (typeof console !== 'undefined' && typeof console.warn === 'function') {
-      console.warn('[externalProjectsLoader] Ressource texte introuvable :', url, error);
-    }
-    return null;
   }
+
+  return fetchWithXhr(url);
 };
 
 const sanitizeRelativePath = (value) => {
@@ -105,10 +139,6 @@ const deduplicate = (items) => {
 
   return result;
 };
-
-const STATIC_DIRECTORY_SNAPSHOT = createStaticDirectorySnapshot();
-const STATIC_DIRECTORY_FILES = deduplicate(STATIC_DIRECTORY_SNAPSHOT.files);
-const STATIC_DIRECTORY_PAYLOADS = STATIC_DIRECTORY_SNAPSHOT.payloads;
 
 const extractFilesFromManifest = (manifest) => {
   if (!manifest) {
@@ -318,7 +348,7 @@ const buildProjectEntry = (
   return normalizedProject;
 };
 
-const loadProjectsFromFiles = async (files, context) => {
+const loadProjectsFromFiles = async (files, context, preloadedPayloads = new Map()) => {
   const results = [];
 
   for (const file of files) {
@@ -328,13 +358,16 @@ const loadProjectsFromFiles = async (files, context) => {
     }
 
     const url = `${DIRECTORY_PATH}${relativePath}`;
-    let payload = await fetchJson(url);
-    if (!payload && STATIC_DIRECTORY_PAYLOADS.has(relativePath)) {
+    let payload = null;
+
+    if (preloadedPayloads.has(relativePath)) {
       try {
-        payload = JSON.parse(JSON.stringify(STATIC_DIRECTORY_PAYLOADS.get(relativePath)));
+        payload = JSON.parse(JSON.stringify(preloadedPayloads.get(relativePath)));
       } catch (error) {
-        payload = STATIC_DIRECTORY_PAYLOADS.get(relativePath);
+        payload = preloadedPayloads.get(relativePath);
       }
+    } else {
+      payload = await fetchJson(url);
     }
 
     if (!payload) {
@@ -374,12 +407,45 @@ const loadInlineProjects = (projects = [], context) => {
     .filter(Boolean);
 };
 
+const discoverSequentiallyNamedProjects = async () => {
+  const files = [];
+  const payloads = new Map();
+
+  let consecutiveMisses = 0;
+
+  for (let index = 1; index <= SEQUENTIAL_MAX_ATTEMPTS; index += 1) {
+    const candidate = `${SEQUENTIAL_PREFIX}${index}.json`;
+    const relativePath = sanitizeRelativePath(candidate);
+
+    if (!relativePath) {
+      continue;
+    }
+
+    const payload = await fetchJson(`${DIRECTORY_PATH}${relativePath}`);
+
+    if (payload) {
+      files.push(relativePath);
+      payloads.set(relativePath, payload);
+      consecutiveMisses = 0;
+      continue;
+    }
+
+    consecutiveMisses += 1;
+
+    if (consecutiveMisses >= SEQUENTIAL_MAX_CONSECUTIVE_MISSES) {
+      break;
+    }
+  }
+
+  return { files, payloads };
+};
+
 const discoverProjectFiles = async () => {
   for (const manifestFile of MANIFEST_CANDIDATES) {
     const manifest = await fetchJson(`${DIRECTORY_PATH}${manifestFile}`);
     const { files, inlineProjects } = extractFilesFromManifest(manifest);
     if (files.length > 0 || inlineProjects.length > 0) {
-      return { files: deduplicate(files), inlineProjects };
+      return { files: deduplicate(files), inlineProjects, payloads: new Map() };
     }
   }
 
@@ -387,9 +453,14 @@ const discoverProjectFiles = async () => {
   const discoveredFiles = htmlListing
     ? extractFilesFromDirectoryListing(htmlListing)
     : [];
-  const files = deduplicate([...discoveredFiles, ...STATIC_DIRECTORY_FILES]);
+  const sequentialDiscovery = await discoverSequentiallyNamedProjects();
+  const files = deduplicate([...discoveredFiles, ...sequentialDiscovery.files]);
 
-  return { files, inlineProjects: [] };
+  return {
+    files,
+    inlineProjects: [],
+    payloads: sequentialDiscovery.payloads
+  };
 };
 
 export const loadSubmittedProjectsFromDirectory = async ({
@@ -420,9 +491,9 @@ export const loadSubmittedProjectsFromDirectory = async ({
   };
 
   try {
-    const { files, inlineProjects } = await discoverProjectFiles();
+    const { files, inlineProjects, payloads } = await discoverProjectFiles();
     const inlineResults = loadInlineProjects(inlineProjects, context);
-    const fileResults = await loadProjectsFromFiles(files, context);
+    const fileResults = await loadProjectsFromFiles(files, context, payloads);
 
     return [...inlineResults, ...fileResults];
   } catch (error) {
