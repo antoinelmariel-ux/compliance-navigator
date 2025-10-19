@@ -806,16 +806,19 @@ export const App = () => {
           : relevantQuestions.length > 0
             ? Math.min(entry.lastQuestionIndex ?? 0, relevantQuestions.length - 1)
             : 0;
+        const hasPendingMandatory = missingMandatory.length > 0;
 
         setAnswers(importedAnswers);
         setAnalysis(derivedAnalysis);
         setCurrentQuestionIndex(nextIndex);
         setValidationError(null);
         setActiveProjectId(entry.id);
-        setScreen('questionnaire');
+        setScreen(hasPendingMandatory ? 'mandatory-summary' : 'synthesis');
         setSaveFeedback({
           status: 'success',
-          message: 'Projet importé en mode brouillon. Vous pouvez poursuivre sa saisie.'
+          message: hasPendingMandatory
+            ? 'Projet importé. Complétez les questions obligatoires avant de consulter la synthèse.'
+            : 'Projet importé. Le rapport compliance est disponible.'
         });
       } catch (error) {
         if (typeof console !== 'undefined' && typeof console.error === 'function') {
