@@ -46,7 +46,8 @@ L'application tente d'identifier automatiquement tous les fichiers `.json`
 présents dans ce dossier.
 
 Si l'hébergement ne permet pas l'indexation automatique d'un dossier, ajoutez
-un fichier `index.json` listant explicitement les fichiers ou les projets :
+un fichier `index.json` listant explicitement les fichiers ou les projets, ou
+utilisez la convention `projetX.json` décrite ci-dessous :
 
 - Tableau de noms de fichiers : `['projet-a.json', 'projet-b.json']`
 - Objet avec une clef `files` ou `projects` :
@@ -62,4 +63,11 @@ un fichier `index.json` listant explicitement les fichiers ou les projets :
 
 Les projets décrits directement dans `projects` sont importés sans fichier
 supplémentaire.
+
+### Convention `projetX.json`
+
+En l'absence d'index et de manifeste, l'application tente désormais de charger
+des fichiers nommés `projet1.json`, `projet2.json`, etc. Cette découverte se
+termine après plusieurs numéros manquants consécutifs. Tant que vos fichiers
+sont numérotés sans trou (ou presque), ils seront importés automatiquement.
 
