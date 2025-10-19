@@ -21,7 +21,7 @@ import { normalizeRiskWeighting } from './utils/risk.js';
 import { normalizeProjectEntry, normalizeProjectsCollection } from './utils/projectNormalization.js';
 import { loadSubmittedProjectsFromDirectory } from './utils/externalProjectsLoader.js';
 
-const APP_VERSION = 'v1.0.79';
+const APP_VERSION = 'v1.0.80';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -806,16 +806,19 @@ export const App = () => {
           : relevantQuestions.length > 0
             ? Math.min(entry.lastQuestionIndex ?? 0, relevantQuestions.length - 1)
             : 0;
+        const hasPendingMandatory = missingMandatory.length > 0;
 
         setAnswers(importedAnswers);
         setAnalysis(derivedAnalysis);
         setCurrentQuestionIndex(nextIndex);
         setValidationError(null);
         setActiveProjectId(entry.id);
-        setScreen('questionnaire');
+        setScreen(hasPendingMandatory ? 'mandatory-summary' : 'synthesis');
         setSaveFeedback({
           status: 'success',
-          message: 'Projet importé en mode brouillon. Vous pouvez poursuivre sa saisie.'
+          message: hasPendingMandatory
+            ? 'Projet importé. Complétez les questions obligatoires avant de consulter la synthèse.'
+            : 'Projet importé. Le rapport compliance est disponible.'
         });
       } catch (error) {
         if (typeof console !== 'undefined' && typeof console.error === 'function') {
