@@ -5,7 +5,7 @@ import { initialRiskWeights } from './riskWeights.js';
 import { analyzeAnswers } from '../utils/rules.js';
 
 const demoProjectAnswers = {
-  projectName: 'Plasma360',
+  projectName: 'Plasma 360',
   projectSlogan: 'Du don à la vie : découvrez comment chaque goutte de plasma devient un traitement vital',
   targetAudience: ['Grand public', 'Patients', 'Professionnels de santé'],
   problemPainPoints:
@@ -40,7 +40,8 @@ const demoProjectAnswers = {
   BUDGET: '30'
 };
 
-const DEMO_TIMESTAMP = '2025-10-18T09:58:20.033Z';
+const DEMO_VERSION = 1;
+const DEMO_TIMESTAMP = '2025-10-19T06:08:36.021Z';
 
 export const createDemoProject = ({
   questions = initialQuestions,
@@ -54,10 +55,21 @@ export const createDemoProject = ({
 
   return {
     id: 'demo-project',
+    version: DEMO_VERSION,
     projectName: demoProjectAnswers.projectName,
     answers: { ...demoProjectAnswers },
+    metadata: {
+      version: DEMO_VERSION,
+      generatedAt: DEMO_TIMESTAMP,
+      project: {
+        name: demoProjectAnswers.projectName,
+        projectName: demoProjectAnswers.projectName,
+        answers: { ...demoProjectAnswers }
+      }
+    },
     analysis,
     status: 'submitted',
+    generatedAt: DEMO_TIMESTAMP,
     lastUpdated: DEMO_TIMESTAMP,
     submittedAt: DEMO_TIMESTAMP,
     lastQuestionIndex: sanitizedTotal > 0 ? sanitizedTotal - 1 : 0,
