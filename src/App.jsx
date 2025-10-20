@@ -21,7 +21,7 @@ import { normalizeRiskWeighting } from './utils/risk.js';
 import { normalizeProjectEntry, normalizeProjectsCollection } from './utils/projectNormalization.js';
 import { loadSubmittedProjectsFromDirectory } from './utils/externalProjectsLoader.js';
 
-const APP_VERSION = 'v1.0.93';
+const APP_VERSION = 'v1.0.94';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -904,7 +904,7 @@ export const App = () => {
     setScreen('questionnaire');
   }, [resetProjectState]);
 
-  const handleOpenProject = useCallback((projectId) => {
+  const handleOpenProject = useCallback((projectId, options = {}) => {
     if (!projectId) {
       return;
     }
@@ -955,16 +955,24 @@ export const App = () => {
       };
     }));
 
-    if (project.status === 'draft') {
-      setScreen('questionnaire');
-      return;
+    const forcedView = typeof options?.view === 'string' ? options.view : null;
+
+    let targetScreen = null;
+    if (forcedView === 'synthesis' || forcedView === 'questionnaire' || forcedView === 'mandatory-summary') {
+      targetScreen = forcedView;
     }
 
-    if (missingMandatory.length > 0) {
-      setScreen('mandatory-summary');
-    } else {
-      setScreen('synthesis');
+    if (!targetScreen) {
+      if (project.status === 'draft') {
+        targetScreen = 'questionnaire';
+      } else if (missingMandatory.length > 0) {
+        targetScreen = 'mandatory-summary';
+      } else {
+        targetScreen = 'synthesis';
+      }
     }
+
+    setScreen(targetScreen);
   }, [
     analyzeAnswers,
     projects,
@@ -1162,7 +1170,7 @@ export const App = () => {
     const { projectId } = showcaseProjectContext;
     setShowcaseProjectContext(null);
     previousScreenRef.current = null;
-    handleOpenProject(projectId);
+    handleOpenProject(projectId, { view: 'synthesis' });
   }, [handleOpenProject, showcaseProjectContext]);
 
   const handleUpdateProjectShowcaseAnswers = useCallback((updates) => {
