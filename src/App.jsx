@@ -21,7 +21,7 @@ import { normalizeRiskWeighting } from './utils/risk.js';
 import { normalizeProjectEntry, normalizeProjectsCollection } from './utils/projectNormalization.js';
 import { loadSubmittedProjectsFromDirectory } from './utils/externalProjectsLoader.js';
 
-const APP_VERSION = 'v1.0.98';
+const APP_VERSION = 'v1.0.99';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -1199,15 +1199,24 @@ export const App = () => {
   }, []);
 
   const handleReturnToComplianceReport = useCallback(() => {
-    if (!showcaseProjectContext?.projectId) {
+    if (showcaseProjectContext?.projectId) {
+      const { projectId } = showcaseProjectContext;
+      setShowcaseProjectContext(null);
+      previousScreenRef.current = null;
+      handleOpenProject(projectId, { view: 'synthesis' });
       return;
     }
 
-    const { projectId } = showcaseProjectContext;
     setShowcaseProjectContext(null);
+
+    if (previousScreenRef.current) {
+      setScreen(previousScreenRef.current);
+    } else {
+      setScreen('synthesis');
+    }
+
     previousScreenRef.current = null;
-    handleOpenProject(projectId, { view: 'synthesis' });
-  }, [handleOpenProject, showcaseProjectContext]);
+  }, [handleOpenProject, showcaseProjectContext, setScreen]);
 
   const handleUpdateProjectShowcaseAnswers = useCallback((updates) => {
     if (
