@@ -1,4 +1,4 @@
-# Compliance Advisor
+# Compliance Navigator
 
 Prototype React monopage d'aide à la décision compliance lancé directement depuis `index.html`.
 
