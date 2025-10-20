@@ -26,6 +26,18 @@ const demoProjectAnswers = {
     {
       date: '2025-10-01',
       description: 'Validation du concept et du budget'
+    },
+    {
+      date: '2025-10-15',
+      description: 'Atelier immersif avec les équipes métiers pour définir le parcours interactif'
+    },
+    {
+      date: '2025-11-05',
+      description: 'Production des contenus vidéos et rédaction des fiches pédagogiques'
+    },
+    {
+      date: '2025-11-25',
+      description: 'Recette utilisateur sur un panel mixte grand public / professionnels'
     }
   ],
   teamLead: 'Bertrand Darieux',
