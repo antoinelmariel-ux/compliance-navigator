@@ -107,6 +107,95 @@ const formatRiskTimingViolation = (violation) => {
   return `Délai constaté : ${actualText} – minimum requis : ${requiredParts.join(' / ')}`;
 };
 
+const formatTimingRequirementSummary = (questionBank, constraint) => {
+  if (!constraint || typeof constraint !== 'object') {
+    return '';
+  }
+
+  const startId = constraint.startQuestion;
+  const endId = constraint.endQuestion;
+  const minimumWeeks =
+    typeof constraint.minimumWeeks === 'number' ? constraint.minimumWeeks : undefined;
+  const minimumDays =
+    typeof constraint.minimumDays === 'number' ? constraint.minimumDays : undefined;
+
+  const startLabel = resolveQuestionLabel(questionBank, startId);
+  const endLabel = resolveQuestionLabel(questionBank, endId);
+
+  const startDisplay = startLabel || startId || '';
+  const endDisplay = endLabel || endId || '';
+
+  const requirementParts = [];
+  if (minimumWeeks !== undefined) {
+    requirementParts.push(`${formatNumber(minimumWeeks)} sem.`);
+  }
+  if (minimumDays !== undefined) {
+    requirementParts.push(`${formatNumber(minimumDays)} j.`);
+  }
+
+  const hasRequirement = requirementParts.length > 0;
+  const hasStart = startDisplay.length > 0;
+  const hasEnd = endDisplay.length > 0;
+
+  if (!hasRequirement && !hasStart && !hasEnd) {
+    return '';
+  }
+
+  if (hasRequirement && hasStart && hasEnd) {
+    return `Respecter un délai minimal de ${requirementParts.join(' / ')} entre « ${startDisplay} » et « ${endDisplay} ».`;
+  }
+
+  if (hasRequirement && hasStart && !hasEnd) {
+    return `Respecter un délai minimal de ${requirementParts.join(' / ')} après « ${startDisplay} ».`;
+  }
+
+  if (hasRequirement && !hasStart && hasEnd) {
+    return `Respecter un délai minimal de ${requirementParts.join(' / ')} avant « ${endDisplay} ».`;
+  }
+
+  if (hasRequirement) {
+    return `Respecter un délai minimal de ${requirementParts.join(' / ')} avant la prochaine étape.`;
+  }
+
+  if (hasStart && hasEnd) {
+    return `Surveiller le délai entre « ${startDisplay} » et « ${endDisplay} ».`;
+  }
+
+  if (hasStart || hasEnd) {
+    return `Surveiller la date « ${hasStart ? startDisplay : endDisplay} ».`;
+  }
+
+  return '';
+};
+
+const formatVigilanceStatusMessage = (alert) => {
+  if (!alert || typeof alert !== 'object') {
+    return '';
+  }
+
+  if (alert.status === 'unknown') {
+    return "Dates manquantes : renseignez-les pour vérifier ce délai.";
+  }
+
+  if (alert.status === 'satisfied' && alert.diff) {
+    const parts = [];
+    if (typeof alert.diff.diffInWeeks === 'number') {
+      parts.push(formatWeeksValue(alert.diff.diffInWeeks));
+    }
+    if (typeof alert.diff.diffInDays === 'number') {
+      parts.push(formatDaysValue(alert.diff.diffInDays));
+    }
+
+    if (parts.length === 0) {
+      return 'Délai déclaré conforme. Anticiper pour éviter l’alerte.';
+    }
+
+    return `Délai constaté : ${parts.join(' / ')} — anticiper pour éviter l’alerte.`;
+  }
+
+  return '';
+};
+
 const resolveQuestionLabel = (questionBank, questionId) => {
   if (!questionId) {
     return '';
@@ -188,6 +277,9 @@ const buildEmailHtml = ({
   });
 
   const risks = Array.isArray(analysis?.risks) ? analysis.risks : [];
+  const vigilanceAlerts = Array.isArray(analysis?.timeline?.vigilance)
+    ? analysis.timeline.vigilance.filter(alert => alert && alert.status !== 'breach')
+    : [];
 
   const overviewSection = answeredQuestions.length
     ? `
@@ -302,6 +394,42 @@ const buildEmailHtml = ({
       `
     : '';
 
+  const vigilanceSection = vigilanceAlerts.length
+    ? `
+        <div style="margin-bottom:24px;">
+          <h2 style="font-size:18px; font-weight:600; color:#1f2937; margin-bottom:12px;">
+            Points de vigilance
+          </h2>
+          ${vigilanceAlerts
+            .map(alert => {
+              const requirementSummary = formatTimingRequirementSummary(questions, alert.timingConstraint);
+              const statusMessage = formatVigilanceStatusMessage(alert);
+              const title = alert.riskDescription && alert.riskDescription.trim().length > 0
+                ? alert.riskDescription
+                : alert.ruleName;
+
+              return `
+                <div style="border:1px solid #bbf7d0; border-radius:12px; padding:16px; margin-bottom:12px; background-color:#ecfdf5;">
+                  <div style="font-size:15px; font-weight:600; color:#047857;">
+                    ${escapeHtml(alert.ruleName)}${alert.priority ? ` — Priorité : ${escapeHtml(alert.priority)}` : ''}
+                  </div>
+                  <p style="margin:8px 0 4px; font-size:14px; color:#064e3b; font-weight:600;">
+                    ${formatAsHtmlText(title)}
+                  </p>
+                  ${requirementSummary
+                    ? `<p style="margin:0 0 6px; font-size:13px; color:#047857;">${escapeHtml(requirementSummary)}</p>`
+                    : ''}
+                  ${statusMessage
+                    ? `<p style="margin:0; font-size:12px; color:#1f2937;">${escapeHtml(statusMessage)}</p>`
+                    : ''}
+                </div>
+              `;
+            })
+            .join('')}
+        </div>
+      `
+    : '';
+
   return `<!DOCTYPE html>
     <html lang="fr">
       <head>
@@ -326,6 +454,7 @@ const buildEmailHtml = ({
             ${overviewSection}
             ${teamSection}
             ${riskSection}
+            ${vigilanceSection}
           </div>
         </div>
       </body>
@@ -424,6 +553,18 @@ export const SynthesisReport = ({
   const hasSaveFeedback = Boolean(saveFeedback?.message);
   const isSaveSuccess = saveFeedback?.status === 'success';
 
+  const resolveTeamLabel = useCallback(
+    (teamId) => {
+      if (!teamId) {
+        return '';
+      }
+
+      const teamMatch = teams.find(team => team?.id === teamId);
+      return teamMatch?.name || teamId;
+    },
+    [teams]
+  );
+
   const normalizedProjectStatus =
     typeof projectStatus === 'string' ? projectStatus.toLowerCase() : null;
   const statusLabelMap = {
@@ -453,6 +594,12 @@ export const SynthesisReport = ({
     Faible: 'bg-green-50 border-green-300 text-green-900'
   };
 
+  const vigilanceStatusClasses = {
+    satisfied: 'bg-emerald-50 border-emerald-300 text-emerald-900',
+    unknown: 'bg-emerald-50 border-emerald-200 text-emerald-900',
+    breach: 'bg-red-50 border-red-300 text-red-900'
+  };
+
   const complexityColors = {
     Élevé: 'text-red-600',
     Moyen: 'text-orange-600',
@@ -462,6 +609,15 @@ export const SynthesisReport = ({
   const formattedRiskScore = formatRiskScore(analysis?.riskScore);
 
   const timelineDetails = analysis?.timeline?.details || [];
+  const vigilanceAlerts = (Array.isArray(analysis?.timeline?.vigilance)
+    ? analysis.timeline.vigilance
+    : [])
+    .filter(alert => alert && alert.status !== 'breach')
+    .map(alert => ({
+      ...alert,
+      requirementSummary: formatTimingRequirementSummary(questions, alert.timingConstraint),
+      statusMessage: formatVigilanceStatusMessage(alert)
+    }));
 
   const extractedProjectName = extractProjectName(answers, questions);
   const effectiveProjectName =
@@ -861,11 +1017,11 @@ export const SynthesisReport = ({
               Risques identifiés ({analysis.risks.length})
             </h2>
             <div className="space-y-3">
-              {analysis.risks.map((risk, idx) => {
-                const timingViolationMessage = formatRiskTimingViolation(risk.timingViolation);
+          {analysis.risks.map((risk, idx) => {
+            const timingViolationMessage = formatRiskTimingViolation(risk.timingViolation);
 
-                return (
-                  <div key={idx} className={`p-4 rounded-xl border hv-surface ${riskColors[risk.level]}`} role="article" aria-label={`Risque ${risk.level}`}>
+            return (
+              <div key={idx} className={`p-4 rounded-xl border hv-surface ${riskColors[risk.level]}`} role="article" aria-label={`Risque ${risk.level}`}>
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                       <span className="text-sm font-semibold text-gray-700">{risk.level}</span>
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold border hv-badge ${priorityColors[risk.priority]}`}>
@@ -909,10 +1065,60 @@ export const SynthesisReport = ({
                       {renderTextWithLinks(risk.mitigation)}
                     </p>
                   </div>
-                );
-              })}
-            </div>
-          </section>
+            );
+          })}
+        </div>
+      </section>
+
+          {vigilanceAlerts.length > 0 && (
+            <section aria-labelledby="vigilance-heading" className="mt-8">
+              <h2 id="vigilance-heading" className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+                <CheckCircle className="w-6 h-6 mr-2 text-emerald-500" />
+                Points de vigilance ({vigilanceAlerts.length})
+              </h2>
+              <div className="space-y-3">
+                {vigilanceAlerts.map(alert => {
+                  const priorityClass = priorityColors[alert.priority] || 'bg-emerald-100 text-emerald-800 border-emerald-300';
+                  const statusClass = vigilanceStatusClasses[alert.status] || vigilanceStatusClasses.unknown;
+                  const title = alert.riskDescription && alert.riskDescription.trim().length > 0
+                    ? alert.riskDescription
+                    : alert.ruleName;
+                  const teamLabel = resolveTeamLabel(alert.teamId);
+
+                  return (
+                    <div
+                      key={alert.id || `${alert.ruleId}-${alert.riskId || 'risk'}`}
+                      className={`p-4 rounded-xl border hv-surface ${statusClass}`}
+                      role="article"
+                      aria-label={`Point de vigilance ${alert.ruleName}`}
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                        <span className="text-sm font-semibold text-gray-700">{alert.ruleName}</span>
+                        {alert.priority && (
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold border hv-badge ${priorityClass}`}>
+                            {alert.priority}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-gray-800 font-medium">{renderTextWithLinks(title)}</p>
+                      {alert.requirementSummary && (
+                        <p className="text-xs text-emerald-800 mt-2">{alert.requirementSummary}</p>
+                      )}
+                      {alert.statusMessage && (
+                        <p className="text-xs text-gray-600 mt-2">{alert.statusMessage}</p>
+                      )}
+                      {teamLabel && (
+                        <p className="text-xs text-gray-600 mt-2">
+                          <span className="font-semibold text-gray-700">Équipe référente :</span>{' '}
+                          {teamLabel}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
         </div>
       </div>
       {isShowcaseFallbackOpen && (

@@ -35,6 +35,156 @@ const getRawAnswer = (answers, id) => {
 
 const hasText = (value) => typeof value === 'string' && value.trim().length > 0;
 
+const formatNumberFR = (value, options = {}) => {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) {
+    return '';
+  }
+
+  return numericValue.toLocaleString('fr-FR', options);
+};
+
+const formatWeeksValue = (weeks) => {
+  if (weeks === undefined || weeks === null) {
+    return '';
+  }
+
+  const rounded = Math.round(weeks * 10) / 10;
+  const hasDecimal = Math.abs(rounded - Math.round(rounded)) > 0.0001;
+
+  return `${formatNumberFR(rounded, {
+    minimumFractionDigits: hasDecimal ? 1 : 0,
+    maximumFractionDigits: hasDecimal ? 1 : 0
+  })} sem.`;
+};
+
+const formatDaysValue = (days) => {
+  if (days === undefined || days === null) {
+    return '';
+  }
+
+  return `${formatNumberFR(Math.round(days))} j.`;
+};
+
+const resolveQuestionTitle = (questions, id) => {
+  if (!id) {
+    return '';
+  }
+
+  const question = findQuestionById(questions, id);
+  return question?.question || id;
+};
+
+const formatTimingRequirementSummary = (questions, constraint) => {
+  if (!constraint || typeof constraint !== 'object') {
+    return '';
+  }
+
+  const startLabel = resolveQuestionTitle(questions, constraint.startQuestion);
+  const endLabel = resolveQuestionTitle(questions, constraint.endQuestion);
+
+  const requirementParts = [];
+  if (typeof constraint.minimumWeeks === 'number') {
+    requirementParts.push(`${formatNumberFR(constraint.minimumWeeks)} sem.`);
+  }
+  if (typeof constraint.minimumDays === 'number') {
+    requirementParts.push(`${formatNumberFR(constraint.minimumDays)} j.`);
+  }
+
+  const hasRequirement = requirementParts.length > 0;
+  const hasStart = Boolean(startLabel);
+  const hasEnd = Boolean(endLabel);
+
+  if (!hasRequirement && !hasStart && !hasEnd) {
+    return '';
+  }
+
+  if (hasRequirement && hasStart && hasEnd) {
+    return `Respecter un délai minimal de ${requirementParts.join(' / ')} entre « ${startLabel} » et « ${endLabel} ».`;
+  }
+
+  if (hasRequirement && hasStart && !hasEnd) {
+    return `Respecter un délai minimal de ${requirementParts.join(' / ')} après « ${startLabel} ».`;
+  }
+
+  if (hasRequirement && !hasStart && hasEnd) {
+    return `Respecter un délai minimal de ${requirementParts.join(' / ')} avant « ${endLabel} ».`;
+  }
+
+  if (hasRequirement) {
+    return `Respecter un délai minimal de ${requirementParts.join(' / ')} avant la prochaine étape.`;
+  }
+
+  if (hasStart && hasEnd) {
+    return `Surveiller le délai entre « ${startLabel} » et « ${endLabel} ».`;
+  }
+
+  const singleLabel = startLabel || endLabel;
+  if (singleLabel) {
+    return `Surveiller la date « ${singleLabel} ».`;
+  }
+
+  return '';
+};
+
+const formatVigilanceStatusMessage = (alert) => {
+  if (!alert || typeof alert !== 'object') {
+    return '';
+  }
+
+  if (alert.status === 'unknown') {
+    return "Dates manquantes : complétez les informations pour confirmer ce délai.";
+  }
+
+  if (alert.status === 'satisfied' && alert.diff) {
+    const parts = [];
+    if (typeof alert.diff.diffInWeeks === 'number') {
+      parts.push(formatWeeksValue(alert.diff.diffInWeeks));
+    }
+    if (typeof alert.diff.diffInDays === 'number') {
+      parts.push(formatDaysValue(alert.diff.diffInDays));
+    }
+
+    const diffLabel = parts.length > 0 ? parts.join(' / ') : '';
+    if (diffLabel) {
+      return `Délai actuel : ${diffLabel}. Maintenir cette marge pour éviter l’alerte.`;
+    }
+
+    return 'Délai actuel conforme. Maintenir cette marge pour éviter l’alerte.';
+  }
+
+  return '';
+};
+
+const buildVigilanceAlerts = (analysis, questions, resolveTeamLabel) => {
+  const rawAlerts = Array.isArray(analysis?.timeline?.vigilance)
+    ? analysis.timeline.vigilance
+    : [];
+
+  return rawAlerts
+    .filter(alert => alert && alert.status !== 'breach')
+    .map((alert, index) => {
+      const title = alert.riskDescription && alert.riskDescription.trim().length > 0
+        ? alert.riskDescription.trim()
+        : alert.ruleName;
+
+      return {
+        id: alert.id || `${alert.ruleId || 'rule'}-${alert.riskId || index}`,
+        ruleName: alert.ruleName,
+        title,
+        priority: alert.priority || '',
+        requirementSummary: formatTimingRequirementSummary(questions, alert.timingConstraint),
+        statusMessage: formatVigilanceStatusMessage(alert),
+        status: alert.status || 'unknown',
+        teamId: alert.teamId || '',
+        teamLabel: typeof resolveTeamLabel === 'function'
+          ? resolveTeamLabel(alert.teamId)
+          : (alert.teamId || '')
+      };
+    })
+    .filter(entry => entry.title || entry.requirementSummary || entry.statusMessage);
+};
+
 const SHOWCASE_THEME = {
   id: 'aurora',
   label: 'Aurora néon',
@@ -531,6 +681,15 @@ export const ProjectShowcase = ({
   const rawProjectName = typeof projectName === 'string' ? projectName.trim() : '';
   const safeProjectName = rawProjectName.length > 0 ? rawProjectName : 'Votre projet';
   const normalizedTeams = Array.isArray(relevantTeams) ? relevantTeams : [];
+  const teamNameById = useMemo(() => {
+    const map = new Map();
+    normalizedTeams.forEach(team => {
+      if (team && team.id) {
+        map.set(team.id, team.name || team.id);
+      }
+    });
+    return map;
+  }, [normalizedTeams]);
 
   const editableFields = useMemo(
     () =>
@@ -696,6 +855,15 @@ export const ProjectShowcase = ({
   }, [rawRunway, animatedWeeks, animatedDays]);
   const timelineSummary = useMemo(() => computeTimelineSummary(timelineDetails), [timelineDetails]);
   const timelineProfiles = useMemo(() => extractTimelineProfiles(timelineDetails), [timelineDetails]);
+  const vigilanceAlerts = useMemo(
+    () =>
+      buildVigilanceAlerts(
+        analysis,
+        questions,
+        (teamId) => (teamNameById.has(teamId) ? teamNameById.get(teamId) : teamId || '')
+      ),
+    [analysis, questions, teamNameById]
+  );
   const manualMilestones = useMemo(
     () => buildManualMilestones(getRawAnswer(answers, 'roadmapMilestones')),
     [answers]
@@ -828,7 +996,10 @@ export const ProjectShowcase = ({
     [timelineProfileEntries, manualTimelineEntries]
   );
   const hasTimelineEntries = timelineEntries.length > 0;
-  const hasTimelineSection = Boolean(runway || timelineSummary || hasManualMilestones || hasTimelineProfiles);
+  const hasVigilanceAlerts = vigilanceAlerts.length > 0;
+  const hasTimelineSection = Boolean(
+    runway || timelineSummary || hasManualMilestones || hasTimelineProfiles || hasVigilanceAlerts
+  );
   const shouldShowTimelineSummary = Boolean(timelineSummary && !hasTimelineProfiles);
 
   const previewContent = shouldShowPreview ? (
@@ -1066,6 +1237,29 @@ export const ProjectShowcase = ({
                     ? 'Runway conforme aux exigences identifiées.'
                     : 'Un ajustement est recommandé pour sécuriser les jalons.'}
                 </p>
+              </div>
+            )}
+            {hasVigilanceAlerts && (
+              <div className="aurora-roadmap__watchpoints">
+                {vigilanceAlerts.map((alert, index) => (
+                  <div
+                    key={alert.id}
+                    className={`aurora-roadmap__watchpoint aurora-roadmap__watchpoint--${alert.status}`}
+                    style={{ animationDelay: `${index * 0.08}s` }}
+                  >
+                    <p className="aurora-roadmap__watchpoint-eyebrow">{alert.ruleName}</p>
+                    <p className="aurora-roadmap__watchpoint-title">{renderTextWithLinks(alert.title)}</p>
+                    {alert.requirementSummary && (
+                      <p className="aurora-roadmap__watchpoint-text">{alert.requirementSummary}</p>
+                    )}
+                    {alert.statusMessage && (
+                      <p className="aurora-roadmap__watchpoint-caption">{alert.statusMessage}</p>
+                    )}
+                    {alert.teamLabel && (
+                      <p className="aurora-roadmap__watchpoint-team">Équipe référente : {alert.teamLabel}</p>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
             {hasTimelineEntries && (
