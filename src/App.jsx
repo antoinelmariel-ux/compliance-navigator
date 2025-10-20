@@ -21,7 +21,7 @@ import { normalizeRiskWeighting } from './utils/risk.js';
 import { normalizeProjectEntry, normalizeProjectsCollection } from './utils/projectNormalization.js';
 import { loadSubmittedProjectsFromDirectory } from './utils/externalProjectsLoader.js';
 
-const APP_VERSION = 'v1.0.90';
+const APP_VERSION = 'v1.0.91';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -1455,7 +1455,7 @@ export const App = () => {
                 <CheckCircle className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-gray-800 sm:text-xl">Compliance Advisor</h1>
+                <h1 className="text-lg font-bold text-gray-800 sm:text-xl">Compliance Navigator</h1>
                 <p className="text-xs text-gray-500">Outil d'aide à la décision</p>
               </div>
             </div>
@@ -1628,7 +1628,7 @@ export const App = () => {
 
       <footer className="bg-white border-t border-gray-200 mt-10" aria-label="Pied de page">
         <p className="text-xs text-gray-400 text-center py-4">
-          Compliance Advisor · Version {APP_VERSION} ·{' '}
+          Compliance Navigator · Version {APP_VERSION} ·{' '}
           <a
             href="/mentions-legales.html"
             target="_blank"

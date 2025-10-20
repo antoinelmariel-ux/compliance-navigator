@@ -1,4 +1,4 @@
-export const STORAGE_KEY = 'complianceAdvisorState';
+export const STORAGE_KEY = 'complianceNavigatorState';
 // Désactivation temporaire de la persistance locale.
 const ENABLE_PERSISTENCE = false;
 
