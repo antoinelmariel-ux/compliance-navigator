@@ -8,15 +8,24 @@ export const renderTextWithLinks = (text) => {
     return text;
   }
 
+  const matches = Array.from(text.matchAll(URL_REGEX));
+
+  if (matches.length === 0) {
+    return text;
+  }
+
   const elements = [];
   let lastIndex = 0;
 
-  text.replace(URL_REGEX, (match, offset) => {
+  matches.forEach((match, matchIdx) => {
+    const fullMatch = match[0];
+    const offset = match.index ?? 0;
+
     if (offset > lastIndex) {
       elements.push(text.slice(lastIndex, offset));
     }
 
-    let url = match;
+    let url = fullMatch;
     const trailingMatch = url.match(TRAILING_PUNCTUATION_REGEX);
     let trailing = '';
 
@@ -27,7 +36,7 @@ export const renderTextWithLinks = (text) => {
 
     elements.push(
       <a
-        key={`link-${offset}`}
+        key={`link-${offset}-${matchIdx}`}
         href={url}
         target="_blank"
         rel="noopener noreferrer"
@@ -41,13 +50,8 @@ export const renderTextWithLinks = (text) => {
       elements.push(trailing);
     }
 
-    lastIndex = offset + match.length;
-    return match;
+    lastIndex = offset + fullMatch.length;
   });
-
-  if (lastIndex === 0) {
-    return text;
-  }
 
   if (lastIndex < text.length) {
     elements.push(text.slice(lastIndex));
