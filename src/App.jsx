@@ -1246,15 +1246,24 @@ export const App = () => {
   }, []);
 
   const handleReturnToComplianceReport = useCallback(() => {
-    if (!showcaseProjectContext?.projectId) {
+    if (showcaseProjectContext?.projectId) {
+      const { projectId } = showcaseProjectContext;
+      setShowcaseProjectContext(null);
+      previousScreenRef.current = null;
+      handleOpenProject(projectId, { view: 'synthesis' });
       return;
     }
 
-    const { projectId } = showcaseProjectContext;
     setShowcaseProjectContext(null);
+
+    if (previousScreenRef.current) {
+      setScreen(previousScreenRef.current);
+    } else {
+      setScreen('synthesis');
+    }
+
     previousScreenRef.current = null;
-    handleOpenProject(projectId, { view: 'synthesis' });
-  }, [handleOpenProject, showcaseProjectContext]);
+  }, [handleOpenProject, showcaseProjectContext, setScreen]);
 
   const handleUpdateProjectShowcaseAnswers = useCallback((updates) => {
     if (
