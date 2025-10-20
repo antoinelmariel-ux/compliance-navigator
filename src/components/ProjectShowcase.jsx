@@ -861,6 +861,14 @@ export const ProjectShowcase = ({
     [answers]
   );
   const budgetEstimate = getFormattedAnswer(questions, answers, 'BUDGET');
+  const normalizedTimelineDetails = useMemo(() => {
+    if (Array.isArray(timelineDetails)) {
+      return timelineDetails;
+    }
+
+    const analysisDetails = analysis?.timeline?.details;
+    return Array.isArray(analysisDetails) ? analysisDetails : [];
+  }, [analysis, timelineDetails]);
 
   const formattedBudgetEstimate = useMemo(() => {
     if (!hasText(budgetEstimate)) {
@@ -894,10 +902,13 @@ export const ProjectShowcase = ({
     };
   }, [rawRunway, animatedWeeks, animatedDays]);
   const timelineSummaries = useMemo(
-    () => computeTimelineSummaries(timelineDetails),
-    [timelineDetails]
+    () => computeTimelineSummaries(normalizedTimelineDetails),
+    [normalizedTimelineDetails]
   );
-  const timelineProfiles = useMemo(() => extractTimelineProfiles(timelineDetails), [timelineDetails]);
+  const timelineProfiles = useMemo(
+    () => extractTimelineProfiles(normalizedTimelineDetails),
+    [normalizedTimelineDetails]
+  );
   const vigilanceAlerts = useMemo(
     () =>
       buildVigilanceAlerts(
