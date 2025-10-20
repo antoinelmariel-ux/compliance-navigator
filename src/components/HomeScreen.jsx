@@ -44,7 +44,7 @@ const complexityColors = {
 const statusStyles = {
   draft: {
     label: 'Brouillon en cours',
-    className: 'bg-amber-50 border-amber-200 text-amber-600'
+    className: 'bg-yellow-50 border-yellow-200 text-yellow-600'
   },
   submitted: {
     label: 'Synthèse finalisée',
@@ -105,12 +105,12 @@ export const HomeScreen = ({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-blue-50 px-4 py-8 sm:px-8 hv-background">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 px-4 py-8 sm:px-8 hv-background">
       <div className="max-w-6xl mx-auto space-y-12">
-        <header className="bg-white border border-indigo-100 rounded-3xl shadow-xl p-6 sm:p-10 hv-surface" role="banner">
+        <header className="bg-white border border-blue-100 rounded-3xl shadow-xl p-6 sm:p-10 hv-surface" role="banner">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div className="space-y-4">
-              <span className="inline-flex items-center px-3 py-1 text-sm font-semibold text-indigo-700 bg-indigo-100 rounded-full border border-indigo-200">
+              <span className="inline-flex items-center px-3 py-1 text-sm font-semibold text-blue-700 bg-blue-100 rounded-full border border-blue-200">
                 <Target className="w-4 h-4 mr-2" /> Votre copilote compliance
               </span>
               <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 leading-tight">
@@ -123,7 +123,7 @@ export const HomeScreen = ({
                 <button
                   type="button"
                   onClick={onStartNewProject}
-                  className="inline-flex items-center justify-center gap-3 px-5 py-3 text-base font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md transition-all hv-button hv-button-primary"
+                  className="inline-flex items-center justify-center gap-3 px-5 py-3 text-base font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md transition-all hv-button hv-button-primary"
                 >
                   <Plus className="w-5 h-5" aria-hidden="true" />
                   <span className="flex flex-col leading-tight text-left">
@@ -134,7 +134,7 @@ export const HomeScreen = ({
                 <button
                   type="button"
                   onClick={handleTriggerImport}
-                  className="inline-flex items-center justify-center gap-3 px-5 py-3 text-base font-semibold text-indigo-600 bg-white hover:bg-indigo-50 rounded-xl border border-indigo-200 transition-all hv-button hv-focus-ring"
+                  className="inline-flex items-center justify-center gap-3 px-5 py-3 text-base font-semibold text-blue-600 bg-white hover:bg-blue-50 rounded-xl border border-blue-200 transition-all hv-button hv-focus-ring"
                 >
                   <Upload className="w-5 h-5" aria-hidden="true" />
                   <span className="flex flex-col leading-tight text-left">
@@ -154,7 +154,7 @@ export const HomeScreen = ({
               />
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm text-gray-600">
-              <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-4 hv-surface" role="listitem">
+              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 hv-surface" role="listitem">
                 <p className="font-semibold text-gray-800 flex items-center">
                   <Rocket className="w-5 h-5 mr-2" /> Démarrez simplement
                 </p>
@@ -170,7 +170,7 @@ export const HomeScreen = ({
                   Une synthèse claire avec le niveau de complexité, les équipes à mobiliser et les délais recommandés.
                 </p>
               </div>
-              <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-4 hv-surface" role="listitem">
+              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 hv-surface" role="listitem">
                 <p className="font-semibold text-gray-800 flex items-center">
                   <Users className="w-5 h-5 mr-2" /> Collaborez efficacement
                 </p>
@@ -200,19 +200,19 @@ export const HomeScreen = ({
                 Accédez aux brouillons et aux synthèses finalisées pour les reprendre à tout moment.
               </p>
             </div>
-            <span className="inline-flex items-center text-sm font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-full px-3 py-1">
+            <span className="inline-flex items-center text-sm font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded-full px-3 py-1">
               <CheckCircle className="w-4 h-4 mr-2" /> {projects.length} projet{projects.length > 1 ? 's' : ''}
             </span>
           </div>
 
           {!hasProjects && (
-            <div className="bg-white border border-dashed border-indigo-200 rounded-3xl p-8 text-center text-gray-600 hv-surface" role="status" aria-live="polite">
+            <div className="bg-white border border-dashed border-blue-200 rounded-3xl p-8 text-center text-gray-600 hv-surface" role="status" aria-live="polite">
               <p className="text-lg font-medium text-gray-800">Aucun projet enregistré pour le moment.</p>
               <p className="mt-2">Lancez-vous dès maintenant pour préparer votre première synthèse compliance.</p>
               <button
                 type="button"
                 onClick={onStartNewProject}
-                className="mt-4 inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-semibold transition-all hv-button hv-button-primary"
+                className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-all hv-button hv-button-primary"
               >
                 <Plus className="w-4 h-4 mr-2" /> Créer un projet
               </button>
@@ -247,7 +247,7 @@ export const HomeScreen = ({
                         <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2 flex-wrap">
                           <span>{project.projectName || 'Projet sans nom'}</span>
                           {project.isDemo && (
-                            <span className="inline-flex items-center px-2 py-0.5 text-xs font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-full">
+                            <span className="inline-flex items-center px-2 py-0.5 text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded-full">
                               Projet démo
                             </span>
                           )}
@@ -264,7 +264,7 @@ export const HomeScreen = ({
                             {projectStatus.label}
                           </span>
                           {complexity && (
-                            <span className={`px-3 py-1 text-xs font-semibold rounded-full border hv-badge ${complexityColors[complexity] || 'text-indigo-600'}`}>
+                            <span className={`px-3 py-1 text-xs font-semibold rounded-full border hv-badge ${complexityColors[complexity] || 'text-blue-600'}`}>
                               {complexity}
                             </span>
                           )}
@@ -273,7 +273,7 @@ export const HomeScreen = ({
                           <button
                             type="button"
                             onClick={() => onDuplicateProject(project.id)}
-                            className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-indigo-200 text-indigo-600 hover:bg-indigo-50 transition-colors hv-button hv-focus-ring"
+                            className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors hv-button hv-focus-ring"
                             aria-label={`Dupliquer le projet ${project.projectName || 'sans nom'}`}
                             title="Dupliquer le projet"
                           >
@@ -311,7 +311,7 @@ export const HomeScreen = ({
                         className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all hv-button ${
                           isDraft
                             ? 'hv-button-draft text-white'
-                            : 'bg-indigo-600 text-white hover:bg-indigo-700 hv-button-primary'
+                            : 'bg-blue-600 text-white hover:bg-blue-700 hv-button-primary'
                         }`}
                       >
                         {isDraft ? (
@@ -330,7 +330,7 @@ export const HomeScreen = ({
                         <button
                           type="button"
                           onClick={() => onShowProjectShowcase(project.id)}
-                          className="inline-flex items-center px-4 py-2 bg-white border border-indigo-200 text-indigo-600 rounded-lg font-semibold hover:bg-indigo-50 transition-all hv-button hv-focus-ring"
+                          className="inline-flex items-center px-4 py-2 bg-white border border-blue-200 text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition-all hv-button hv-focus-ring"
                         >
                           <Sparkles className="w-4 h-4 mr-2" /> Vitrine du projet
                         </button>

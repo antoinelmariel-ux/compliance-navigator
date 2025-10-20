@@ -406,7 +406,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                     )
                   );
                 }}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-all hv-button hv-button-primary"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all hv-button hv-button-primary"
               >
                 Enregistrer
               </button>
@@ -418,7 +418,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
           {/* Informations générales */}
           <div>
             <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <Clipboard className="w-5 h-5 text-indigo-500" />
+              <Clipboard className="w-5 h-5 text-blue-500" />
               Informations générales
             </h3>
             <div className="space-y-4">
@@ -428,7 +428,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                   type="text"
                   value={editedRule.name}
                   onChange={(e) => setEditedRule({ ...editedRule, name: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Ex: Projet digital avec données de santé"
                 />
               </div>
@@ -440,7 +440,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
             <div className="flex justify-between items-center mb-4">
               <div>
                 <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                  <Target className="w-5 h-5 text-indigo-500" />
+                  <Target className="w-5 h-5 text-blue-500" />
                   Conditions de déclenchement
                 </h3>
                 <p className="text-sm text-gray-600 mt-1">
@@ -450,7 +450,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
               <button
                 type="button"
                 onClick={addConditionGroup}
-                className="flex items-center px-3 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-all text-sm font-medium"
+                className="flex items-center px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-all text-sm font-medium"
               >
                 <Plus className="w-4 h-4 mr-1" />
                 Ajouter un groupe
@@ -469,7 +469,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                   <button
                     type="button"
                     onClick={addConditionGroup}
-                    className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all"
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Créer un groupe de conditions
@@ -490,7 +490,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                       return (
                         <p className="text-sm text-blue-900">
                           <strong className="inline-flex items-center gap-2">
-                            <Lightbulb className="w-4 h-4 text-amber-500" />
+                            <Lightbulb className="w-4 h-4 text-yellow-500" />
                             Logique :
                           </strong>{' '}
                           Cette règle se déclenchera si{' '}
@@ -503,7 +503,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                     <div className="space-y-2 text-sm text-blue-900">
                       <p>
                         <strong className="inline-flex items-center gap-2">
-                          <Lightbulb className="w-4 h-4 text-amber-500" />
+                          <Lightbulb className="w-4 h-4 text-yellow-500" />
                           Logique :
                         </strong>{' '}
                         La règle se déclenche lorsque{' '}
@@ -528,23 +528,23 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                       <div key={groupIdx}>
                         {groupIdx > 0 && (
                           <div className="flex justify-center -mb-3" aria-hidden="true">
-                            <span className="bg-indigo-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow">
+                            <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow">
                               ET
                             </span>
                           </div>
                         )}
 
-                        <div className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg p-4 border border-indigo-200">
+                        <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
                           <div className="flex flex-wrap items-center gap-3 mb-4">
                             <span className="text-sm font-semibold text-gray-700">
                               Groupe {groupIdx + 1}
                             </span>
-                            <div className="flex items-center gap-2 text-xs text-indigo-800 uppercase tracking-wide">
+                            <div className="flex items-center gap-2 text-xs text-blue-800 uppercase tracking-wide">
                               <span className="font-semibold">Logique interne</span>
                               <select
                                 value={logic}
                                 onChange={(e) => updateConditionGroupLogic(groupIdx, e.target.value)}
-                                className="px-3 py-1.5 border border-indigo-200 rounded-lg bg-white text-xs focus:ring-2 focus:ring-indigo-500"
+                                className="px-3 py-1.5 border border-blue-200 rounded-lg bg-white text-xs focus:ring-2 focus:ring-blue-500"
                               >
                                 <option value="all">Toutes les conditions (ET)</option>
                                 <option value="any">Au moins une condition (OU)</option>
@@ -561,12 +561,12 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                           </div>
 
                           {conditions.length === 0 ? (
-                            <div className="bg-white border border-dashed border-indigo-200 rounded-lg p-4 text-sm text-indigo-700">
+                            <div className="bg-white border border-dashed border-blue-200 rounded-lg p-4 text-sm text-blue-700">
                               <p>Ajoutez une condition pour définir ce groupe.</p>
                               <button
                                 type="button"
                                 onClick={() => addConditionToGroup(groupIdx)}
-                                className="mt-3 inline-flex items-center px-3 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-all text-sm font-medium"
+                                className="mt-3 inline-flex items-center px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-all text-sm font-medium"
                               >
                                 <Plus className="w-4 h-4 mr-1" />
                                 Ajouter une condition
@@ -591,10 +591,10 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                     : 'Valeur (texte, date, etc.)';
 
                                 return (
-                                  <div key={conditionIdx} className="bg-white rounded-lg border border-indigo-200 p-4 shadow-sm">
+                                  <div key={conditionIdx} className="bg-white rounded-lg border border-blue-200 p-4 shadow-sm">
                                     <div className="flex flex-wrap items-center gap-3 mb-3">
                                       {conditionIdx > 0 && (
-                                        <span className="bg-indigo-600 text-white px-3 py-1 rounded-full text-xs font-bold">
+                                        <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-bold">
                                           {connectorLabel}
                                         </span>
                                       )}
@@ -604,7 +604,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                       <select
                                         value={conditionType}
                                         onChange={(e) => handleConditionTypeChange(groupIdx, conditionIdx, e.target.value)}
-                                        className="px-3 py-2 border border-indigo-200 rounded-lg bg-white text-sm focus:ring-2 focus:ring-indigo-500"
+                                        className="px-3 py-2 border border-blue-200 rounded-lg bg-white text-sm focus:ring-2 focus:ring-blue-500"
                                       >
                                         <option value="question">Basée sur une réponse</option>
                                         <option value="timing">Comparaison de dates</option>
@@ -628,7 +628,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                                 <select
                                                   value={condition.startQuestion}
                                                   onChange={(e) => updateConditionField(groupIdx, conditionIdx, 'startQuestion', e.target.value)}
-                                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                                                 >
                                                   <option value="">Sélectionner...</option>
                                                   {dateQuestions.map(q => (
@@ -642,7 +642,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                                 <select
                                                   value={condition.endQuestion}
                                                   onChange={(e) => updateConditionField(groupIdx, conditionIdx, 'endQuestion', e.target.value)}
-                                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                                                 >
                                                   <option value="">Sélectionner...</option>
                                                   {dateQuestions.map(q => (
@@ -660,7 +660,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                                   min="0"
                                                   value={condition.minimumWeeks ?? ''}
                                                   onChange={(e) => updateConditionField(groupIdx, conditionIdx, 'minimumWeeks', e.target.value === '' ? undefined : Number(e.target.value))}
-                                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                                                   placeholder="Ex: 8"
                                                 />
                                               </div>
@@ -672,7 +672,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                                   min="0"
                                                   value={condition.maximumWeeks ?? ''}
                                                   onChange={(e) => updateConditionField(groupIdx, conditionIdx, 'maximumWeeks', e.target.value === '' ? undefined : Number(e.target.value))}
-                                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                                                   placeholder="Laisser vide si non concerné"
                                                 />
                                               </div>
@@ -684,7 +684,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
 
                                           </>
                                         ) : (
-                                          <div className="bg-white border border-dashed border-indigo-200 rounded-lg p-4 text-sm text-indigo-700">
+                                          <div className="bg-white border border-dashed border-blue-200 rounded-lg p-4 text-sm text-blue-700">
                                             Ajoutez au moins deux questions de type date pour configurer cette condition temporelle.
                                           </div>
                                         )}
@@ -696,7 +696,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                           <select
                                             value={condition.question}
                                             onChange={(e) => updateConditionField(groupIdx, conditionIdx, 'question', e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                                           >
                                             <option value="">Sélectionner...</option>
                                             {questions.map(q => (
@@ -714,7 +714,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                               <select
                                                 value={operatorValue}
                                                 onChange={(e) => updateConditionField(groupIdx, conditionIdx, 'operator', e.target.value)}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                                               >
                                                 {operatorOptions.map(option => (
                                                   <option key={option.value} value={option.value}>{option.label}</option>
@@ -733,7 +733,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                                   type="text"
                                                   value={condition.value}
                                                   onChange={(e) => updateConditionField(groupIdx, conditionIdx, 'value', e.target.value)}
-                                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                                                   placeholder="Valeur (texte, date, etc.)"
                                                 />
                                               );
@@ -744,7 +744,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                                 <select
                                                   value={condition.value}
                                                   onChange={(e) => updateConditionField(groupIdx, conditionIdx, 'value', e.target.value)}
-                                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                                                 >
                                                   <option value="">Sélectionner...</option>
                                                   {(selectedQuestion?.options || []).map((opt, i) => (
@@ -759,7 +759,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                                 type={inputType}
                                                 value={condition.value}
                                                 onChange={(e) => updateConditionField(groupIdx, conditionIdx, 'value', e.target.value)}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                                                 placeholder={placeholder}
                                               />
                                             );
@@ -771,11 +771,11 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                 );
                               })}
 
-                              <div className="pt-3 border-t border-indigo-100 flex justify-end">
+                              <div className="pt-3 border-t border-blue-100 flex justify-end">
                                 <button
                                   type="button"
                                   onClick={() => addConditionToGroup(groupIdx)}
-                                  className="flex items-center px-3 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-all text-sm font-medium"
+                                  className="flex items-center px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-all text-sm font-medium"
                                 >
                                   <Plus className="w-4 h-4 mr-1" />
                                   Ajouter une condition
@@ -794,7 +794,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
           {/* Équipes à déclencher */}
           <div>
             <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <Users className="w-5 h-5 text-indigo-500" />
+              <Users className="w-5 h-5 text-blue-500" />
               Équipes compliance à déclencher
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -804,14 +804,14 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                   onClick={() => toggleTeam(team.id)}
                   className={`p-4 rounded-lg border-2 text-left transition-all ${
                     editedRule.teams.includes(team.id)
-                      ? 'border-indigo-600 bg-indigo-50'
-                      : 'border-gray-200 hover:border-indigo-300'
+                      ? 'border-blue-600 bg-blue-50'
+                      : 'border-gray-200 hover:border-blue-300'
                   }`}
                 >
                   <div className="flex items-center">
                     <div className={`w-5 h-5 rounded border-2 mr-3 flex items-center justify-center ${
                       editedRule.teams.includes(team.id)
-                        ? 'border-indigo-600 bg-indigo-600 text-white'
+                        ? 'border-blue-600 bg-blue-600 text-white'
                         : 'border-gray-300'
                     }`}>
                       {editedRule.teams.includes(team.id) && (
@@ -830,7 +830,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
           {/* Questions par équipe */}
           <div>
             <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <FileText className="w-5 h-5 text-indigo-500" />
+              <FileText className="w-5 h-5 text-blue-500" />
               Questions à préparer par équipe
             </h3>
             {editedRule.teams.length === 0 ? (
@@ -847,7 +847,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                       </h4>
                       <button
                         onClick={() => addQuestionForTeam(teamId)}
-                        className="flex items-center px-3 py-1 text-xs bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-all"
+                        className="flex items-center px-3 py-1 text-xs bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-all"
                       >
                         <Plus className="w-3 h-3 mr-1" />
                         Ajouter une question
@@ -900,7 +900,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                   >
                                     <input
                                       type="checkbox"
-                                      className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                       checked={isToggleChecked}
                                       onChange={(event) =>
                                         updateTeamQuestionTiming(teamId, idx, { enabled: event.target.checked })
@@ -912,7 +912,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                 </div>
 
                                 {!hasDateQuestions ? (
-                                  <p className="mt-2 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                                  <p className="mt-2 text-xs text-yellow-600 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
                                     Ajoutez au moins deux questions de type date pour pouvoir contrôler un délai minimum.
                                   </p>
                                 ) : isToggleChecked ? (
@@ -925,7 +925,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                           onChange={(e) =>
                                             updateTeamQuestionTiming(teamId, idx, { startQuestion: e.target.value })
                                           }
-                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                                         >
                                           <option value="">Sélectionner...</option>
                                           {dateQuestions.map(question => (
@@ -942,7 +942,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                           onChange={(e) =>
                                             updateTeamQuestionTiming(teamId, idx, { endQuestion: e.target.value })
                                           }
-                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                                         >
                                           <option value="">Sélectionner...</option>
                                           {dateQuestions.map(question => (
@@ -968,7 +968,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                               minimumWeeks: rawValue === '' ? undefined : Number(rawValue)
                                             });
                                           }}
-                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                                           placeholder="Ex: 4"
                                         />
                                       </div>
@@ -985,7 +985,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                               minimumDays: rawValue === '' ? undefined : Number(rawValue)
                                             });
                                           }}
-                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                                           placeholder="Ex: 90"
                                         />
                                       </div>
@@ -1057,7 +1057,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                             type="text"
                             value={risk.description}
                             onChange={(e) => updateRisk(idx, 'description', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                             placeholder="Ex: Non-conformité RGPD sur les données de santé"
                           />
                         </div>
@@ -1067,7 +1067,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                           <select
                             value={risk.teamId}
                             onChange={(e) => updateRisk(idx, 'teamId', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                             disabled={editedRule.teams.length === 0}
                           >
                             {editedRule.teams.length === 0 ? (
@@ -1094,7 +1094,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                         <select
                           value={risk.level}
                           onChange={(e) => updateRisk(idx, 'level', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                         >
                           <option value="Faible">Faible (niveau vert)</option>
                           <option value="Moyen">Moyen (niveau orange)</option>
@@ -1107,7 +1107,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                         <select
                           value={risk.priority}
                           onChange={(e) => updateRisk(idx, 'priority', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                         >
                           {RISK_PRIORITY_OPTIONS.map(option => (
                             <option key={option} value={option}>
@@ -1122,7 +1122,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                         <textarea
                           value={risk.mitigation}
                           onChange={(e) => updateRisk(idx, 'mitigation', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                           rows="2"
                           placeholder="Ex: Réaliser une DPIA et héberger sur un serveur HDS"
                         />
@@ -1162,7 +1162,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                 <select
                                   value={timingConstraint.startQuestion}
                                   onChange={(e) => updateRiskTimingConstraint(idx, { startQuestion: e.target.value })}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                                 >
                                   <option value="">Sélectionner...</option>
                                   {dateQuestions.map(question => (
@@ -1177,7 +1177,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                 <select
                                   value={timingConstraint.endQuestion}
                                   onChange={(e) => updateRiskTimingConstraint(idx, { endQuestion: e.target.value })}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                                 >
                                   <option value="">Sélectionner...</option>
                                   {dateQuestions.map(question => (
@@ -1201,7 +1201,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                     const rawValue = e.target.value;
                                     updateRiskTimingConstraint(idx, { minimumWeeks: rawValue === '' ? undefined : Number(rawValue) });
                                   }}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                                   placeholder="Ex: 4"
                                 />
                               </div>
@@ -1216,7 +1216,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                     const rawValue = e.target.value;
                                     updateRiskTimingConstraint(idx, { minimumDays: rawValue === '' ? undefined : Number(rawValue) });
                                   }}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                                   placeholder="Ex: 90"
                                 />
                               </div>

@@ -42,7 +42,7 @@ export const MandatoryQuestionsSummary = ({
     }
   };
 
-  const proceedButtonClassName = `w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 rounded-lg font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-all hv-button hv-button-primary ${
+  const proceedButtonClassName = `w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 rounded-lg font-medium text-white bg-blue-600 hover:bg-blue-700 transition-all hv-button hv-button-primary ${
     hasPending ? 'opacity-60 cursor-not-allowed focus:outline-none focus:ring-0' : ''
   }`;
 
@@ -52,7 +52,7 @@ export const MandatoryQuestionsSummary = ({
         <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 sm:p-8 space-y-6 hv-surface">
           <div className="flex items-start gap-4">
             {hasPending ? (
-              <AlertTriangle className="w-6 h-6 text-amber-500 mt-1" />
+              <AlertTriangle className="w-6 h-6 text-yellow-500 mt-1" />
             ) : (
               <CheckCircle className="w-6 h-6 text-emerald-500 mt-1" />
             )}
@@ -82,11 +82,11 @@ export const MandatoryQuestionsSummary = ({
                 return (
                   <li
                     key={question.id}
-                    className="border border-amber-200 rounded-xl bg-amber-50 p-4 sm:p-5 hv-surface"
+                    className="border border-yellow-200 rounded-xl bg-yellow-50 p-4 sm:p-5 hv-surface"
                   >
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">{positionLabel}</p>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-yellow-700">{positionLabel}</p>
                         <p className="mt-2 text-sm sm:text-base font-medium text-gray-900">{question.question}</p>
                         {question.guidance?.objective && (
                           <p className="mt-1 text-xs text-gray-600">
@@ -98,7 +98,7 @@ export const MandatoryQuestionsSummary = ({
                         <button
                           type="button"
                           onClick={() => handleNavigate(question.id)}
-                          className="inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium bg-white text-amber-700 border border-amber-300 hover:bg-amber-100 transition-all hv-button"
+                          className="inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium bg-white text-yellow-700 border border-yellow-300 hover:bg-yellow-100 transition-all hv-button"
                         >
                           Compléter la question
                           <ChevronRight className="w-4 h-4 ml-2" />
@@ -118,7 +118,7 @@ export const MandatoryQuestionsSummary = ({
           )}
 
           {showIncompleteAlert && hasPending && (
-            <div className="border border-amber-200 rounded-xl bg-amber-50 p-4 text-amber-800 flex items-start gap-3" role="alert" aria-live="assertive">
+            <div className="border border-yellow-200 rounded-xl bg-yellow-50 p-4 text-yellow-800 flex items-start gap-3" role="alert" aria-live="assertive">
               <AlertTriangle className="w-5 h-5 mt-0.5" />
               <div>
                 <p className="text-sm font-semibold">Complétez les réponses obligatoires</p>

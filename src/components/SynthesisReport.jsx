@@ -316,7 +316,7 @@ const buildEmailHtml = ({
                 <h1 style="font-size:24px; color:#111827; margin:0 0 6px;">Rapport de Compliance</h1>
                 <p style="margin:0; color:#4b5563; font-size:14px;">${escapeHtml(title)}</p>
               </div>
-              <div style="padding:10px 16px; background-color:#eef2ff; color:#4338ca; border-radius:9999px; font-weight:600; font-size:14px;">
+              <div style="padding:10px 16px; background-color:#eff6ff; color:#1d4ed8; border-radius:9999px; font-weight:600; font-size:14px;">
                 Complexité : ${escapeHtml(analysis.complexity)}
               </div>
             </div>
@@ -431,7 +431,7 @@ export const SynthesisReport = ({
     submitted: 'Soumis'
   };
   const statusClassMap = {
-    draft: 'bg-amber-100 text-amber-800 border border-amber-200',
+    draft: 'bg-yellow-100 text-yellow-800 border border-yellow-200',
     submitted: 'bg-emerald-100 text-emerald-800 border border-emerald-200'
   };
   const projectStatusLabel = normalizedProjectStatus
@@ -672,7 +672,7 @@ export const SynthesisReport = ({
   ]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 px-4 py-6 sm:px-8 sm:py-10 hv-background">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 px-4 py-6 sm:px-8 sm:py-10 hv-background">
       <div className="max-w-6xl mx-auto">
         <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 mb-6 hv-surface" role="region" aria-label="Synthèse du projet">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-6">
@@ -705,7 +705,7 @@ export const SynthesisReport = ({
                 <button
                   type="button"
                   onClick={handleDownloadProject}
-                  className="px-4 py-2 bg-white border border-indigo-200 text-indigo-600 hover:bg-indigo-50 rounded-lg font-medium transition-all flex items-center justify-center hv-button hv-focus-ring w-full sm:w-auto text-sm sm:text-base"
+                  className="px-4 py-2 bg-white border border-blue-200 text-blue-600 hover:bg-blue-50 rounded-lg font-medium transition-all flex items-center justify-center hv-button hv-focus-ring w-full sm:w-auto text-sm sm:text-base"
                 >
                   <Save className="w-4 h-4 mr-2" />
                   Sauvegarder le projet
@@ -714,7 +714,7 @@ export const SynthesisReport = ({
               <button
                 type="button"
                 onClick={handleSubmitByEmail}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-all flex items-center justify-center hv-button hv-button-primary w-full sm:w-auto text-sm sm:text-base"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all flex items-center justify-center hv-button hv-button-primary w-full sm:w-auto text-sm sm:text-base"
               >
                 <Send className="w-4 h-4 mr-2" />
                 Soumettre par e-mail
@@ -722,7 +722,7 @@ export const SynthesisReport = ({
               <button
                 type="button"
                 onClick={handleOpenShowcase}
-                className="px-4 py-2 bg-white border border-indigo-200 text-indigo-600 hover:bg-indigo-50 rounded-lg font-medium transition-all flex items-center justify-center hv-button hv-focus-ring w-full sm:w-auto text-sm sm:text-base"
+                className="px-4 py-2 bg-white border border-blue-200 text-blue-600 hover:bg-blue-50 rounded-lg font-medium transition-all flex items-center justify-center hv-button hv-focus-ring w-full sm:w-auto text-sm sm:text-base"
               >
                 <Sparkles className="w-4 h-4 mr-2" />
                 Vitrine du projet
@@ -761,9 +761,9 @@ export const SynthesisReport = ({
           )}
 
           {/* Vue d'ensemble */}
-          <section className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl p-5 sm:p-6 mb-8 border border-indigo-200 hv-surface" aria-labelledby="overview-heading">
+          <section className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-5 sm:p-6 mb-8 border border-blue-200 hv-surface" aria-labelledby="overview-heading">
             <h2 id="overview-heading" className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-              <FileText className="w-6 h-6 mr-2 text-indigo-600" />
+              <FileText className="w-6 h-6 mr-2 text-blue-600" />
               Vue d'ensemble du projet
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -780,7 +780,7 @@ export const SynthesisReport = ({
             </div>
             <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between bg-white rounded-lg p-4 border border-gray-200 hv-surface" role="status" aria-live="polite">
               <span className="font-medium text-gray-700">Niveau de complexité compliance :</span>
-              <span className={`text-xl font-bold ${complexityColors[analysis.complexity] || 'text-indigo-600'}`}>
+              <span className={`text-xl font-bold ${complexityColors[analysis.complexity] || 'text-blue-600'}`}>
                 {analysis.complexity}
               </span>
             </div>
@@ -800,7 +800,7 @@ export const SynthesisReport = ({
           {/* Équipes à solliciter */}
           <section className="mb-8" aria-labelledby="teams-heading">
             <h2 id="teams-heading" className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-              <Users className="w-6 h-6 mr-2 text-indigo-600" />
+              <Users className="w-6 h-6 mr-2 text-blue-600" />
               Équipes à solliciter ({relevantTeams.length})
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -814,7 +814,7 @@ export const SynthesisReport = ({
                   : [];
 
                 return (
-                  <div key={team.id} className="bg-white rounded-xl p-6 border-2 border-gray-200 hover:border-indigo-300 transition-all hv-surface" role="article" aria-label={`Équipe ${team.name}`}>
+                  <div key={team.id} className="bg-white rounded-xl p-6 border-2 border-gray-200 hover:border-blue-300 transition-all hv-surface" role="article" aria-label={`Équipe ${team.name}`}>
                     <div className="flex justify-between items-start mb-3">
                       <h3 className="text-lg font-bold text-gray-800">{team.name}</h3>
                       <span className={`px-3 py-1 rounded-full text-xs font-semibold border hv-badge ${priorityColors[teamPriority]}`}>
@@ -822,7 +822,7 @@ export const SynthesisReport = ({
                       </span>
                     </div>
                     <p className="text-sm text-gray-600 mb-3">{renderTextWithLinks(team.expertise)}</p>
-                    <div className="mt-2 text-sm text-indigo-600 font-medium flex items-center gap-2">
+                    <div className="mt-2 text-sm text-blue-600 font-medium flex items-center gap-2">
                       <Mail className="w-4 h-4" />
                       {renderTextWithLinks(team.contact)}
                     </div>
@@ -836,11 +836,11 @@ export const SynthesisReport = ({
                             return (
                               <li key={idx} className="text-sm text-gray-700 flex flex-col">
                                 <div className="flex">
-                                  <span className="text-indigo-500 mr-2">•</span>
+                                  <span className="text-blue-500 mr-2">•</span>
                                   <span>{renderTextWithLinks(question.text)}</span>
                                 </div>
                                 {timingMessage && (
-                                  <span className="ml-5 text-xs text-amber-600 mt-1">⚠️ {timingMessage}</span>
+                                  <span className="ml-5 text-xs text-yellow-600 mt-1">⚠️ {timingMessage}</span>
                                 )}
                               </li>
                             );
@@ -938,7 +938,7 @@ export const SynthesisReport = ({
         >
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 sm:p-8 space-y-4 hv-surface hv-modal-panel">
             <div className="flex items-center justify-center">
-              <Mail className="w-10 h-10 text-indigo-600" aria-hidden="true" />
+              <Mail className="w-10 h-10 text-blue-600" aria-hidden="true" />
             </div>
             <div className="text-center">
               <h2 id="attachment-reminder-title" className="text-xl font-semibold text-gray-800">
@@ -956,7 +956,7 @@ export const SynthesisReport = ({
                 type="button"
                 onClick={handleDismissAttachmentReminder}
                 ref={reminderCloseButtonRef}
-                className="px-5 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 hv-button hv-button-primary"
+                className="px-5 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 hv-button hv-button-primary"
               >
                 Compris
               </button>

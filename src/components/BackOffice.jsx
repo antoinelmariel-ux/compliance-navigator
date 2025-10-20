@@ -1305,7 +1305,7 @@ export const BackOffice = ({
         <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 hv-surface" role="region" aria-label="Back-office compliance">
           <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-8">
             <div className="flex items-center space-x-3">
-              <span className="inline-flex items-center justify-center w-12 h-12 bg-indigo-600 text-white rounded-xl">
+              <span className="inline-flex items-center justify-center w-12 h-12 bg-blue-600 text-white rounded-xl">
                 <Settings className="w-6 h-6" />
               </span>
               <div>
@@ -1317,7 +1317,7 @@ export const BackOffice = ({
               <button
                 type="button"
                 onClick={handleDownloadDataFiles}
-                className="inline-flex items-center justify-center px-4 py-2 bg-white border border-indigo-200 text-indigo-700 rounded-lg shadow-sm hover:bg-indigo-50 hv-button hv-focus-ring text-sm sm:text-base"
+                className="inline-flex items-center justify-center px-4 py-2 bg-white border border-blue-200 text-blue-700 rounded-lg shadow-sm hover:bg-blue-50 hv-button hv-focus-ring text-sm sm:text-base"
               >
                 <Download className="w-5 h-5 mr-2" />
                 Télécharger les fichiers (questions, règles, équipes)
@@ -1331,12 +1331,12 @@ export const BackOffice = ({
             aria-live="polite"
           >
             {dataIntegrityIssues.length > 0 ? (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
+              <div className="rounded-2xl border border-yellow-200 bg-yellow-50/80 p-4">
                 <div className="flex items-start gap-3">
-                  <AlertTriangle className="w-6 h-6 text-amber-600 mt-1" />
+                  <AlertTriangle className="w-6 h-6 text-yellow-600 mt-1" />
                   <div className="flex-1 space-y-3">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm font-semibold text-amber-900">
+                      <p className="text-sm font-semibold text-yellow-900">
                         {dataIntegrityIssues.length} incohérence
                         {dataIntegrityIssues.length > 1 ? 's' : ''} détectée
                         {dataIntegrityIssues.length > 1 ? 's' : ''} dans la configuration.
@@ -1344,17 +1344,17 @@ export const BackOffice = ({
                       {dataIntegritySummary.map((entry) => (
                         <span
                           key={entry.scope}
-                          className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800"
+                          className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800"
                         >
                           {entry.label} · {entry.count}
                         </span>
                       ))}
                     </div>
-                    <ul className="space-y-2 text-sm text-amber-900">
+                    <ul className="space-y-2 text-sm text-yellow-900">
                       {dataIntegrityIssues.map((issue) => (
                         <li
                           key={issue.id}
-                          className="rounded-lg border border-amber-200 bg-white/60 p-3"
+                          className="rounded-lg border border-yellow-200 bg-white/60 p-3"
                         >
                           <p className="font-medium">{issue.context}</p>
                           <p className="mt-1 leading-snug">{issue.message}</p>
@@ -1391,7 +1391,7 @@ export const BackOffice = ({
                 onClick={() => setActiveTab(tab.id)}
                 className={`px-4 py-2 rounded-t-md text-sm font-medium hv-focus-ring ${
                   activeTab === tab.id
-                    ? 'bg-indigo-50 text-indigo-700 border-b-2 border-indigo-600'
+                    ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600'
                     : 'text-gray-600 hover:text-gray-800'
                 }`}
               >
@@ -1407,12 +1407,12 @@ export const BackOffice = ({
               aria-labelledby="backoffice-tab-dashboard"
               className="space-y-4"
             >
-              <div className="rounded-2xl border border-dashed border-indigo-200 bg-indigo-50/60 p-6 text-center text-indigo-700">
-                <h2 className="text-2xl font-bold text-indigo-900">Dashboard</h2>
+              <div className="rounded-2xl border border-dashed border-blue-200 bg-blue-50/60 p-6 text-center text-blue-700">
+                <h2 className="text-2xl font-bold text-blue-900">Dashboard</h2>
                 <p className="mt-2 text-sm">
                   Cette section proposera prochainement des indicateurs clés pour analyser les projets soumis.
                 </p>
-                <p className="mt-1 text-xs text-indigo-600">
+                <p className="mt-1 text-xs text-blue-600">
                   Revenez bientôt pour suivre vos KPIs et faciliter vos prises de décision.
                 </p>
               </div>
@@ -1430,16 +1430,16 @@ export const BackOffice = ({
                 <button
                   type="button"
                   onClick={addQuestion}
-                  className="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 text-white rounded-lg shadow-sm hover:bg-indigo-700 hv-button hv-button-primary w-full sm:w-auto text-sm sm:text-base"
+                  className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg shadow-sm hover:bg-blue-700 hv-button hv-button-primary w-full sm:w-auto text-sm sm:text-base"
                 >
                   <Plus className="w-5 h-5 mr-2" />
                   Ajouter une question
                 </button>
               </div>
 
-              <div className="rounded-lg border border-indigo-100 bg-indigo-50/60 px-4 py-3 text-sm text-indigo-900">
+              <div className="rounded-lg border border-blue-100 bg-blue-50/60 px-4 py-3 text-sm text-blue-900">
                 <p className="font-medium">Questions vitrine projet</p>
-                <p className="mt-1 text-indigo-800">
+                <p className="mt-1 text-blue-800">
                   Les questions marquées «&nbsp;Vitrine projet&nbsp;» alimentent automatiquement la vitrine marketing.
                   Elles sont obligatoires pour compléter le showcase et ne peuvent pas être supprimées.
                 </p>
@@ -1468,7 +1468,7 @@ export const BackOffice = ({
                   <React.Fragment key={question.id}>
                     <article
                       className={`border border-gray-200 rounded-xl p-6 bg-white shadow-sm hv-surface transition-shadow ${
-                      dragOverIndex === index ? 'ring-2 ring-indigo-400 ring-offset-2' : ''
+                      dragOverIndex === index ? 'ring-2 ring-blue-400 ring-offset-2' : ''
                     } ${
                       draggedQuestionIndex === index ? 'opacity-75' : ''
                     }`}
@@ -1479,14 +1479,14 @@ export const BackOffice = ({
                     <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div className="space-y-2">
                         <div className="flex items-center space-x-3">
-                          <span className="text-xs font-semibold uppercase tracking-wide bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">
+                          <span className="text-xs font-semibold uppercase tracking-wide bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
                             {question.id}
                           </span>
                           <span className="text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
                             {typeMeta.label}
                           </span>
                           {isShowcaseQuestion && (
-                            <span className="text-xs text-indigo-800 bg-indigo-100 px-2 py-1 rounded-full font-medium">
+                            <span className="text-xs text-blue-800 bg-blue-100 px-2 py-1 rounded-full font-medium">
                               Vitrine projet
                             </span>
                           )}
@@ -1502,7 +1502,7 @@ export const BackOffice = ({
                       <div className="flex flex-wrap gap-2">
                         <button
                           type="button"
-                          className="p-2 text-gray-500 hover:text-indigo-600 rounded hv-button cursor-move"
+                          className="p-2 text-gray-500 hover:text-blue-600 rounded hv-button cursor-move"
                           aria-label={`Réorganiser la question ${question.id}. Position ${index + 1} sur ${questions.length}. Utilisez les flèches haut et bas.`}
                           aria-describedby={`question-${question.id}-position`}
                           draggable
@@ -1517,7 +1517,7 @@ export const BackOffice = ({
                         <button
                           type="button"
                           onClick={() => duplicateQuestion(question.id)}
-                          className="p-2 text-indigo-600 hover:bg-indigo-50 rounded hv-button"
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded hv-button"
                           aria-label={`Dupliquer la question ${question.id}`}
                           title={`Dupliquer la question ${question.id}`}
                         >
@@ -1526,7 +1526,7 @@ export const BackOffice = ({
                         <button
                           type="button"
                           onClick={() => setEditingQuestion(question)}
-                          className="p-2 text-indigo-600 hover:bg-indigo-50 rounded hv-button"
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded hv-button"
                           aria-label={`Modifier la question ${question.id}`}
                         >
                           <Edit className="w-5 h-5" />
@@ -1574,21 +1574,21 @@ export const BackOffice = ({
                     )}
 
                     {conditionSummary.length > 0 ? (
-                      <div className="mt-6 bg-indigo-50 border border-indigo-100 rounded-lg p-4 text-sm text-gray-700">
-                        <h4 className="text-sm font-semibold text-indigo-700 mb-3">Conditions d'affichage</h4>
+                      <div className="mt-6 bg-blue-50 border border-blue-100 rounded-lg p-4 text-sm text-gray-700">
+                        <h4 className="text-sm font-semibold text-blue-700 mb-3">Conditions d'affichage</h4>
                         <ol className="space-y-3">
                           {conditionSummary.map((group) => (
                             <li key={`${question.id}-condition-group-${group.index}`} className="space-y-2">
-                              <div className="text-xs font-semibold text-indigo-600 uppercase tracking-wide">
+                              <div className="text-xs font-semibold text-blue-600 uppercase tracking-wide">
                                 Groupe {group.index} – logique {group.logic === 'OU' ? 'OU (au moins une)' : 'ET (toutes)'}
                               </div>
                               <ul className="space-y-1">
                                 {group.parts.map((part, idx) => (
                                   <li key={`${question.id}-part-${group.index}-${idx}`} className="flex items-baseline space-x-2">
-                                    {part.connector && <span className="text-xs text-indigo-500">{part.connector}</span>}
-                                    <span className="font-mono bg-white px-2 py-0.5 rounded border border-indigo-100">{part.label}</span>
+                                    {part.connector && <span className="text-xs text-blue-500">{part.connector}</span>}
+                                    <span className="font-mono bg-white px-2 py-0.5 rounded border border-blue-100">{part.label}</span>
                                     <span>{part.operator}</span>
-                                    <span className="font-semibold text-indigo-700">« {part.value} »</span>
+                                    <span className="font-semibold text-blue-700">« {part.value} »</span>
                                   </li>
                                 ))}
                               </ul>
@@ -1629,7 +1629,7 @@ export const BackOffice = ({
                         <button
                           type="button"
                           onClick={() => addQuestionAtIndex(index + 1)}
-                          className="w-10 h-10 rounded-full border-2 border-dashed border-indigo-300 text-indigo-600 bg-white flex items-center justify-center shadow-sm hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 hv-button"
+                          className="w-10 h-10 rounded-full border-2 border-dashed border-blue-300 text-blue-600 bg-white flex items-center justify-center shadow-sm hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 hv-button"
                           aria-label={`Insérer une nouvelle question après la question ${question.id}`}
                         >
                           <Plus className="w-5 h-5" />
@@ -1653,7 +1653,7 @@ export const BackOffice = ({
                 <button
                   type="button"
                   onClick={addRule}
-                  className="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 text-white rounded-lg shadow-sm hover:bg-indigo-700 hv-button hv-button-primary w-full sm:w-auto text-sm sm:text-base"
+                  className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg shadow-sm hover:bg-blue-700 hv-button hv-button-primary w-full sm:w-auto text-sm sm:text-base"
                 >
                   <Plus className="w-5 h-5 mr-2" />
                   Ajouter une règle
@@ -1677,7 +1677,7 @@ export const BackOffice = ({
                     <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div className="space-y-1">
                         <div className="flex items-center space-x-3 text-sm text-gray-500">
-                          <span className="bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full font-semibold">{rule.id}</span>
+                          <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-semibold">{rule.id}</span>
                           <span className={`px-2 py-1 rounded-full font-semibold ${getPriorityBadgeClasses(highestRiskPriority)}`}>
                             {highestRiskPriority
                               ? `Priorité principale : ${highestRiskPriority}`
@@ -1690,7 +1690,7 @@ export const BackOffice = ({
                         <button
                           type="button"
                           onClick={() => setEditingRule(rule)}
-                          className="p-2 text-indigo-600 hover:bg-indigo-50 rounded hv-button"
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded hv-button"
                           aria-label={`Afficher la règle ${rule.name}`}
                         >
                           <Eye className="w-5 h-5" />
@@ -1698,7 +1698,7 @@ export const BackOffice = ({
                         <button
                           type="button"
                           onClick={() => duplicateRule(rule.id)}
-                          className="p-2 text-indigo-600 hover:bg-indigo-50 rounded hv-button"
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded hv-button"
                           aria-label={`Dupliquer la règle ${rule.name}`}
                           title={`Dupliquer la règle ${rule.name}`}
                         >
@@ -1746,7 +1746,7 @@ export const BackOffice = ({
                         {teamLabels.length > 0 ? (
                           <ul className="flex flex-wrap gap-2">
                             {teamLabels.map((label) => (
-                              <li key={`${rule.id}-team-${label}`} className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded border border-indigo-100">
+                              <li key={`${rule.id}-team-${label}`} className="px-2 py-1 bg-blue-50 text-blue-700 rounded border border-blue-100">
                                 {label}
                               </li>
                             ))}
@@ -1813,7 +1813,7 @@ export const BackOffice = ({
                 <button
                   type="button"
                   onClick={addRiskLevelRule}
-                  className="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 text-white rounded-lg shadow-sm hover:bg-indigo-700 hv-button hv-button-primary w-full sm:w-auto text-sm sm:text-base"
+                  className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg shadow-sm hover:bg-blue-700 hv-button hv-button-primary w-full sm:w-auto text-sm sm:text-base"
                 >
                   <Plus className="w-5 h-5 mr-2" />
                   Ajouter un niveau
@@ -1884,7 +1884,7 @@ export const BackOffice = ({
                         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                           <div className="space-y-3 flex-1">
                             <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
-                              <span className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded-full font-semibold">{ruleId}</span>
+                              <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-full font-semibold">{ruleId}</span>
                               <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full">{rangeLabel}</span>
                               <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full">Palier {index + 1}</span>
                             </div>
@@ -2027,7 +2027,7 @@ export const BackOffice = ({
                 <button
                   type="button"
                   onClick={addTeam}
-                  className="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 text-white rounded-lg shadow-sm hover:bg-indigo-700 hv-button hv-button-primary w-full sm:w-auto text-sm sm:text-base"
+                  className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg shadow-sm hover:bg-blue-700 hv-button hv-button-primary w-full sm:w-auto text-sm sm:text-base"
                 >
                   <Plus className="w-5 h-5 mr-2" />
                   Ajouter une équipe
@@ -2048,7 +2048,7 @@ export const BackOffice = ({
                         type="text"
                         value={team.name}
                         onChange={(event) => updateTeamField(index, 'name', event.target.value)}
-                        className="text-lg font-semibold text-gray-800 border-b border-transparent focus:border-indigo-600 focus:outline-none flex-1 hv-focus-ring"
+                        className="text-lg font-semibold text-gray-800 border-b border-transparent focus:border-blue-600 focus:outline-none flex-1 hv-focus-ring"
                         aria-label={`Nom de l'équipe ${team.id}`}
                       />
                       <div className="flex justify-end sm:justify-start">
