@@ -3,9 +3,9 @@ export const initialRiskLevelRules = [
     "id": "risk_low",
     "label": "Faible",
     "minRisks": 0,
-    "maxRisks": 1,
+    "maxRisks": 3,
     "description": "Suivi standard avec un point de validation suffisant.",
-    "maxScore": 1
+    "maxScore": 3
   },
   {
     "id": "risk_medium",
