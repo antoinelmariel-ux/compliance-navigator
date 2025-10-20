@@ -136,6 +136,39 @@ const formatVigilanceStatusMessage = (alert) => {
     return "Dates manquantes : complétez les informations pour confirmer ce délai.";
   }
 
+  if (alert.status === 'breach') {
+    const diffParts = [];
+    if (alert.diff && typeof alert.diff.diffInWeeks === 'number') {
+      diffParts.push(formatWeeksValue(alert.diff.diffInWeeks));
+    }
+    if (alert.diff && typeof alert.diff.diffInDays === 'number') {
+      diffParts.push(formatDaysValue(alert.diff.diffInDays));
+    }
+
+    const requiredParts = [];
+    if (typeof alert.requiredWeeks === 'number') {
+      requiredParts.push(`${formatNumberFR(alert.requiredWeeks)} sem.`);
+    }
+    if (typeof alert.requiredDays === 'number') {
+      requiredParts.push(`${formatNumberFR(alert.requiredDays)} j.`);
+    }
+
+    if (diffParts.length === 0 && requiredParts.length === 0) {
+      return 'Délai insuffisant : ajuster les jalons pour respecter l’exigence.';
+    }
+
+    if (diffParts.length === 0) {
+      return `Délai insuffisant – minimum requis : ${requiredParts.join(' / ')}.`;
+    }
+
+    const diffLabel = diffParts.join(' / ');
+    if (requiredParts.length === 0) {
+      return `Délai constaté : ${diffLabel}. Ajuster le planning pour sécuriser le lancement.`;
+    }
+
+    return `Délai constaté : ${diffLabel} – minimum requis : ${requiredParts.join(' / ')}. Ajuster le planning en conséquence.`;
+  }
+
   if (alert.status === 'satisfied' && alert.diff) {
     const parts = [];
     if (typeof alert.diff.diffInWeeks === 'number') {
@@ -162,7 +195,7 @@ const buildVigilanceAlerts = (analysis, questions, resolveTeamLabel) => {
     : [];
 
   return rawAlerts
-    .filter(alert => alert && alert.status !== 'breach')
+    .filter(alert => alert && typeof alert === 'object')
     .map((alert, index) => {
       const title = alert.riskDescription && alert.riskDescription.trim().length > 0
         ? alert.riskDescription.trim()
