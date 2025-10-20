@@ -21,7 +21,7 @@ import { normalizeRiskWeighting } from './utils/risk.js';
 import { normalizeProjectEntry, normalizeProjectsCollection } from './utils/projectNormalization.js';
 import { loadSubmittedProjectsFromDirectory } from './utils/externalProjectsLoader.js';
 
-const APP_VERSION = 'v1.0.98';
+const APP_VERSION = 'v1.0.99';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -706,11 +706,58 @@ export const App = () => {
     });
 
     if (sanitizedResult) {
-      setAnalysis(analyzeAnswers(sanitizedResult, rules, riskLevelRules, riskWeights));
+      const updatedAnalysis = analyzeAnswers(sanitizedResult, rules, riskLevelRules, riskWeights);
+      setAnalysis(updatedAnalysis);
       setValidationError(null);
+
+      if (activeProjectId) {
+        setProjects(prevProjects => {
+          const projectIndex = prevProjects.findIndex(project => project.id === activeProjectId);
+          if (projectIndex === -1) {
+            return prevProjects;
+          }
+
+          const project = prevProjects[projectIndex];
+          if (!project || project.status !== 'draft') {
+            return prevProjects;
+          }
+
+          const relevantQuestions = questions.filter(question => shouldShowQuestion(question, sanitizedResult));
+          const totalQuestions = relevantQuestions.length > 0
+            ? relevantQuestions.length
+            : project.totalQuestions || questions.length || 0;
+          const answeredQuestionsCount = relevantQuestions.length > 0
+            ? relevantQuestions.filter(question => isAnswerProvided(sanitizedResult[question.id])).length
+            : Object.keys(sanitizedResult).length;
+          const inferredName = extractProjectName(sanitizedResult, questions);
+          const sanitizedName = inferredName && inferredName.trim().length > 0
+            ? inferredName.trim()
+            : project.projectName;
+          const lastQuestionIndex = totalQuestions > 0
+            ? Math.min(Math.max(project.lastQuestionIndex ?? totalQuestions - 1, 0), totalQuestions - 1)
+            : project.lastQuestionIndex ?? 0;
+
+          const updatedProject = {
+            ...project,
+            answers: sanitizedResult,
+            analysis: updatedAnalysis,
+            projectName: sanitizedName,
+            totalQuestions,
+            answeredQuestions: Math.min(answeredQuestionsCount, totalQuestions || answeredQuestionsCount),
+            lastQuestionIndex,
+            lastUpdated: new Date().toISOString()
+          };
+
+          const nextProjects = prevProjects.slice();
+          nextProjects[projectIndex] = updatedProject;
+          return nextProjects;
+        });
+      }
     }
   }, [
+    activeProjectId,
     analyzeAnswers,
+    extractProjectName,
     isActiveProjectDraft,
     questions,
     riskLevelRules,
