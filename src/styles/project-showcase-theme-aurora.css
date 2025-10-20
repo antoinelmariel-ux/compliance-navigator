@@ -1060,7 +1060,7 @@
 [data-showcase-theme='aurora'] .aurora-roadmap__budget {
   padding: 1.4rem 1.8rem;
   border-radius: 1.6rem;
-  background: linear-gradient(150deg, rgba(148, 197, 255, 0.16), rgba(15, 23, 42, 0.45));
+  background: linear-gradient(135deg, #0b2f41 0%, #0e5560 100%);
   border: 1px solid rgba(148, 197, 255, 0.28);
   box-shadow: 0 24px 55px rgba(2, 6, 23, 0.32);
   text-align: right;
@@ -1115,7 +1115,7 @@
   min-width: 12rem;
   padding: 1.2rem 1.4rem;
   border-radius: 1.6rem;
-  background: linear-gradient(150deg, rgba(148, 197, 255, 0.16), rgba(15, 23, 42, 0.45));
+  background: linear-gradient(135deg, #0b2f41 0%, #0e5560 100%);
   border: 1px solid rgba(148, 197, 255, 0.24);
   box-shadow: 0 24px 55px rgba(2, 6, 23, 0.34);
   animation: fadeRise 0.9s ease forwards;
@@ -1149,7 +1149,7 @@
   margin-top: 2.5rem;
   padding: 2rem;
   border-radius: 1.9rem;
-  background: linear-gradient(150deg, rgba(148, 197, 255, 0.18), rgba(15, 23, 42, 0.45));
+  background: linear-gradient(135deg, #f05959 0%, #be1717 100%);
   border: 1px solid rgba(148, 197, 255, 0.28);
   box-shadow: 0 26px 58px rgba(2, 6, 23, 0.34);
   color: rgba(224, 236, 255, 0.9);
