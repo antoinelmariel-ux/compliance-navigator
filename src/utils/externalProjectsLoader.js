@@ -51,7 +51,14 @@ const sanitizeRelativePath = (value) => {
 
   try {
     const parsed = new URL(normalized, window.location.href);
-    normalized = parsed.pathname.replace(/^[./]+/, '');
+    const basePath = new URL('.', window.location.href).pathname;
+    let candidate = parsed.pathname;
+
+    if (basePath && basePath !== '/' && candidate.startsWith(basePath)) {
+      candidate = candidate.slice(basePath.length);
+    }
+
+    normalized = candidate.replace(/^[./]+/, '');
   } catch (error) {
     normalized = normalized.replace(/^\.\//, '').replace(/^\//, '');
   }
