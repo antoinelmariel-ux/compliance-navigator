@@ -602,37 +602,40 @@ const useAnimatedCounter = (targetValue, options = {}) => {
   return displayValue;
 };
 
-const computeTimelineSummary = (timelineDetails) => {
+const computeTimelineSummaries = (timelineDetails) => {
   if (!Array.isArray(timelineDetails)) {
-    return null;
+    return [];
   }
 
-  const detailWithDiff = timelineDetails.find(
-    (detail) => Boolean(detail?.diff) && detail?.satisfied === false
-  );
+  return timelineDetails
+    .filter(detail => Boolean(detail?.diff) && detail?.satisfied === false)
+    .map((detail, index) => {
+      const diff = detail.diff;
+      const weeks = Number.isFinite(diff?.diffInWeeks)
+        ? Math.round(diff.diffInWeeks)
+        : 0;
+      const days = Number.isFinite(diff?.diffInDays)
+        ? Math.round(diff.diffInDays)
+        : 0;
+      const riskLabel = typeof detail?.riskDescription === 'string'
+        ? detail.riskDescription.trim()
+        : '';
+      const summaryLabel = riskLabel.length > 0 ? riskLabel : detail?.ruleName;
+      const hasProfiles = Array.isArray(detail?.profiles) && detail.profiles.length > 0;
+      const source = typeof detail?.source === 'string' ? detail.source : null;
+      const identifier = detail?.id
+        || `${detail?.ruleId || detail?.ruleName || 'rule'}-${detail?.riskId || source || index}`;
 
-  if (!detailWithDiff) {
-    return null;
-  }
-
-  const diff = detailWithDiff.diff;
-  const weeks = Math.round(diff.diffInWeeks);
-  const days = Math.round(diff.diffInDays);
-  const riskLabel = typeof detailWithDiff.riskDescription === 'string'
-    ? detailWithDiff.riskDescription.trim()
-    : '';
-  const summaryLabel = riskLabel.length > 0 ? riskLabel : detailWithDiff.ruleName;
-  const hasProfiles = Array.isArray(detailWithDiff.profiles) && detailWithDiff.profiles.length > 0;
-  const source = typeof detailWithDiff.source === 'string' ? detailWithDiff.source : null;
-
-  return {
-    ruleName: summaryLabel,
-    satisfied: detailWithDiff.satisfied,
-    weeks,
-    days,
-    hasProfiles,
-    source
-  };
+      return {
+        id: identifier,
+        ruleName: summaryLabel,
+        satisfied: detail?.satisfied ?? false,
+        weeks,
+        days,
+        hasProfiles,
+        source
+      };
+    });
 };
 
 const extractTimelineProfiles = (timelineDetails) => {
@@ -890,7 +893,10 @@ export const ProjectShowcase = ({
       daysLabel: formatCountdownUnit(animatedDays, 'j.')
     };
   }, [rawRunway, animatedWeeks, animatedDays]);
-  const timelineSummary = useMemo(() => computeTimelineSummary(timelineDetails), [timelineDetails]);
+  const timelineSummaries = useMemo(
+    () => computeTimelineSummaries(timelineDetails),
+    [timelineDetails]
+  );
   const timelineProfiles = useMemo(() => extractTimelineProfiles(timelineDetails), [timelineDetails]);
   const vigilanceAlerts = useMemo(
     () =>
@@ -1034,11 +1040,16 @@ export const ProjectShowcase = ({
   );
   const hasTimelineEntries = timelineEntries.length > 0;
   const hasVigilanceAlerts = vigilanceAlerts.length > 0;
+  const timelineSummariesToDisplay = useMemo(() => {
+    if (!hasTimelineProfiles) {
+      return timelineSummaries;
+    }
+
+    return timelineSummaries.filter(summary => !summary.hasProfiles);
+  }, [hasTimelineProfiles, timelineSummaries]);
+  const hasTimelineSummaries = timelineSummariesToDisplay.length > 0;
   const hasTimelineSection = Boolean(
-    runway || timelineSummary || hasManualMilestones || hasTimelineProfiles || hasVigilanceAlerts
-  );
-  const shouldShowTimelineSummary = Boolean(
-    timelineSummary && (!hasTimelineProfiles || !timelineSummary.hasProfiles)
+    runway || hasTimelineSummaries || hasManualMilestones || hasTimelineProfiles || hasVigilanceAlerts
   );
 
   const previewContent = shouldShowPreview ? (
@@ -1263,20 +1274,26 @@ export const ProjectShowcase = ({
                 )}
               </p>
             )}
-            {shouldShowTimelineSummary && (
-              <div
-                className={`aurora-roadmap__summary ${
-                  timelineSummary.satisfied ? 'aurora-roadmap__summary--ok' : 'aurora-roadmap__summary--alert'
-                }`}
-              >
-                <p className="aurora-roadmap__label">{timelineSummary.ruleName}</p>
-                <p className="aurora-roadmap__value">{timelineSummary.weeks} semaines ({timelineSummary.days} jours)</p>
-                <p className="aurora-roadmap__caption">
-                  {timelineSummary.satisfied
-                    ? 'Runway conforme aux exigences identifiées.'
-                    : 'Un ajustement est recommandé pour sécuriser les jalons.'}
-                </p>
-              </div>
+            {hasTimelineSummaries && (
+              timelineSummariesToDisplay.map((summary, index) => (
+                <div
+                  key={summary.id || `timeline-summary-${index}`}
+                  className={`aurora-roadmap__summary ${
+                    summary.satisfied
+                      ? 'aurora-roadmap__summary--ok'
+                      : 'aurora-roadmap__summary--alert'
+                  }`}
+                  style={{ animationDelay: `${index * 0.08}s` }}
+                >
+                  <p className="aurora-roadmap__label">{summary.ruleName}</p>
+                  <p className="aurora-roadmap__value">{summary.weeks} semaines ({summary.days} jours)</p>
+                  <p className="aurora-roadmap__caption">
+                    {summary.satisfied
+                      ? 'Runway conforme aux exigences identifiées.'
+                      : 'Un ajustement est recommandé pour sécuriser les jalons.'}
+                  </p>
+                </div>
+              ))
             )}
             {hasVigilanceAlerts && (
               <div className="aurora-roadmap__watchpoints">
