@@ -82,7 +82,7 @@ export const initialRules = [
         "type": "timing",
         "startQuestion": "campaignKickoffDate",
         "endQuestion": "launchDate",
-        "minimumWeeks": 26
+        "maximumWeeks": 26
       }
     ],
     "conditionGroups": [
@@ -99,7 +99,7 @@ export const initialRules = [
             "type": "timing",
             "startQuestion": "campaignKickoffDate",
             "endQuestion": "launchDate",
-            "minimumWeeks": 26
+            "maximumWeeks": 26
           }
         ]
       }
