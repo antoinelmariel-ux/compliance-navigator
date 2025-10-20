@@ -429,6 +429,7 @@ export const analyzeAnswers = (answers, rules, riskLevelRules, riskWeighting) =>
   const allRisks = [];
   const timelineByTeam = {};
   const timingDetails = [];
+  const vigilanceAlerts = [];
 
   evaluations.forEach(({ rule, evaluation }) => {
     if (!evaluation.triggered) {
@@ -515,7 +516,7 @@ export const analyzeAnswers = (answers, rules, riskLevelRules, riskWeighting) =>
     });
 
     const processedRisks = (Array.isArray(rule.risks) ? rule.risks : [])
-      .map(risk => {
+      .map((risk, riskIndex) => {
         const ruleTeams = Array.isArray(rule.teams) ? rule.teams : [];
         const preferredTeam = typeof risk?.teamId === 'string' && risk.teamId
           ? risk.teamId
@@ -544,10 +545,6 @@ export const analyzeAnswers = (answers, rules, riskLevelRules, riskWeighting) =>
           }
 
           const diff = computeTimingDiff(timingConstraint, answers);
-          if (!diff) {
-            return null;
-          }
-
           const requiredWeeks = typeof timingConstraint.minimumWeeks === 'number'
             ? timingConstraint.minimumWeeks
             : undefined;
@@ -555,10 +552,62 @@ export const analyzeAnswers = (answers, rules, riskLevelRules, riskWeighting) =>
             ? timingConstraint.minimumDays
             : undefined;
 
+          const alertId = risk?.id
+            ? `${rule.id}__${risk.id}`
+            : `${rule.id}__risk_${riskIndex}`;
+
+          if (!diff) {
+            vigilanceAlerts.push({
+              id: alertId,
+              ruleId: rule.id,
+              ruleName: rule.name,
+              riskId: risk?.id ?? null,
+              riskDescription: typeof risk?.description === 'string' ? risk.description : '',
+              level: weightedRisk.level,
+              priority: weightedRisk.priority,
+              mitigation: typeof weightedRisk.mitigation === 'string' ? weightedRisk.mitigation : '',
+              teamId: preferredTeam,
+              teams: Array.isArray(weightedRisk.teams) && weightedRisk.teams.length > 0
+                ? weightedRisk.teams
+                : preferredTeam
+                  ? [preferredTeam]
+                  : [],
+              timingConstraint,
+              requiredWeeks,
+              requiredDays,
+              diff: null,
+              status: 'unknown'
+            });
+            return null;
+          }
+
           const meetsWeeks = requiredWeeks === undefined || diff.diffInWeeks >= requiredWeeks;
           const meetsDays = requiredDays === undefined || diff.diffInDays >= requiredDays;
+          const satisfied = meetsWeeks && meetsDays;
 
-          if (meetsWeeks && meetsDays) {
+          vigilanceAlerts.push({
+            id: alertId,
+            ruleId: rule.id,
+            ruleName: rule.name,
+            riskId: risk?.id ?? null,
+            riskDescription: typeof risk?.description === 'string' ? risk.description : '',
+            level: weightedRisk.level,
+            priority: weightedRisk.priority,
+            mitigation: typeof weightedRisk.mitigation === 'string' ? weightedRisk.mitigation : '',
+            teamId: preferredTeam,
+            teams: Array.isArray(weightedRisk.teams) && weightedRisk.teams.length > 0
+              ? weightedRisk.teams
+              : preferredTeam
+                ? [preferredTeam]
+                : [],
+            timingConstraint,
+            requiredWeeks,
+            requiredDays,
+            diff,
+            status: satisfied ? 'satisfied' : 'breach'
+          });
+
+          if (satisfied) {
             return null;
           }
 
@@ -672,7 +721,8 @@ export const analyzeAnswers = (answers, rules, riskLevelRules, riskWeighting) =>
     riskScore,
     timeline: {
       byTeam: timelineByTeam,
-      details: timingDetails
+      details: timingDetails,
+      vigilance: vigilanceAlerts
     },
     complexity,
     complexityRule
