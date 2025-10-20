@@ -21,7 +21,7 @@ import { normalizeRiskWeighting } from './utils/risk.js';
 import { normalizeProjectEntry, normalizeProjectsCollection } from './utils/projectNormalization.js';
 import { loadSubmittedProjectsFromDirectory } from './utils/externalProjectsLoader.js';
 
-const APP_VERSION = 'v1.0.87';
+const APP_VERSION = 'v1.0.88';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -1458,7 +1458,7 @@ export const App = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-8 py-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center">
+              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
                 <CheckCircle className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -1476,7 +1476,7 @@ export const App = () => {
                 <button
                   type="button"
                   onClick={handleReturnToComplianceReport}
-                  className="w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button bg-indigo-600 text-white hv-button-primary"
+                  className="w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button bg-blue-600 text-white hv-button-primary"
                   aria-label="Revenir au rapport compliance du projet"
                   title="Revenir au rapport compliance du projet"
                 >
@@ -1489,7 +1489,7 @@ export const App = () => {
                   onClick={() => setScreen('home')}
                   className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button ${
                     screen === 'home'
-                      ? 'bg-indigo-600 text-white hv-button-primary'
+                      ? 'bg-blue-600 text-white hv-button-primary'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                   aria-pressed={screen === 'home'}
@@ -1504,7 +1504,7 @@ export const App = () => {
                   onClick={() => setMode('user')}
                   className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button ${
                     mode === 'user'
-                      ? 'bg-indigo-600 text-white hv-button-primary'
+                      ? 'bg-blue-600 text-white hv-button-primary'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                   aria-pressed={mode === 'user'}
@@ -1518,7 +1518,7 @@ export const App = () => {
                 onClick={handleBackOfficeClick}
                 className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button flex items-center justify-center ${
                   mode === 'admin'
-                    ? 'bg-indigo-600 text-white hv-button-primary'
+                    ? 'bg-blue-600 text-white hv-button-primary'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
                 aria-pressed={mode === 'admin'}
@@ -1596,7 +1596,7 @@ export const App = () => {
             showcaseProjectContext ? (
               <div className="space-y-4">
                 {showcaseProjectContext.status !== 'draft' && (
-                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 hv-surface">
+                  <div className="rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800 hv-surface">
                     Ce projet n'est pas en mode brouillon. La vitrine est consultable en lecture seule.
                   </div>
                 )}

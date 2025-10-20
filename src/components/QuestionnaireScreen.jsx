@@ -226,7 +226,7 @@ export const QuestionnaireScreen = ({
               onChange={(e) => onAnswer(currentQuestion.id, e.target.value)}
               id={`${currentQuestion.id}-date`}
               aria-describedby={currentIndex === 0 ? instructionsId : undefined}
-              className="w-full px-4 py-2.5 sm:py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hv-focus-ring"
+              className="w-full px-4 py-2.5 sm:py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent hv-focus-ring"
             />
             <p className="text-xs text-gray-500 mt-2">
               Utilisez le sélecteur ou le format AAAA-MM-JJ pour garantir une analyse correcte.
@@ -247,8 +247,8 @@ export const QuestionnaireScreen = ({
                   htmlFor={optionId}
                   className={`w-full p-3 sm:p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl border-2 transition-all duration-200 cursor-pointer hv-focus-ring ${
                     isSelected
-                      ? 'border-indigo-600 bg-indigo-50 text-indigo-900'
-                      : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'
+                      ? 'border-blue-600 bg-blue-50 text-blue-900'
+                      : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
                   }`}
                 >
                   <div className="flex items-center">
@@ -259,11 +259,11 @@ export const QuestionnaireScreen = ({
                       value={option}
                       checked={isSelected}
                       onChange={() => onAnswer(currentQuestion.id, option)}
-                      className="w-5 h-5 text-indigo-600 border-gray-300 focus:ring-indigo-500 hv-focus-ring"
+                      className="w-5 h-5 text-blue-600 border-gray-300 focus:ring-blue-500 hv-focus-ring"
                     />
                     <span className="ml-3 font-medium text-sm sm:text-base">{option}</span>
                   </div>
-                  {isSelected && <CheckCircle className="w-5 h-5 text-indigo-600 self-end sm:self-auto" />}
+                  {isSelected && <CheckCircle className="w-5 h-5 text-blue-600 self-end sm:self-auto" />}
                 </label>
               );
             })}
@@ -293,8 +293,8 @@ export const QuestionnaireScreen = ({
                   htmlFor={optionId}
                   className={`w-full p-3 sm:p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl border-2 transition-all duration-200 cursor-pointer hv-focus-ring ${
                     isSelected
-                      ? 'border-indigo-600 bg-indigo-50 text-indigo-900'
-                      : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'
+                      ? 'border-blue-600 bg-blue-50 text-blue-900'
+                      : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
                   }`}
                 >
                   <div className="flex items-center">
@@ -303,11 +303,11 @@ export const QuestionnaireScreen = ({
                       checked={isSelected}
                       onChange={toggleOption}
                       id={optionId}
-                      className="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 hv-focus-ring"
+                      className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 hv-focus-ring"
                     />
                     <span className="ml-3 font-medium text-sm sm:text-base">{option}</span>
                   </div>
-                  {isSelected && <CheckCircle className="w-5 h-5 text-indigo-600 self-end sm:self-auto" />}
+                  {isSelected && <CheckCircle className="w-5 h-5 text-blue-600 self-end sm:self-auto" />}
                 </label>
               );
             })}
@@ -377,7 +377,7 @@ export const QuestionnaireScreen = ({
                         type="date"
                         value={entry.date || ''}
                         onChange={(event) => handleMilestoneFieldChange(index, 'date', event.target.value)}
-                        className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hv-focus-ring"
+                        className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent hv-focus-ring"
                       />
                     </div>
                     <div className="flex-1">
@@ -389,7 +389,7 @@ export const QuestionnaireScreen = ({
                         type="text"
                         value={entry.description || ''}
                         onChange={(event) => handleMilestoneFieldChange(index, 'description', event.target.value)}
-                        className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hv-focus-ring"
+                        className="w-full px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent hv-focus-ring"
                       />
                     </div>
                     <button
@@ -407,7 +407,7 @@ export const QuestionnaireScreen = ({
             <button
               type="button"
               onClick={handleAddMilestone}
-              className="mt-4 inline-flex items-center px-4 py-2 border-2 border-dashed border-indigo-300 rounded-xl text-indigo-700 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="mt-4 inline-flex items-center px-4 py-2 border-2 border-dashed border-blue-300 rounded-xl text-blue-700 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               <Plus className="w-4 h-4 mr-2" />
               Ajouter un jalon
@@ -431,7 +431,7 @@ export const QuestionnaireScreen = ({
                   : 'Saisissez une réponse en une ligne'
               }
               id={`${currentQuestion.id}-text`}
-              className="w-full px-4 py-2.5 sm:py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hv-focus-ring"
+              className="w-full px-4 py-2.5 sm:py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent hv-focus-ring"
             />
             <p className="text-xs text-gray-500 mt-2">
               Utilisez ce champ pour des réponses courtes sous forme de texte libre.
@@ -454,7 +454,7 @@ export const QuestionnaireScreen = ({
               }
               rows={5}
               id={`${currentQuestion.id}-long-text`}
-              className="w-full px-4 py-2.5 sm:py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-y hv-focus-ring"
+              className="w-full px-4 py-2.5 sm:py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y hv-focus-ring"
             />
             <p className="text-xs text-gray-500 mt-2">
               Ce champ accepte plusieurs lignes : structurez votre réponse librement.
@@ -473,7 +473,7 @@ export const QuestionnaireScreen = ({
               value={currentAnswer ?? ''}
               onChange={(e) => onAnswer(currentQuestion.id, e.target.value)}
               id={`${currentQuestion.id}-number`}
-              className="w-full px-4 py-2.5 sm:py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hv-focus-ring"
+              className="w-full px-4 py-2.5 sm:py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent hv-focus-ring"
             />
             <p className="text-xs text-gray-500 mt-2">
               Vous pouvez saisir un nombre entier ou décimal.
@@ -492,7 +492,7 @@ export const QuestionnaireScreen = ({
               onChange={(e) => onAnswer(currentQuestion.id, e.target.value)}
               placeholder="https://exemple.com"
               id={`${currentQuestion.id}-url`}
-              className="w-full px-4 py-2.5 sm:py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent hv-focus-ring"
+              className="w-full px-4 py-2.5 sm:py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent hv-focus-ring"
             />
             <p className="text-xs text-gray-500 mt-2">
               Incluez le protocole (https://) pour une URL valide.
@@ -540,7 +540,7 @@ export const QuestionnaireScreen = ({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 px-4 py-6 sm:px-8 sm:py-10 hv-background">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 px-4 py-6 sm:px-8 sm:py-10 hv-background">
       <div className="max-w-3xl mx-auto">
         <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 hv-surface">
           <div className="mb-8">
@@ -548,7 +548,7 @@ export const QuestionnaireScreen = ({
               <span id={progressLabelId} className="text-sm font-medium text-gray-600 hv-text-muted" aria-live="polite">
                 Question {currentIndex + 1} sur {questions.length}
               </span>
-              <span className="text-sm font-medium text-indigo-600 sm:text-right" aria-live="polite">
+              <span className="text-sm font-medium text-blue-600 sm:text-right" aria-live="polite">
                 {Math.round(progress)}% complété
               </span>
             </div>
@@ -561,7 +561,7 @@ export const QuestionnaireScreen = ({
               aria-labelledby={progressLabelId}
             >
               <span
-                className="block bg-indigo-600 h-2 rounded-full transition-all duration-300 hv-progress-indicator"
+                className="block bg-blue-600 h-2 rounded-full transition-all duration-300 hv-progress-indicator"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -619,8 +619,8 @@ export const QuestionnaireScreen = ({
                   onClick={() => setShowGuidance(prev => !prev)}
                   className={`inline-flex items-center justify-center w-full sm:w-auto px-4 py-2 text-sm font-medium rounded-lg border transition-all hv-button hv-focus-ring ${
                     showGuidance
-                      ? 'bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700'
-                      : 'bg-indigo-50 text-indigo-600 border-indigo-200 hover:bg-indigo-100'
+                      ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'
+                      : 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'
                   }`}
                   aria-expanded={showGuidance}
                   aria-controls={guidancePanelId}
@@ -634,17 +634,17 @@ export const QuestionnaireScreen = ({
             {hasGuidanceContent && showGuidance && (
               <div
                 id={guidancePanelId}
-                className="mt-4 bg-indigo-50 border border-indigo-200 rounded-2xl p-5 text-sm text-gray-700 hv-surface"
+                className="mt-4 bg-blue-50 border border-blue-200 rounded-2xl p-5 text-sm text-gray-700 hv-surface"
                 role="region"
                 aria-label="Aide contextuelle"
               >
                 <div className="flex items-start">
-                  <div className="mr-3 mt-0.5 text-indigo-600">
+                  <div className="mr-3 mt-0.5 text-blue-600">
                     <Info className="w-5 h-5" />
                   </div>
                   <div className="space-y-4">
                     <div>
-                      <h3 className="text-base font-semibold text-indigo-700">Guidage contextuel</h3>
+                      <h3 className="text-base font-semibold text-blue-700">Guidage contextuel</h3>
                       {guidance.objective && (
                         <p className="mt-1 text-gray-700">{renderTextWithLinks(guidance.objective)}</p>
                       )}
@@ -656,12 +656,12 @@ export const QuestionnaireScreen = ({
 
                     {hasConditions && (
                       <div>
-                        <h4 className="text-xs font-semibold uppercase tracking-wide text-indigo-700">Pourquoi cette question apparaît</h4>
+                        <h4 className="text-xs font-semibold uppercase tracking-wide text-blue-700">Pourquoi cette question apparaît</h4>
                         {conditionSummaries.length === 1 ? (
                           (() => {
                             const logic = conditionSummaries[0].logic === 'any' ? 'any' : 'all';
                             return (
-                              <p className="text-xs text-indigo-600 mt-1">
+                              <p className="text-xs text-blue-600 mt-1">
                                 Elle s'affiche lorsque {logic === 'any'
                                   ? "au moins une des conditions suivantes est remplie"
                                   : 'toutes les conditions suivantes sont remplies'}.
@@ -669,10 +669,10 @@ export const QuestionnaireScreen = ({
                             );
                           })()
                         ) : (
-                          <div className="text-xs text-indigo-600 mt-1 space-y-1">
+                          <div className="text-xs text-blue-600 mt-1 space-y-1">
                             <p>
                               Cette question apparaît lorsque{' '}
-                              <strong className="text-indigo-700">chaque groupe de conditions</strong> ci-dessous est vérifié.
+                              <strong className="text-blue-700">chaque groupe de conditions</strong> ci-dessous est vérifié.
                             </p>
                             <p>
                               À l'intérieur de chaque groupe, suivez la logique indiquée (ET ou OU) pour les conditions listées.
@@ -689,16 +689,16 @@ export const QuestionnaireScreen = ({
                             }
 
                             return (
-                              <div key={`condition-group-${idx}`} className="bg-white border border-indigo-100 rounded-xl p-3 hv-surface">
+                              <div key={`condition-group-${idx}`} className="bg-white border border-blue-100 rounded-xl p-3 hv-surface">
                                 <div className="flex items-center gap-2 mb-2">
-                                  <span className="text-xs font-semibold text-indigo-700 uppercase tracking-wide">
+                                  <span className="text-xs font-semibold text-blue-700 uppercase tracking-wide">
                                     Groupe {idx + 1}
                                   </span>
-                                  <span className="text-[11px] text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
+                                  <span className="text-[11px] text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
                                     Logique {logicLabel}
                                   </span>
                                   {idx > 0 && (
-                                    <span className="ml-auto text-[11px] font-semibold text-indigo-600 uppercase tracking-wide">
+                                    <span className="ml-auto text-[11px] font-semibold text-blue-600 uppercase tracking-wide">
                                       ET avec précédent
                                     </span>
                                   )}
@@ -708,7 +708,7 @@ export const QuestionnaireScreen = ({
                                     <li key={`${item.label}-${conditionIdx}`} className="text-sm text-gray-700">
                                       <p className="font-medium text-gray-800">
                                         {conditionIdx > 0 && (
-                                          <span className="inline-flex items-center px-2 py-0.5 mr-2 text-[11px] font-semibold uppercase tracking-wide rounded-full bg-indigo-100 text-indigo-700">
+                                          <span className="inline-flex items-center px-2 py-0.5 mr-2 text-[11px] font-semibold uppercase tracking-wide rounded-full bg-blue-100 text-blue-700">
                                             {connectorLabel}
                                           </span>
                                         )}
@@ -734,7 +734,7 @@ export const QuestionnaireScreen = ({
 
                     {guidanceTips.length > 0 && (
                       <div>
-                        <h4 className="text-xs font-semibold uppercase tracking-wide text-indigo-700">Conseils pratiques</h4>
+                        <h4 className="text-xs font-semibold uppercase tracking-wide text-blue-700">Conseils pratiques</h4>
                         <ul className="mt-2 space-y-2 list-disc list-inside text-sm text-gray-700">
                           {guidanceTips.map((tip, idx) => (
                             <li key={idx}>{renderTextWithLinks(tip)}</li>
@@ -784,7 +784,7 @@ export const QuestionnaireScreen = ({
               <button
                 type="button"
                 onClick={onSaveDraft}
-                className="flex items-center justify-center px-6 py-3 rounded-lg font-medium bg-amber-500 text-white hover:bg-amber-600 transition-all hv-button w-full sm:w-auto text-sm sm:text-base"
+                className="flex items-center justify-center px-6 py-3 rounded-lg font-medium bg-yellow-500 text-white hover:bg-yellow-600 transition-all hv-button w-full sm:w-auto text-sm sm:text-base"
               >
                 <Save className="w-5 h-5 mr-2" />
                 Enregistrer le projet
@@ -794,7 +794,7 @@ export const QuestionnaireScreen = ({
             <button
               type="button"
               onClick={onNext}
-              className="flex items-center justify-center px-6 py-3 rounded-lg font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all hv-button hv-button-primary w-full sm:w-auto text-sm sm:text-base"
+              className="flex items-center justify-center px-6 py-3 rounded-lg font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all hv-button hv-button-primary w-full sm:w-auto text-sm sm:text-base"
             >
               {currentIndex === questions.length - 1 ? 'Voir la synthèse' : 'Suivant'}
               <ChevronRight className="w-5 h-5 ml-2" />

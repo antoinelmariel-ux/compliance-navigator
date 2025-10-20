@@ -347,7 +347,7 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
               <button
                 type="button"
                 onClick={handleSave}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-all hv-button hv-button-primary"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all hv-button hv-button-primary"
               >
                 Enregistrer
               </button>
@@ -359,7 +359,7 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
           {/* Informations de base */}
           <div>
             <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <Clipboard className="w-5 h-5 text-indigo-500" />
+              <Clipboard className="w-5 h-5 text-blue-500" />
               Informations de base
             </h3>
             <div className="space-y-4">
@@ -379,7 +379,7 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                 <textarea
                   value={editedQuestion.question}
                   onChange={(e) => setEditedQuestion({ ...editedQuestion, question: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   rows="2"
                   placeholder="Ex: Quel est le périmètre de votre projet ?"
                 />
@@ -390,7 +390,7 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                 <select
                   value={questionType}
                   onChange={(e) => handleTypeChange(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="choice">Liste de choix</option>
                   <option value="date">Date</option>
@@ -414,7 +414,7 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                     <textarea
                       value={editedQuestion.placeholder || ''}
                       onChange={(e) => setEditedQuestion(prev => ({ ...prev, placeholder: e.target.value }))}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       rows="2"
                       placeholder={getDefaultPlaceholder(questionType)}
                     />
@@ -423,7 +423,7 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                       type="text"
                       value={editedQuestion.placeholder || ''}
                       onChange={(e) => setEditedQuestion(prev => ({ ...prev, placeholder: e.target.value }))}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder={getDefaultPlaceholder(questionType)}
                     />
                   )}
@@ -438,7 +438,7 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                   type="checkbox"
                   checked={editedQuestion.required}
                   onChange={(e) => setEditedQuestion({ ...editedQuestion, required: e.target.checked })}
-                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
                 <label className="ml-2 text-sm font-medium text-gray-700">
                   Question obligatoire
@@ -460,7 +460,7 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                   </h3>
                   <button
                     onClick={addOption}
-                    className="flex items-center px-3 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-all text-sm font-medium"
+                    className="flex items-center px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-all text-sm font-medium"
                   >
                     <Plus className="w-4 h-4 mr-1" />
                     Ajouter une option
@@ -477,7 +477,7 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                     <div
                       key={idx}
                       className={`flex items-center space-x-2 rounded-lg border border-transparent bg-white p-2 transition-colors ${
-                        dragOverIndex === idx ? 'border-indigo-200 bg-indigo-50 shadow' : 'shadow-sm'
+                        dragOverIndex === idx ? 'border-blue-200 bg-blue-50 shadow' : 'shadow-sm'
                       }`}
                       onDragOver={(e) => {
                         e.preventDefault();
@@ -500,7 +500,7 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                         type="button"
                         draggable
                         onDragStart={(event) => handleDragStart(event, idx)}
-                        className="cursor-grab px-2 py-3 text-gray-400 hover:text-indigo-600 focus:outline-none"
+                        className="cursor-grab px-2 py-3 text-gray-400 hover:text-blue-600 focus:outline-none"
                         aria-label={`Réordonner l'option ${idx + 1}`}
                       >
                         <GripVertical className="w-4 h-4" />
@@ -510,7 +510,7 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                         type="text"
                         value={option}
                         onChange={(e) => updateOption(idx, e.target.value)}
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                         placeholder="Texte de l'option..."
                       />
                       <button
@@ -525,7 +525,7 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                 </div>
               </>
             ) : (
-              <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 text-sm text-indigo-700">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-700">
                 Ce type de question ne nécessite pas de liste d'options prédéfinies.
               </div>
             )}
@@ -534,7 +534,7 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
           {/* Guidage contextuel */}
           <div>
             <h3 className="text-xl font-bold text-gray-800 mb-3 flex items-center gap-2">
-              <Compass className="w-5 h-5 text-indigo-500" />
+              <Compass className="w-5 h-5 text-blue-500" />
               Guidage contextuel
             </h3>
             <p className="text-sm text-gray-600 mb-4">
@@ -548,7 +548,7 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                   type="text"
                   value={normalizedGuidance.objective}
                   onChange={(e) => updateGuidanceField('objective', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Pourquoi cette question est posée..."
                 />
               </div>
@@ -558,7 +558,7 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                 <textarea
                   value={normalizedGuidance.details}
                   onChange={(e) => updateGuidanceField('details', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   rows="3"
                   placeholder="Précisez le contexte, les impacts compliance ou les attentes..."
                 />
@@ -571,7 +571,7 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                 <button
                   type="button"
                   onClick={addGuidanceTip}
-                  className="flex items-center px-3 py-1 text-xs bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-all"
+                  className="flex items-center px-3 py-1 text-xs bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-all"
                 >
                   <Plus className="w-3 h-3 mr-1" />
                   Ajouter un conseil
@@ -591,7 +591,7 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                         type="text"
                         value={tip}
                         onChange={(e) => updateGuidanceTip(idx, e.target.value)}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                         placeholder="Conseil pratique..."
                       />
                       <button
@@ -613,7 +613,7 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
             <div className="flex justify-between items-center mb-4">
               <div>
                 <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                  <Target className="w-5 h-5 text-indigo-500" />
+                  <Target className="w-5 h-5 text-blue-500" />
                   Conditions d'affichage
                 </h3>
                 <p className="text-sm text-gray-600 mt-1">
@@ -661,7 +661,7 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                       return (
                         <p className="text-sm text-blue-900">
                           <strong className="inline-flex items-center gap-2">
-                            <Lightbulb className="w-4 h-4 text-amber-500" />
+                            <Lightbulb className="w-4 h-4 text-yellow-500" />
                             Logique :
                           </strong>{' '}
                           Cette question s'affichera si{' '}
@@ -674,7 +674,7 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                     <div className="space-y-2 text-sm text-blue-900">
                       <p>
                         <strong className="inline-flex items-center gap-2">
-                          <Lightbulb className="w-4 h-4 text-amber-500" />
+                          <Lightbulb className="w-4 h-4 text-yellow-500" />
                           Logique :
                         </strong>{' '}
                         Cette question s'affiche lorsque{' '}

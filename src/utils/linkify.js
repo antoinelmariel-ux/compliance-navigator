@@ -31,7 +31,7 @@ export const renderTextWithLinks = (text) => {
         href={url}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-indigo-600 underline"
+        className="text-blue-600 underline"
       >
         {url}
       </a>
