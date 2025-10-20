@@ -622,12 +622,16 @@ const computeTimelineSummary = (timelineDetails) => {
     ? detailWithDiff.riskDescription.trim()
     : '';
   const summaryLabel = riskLabel.length > 0 ? riskLabel : detailWithDiff.ruleName;
+  const hasProfiles = Array.isArray(detailWithDiff.profiles) && detailWithDiff.profiles.length > 0;
+  const source = typeof detailWithDiff.source === 'string' ? detailWithDiff.source : null;
 
   return {
     ruleName: summaryLabel,
     satisfied: detailWithDiff.satisfied,
     weeks,
-    days
+    days,
+    hasProfiles,
+    source
   };
 };
 
@@ -1033,7 +1037,9 @@ export const ProjectShowcase = ({
   const hasTimelineSection = Boolean(
     runway || timelineSummary || hasManualMilestones || hasTimelineProfiles || hasVigilanceAlerts
   );
-  const shouldShowTimelineSummary = Boolean(timelineSummary && !hasTimelineProfiles);
+  const shouldShowTimelineSummary = Boolean(
+    timelineSummary && (!hasTimelineProfiles || !timelineSummary.hasProfiles)
+  );
 
   const previewContent = shouldShowPreview ? (
     <div className="aurora-sections">
