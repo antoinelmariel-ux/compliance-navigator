@@ -21,7 +21,7 @@ import { normalizeRiskWeighting } from './utils/risk.js';
 import { normalizeProjectEntry, normalizeProjectsCollection } from './utils/projectNormalization.js';
 import { loadSubmittedProjectsFromDirectory } from './utils/externalProjectsLoader.js';
 
-const APP_VERSION = 'v1.0.95';
+const APP_VERSION = 'v1.0.97';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -170,7 +170,13 @@ const areMilestoneListsEqual = (previousValue, nextValue) => {
   });
 };
 
-const applyAnswerUpdates = (prevAnswers = {}, updates, questions, predicate) => {
+const applyAnswerUpdates = (
+  prevAnswers = {},
+  updates,
+  questions,
+  predicate,
+  options = {}
+) => {
   if (!updates || typeof updates !== 'object') {
     return { nextAnswers: prevAnswers, changed: false };
   }
@@ -273,8 +279,38 @@ const applyAnswerUpdates = (prevAnswers = {}, updates, questions, predicate) => 
     return { nextAnswers: prevAnswers, changed: false };
   }
 
-  const questionsToRemove = Array.isArray(questions)
-    ? questions.filter(question => !predicate(question, nextAnswers)).map(question => question.id)
+  const canEvaluatePredicate = typeof predicate === 'function';
+  const shouldPreserveQuestion = typeof options.shouldPreserveQuestion === 'function'
+    ? options.shouldPreserveQuestion
+    : null;
+  const questionsToRemove = Array.isArray(questions) && canEvaluatePredicate
+    ? questions
+        .filter(question => {
+          if (!question || !question.id) {
+            return false;
+          }
+
+          const wasVisible = predicate(question, prevAnswers);
+          const isVisible = predicate(question, nextAnswers);
+
+          if (isVisible) {
+            return false;
+          }
+
+          if (shouldPreserveQuestion && shouldPreserveQuestion(question, {
+            prevAnswers,
+            nextAnswers
+          })) {
+            return false;
+          }
+
+          if (wasVisible) {
+            return true;
+          }
+
+          return isAnswerProvided(nextAnswers[question.id]) || isAnswerProvided(prevAnswers[question.id]);
+        })
+        .map(question => question.id)
     : [];
 
   if (questionsToRemove.length > 0) {
@@ -1191,7 +1227,15 @@ export const App = () => {
         return prevProjects;
       }
 
-      const { nextAnswers, changed } = applyAnswerUpdates(project.answers || {}, updates, questions, shouldShowQuestion);
+      const { nextAnswers, changed } = applyAnswerUpdates(
+        project.answers || {},
+        updates,
+        questions,
+        shouldShowQuestion,
+        {
+          shouldPreserveQuestion: (question) => !question?.showcase
+        }
+      );
       if (!changed) {
         return prevProjects;
       }
