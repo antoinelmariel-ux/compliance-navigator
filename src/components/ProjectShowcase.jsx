@@ -218,6 +218,113 @@ const buildVigilanceAlerts = (analysis, questions, resolveTeamLabel) => {
     .filter(entry => entry.title || entry.requirementSummary || entry.statusMessage);
 };
 
+const mergeTimelineSummariesWithAlerts = (summaries, alerts) => {
+  const safeSummaries = Array.isArray(summaries) ? summaries : [];
+  const safeAlerts = Array.isArray(alerts) ? alerts : [];
+
+  if (safeSummaries.length === 0) {
+    return { summaries: safeSummaries, unmatchedAlerts: safeAlerts };
+  }
+
+  const alertIdMap = new Map();
+  const alertRuleNameMap = new Map();
+
+  safeAlerts.forEach((alert, index) => {
+    if (!alert || typeof alert !== 'object') {
+      return;
+    }
+
+    const entry = { alert, index };
+
+    if (alert.id) {
+      alertIdMap.set(alert.id, entry);
+    }
+
+    if (alert.ruleId) {
+      alertIdMap.set(alert.ruleId, entry);
+    }
+
+    if (typeof alert.ruleName === 'string') {
+      const normalizedRuleName = alert.ruleName.trim().toLowerCase();
+      if (normalizedRuleName.length > 0) {
+        if (!alertRuleNameMap.has(normalizedRuleName)) {
+          alertRuleNameMap.set(normalizedRuleName, entry);
+        }
+        if (!alertIdMap.has(normalizedRuleName)) {
+          alertIdMap.set(normalizedRuleName, entry);
+        }
+      }
+    }
+  });
+
+  const matchedAlertIndexes = new Set();
+
+  const mergedSummaries = safeSummaries.map(summary => {
+    if (!summary || typeof summary !== 'object') {
+      return summary;
+    }
+
+    const candidateKeys = [];
+
+    if (summary.id) {
+      candidateKeys.push(summary.id);
+    }
+
+    if (summary.source) {
+      candidateKeys.push(summary.source);
+    }
+
+    if (summary.ruleName && typeof summary.ruleName === 'string') {
+      const normalizedRuleName = summary.ruleName.trim().toLowerCase();
+      if (normalizedRuleName.length > 0) {
+        candidateKeys.push(normalizedRuleName);
+      }
+    }
+
+    let matchedEntry = null;
+
+    for (const key of candidateKeys) {
+      if (!key) {
+        continue;
+      }
+
+      if (alertIdMap.has(key)) {
+        matchedEntry = alertIdMap.get(key);
+        break;
+      }
+
+      if (typeof key === 'string') {
+        const normalizedKey = key.trim().toLowerCase();
+        if (alertIdMap.has(normalizedKey)) {
+          matchedEntry = alertIdMap.get(normalizedKey);
+          break;
+        }
+        if (alertRuleNameMap.has(normalizedKey)) {
+          matchedEntry = alertRuleNameMap.get(normalizedKey);
+          break;
+        }
+      }
+    }
+
+    if (matchedEntry) {
+      matchedAlertIndexes.add(matchedEntry.index);
+      return {
+        ...summary,
+        alert: matchedEntry.alert
+      };
+    }
+
+    return summary;
+  });
+
+  const unmatchedAlerts = safeAlerts.filter((_, index) => !matchedAlertIndexes.has(index));
+
+  return {
+    summaries: mergedSummaries,
+    unmatchedAlerts
+  };
+};
+
 const SHOWCASE_THEME = {
   id: 'aurora',
   label: 'Aurora néon',
@@ -918,6 +1025,10 @@ export const ProjectShowcase = ({
       ),
     [analysis, questions, teamNameById]
   );
+  const { summaries: timelineSummariesWithAlerts, unmatchedAlerts: unmatchedVigilanceAlerts } = useMemo(
+    () => mergeTimelineSummariesWithAlerts(timelineSummaries, vigilanceAlerts),
+    [timelineSummaries, vigilanceAlerts]
+  );
   const manualMilestones = useMemo(
     () => buildManualMilestones(getRawAnswer(answers, 'roadmapMilestones')),
     [answers]
@@ -1050,15 +1161,15 @@ export const ProjectShowcase = ({
     [timelineProfileEntries, manualTimelineEntries]
   );
   const hasTimelineEntries = timelineEntries.length > 0;
-  const hasVigilanceAlerts = vigilanceAlerts.length > 0;
   const timelineSummariesToDisplay = useMemo(() => {
     if (!hasTimelineProfiles) {
-      return timelineSummaries;
+      return timelineSummariesWithAlerts;
     }
 
-    return timelineSummaries.filter(summary => !summary.hasProfiles);
-  }, [hasTimelineProfiles, timelineSummaries]);
+    return timelineSummariesWithAlerts.filter(summary => !summary.hasProfiles);
+  }, [hasTimelineProfiles, timelineSummariesWithAlerts]);
   const hasTimelineSummaries = timelineSummariesToDisplay.length > 0;
+  const hasVigilanceAlerts = unmatchedVigilanceAlerts.length > 0;
   const hasTimelineSection = Boolean(
     runway || hasTimelineSummaries || hasManualMilestones || hasTimelineProfiles || hasVigilanceAlerts
   );
@@ -1303,12 +1414,25 @@ export const ProjectShowcase = ({
                       ? 'Runway conforme aux exigences identifiées.'
                       : 'Un ajustement est recommandé pour sécuriser les jalons.'}
                   </p>
+                  {summary.alert?.requirementSummary && (
+                    <p className="aurora-roadmap__summary-detail">
+                      {renderTextWithLinks(summary.alert.requirementSummary)}
+                    </p>
+                  )}
+                  {summary.alert?.statusMessage && (
+                    <p className="aurora-roadmap__summary-detail aurora-roadmap__summary-detail--status">
+                      {renderTextWithLinks(summary.alert.statusMessage)}
+                    </p>
+                  )}
+                  {summary.alert?.teamLabel && (
+                    <p className="aurora-roadmap__summary-team">Équipe référente : {summary.alert.teamLabel}</p>
+                  )}
                 </div>
               ))
             )}
             {hasVigilanceAlerts && (
               <div className="aurora-roadmap__watchpoints">
-                {vigilanceAlerts.map((alert, index) => (
+                {unmatchedVigilanceAlerts.map((alert, index) => (
                   <div
                     key={alert.id}
                     className={`aurora-roadmap__watchpoint aurora-roadmap__watchpoint--${alert.status}`}
