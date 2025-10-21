@@ -583,6 +583,19 @@ export const QuestionnaireScreen = ({
                 Certaines questions peuvent apparaître en fonction de vos réponses
               </p>
             )}
+            {currentIndex === 0 && (
+              <p className="mt-4 text-xs italic text-gray-400">
+                Le LFB traite les données recueillies pour gérer les projets à soumettre aux équipes compliance.{' '}
+                <a
+                  href="/mentions-legales.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-gray-500"
+                >
+                  En savoir plus sur vos données et vos droits
+                </a>
+              </p>
+            )}
           </div>
 
           {hasSaveFeedback && (
