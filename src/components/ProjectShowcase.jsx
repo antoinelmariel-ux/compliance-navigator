@@ -1592,12 +1592,12 @@ export const ProjectShowcase = ({
                         {renderTextWithLinks(alertTitle)}
                       </p>
                     )}
-                    <p className="aurora-roadmap__value">{summary.weeks} semaines ({summary.days} jours)</p>
-                    <p className="aurora-roadmap__caption">
-                      {summary.satisfied
-                        ? 'Runway conforme aux exigences identifiées.'
-                        : 'Un ajustement est recommandé pour sécuriser les jalons.'}
-                    </p>
+                    {summary.satisfied && (
+                      <>
+                        <p className="aurora-roadmap__value">{summary.weeks} semaines ({summary.days} jours)</p>
+                        <p className="aurora-roadmap__caption">Runway conforme aux exigences identifiées.</p>
+                      </>
+                    )}
                     {summary.alert?.requirementSummary && (
                       <p className="aurora-roadmap__summary-detail">
                         {renderTextWithLinks(summary.alert.requirementSummary)}
