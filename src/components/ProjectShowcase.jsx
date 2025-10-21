@@ -1397,38 +1397,52 @@ export const ProjectShowcase = ({
               </p>
             )}
             {hasTimelineSummaries && (
-              timelineSummariesToDisplay.map((summary, index) => (
-                <div
-                  key={summary.id || `timeline-summary-${index}`}
-                  className={`aurora-roadmap__summary ${
-                    summary.satisfied
-                      ? 'aurora-roadmap__summary--ok'
-                      : 'aurora-roadmap__summary--alert'
-                  }`}
-                  style={{ animationDelay: `${index * 0.08}s` }}
-                >
-                  <p className="aurora-roadmap__label">{summary.ruleName}</p>
-                  <p className="aurora-roadmap__value">{summary.weeks} semaines ({summary.days} jours)</p>
-                  <p className="aurora-roadmap__caption">
-                    {summary.satisfied
-                      ? 'Runway conforme aux exigences identifiées.'
-                      : 'Un ajustement est recommandé pour sécuriser les jalons.'}
-                  </p>
-                  {summary.alert?.requirementSummary && (
-                    <p className="aurora-roadmap__summary-detail">
-                      {renderTextWithLinks(summary.alert.requirementSummary)}
+              timelineSummariesToDisplay.map((summary, index) => {
+                const summaryRuleLabel = summary?.alert?.ruleName || summary?.ruleName;
+                const alertTitle = summary?.alert?.title;
+
+                return (
+                  <div
+                    key={summary.id || `timeline-summary-${index}`}
+                    className={`aurora-roadmap__summary ${
+                      summary.satisfied
+                        ? 'aurora-roadmap__summary--ok'
+                        : 'aurora-roadmap__summary--alert'
+                    }`}
+                    style={{ animationDelay: `${index * 0.08}s` }}
+                  >
+                    {summaryRuleLabel && (
+                      <p className="aurora-roadmap__label">
+                        {renderTextWithLinks(summaryRuleLabel)}
+                      </p>
+                    )}
+                    {alertTitle && (
+                      <p className="aurora-roadmap__summary-title">
+                        {renderTextWithLinks(alertTitle)}
+                      </p>
+                    )}
+                    <p className="aurora-roadmap__value">{summary.weeks} semaines ({summary.days} jours)</p>
+                    <p className="aurora-roadmap__caption">
+                      {summary.satisfied
+                        ? 'Runway conforme aux exigences identifiées.'
+                        : 'Un ajustement est recommandé pour sécuriser les jalons.'}
                     </p>
-                  )}
-                  {summary.alert?.statusMessage && (
-                    <p className="aurora-roadmap__summary-detail aurora-roadmap__summary-detail--status">
-                      {renderTextWithLinks(summary.alert.statusMessage)}
-                    </p>
-                  )}
-                  {summary.alert?.teamLabel && (
-                    <p className="aurora-roadmap__summary-team">Équipe référente : {summary.alert.teamLabel}</p>
-                  )}
-                </div>
-              ))
+                    {summary.alert?.requirementSummary && (
+                      <p className="aurora-roadmap__summary-detail">
+                        {renderTextWithLinks(summary.alert.requirementSummary)}
+                      </p>
+                    )}
+                    {summary.alert?.statusMessage && (
+                      <p className="aurora-roadmap__summary-detail aurora-roadmap__summary-detail--status">
+                        {renderTextWithLinks(summary.alert.statusMessage)}
+                      </p>
+                    )}
+                    {summary.alert?.teamLabel && (
+                      <p className="aurora-roadmap__summary-team">Équipe référente : {summary.alert.teamLabel}</p>
+                    )}
+                  </div>
+                );
+              })
             )}
             {hasVigilanceAlerts && (
               <div className="aurora-roadmap__watchpoints">
