@@ -614,6 +614,18 @@ export const HomeScreen = ({
                     <span>un projet</span>
                   </span>
                 </button>
+                <a
+                  href="https://forms.gle/EtUZAPanXWpig9A38"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-3 px-5 py-3 text-base font-semibold text-white bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 hover:from-pink-600 hover:via-red-600 hover:to-yellow-600 rounded-xl shadow-lg transition-all hv-button hv-focus-ring focus-visible:ring-pink-400"
+                >
+                  <Sparkles className="w-5 h-5" aria-hidden="true" />
+                  <span className="flex flex-col leading-tight text-left">
+                    <span>Partagez</span>
+                    <span>votre avis</span>
+                  </span>
+                </a>
               </div>
               <input
                 ref={fileInputRef}
