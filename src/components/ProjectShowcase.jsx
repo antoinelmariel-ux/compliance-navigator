@@ -195,7 +195,7 @@ const buildVigilanceAlerts = (analysis, questions, resolveTeamLabel) => {
     : [];
 
   return rawAlerts
-    .filter(alert => alert && typeof alert === 'object')
+    .filter(alert => alert && typeof alert === 'object' && alert.status !== 'breach')
     .map((alert, index) => {
       const title = alert.riskDescription && alert.riskDescription.trim().length > 0
         ? alert.riskDescription.trim()
