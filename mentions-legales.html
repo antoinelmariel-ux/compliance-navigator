@@ -4,50 +4,342 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mentions légales · Compliance Navigator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        color-scheme: light;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: 'Inter', 'Segoe UI', Roboto, -apple-system, BlinkMacSystemFont,
+          'Helvetica Neue', Arial, sans-serif;
+        background: linear-gradient(180deg, #f4f7fb 0%, #ffffff 60%);
+        color: #1f2937;
+        line-height: 1.6;
+      }
+
+      a {
+        color: #2563eb;
+        font-weight: 500;
+        text-decoration: none;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+
+      header {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid #e5e7eb;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+
+      .header-inner {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 3.5rem 1.5rem 2.5rem;
+        text-align: center;
+      }
+
+      .header-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: #eef2ff;
+        color: #4338ca;
+        padding: 0.35rem 0.9rem;
+        border-radius: 999px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+      }
+
+      header h1 {
+        margin: 1.5rem 0 0.75rem;
+        font-size: clamp(2rem, 2.8vw, 2.5rem);
+        color: #0f172a;
+      }
+
+      header p {
+        margin: 0 auto;
+        max-width: 580px;
+        color: #6b7280;
+      }
+
+      main {
+        max-width: 960px;
+        margin: -2.5rem auto 4rem;
+        padding: 0 1.5rem;
+      }
+
+      .legal-card {
+        background: #ffffff;
+        border-radius: 1.25rem;
+        box-shadow: 0 25px 60px rgba(15, 23, 42, 0.08);
+        border: 1px solid #eef2f7;
+        padding: clamp(2rem, 2.4vw, 3rem);
+      }
+
+      .legal-section + .legal-section {
+        margin-top: 2.5rem;
+        padding-top: 2.5rem;
+        border-top: 1px solid #f1f5f9;
+      }
+
+      .legal-section h2 {
+        margin: 0;
+        font-size: 1.35rem;
+        color: #0f172a;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .legal-section h2 span.icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 0.75rem;
+        background: #f4f5ff;
+        color: #4338ca;
+        font-size: 1.3rem;
+      }
+
+      .legal-section p {
+        margin: 1rem 0 0;
+      }
+
+      .legal-section ul {
+        margin: 1rem 0 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 0.6rem;
+      }
+
+      .legal-section li {
+        position: relative;
+        padding-left: 1.6rem;
+        color: #374151;
+      }
+
+      .legal-section li::before {
+        content: '';
+        position: absolute;
+        left: 0.5rem;
+        top: 0.8rem;
+        width: 0.5rem;
+        height: 0.5rem;
+        border-radius: 999px;
+        background: #6366f1;
+        box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+      }
+
+      .legal-highlight {
+        display: grid;
+        gap: 1.25rem;
+        margin-top: 1.5rem;
+        padding: 1.25rem 1.5rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 1rem;
+      }
+
+      .legal-highlight strong {
+        color: #1d4ed8;
+      }
+
+      .contact-card {
+        margin-top: 1.5rem;
+        padding: 1.5rem;
+        border-radius: 1rem;
+        background: linear-gradient(145deg, rgba(67, 56, 202, 0.08), rgba(59, 130, 246, 0.08));
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        color: #312e81;
+      }
+
+      .contact-card strong {
+        color: #1e3a8a;
+      }
+
+      footer {
+        margin: 0;
+        padding: 2rem 1.5rem 3rem;
+        background: #ffffff;
+        border-top: 1px solid #e5e7eb;
+        color: #6b7280;
+      }
+
+      .footer-inner {
+        max-width: 960px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        align-items: center;
+        text-align: center;
+      }
+
+      .footer-inner a {
+        color: #4338ca;
+      }
+
+      .return-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        color: #4338ca;
+        font-weight: 600;
+        text-decoration: none;
+      }
+
+      .return-link::before {
+        content: '←';
+        font-weight: 700;
+      }
+
+      @media (max-width: 640px) {
+        header {
+          position: static;
+        }
+
+        .header-inner {
+          padding: 2.5rem 1.25rem 1.75rem;
+        }
+
+        main {
+          margin-top: -1.25rem;
+        }
+
+        .legal-card {
+          padding: 1.75rem 1.25rem;
+        }
+
+        .legal-section h2 {
+          font-size: 1.2rem;
+        }
+
+        .legal-section h2 span.icon {
+          width: 2.25rem;
+          height: 2.25rem;
+        }
+      }
+    </style>
   </head>
   <body>
-    <h3 data-start="1022" data-end="1061">🧭 À propos de Compliance Navigator</h3>
-<p data-start="1063" data-end="1301"><strong data-start="1063" data-end="1087">Compliance Navigator</strong> est un outil créé pour vous guider pas à pas dans la qualification de vos projets.<br data-start="1170" data-end="1173" /> Il vous aide à identifier les bons interlocuteurs, anticiper vos besoins réglementaires et sécuriser vos délais de validation.</p>
-<p data-start="1303" data-end="1454">Cet outil n’a pas vocation à se substituer à l’avis des équipes Compliance : il vous oriente, vous simplifie la démarche, et vous fait gagner du temps.</p>
-<hr data-start="1456" data-end="1459" />
-<h3 data-start="1461" data-end="1483">👥 Éditeur du site</h3>
-<p data-start="1485" data-end="1566">Cet outil a été conçu et développé par le <strong data-start="1527" data-end="1563">pôle Éthique &amp; Conformité du LFB</strong>.</p>
-<p data-start="1568" data-end="1709">Pour toute question, suggestion ou idée d’amélioration, vous pouvez écrire à :<br data-start="1646" data-end="1649" /> 📩 <strong data-start="1652" data-end="1672">Antoine Lassauge</strong> – <em data-start="1675" data-end="1707">pôle Éthique &amp; Conformité, LFB</em></p>
-<hr data-start="1711" data-end="1714" />
-<h3 data-start="1716" data-end="1737">⚖️ Responsabilité</h3>
-<p data-start="1739" data-end="1931">Nous faisons le maximum pour vous proposer une information fiable, à jour et utile.<br data-start="1822" data-end="1825" /> Cependant, malgré notre vigilance, certaines informations peuvent évoluer ou contenir des inexactitudes.</p>
-<p data-start="1933" data-end="2209">👉 L’analyse réalisée par l’outil repose exclusivement sur vos réponses.<br data-start="2005" data-end="2008" /> Elle n’a donc qu’une valeur indicative : <strong data-start="2049" data-end="2146">seules les équipes Compliance du LFB peuvent valider la conformité officielle de votre projet</strong> avec les lois, règlements et procédures internes en vigueur.</p>
-<hr data-start="2211" data-end="2214" />
-<h3 data-start="2216" data-end="2261">🔒 Protection de vos données personnelles</h3>
-<p data-start="2263" data-end="2541">Nous attachons une grande importance à la confidentialité de vos données.<br data-start="2336" data-end="2339" /> Les informations que vous saisissez sont enregistrées dans des fichiers informatisés par le <strong data-start="2431" data-end="2445">Groupe LFB</strong>.<br data-start="2446" data-end="2449" /> Elles servent uniquement à <strong data-start="2476" data-end="2497">gérer les projets</strong> et à <strong data-start="2503" data-end="2538">faciliter leur revue Compliance</strong>.</p>
-<ul data-start="2543" data-end="2741">
-<li data-start="2543" data-end="2597">
-<p data-start="2545" data-end="2597"><strong data-start="2545" data-end="2560">Base légale</strong> : exécution du contrat de travail.</p>
-</li>
-<li data-start="2598" data-end="2652">
-<p data-start="2600" data-end="2652"><strong data-start="2600" data-end="2609">Accès</strong> : uniquement les employés du Groupe LFB.</p>
-</li>
-<li data-start="2653" data-end="2741">
-<p data-start="2655" data-end="2741"><strong data-start="2655" data-end="2680">Durée de conservation</strong> : 5 ans à compter de la soumission aux équipes Compliance.</p>
-</li>
-</ul>
-<h3 data-start="2748" data-end="2765">🧾 Vos droits</h3>
-<p data-start="2767" data-end="2818">Vous disposez à tout moment des droits suivants :</p>
-<ul data-start="2819" data-end="2970">
-<li data-start="2819" data-end="2845">
-<p data-start="2821" data-end="2845">Accéder à vos données,</p>
-</li>
-<li data-start="2846" data-end="2887">
-<p data-start="2848" data-end="2887">Les corriger si elles sont inexactes,</p>
-</li>
-<li data-start="2888" data-end="2918">
-<p data-start="2890" data-end="2918">Demander leur suppression,</p>
-</li>
-<li data-start="2919" data-end="2970">
-<p data-start="2921" data-end="2970">Limiter ou vous opposer à certains traitements.</p>
-</li>
-</ul>
-<p data-start="2972" data-end="3114">Pour en savoir plus sur vos droits, consultez le site de la <a href="https://www.cnil.fr/fr/les-droits-pour-maitriser-vos-donnees-personnelles" target="_new" rel="noopener" data-start="3032" data-end="3113">CNIL</a></p>
+    <header>
+      <div class="header-inner">
+        <span class="header-badge">Mentions légales</span>
+        <h1>Confiance et transparence, au service de vos projets</h1>
+        <p>
+          Compliance Navigator est conçu pour vous guider sereinement dans vos démarches.
+          Retrouvez ici les informations essentielles relatives à l'éditeur, à la
+          protection des données et à vos droits.
+        </p>
+      </div>
+    </header>
+    <main>
+      <article class="legal-card" aria-labelledby="about-title">
+        <section class="legal-section" id="about" aria-labelledby="about-title">
+          <h2 id="about-title"><span class="icon">🧭</span>À propos de Compliance Navigator</h2>
+          <p>
+            <strong>Compliance Navigator</strong> est un outil pensé pour vous accompagner pas à
+            pas dans la qualification de vos projets. Il vous aide à identifier les bons
+            interlocuteurs, anticiper vos besoins réglementaires et sécuriser vos délais de
+            validation.
+          </p>
+          <div class="legal-highlight">
+            <p>
+              Cet outil ne se substitue pas à l'avis des équipes Compliance : il vous oriente,
+              simplifie la démarche et vous fait gagner un temps précieux.
+            </p>
+          </div>
+        </section>
 
+        <section class="legal-section" id="editor" aria-labelledby="editor-title">
+          <h2 id="editor-title"><span class="icon">👥</span>Éditeur du site</h2>
+          <p>
+            L'outil est conçu et développé par le <strong>pôle Éthique &amp; Conformité du LFB</strong>.
+          </p>
+          <div class="contact-card">
+            <p>
+              Pour toute question, suggestion ou idée d'amélioration, écrivez à :<br />
+              📩 <strong>Antoine Lassauge</strong> – <em>pôle Éthique &amp; Conformité, LFB</em>
+            </p>
+          </div>
+        </section>
+
+        <section class="legal-section" id="responsibility" aria-labelledby="responsibility-title">
+          <h2 id="responsibility-title"><span class="icon">⚖️</span>Responsabilité</h2>
+          <p>
+            Nous faisons le maximum pour vous proposer une information fiable, à jour et utile.
+            Cependant, malgré notre vigilance, certaines informations peuvent évoluer ou contenir
+            des inexactitudes.
+          </p>
+          <div class="legal-highlight">
+            <p>
+              👉 L'analyse réalisée repose exclusivement sur vos réponses. Elle a une valeur
+              indicative : <strong>seules les équipes Compliance du LFB peuvent valider la conformité
+              officielle de votre projet</strong> avec les lois, règlements et procédures internes en
+              vigueur.
+            </p>
+          </div>
+        </section>
+
+        <section class="legal-section" id="privacy" aria-labelledby="privacy-title">
+          <h2 id="privacy-title"><span class="icon">🔒</span>Protection de vos données personnelles</h2>
+          <p>
+            Nous attachons une grande importance à la confidentialité de vos données. Les informations
+            que vous saisissez sont enregistrées dans des fichiers informatisés par le
+            <strong>Groupe LFB</strong>. Elles servent uniquement à <strong>gérer les projets</strong>
+            et à <strong>faciliter leur revue Compliance</strong>.
+          </p>
+          <ul>
+            <li><strong>Base légale</strong> : exécution du contrat de travail.</li>
+            <li><strong>Accès</strong> : uniquement les employés du Groupe LFB.</li>
+            <li><strong>Durée de conservation</strong> : 5 ans à compter de la soumission aux équipes Compliance.</li>
+          </ul>
+        </section>
+
+        <section class="legal-section" id="rights" aria-labelledby="rights-title">
+          <h2 id="rights-title"><span class="icon">🧾</span>Vos droits</h2>
+          <p>Vous disposez à tout moment des droits suivants :</p>
+          <ul>
+            <li>Accéder à vos données.</li>
+            <li>Les corriger si elles sont inexactes.</li>
+            <li>Demander leur suppression.</li>
+            <li>Limiter ou vous opposer à certains traitements.</li>
+          </ul>
+          <p>
+            Pour en savoir plus sur vos droits, consultez le site de la
+            <a href="https://www.cnil.fr/fr/les-droits-pour-maitriser-vos-donnees-personnelles" target="_blank" rel="noopener">
+              CNIL
+            </a>.
+          </p>
+        </section>
+      </article>
+    </main>
+    <footer>
+      <div class="footer-inner">
+        <a class="return-link" href="./index.html">Retour à l'application</a>
+        <p>Compliance Navigator · Version v1.0.119 · Tous droits réservés © LFB</p>
+      </div>
+    </footer>
   </body>
 </html>
