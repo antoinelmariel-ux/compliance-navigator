@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from '../react.js';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from '../react.js';
 import { normalizeRiskWeighting } from '../utils/risk.js';
 import {
   Settings,
@@ -14,7 +14,8 @@ import {
   Copy,
   AlertTriangle,
   CheckCircle,
-  ChevronRight
+  ChevronRight,
+  ChevronLeft
 } from './icons.js';
 import { QuestionEditor } from './QuestionEditor.jsx';
 import { RuleEditor } from './RuleEditor.jsx';
@@ -410,12 +411,137 @@ export const BackOffice = ({
   const [ruleTeamFilter, setRuleTeamFilter] = useState('all');
   const [expandedQuestionIds, setExpandedQuestionIds] = useState(() => new Set());
   const [expandedRuleIds, setExpandedRuleIds] = useState(() => new Set());
+  const undoStackRef = useRef([]);
+  const [canUndo, setCanUndo] = useState(false);
+  const [undoMessage, setUndoMessage] = useState('');
   const safeRiskLevelRules = Array.isArray(riskLevelRules) ? riskLevelRules : [];
   const riskLevelRuleCount = safeRiskLevelRules.length;
   const normalizedRiskWeights = useMemo(
     () => normalizeRiskWeighting(riskWeights),
     [riskWeights]
   );
+
+  const handleUndo = useCallback(() => {
+    const stack = undoStackRef.current;
+    if (!stack || stack.length === 0) {
+      setUndoMessage('');
+      setCanUndo(false);
+      return;
+    }
+
+    const entry = stack[stack.length - 1];
+    undoStackRef.current = stack.slice(0, -1);
+    setCanUndo(undoStackRef.current.length > 0);
+
+    if (!entry) {
+      setUndoMessage('');
+      return;
+    }
+
+    switch (entry.type) {
+      case 'question': {
+        if (typeof setQuestions === 'function') {
+          setQuestions((prevQuestions) => {
+            const next = Array.isArray(prevQuestions) ? prevQuestions.slice() : [];
+            const insertIndex = Math.max(0, Math.min(entry.index ?? next.length, next.length));
+            next.splice(insertIndex, 0, entry.item);
+            return next;
+          });
+        }
+        setUndoMessage(`La question « ${entry.item?.question || entry.item?.id || 'question'} » a été restaurée.`);
+        setReorderAnnouncement('Suppression de question annulée.');
+        break;
+      }
+      case 'rule': {
+        if (typeof setRules === 'function') {
+          setRules((prevRules) => {
+            const next = Array.isArray(prevRules) ? prevRules.slice() : [];
+            const insertIndex = Math.max(0, Math.min(entry.index ?? next.length, next.length));
+            next.splice(insertIndex, 0, entry.item);
+            return next;
+          });
+        }
+        setUndoMessage(`La règle « ${entry.item?.name || entry.item?.id || 'règle'} » a été restaurée.`);
+        setReorderAnnouncement('Suppression de règle annulée.');
+        break;
+      }
+      case 'riskLevelRule': {
+        if (typeof setRiskLevelRules === 'function') {
+          setRiskLevelRules((prevRules) => {
+            const base = Array.isArray(prevRules) ? prevRules.slice() : [];
+            const insertIndex = Math.max(0, Math.min(entry.index ?? base.length, base.length));
+            base.splice(insertIndex, 0, entry.item);
+            return base;
+          });
+        }
+        setUndoMessage(`Le niveau « ${entry.item?.label || entry.item?.id || 'niveau'} » a été restauré.`);
+        setReorderAnnouncement('Suppression de niveau de complexité annulée.');
+        break;
+      }
+      case 'team': {
+        if (typeof setTeams === 'function') {
+          setTeams((prevTeams) => {
+            const next = Array.isArray(prevTeams) ? prevTeams.slice() : [];
+            const insertIndex = Math.max(0, Math.min(entry.index ?? next.length, next.length));
+            next.splice(insertIndex, 0, entry.item);
+            return next;
+          });
+        }
+        setUndoMessage(`L'équipe « ${entry.item?.name || entry.item?.id || 'équipe'} » a été restaurée.`);
+        setReorderAnnouncement('Suppression d’équipe annulée.');
+        break;
+      }
+      default:
+        setUndoMessage('Dernière action annulée.');
+        break;
+    }
+  }, [setQuestions, setRules, setRiskLevelRules, setTeams, setReorderAnnouncement]);
+
+  const confirmDeletion = useCallback((message) => {
+    if (typeof window === 'undefined') {
+      return true;
+    }
+
+    return window.confirm(message);
+  }, []);
+
+  const pushUndoEntry = useCallback((entry) => {
+    undoStackRef.current = [...undoStackRef.current.slice(-19), entry];
+    setCanUndo(true);
+    if (entry && entry.message) {
+      setUndoMessage(entry.message);
+    } else {
+      setUndoMessage('Dernière suppression enregistrée. Vous pouvez utiliser Ctrl+Z pour annuler.');
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const keydownHandler = (event) => {
+      if ((event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === 'z') {
+        const target = event.target;
+        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+          return;
+        }
+
+        if (!undoStackRef.current.length) {
+          return;
+        }
+
+        event.preventDefault();
+        handleUndo();
+      }
+    };
+
+    window.addEventListener('keydown', keydownHandler);
+
+    return () => {
+      window.removeEventListener('keydown', keydownHandler);
+    };
+  }, [handleUndo]);
 
   const questionTeamAssignments = useMemo(() => {
     const setMap = new Map();
@@ -1406,19 +1532,35 @@ export const BackOffice = ({
       return;
     }
 
+    const normalizedIndex = Number.isInteger(index) && index >= 0
+      ? index
+      : safeRiskLevelRules.findIndex((rule) => rule?.id === id);
+
+    if (normalizedIndex < 0 || normalizedIndex >= safeRiskLevelRules.length) {
+      return;
+    }
+
+    const targetRule = safeRiskLevelRules[normalizedIndex];
+    const label = targetRule?.label || targetRule?.id || `Niveau ${normalizedIndex + 1}`;
+
+    if (!confirmDeletion(`Êtes-vous sûr de vouloir supprimer le niveau de complexité « ${label} » ? Cette action peut être annulée (Ctrl+Z).`)) {
+      return;
+    }
+
+    pushUndoEntry({
+      type: 'riskLevelRule',
+      index: normalizedIndex,
+      item: cloneData(targetRule),
+      message: `Le niveau « ${label} » a été supprimé. Cliquez sur « Annuler » ou utilisez Ctrl+Z pour le restaurer.`,
+    });
+
     setRiskLevelRules(prevRules => {
       const baseRules = Array.isArray(prevRules) ? [...prevRules] : [];
-
-      if (Number.isInteger(index) && index >= 0 && index < baseRules.length) {
-        baseRules.splice(index, 1);
+      if (normalizedIndex < 0 || normalizedIndex >= baseRules.length) {
         return baseRules;
       }
-
-      if (!id) {
-        return baseRules;
-      }
-
-      return baseRules.filter(rule => rule?.id !== id);
+      baseRules.splice(normalizedIndex, 1);
+      return baseRules;
     });
 
     setReorderAnnouncement(`Niveau de risque supprimé. ${Math.max(safeRiskLevelRules.length - 1, 0)} niveau(x) restant(s).`);
@@ -1609,12 +1751,30 @@ export const BackOffice = ({
   };
 
   const deleteQuestion = (id) => {
-    const target = questions.find((question) => question.id === id);
+    const targetIndex = questions.findIndex((question) => question.id === id);
+    if (targetIndex < 0) {
+      return;
+    }
+
+    const target = questions[targetIndex];
     if (target && target.showcase) {
       return;
     }
 
-    setQuestions(questions.filter((question) => question.id !== id));
+    const label = target?.question || target?.id || 'cette question';
+
+    if (!confirmDeletion(`Êtes-vous sûr de vouloir supprimer la question « ${label} » ? Cette action peut être annulée (Ctrl+Z).`)) {
+      return;
+    }
+
+    pushUndoEntry({
+      type: 'question',
+      index: targetIndex,
+      item: cloneData(target),
+      message: `La question « ${label} » a été supprimée. Cliquez sur « Annuler » ou utilisez Ctrl+Z pour la restaurer.`,
+    });
+
+    setQuestions((prevQuestions) => prevQuestions.filter((question) => question.id !== id));
   };
 
   const duplicateQuestion = (id) => {
@@ -1686,7 +1846,26 @@ export const BackOffice = ({
   };
 
   const deleteRule = (id) => {
-    setRules(rules.filter((rule) => rule.id !== id));
+    const targetIndex = rules.findIndex((rule) => rule.id === id);
+    if (targetIndex < 0) {
+      return;
+    }
+
+    const target = rules[targetIndex];
+    const label = target?.name || target?.id || 'cette règle';
+
+    if (!confirmDeletion(`Êtes-vous sûr de vouloir supprimer la règle « ${label} » ? Cette action peut être annulée (Ctrl+Z).`)) {
+      return;
+    }
+
+    pushUndoEntry({
+      type: 'rule',
+      index: targetIndex,
+      item: cloneData(target),
+      message: `La règle « ${label} » a été supprimée. Cliquez sur « Annuler » ou utilisez Ctrl+Z pour la restaurer.`,
+    });
+
+    setRules((prevRules) => prevRules.filter((ruleItem) => ruleItem.id !== id));
     if (editingRule && editingRule.id === id) {
       setEditingRule(null);
     }
@@ -1756,7 +1935,26 @@ export const BackOffice = ({
   };
 
   const deleteTeam = (id) => {
-    setTeams(teams.filter((team) => team.id !== id));
+    const targetIndex = teams.findIndex((team) => team.id === id);
+    if (targetIndex < 0) {
+      return;
+    }
+
+    const target = teams[targetIndex];
+    const label = target?.name || target?.id || 'cette équipe';
+
+    if (!confirmDeletion(`Êtes-vous sûr de vouloir supprimer l'équipe « ${label} » ? Cette action peut être annulée (Ctrl+Z).`)) {
+      return;
+    }
+
+    pushUndoEntry({
+      type: 'team',
+      index: targetIndex,
+      item: cloneData(target),
+      message: `L'équipe « ${label} » a été supprimée. Cliquez sur « Annuler » ou utilisez Ctrl+Z pour la restaurer.`,
+    });
+
+    setTeams((prevTeams) => prevTeams.filter((team) => team.id !== id));
   };
 
   return (
@@ -1776,6 +1974,16 @@ export const BackOffice = ({
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2 w-full lg:w-auto">
               <button
                 type="button"
+                onClick={handleUndo}
+                disabled={!canUndo}
+                title="Annuler la dernière suppression (Ctrl+Z)"
+                className="inline-flex items-center justify-center px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg shadow-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60 hv-button hv-focus-ring text-sm sm:text-base"
+              >
+                <ChevronLeft className="w-5 h-5 mr-2" />
+                Annuler (Ctrl+Z)
+              </button>
+              <button
+                type="button"
                 onClick={handleDownloadDataFiles}
                 className="inline-flex items-center justify-center px-4 py-2 bg-white border border-blue-200 text-blue-700 rounded-lg shadow-sm hover:bg-blue-50 hv-button hv-focus-ring text-sm sm:text-base"
               >
@@ -1784,6 +1992,16 @@ export const BackOffice = ({
               </button>
             </div>
           </header>
+
+          {undoMessage ? (
+            <div
+              className="mb-6 rounded-2xl border border-blue-200 bg-blue-50/80 p-4 text-sm text-blue-800"
+              role="status"
+              aria-live="polite"
+            >
+              {undoMessage}
+            </div>
+          ) : null}
 
           <section
             className="mb-6"
