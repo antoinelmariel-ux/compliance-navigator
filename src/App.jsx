@@ -25,7 +25,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.110';
+const APP_VERSION = 'v1.0.111';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -132,6 +132,38 @@ const isAnswerProvided = (value) => {
   }
 
   return value !== null && value !== undefined;
+};
+
+const areAnswersEqual = (previousValue, nextValue) => {
+  if (previousValue === nextValue) {
+    return true;
+  }
+
+  if (Array.isArray(previousValue) && Array.isArray(nextValue)) {
+    try {
+      return JSON.stringify(previousValue) === JSON.stringify(nextValue);
+    } catch (error) {
+      if (previousValue.length !== nextValue.length) {
+        return false;
+      }
+      return previousValue.every((entry, index) => entry === nextValue[index]);
+    }
+  }
+
+  if (
+    previousValue &&
+    nextValue &&
+    typeof previousValue === 'object' &&
+    typeof nextValue === 'object'
+  ) {
+    try {
+      return JSON.stringify(previousValue) === JSON.stringify(nextValue);
+    } catch (error) {
+      return false;
+    }
+  }
+
+  return false;
 };
 
 const findQuestionById = (questions, id) => {
@@ -381,6 +413,7 @@ export const App = () => {
   const [validationError, setValidationError] = useState(null);
   const [saveFeedback, setSaveFeedback] = useState(null);
   const [showcaseProjectContext, setShowcaseProjectContext] = useState(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const [questions, setQuestions] = useState(() => restoreShowcaseQuestions(initialQuestions));
   const [rules, setRules] = useState(initialRules);
@@ -400,6 +433,10 @@ export const App = () => {
     }
 
     const handleBeforeUnload = (event) => {
+      if (!hasUnsavedChanges) {
+        return undefined;
+      }
+
       const message = 'Avez-vous bien sauvegardé votre projet avant de quitter ?';
       event.preventDefault();
       event.returnValue = message;
@@ -411,7 +448,7 @@ export const App = () => {
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, []);
+  }, [hasUnsavedChanges]);
 
   useEffect(() => {
     projectsRef.current = projects;
@@ -714,7 +751,14 @@ export const App = () => {
   const isActiveProjectDraft = activeProject ? activeProject.status === 'draft' : true;
 
   const handleAnswer = useCallback((questionId, answer) => {
+    let answerChanged = false;
+
     setAnswers(prevAnswers => {
+      const previousValue = prevAnswers[questionId];
+      if (!areAnswersEqual(previousValue, answer)) {
+        answerChanged = true;
+      }
+
       const nextAnswers = { ...prevAnswers, [questionId]: answer };
 
       const questionsToRemove = questions
@@ -722,22 +766,46 @@ export const App = () => {
         .map(q => q.id);
 
       if (questionsToRemove.length === 0) {
-        return nextAnswers;
+        return answerChanged ? nextAnswers : prevAnswers;
       }
 
       const sanitizedAnswers = { ...nextAnswers };
+      let removedExistingAnswer = false;
       questionsToRemove.forEach(qId => {
-        delete sanitizedAnswers[qId];
+        if (Object.prototype.hasOwnProperty.call(sanitizedAnswers, qId)) {
+          if (Object.prototype.hasOwnProperty.call(prevAnswers, qId)) {
+            removedExistingAnswer = true;
+          }
+          delete sanitizedAnswers[qId];
+        }
       });
 
-      return sanitizedAnswers;
+      if (!answerChanged) {
+        if (removedExistingAnswer) {
+          answerChanged = true;
+        } else {
+          const prevKeys = Object.keys(prevAnswers);
+          const nextKeys = Object.keys(sanitizedAnswers);
+          if (prevKeys.length !== nextKeys.length) {
+            answerChanged = true;
+          } else if (nextKeys.some(key => !areAnswersEqual(prevAnswers[key], sanitizedAnswers[key]))) {
+            answerChanged = true;
+          }
+        }
+      }
+
+      return answerChanged ? sanitizedAnswers : prevAnswers;
     });
+
+    if (answerChanged) {
+      setHasUnsavedChanges(true);
+    }
 
     setValidationError(prev => {
       if (!prev) return null;
       return prev.questionId === questionId ? null : prev;
     });
-  }, [questions]);
+  }, [questions, setHasUnsavedChanges]);
 
   const handleUpdateAnswers = useCallback((updates) => {
     if (!isActiveProjectDraft) {
@@ -759,6 +827,7 @@ export const App = () => {
       const updatedAnalysis = analyzeAnswers(sanitizedResult, rules, riskLevelRules, riskWeights);
       setAnalysis(updatedAnalysis);
       setValidationError(null);
+      setHasUnsavedChanges(true);
 
       if (activeProjectId) {
         setProjects(prevProjects => {
@@ -809,6 +878,7 @@ export const App = () => {
     analyzeAnswers,
     extractProjectName,
     isActiveProjectDraft,
+    setHasUnsavedChanges,
     questions,
     riskLevelRules,
     riskWeights,
@@ -822,7 +892,8 @@ export const App = () => {
     setAnalysis(null);
     setValidationError(null);
     setActiveProjectId(null);
-  }, []);
+    setHasUnsavedChanges(false);
+  }, [setHasUnsavedChanges]);
 
   const handleBackOfficeClick = useCallback(async () => {
     if (mode === 'admin') {
@@ -953,6 +1024,7 @@ export const App = () => {
             ? 'Projet importé. Complétez les questions obligatoires avant de consulter la synthèse.'
             : 'Projet importé. Le rapport compliance est disponible.'
         });
+        setHasUnsavedChanges(false);
       } catch (error) {
         if (typeof console !== 'undefined' && typeof console.error === 'function') {
           console.error('[projectImport] Impossible de charger le projet :', error);
@@ -984,6 +1056,7 @@ export const App = () => {
     }
   }, [
     handleSaveProject,
+    setHasUnsavedChanges,
     questions,
     rules,
     riskLevelRules,
@@ -1106,10 +1179,12 @@ export const App = () => {
     }
 
     setScreen(targetScreen);
+    setHasUnsavedChanges(false);
   }, [
     analyzeAnswers,
     projects,
     questions,
+    setHasUnsavedChanges,
     riskLevelRules,
     riskWeights,
     rules,
@@ -1326,6 +1401,7 @@ export const App = () => {
 
     const projectId = showcaseProjectContext.projectId;
     let contextPatch = null;
+    let hasProjectChanges = false;
 
     setProjects(prevProjects => {
       const project = prevProjects.find(entry => entry.id === projectId);
@@ -1345,6 +1421,8 @@ export const App = () => {
       if (!changed) {
         return prevProjects;
       }
+
+      hasProjectChanges = true;
 
       const relevantQuestions = questions.filter(question => shouldShowQuestion(question, nextAnswers));
       const totalQuestions = relevantQuestions.length > 0
@@ -1405,9 +1483,14 @@ export const App = () => {
         };
       });
     }
+
+    if (hasProjectChanges) {
+      setHasUnsavedChanges(true);
+    }
   }, [
     analyzeAnswers,
     extractProjectName,
+    setHasUnsavedChanges,
     questions,
     riskLevelRules,
     riskWeights,
@@ -1500,6 +1583,8 @@ export const App = () => {
       setAnalysis(computedAnalysis);
     }
 
+    setHasUnsavedChanges(false);
+
     return entry;
   }, [
     activeProjectId,
@@ -1512,6 +1597,7 @@ export const App = () => {
     riskLevelRules,
     riskWeights,
     rules,
+    setHasUnsavedChanges,
     shouldShowQuestion,
     upsertProject
   ]);
