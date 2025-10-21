@@ -69,57 +69,6 @@ export const initialRules = [
     ]
   },
   {
-    "id": "rule3",
-    "name": "Données de santé",
-    "conditions": [
-      {
-        "type": "question",
-        "question": "q3",
-        "operator": "equals",
-        "value": "Oui - Données de santé"
-      },
-      {
-        "type": "timing",
-        "startQuestion": "campaignKickoffDate",
-        "endQuestion": "launchDate",
-        "maximumWeeks": 26
-      }
-    ],
-    "conditionGroups": [
-      {
-        "logic": "all",
-        "conditions": [
-          {
-            "type": "question",
-            "question": "q3",
-            "operator": "equals",
-            "value": "Oui - Données de santé"
-          },
-          {
-            "type": "timing",
-            "startQuestion": "campaignKickoffDate",
-            "endQuestion": "launchDate",
-            "maximumWeeks": 26
-          }
-        ]
-      }
-    ],
-    "conditionLogic": "all",
-    "teams": [
-      "privacy"
-    ],
-    "questions": {},
-    "risks": [
-      {
-        "description": "Déclaration hors délai",
-        "level": "Élevé",
-        "mitigation": "",
-        "priority": "A particulièrement anticiper",
-        "teamId": "privacy"
-      }
-    ]
-  },
-  {
     "id": "rule4",
     "name": "Rémunération PDS",
     "conditions": [
@@ -160,6 +109,51 @@ export const initialRules = [
           "startQuestion": "campaignKickoffDate",
           "endQuestion": "launchDate",
           "minimumWeeks": 10
+        }
+      }
+    ]
+  },
+  {
+    "id": "rule5",
+    "name": "Données de santé",
+    "conditions": [
+      {
+        "type": "question",
+        "question": "q3",
+        "operator": "equals",
+        "value": "Oui - Données de santé"
+      }
+    ],
+    "conditionGroups": [
+      {
+        "logic": "all",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "q3",
+            "operator": "equals",
+            "value": "Oui - Données de santé"
+          }
+        ]
+      }
+    ],
+    "conditionLogic": "all",
+    "teams": [
+      "privacy"
+    ],
+    "questions": {},
+    "risks": [
+      {
+        "description": "Contraites spécifiques en cas de données de santé",
+        "level": "Élevé",
+        "mitigation": "En cas de collecte/traitement de données de santé, des déclarations 6 mois avant le lancement peuvent être requises, sauf à rentrer dans des référentiels déjà définis. Pensez à contacter au plus vite le DPO",
+        "priority": "A particulièrement anticiper",
+        "teamId": "privacy",
+        "timingConstraint": {
+          "enabled": true,
+          "startQuestion": "campaignKickoffDate",
+          "endQuestion": "launchDate",
+          "minimumWeeks": 26
         }
       }
     ]
