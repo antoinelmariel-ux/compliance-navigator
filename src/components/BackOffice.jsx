@@ -19,6 +19,7 @@ import {
 } from './icons.js';
 import { QuestionEditor } from './QuestionEditor.jsx';
 import { RuleEditor } from './RuleEditor.jsx';
+import { BackOfficeDashboard } from './BackOfficeDashboard.jsx';
 import { renderTextWithLinks } from '../utils/linkify.js';
 import { normalizeConditionGroups } from '../utils/conditionGroups.js';
 import {
@@ -396,6 +397,7 @@ const PROJECT_FILTER_FIELD_DESCRIPTIONS = {
 };
 
 export const BackOffice = ({
+  projects,
   questions,
   setQuestions,
   rules,
@@ -2276,15 +2278,7 @@ export const BackOffice = ({
               aria-labelledby="backoffice-tab-dashboard"
               className="space-y-6"
             >
-              <div className="rounded-2xl border border-dashed border-blue-200 bg-blue-50/60 p-6 text-center text-blue-700">
-                <h2 className="text-2xl font-bold text-blue-900">Dashboard</h2>
-                <p className="mt-2 text-sm">
-                  Cette section proposera prochainement des indicateurs clés pour analyser les projets soumis.
-                </p>
-                <p className="mt-1 text-xs text-blue-600">
-                  Revenez bientôt pour suivre vos KPIs et faciliter vos prises de décision.
-                </p>
-              </div>
+              <BackOfficeDashboard projects={projects} teams={teams} />
             </section>
           )}
 
