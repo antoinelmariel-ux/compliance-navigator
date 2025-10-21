@@ -39,7 +39,7 @@ const formatDate = (isoDate) => {
 
 const getSafeString = (value) => (typeof value === 'string' ? value : '');
 
-const DEFAULT_TEAM_FILTER_VALUE = 'all';
+const DEFAULT_SELECT_FILTER_VALUE = 'all';
 
 const PROJECT_FILTER_VALUE_EXTRACTORS = {
   projectName: (project) => {
@@ -56,6 +56,53 @@ const PROJECT_FILTER_VALUE_EXTRACTORS = {
   },
   teamLead: (project) => getSafeString(project?.answers?.teamLead),
   teamLeadTeam: (project) => getSafeString(project?.answers?.teamLeadTeam)
+};
+
+const formatAnswerValue = (value) => {
+  if (Array.isArray(value)) {
+    return value.map((item) => (item == null ? '' : String(item))).filter(Boolean).join(', ');
+  }
+
+  if (value == null) {
+    return '';
+  }
+
+  return String(value);
+};
+
+const getProjectFilterValue = (field, project) => {
+  if (!field || !project) {
+    return '';
+  }
+
+  const extractor = PROJECT_FILTER_VALUE_EXTRACTORS[field.id];
+  if (typeof extractor === 'function') {
+    const extracted = extractor(project);
+    if (typeof extracted === 'string' && extracted.trim().length > 0) {
+      return extracted;
+    }
+  }
+
+  const sourceId = typeof field.sourceQuestionId === 'string' && field.sourceQuestionId.trim().length > 0
+    ? field.sourceQuestionId
+    : field.id;
+
+  const answerValue = project?.answers?.[sourceId];
+  if (typeof answerValue === 'string') {
+    return answerValue;
+  }
+
+  const formattedAnswer = formatAnswerValue(answerValue);
+  if (formattedAnswer.trim().length > 0) {
+    return formattedAnswer;
+  }
+
+  const directValue = project[sourceId];
+  if (typeof directValue === 'string') {
+    return directValue;
+  }
+
+  return formatAnswerValue(directValue);
 };
 
 const getProjectTimestamp = (project) => {
@@ -103,7 +150,7 @@ const buildInitialFiltersState = (config) => {
     }
 
     if (field.type === 'select') {
-      initial[field.id] = DEFAULT_TEAM_FILTER_VALUE;
+      initial[field.id] = DEFAULT_SELECT_FILTER_VALUE;
     } else {
       initial[field.id] = '';
     }
@@ -314,11 +361,11 @@ export const HomeScreen = ({
 
         if (field.type === 'select') {
           if (!(field.id in prevState)) {
-            nextState[field.id] = DEFAULT_TEAM_FILTER_VALUE;
+            nextState[field.id] = DEFAULT_SELECT_FILTER_VALUE;
             changed = true;
           }
-          if (!field.enabled && nextState[field.id] !== DEFAULT_TEAM_FILTER_VALUE) {
-            nextState[field.id] = DEFAULT_TEAM_FILTER_VALUE;
+          if (!field.enabled && nextState[field.id] !== DEFAULT_SELECT_FILTER_VALUE) {
+            nextState[field.id] = DEFAULT_SELECT_FILTER_VALUE;
             changed = true;
           }
         } else {
@@ -353,27 +400,47 @@ export const HomeScreen = ({
     });
   }, [normalizedFilters]);
 
-  const combinedTeamLeadOptions = useMemo(() => {
-    const options = new Set();
+  const selectFilterOptions = useMemo(() => {
+    const fields = Array.isArray(normalizedFilters.fields) ? normalizedFilters.fields : [];
+    const map = new Map();
 
-    if (Array.isArray(teamLeadOptions)) {
-      teamLeadOptions.forEach((option) => {
-        const label = getSafeString(option).trim();
-        if (label.length > 0) {
-          options.add(label);
+    fields.forEach((field) => {
+      if (!field || field.type !== 'select') {
+        return;
+      }
+
+      const options = new Set();
+
+      if (field.id === 'teamLeadTeam' && Array.isArray(teamLeadOptions)) {
+        teamLeadOptions.forEach((option) => {
+          const label = getSafeString(option).trim();
+          if (label.length > 0) {
+            options.add(label);
+          }
+        });
+      }
+
+      if (Array.isArray(field.options)) {
+        field.options.forEach((option) => {
+          const label = getSafeString(option).trim();
+          if (label.length > 0) {
+            options.add(label);
+          }
+        });
+      }
+
+      projects.forEach((project) => {
+        const value = getProjectFilterValue(field, project).trim();
+        if (value.length > 0) {
+          options.add(value);
         }
       });
-    }
 
-    projects.forEach((project) => {
-      const team = PROJECT_FILTER_VALUE_EXTRACTORS.teamLeadTeam(project).trim();
-      if (team.length > 0) {
-        options.add(team);
-      }
+      map.set(field.id, Array.from(options).sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' })));
     });
 
-    return Array.from(options).sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }));
-  }, [projects, teamLeadOptions]);
+    return map;
+  }, [normalizedFilters.fields, projects, teamLeadOptions]);
 
   const filteredProjects = useMemo(() => {
     if (!Array.isArray(projects)) {
@@ -392,8 +459,8 @@ export const HomeScreen = ({
         const value = filtersState[field.id];
 
         if (field.type === 'select') {
-          if (value && value !== DEFAULT_TEAM_FILTER_VALUE) {
-            const projectValue = PROJECT_FILTER_VALUE_EXTRACTORS[field.id]?.(project) || '';
+          if (value && value !== DEFAULT_SELECT_FILTER_VALUE) {
+            const projectValue = getProjectFilterValue(field, project);
             if (projectValue !== value) {
               return false;
             }
@@ -406,7 +473,7 @@ export const HomeScreen = ({
           continue;
         }
 
-        const projectValue = PROJECT_FILTER_VALUE_EXTRACTORS[field.id]?.(project) || '';
+        const projectValue = getProjectFilterValue(field, project);
         if (projectValue.toLowerCase().indexOf(query) === -1) {
           return false;
         }
@@ -466,7 +533,7 @@ export const HomeScreen = ({
 
       const value = filtersState[field.id];
       if (field.type === 'select') {
-        if (value && value !== DEFAULT_TEAM_FILTER_VALUE) {
+        if (value && value !== DEFAULT_SELECT_FILTER_VALUE) {
           return true;
         }
       } else if (typeof value === 'string' && value.trim().length > 0) {
@@ -655,7 +722,9 @@ export const HomeScreen = ({
                       const fieldId = `project-filter-${field.id}`;
 
                       if (field.type === 'select') {
-                        const value = filtersState[field.id] || DEFAULT_TEAM_FILTER_VALUE;
+                        const value = filtersState[field.id] || DEFAULT_SELECT_FILTER_VALUE;
+                        const optionLabel = field.emptyOptionLabel || 'Toutes les valeurs';
+                        const options = selectFilterOptions.get(field.id) || [];
                         return (
                           <div key={field.id} className="flex flex-col gap-2 text-sm text-gray-700">
                             <label htmlFor={fieldId} className="font-semibold text-gray-700">
@@ -669,8 +738,8 @@ export const HomeScreen = ({
                               }
                               className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                             >
-                              <option value={DEFAULT_TEAM_FILTER_VALUE}>Toutes les équipes</option>
-                              {combinedTeamLeadOptions.map(option => (
+                              <option value={DEFAULT_SELECT_FILTER_VALUE}>{optionLabel}</option>
+                              {options.map(option => (
                                 <option key={option} value={option}>
                                   {option}
                                 </option>
