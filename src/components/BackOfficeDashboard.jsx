@@ -323,7 +323,12 @@ export const BackOfficeDashboard = ({ projects = [], teams = [] }) => {
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
 
-  const teamOptions = useMemo(() => buildTeamOptions(Array.isArray(projects) ? projects : []), [projects]);
+  const sanitizedProjects = useMemo(
+    () => (Array.isArray(projects) ? projects.filter((project) => !(project && project.isDemo)) : []),
+    [projects]
+  );
+
+  const teamOptions = useMemo(() => buildTeamOptions(sanitizedProjects), [sanitizedProjects]);
   const timeOption = useMemo(
     () => TIME_FILTER_OPTIONS.find((option) => option.id === selectedTimeFilter) || TIME_FILTER_OPTIONS[0],
     [selectedTimeFilter]
@@ -352,7 +357,7 @@ export const BackOfficeDashboard = ({ projects = [], teams = [] }) => {
   }, [timeOption, customStart, customEnd]);
 
   const filteredProjects = useMemo(() => {
-    const list = Array.isArray(projects) ? projects : [];
+    const list = sanitizedProjects;
 
     return list.filter((project) => {
       if (!project) {
@@ -380,7 +385,7 @@ export const BackOfficeDashboard = ({ projects = [], teams = [] }) => {
 
       return true;
     });
-  }, [projects, selectedLeadTeam, computedRange]);
+  }, [sanitizedProjects, selectedLeadTeam, computedRange]);
 
   const leadTeamDistribution = useMemo(() => {
     const counts = new Map();
@@ -577,7 +582,7 @@ export const BackOfficeDashboard = ({ projects = [], teams = [] }) => {
               onChange={(event) => setSelectedLeadTeam(event.target.value)}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
             >
-              <option value="all">Toutes les équipes ({numberFormatter.format(Array.isArray(projects) ? projects.length : 0)})</option>
+              <option value="all">Toutes les équipes ({numberFormatter.format(sanitizedProjects.length)})</option>
               <option value="not_set">Équipe non renseignée ({numberFormatter.format(teamOptions.find((option) => option.id === 'not_set')?.count || 0)})</option>
               {teamOptions
                 .filter((option) => option.id !== 'not_set')
@@ -655,7 +660,7 @@ export const BackOfficeDashboard = ({ projects = [], teams = [] }) => {
             {numberFormatter.format(filteredProjects.length)}
           </p>
           <p className="mt-2 text-xs text-blue-700">
-            Sur un total de {numberFormatter.format(Array.isArray(projects) ? projects.length : 0)} projets importés.
+            Sur un total de {numberFormatter.format(sanitizedProjects.length)} projets importés.
           </p>
         </div>
         <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-5">
