@@ -14,7 +14,8 @@ import {
   Edit,
   Save,
   Upload,
-  Copy
+  Copy,
+  Trash2
 } from './icons.js';
 import { normalizeProjectFilterConfig } from '../utils/projectFilters.js';
 
@@ -649,6 +650,17 @@ export const HomeScreen = ({
                                 title="Dupliquer le projet"
                               >
                                 <Copy className="w-4 h-4" aria-hidden="true" />
+                              </button>
+                            )}
+                            {isDraft && typeof onDeleteProject === 'function' && (
+                              <button
+                                type="button"
+                                onClick={() => onDeleteProject(project.id)}
+                                className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors hv-button hv-focus-ring"
+                                aria-label={`Supprimer le projet ${project.projectName || 'sans nom'}`}
+                                title="Supprimer le projet"
+                              >
+                                <Trash2 className="w-4 h-4" aria-hidden="true" />
                               </button>
                             )}
                           </div>
