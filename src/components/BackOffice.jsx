@@ -2447,7 +2447,7 @@ export const BackOffice = ({
                                       onChange={() => handleProjectFilterDefaultSortChange('desc')}
                                       className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                                     />
-                                    <span>Antéchronologique (plus récents en premier)</span>
+                                    <span>Les plus récents en premier</span>
                                   </label>
                                   <label className="inline-flex items-center gap-2 text-sm text-gray-700">
                                     <input
@@ -2458,7 +2458,7 @@ export const BackOffice = ({
                                       onChange={() => handleProjectFilterDefaultSortChange('asc')}
                                       className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
                                     />
-                                    <span>Chronologique (plus anciens en premier)</span>
+                                    <span>Les plus anciens en premier</span>
                                   </label>
                                 </fieldset>
                               ) : field.type === 'select' ? (

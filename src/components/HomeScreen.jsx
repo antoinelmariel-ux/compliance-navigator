@@ -160,8 +160,8 @@ const buildInitialFiltersState = (config) => {
 };
 
 const SORT_LABELS = {
-  desc: 'Antéchronologique (plus récents en premier)',
-  asc: 'Chronologique (plus anciens en premier)'
+  desc: 'Les plus récents en premier',
+  asc: 'Les plus anciens en premier'
 };
 
 const complexityColors = {
