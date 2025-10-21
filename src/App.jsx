@@ -20,8 +20,12 @@ import { exportProjectToFile } from './utils/projectExport.js';
 import { normalizeRiskWeighting } from './utils/risk.js';
 import { normalizeProjectEntry, normalizeProjectsCollection } from './utils/projectNormalization.js';
 import { loadSubmittedProjectsFromDirectory } from './utils/externalProjectsLoader.js';
+import {
+  createDefaultProjectFiltersConfig,
+  normalizeProjectFilterConfig
+} from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.107';
+const APP_VERSION = 'v1.0.108';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -383,6 +387,7 @@ export const App = () => {
   const [riskLevelRules, setRiskLevelRules] = useState(initialRiskLevelRules);
   const [riskWeights, setRiskWeights] = useState(() => normalizeRiskWeighting(initialRiskWeights));
   const [teams, setTeams] = useState(initialTeams);
+  const [projectFilters, setProjectFiltersState] = useState(() => createDefaultProjectFiltersConfig());
   const [isHydrated, setIsHydrated] = useState(false);
   const [isBackOfficeUnlocked, setIsBackOfficeUnlocked] = useState(false);
   const [backOfficeAuthError, setBackOfficeAuthError] = useState(null);
@@ -411,6 +416,14 @@ export const App = () => {
   useEffect(() => {
     projectsRef.current = projects;
   }, [projects]);
+
+  const updateProjectFilters = useCallback((updater) => {
+    setProjectFiltersState(prevConfig => {
+      const currentConfig = normalizeProjectFilterConfig(prevConfig);
+      const nextConfig = typeof updater === 'function' ? updater(currentConfig) : updater;
+      return normalizeProjectFilterConfig(nextConfig);
+    });
+  }, []);
 
   const synchronizeExternalProjects = useCallback(async () => {
     const existingProjects = Array.isArray(projectsRef.current) ? projectsRef.current : [];
@@ -552,6 +565,9 @@ export const App = () => {
       setRiskWeights(normalizeRiskWeighting(savedState.riskWeights));
     }
     if (Array.isArray(savedState.teams)) setTeams(savedState.teams);
+    if (savedState && typeof savedState.projectFilters === 'object') {
+      setProjectFiltersState(normalizeProjectFilterConfig(savedState.projectFilters));
+    }
 
     setIsHydrated(true);
   }, []);
@@ -587,7 +603,8 @@ export const App = () => {
         riskWeights,
         teams,
         projects,
-        activeProjectId
+        activeProjectId,
+        projectFilters: normalizeProjectFilterConfig(projectFilters)
       });
       persistTimeoutRef.current = null;
     }, 200);
@@ -611,6 +628,7 @@ export const App = () => {
     teams,
     projects,
     activeProjectId,
+    projectFilters,
     isHydrated
   ]);
 
@@ -633,6 +651,19 @@ export const App = () => {
       })),
     [unansweredMandatoryQuestions, activeQuestions]
   );
+
+  const teamLeadTeamOptions = useMemo(() => {
+    const leadTeamQuestion = questions.find(question => question?.id === 'teamLeadTeam');
+    if (!leadTeamQuestion || !Array.isArray(leadTeamQuestion.options)) {
+      return [];
+    }
+
+    const sanitized = leadTeamQuestion.options
+      .map(option => (typeof option === 'string' ? option.trim() : ''))
+      .filter(option => option.length > 0);
+
+    return Array.from(new Set(sanitized));
+  }, [questions]);
 
   useEffect(() => {
     if (!isHydrated) return;
@@ -1663,6 +1694,8 @@ export const App = () => {
           screen === 'home' ? (
             <HomeScreen
               projects={projects}
+              projectFilters={projectFilters}
+              teamLeadOptions={teamLeadTeamOptions}
               onStartNewProject={handleCreateNewProject}
               onOpenProject={handleOpenProject}
               onDeleteProject={handleDeleteProject}
@@ -1749,6 +1782,8 @@ export const App = () => {
             setRiskWeights={setRiskWeights}
             teams={teams}
             setTeams={setTeams}
+            projectFilters={projectFilters}
+            setProjectFilters={updateProjectFilters}
           />
         )}
       </main>

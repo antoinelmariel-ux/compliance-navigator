@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from '../react.js';
+import React, { useCallback, useEffect, useMemo, useState } from '../react.js';
 import { normalizeRiskWeighting } from '../utils/risk.js';
 import {
   Settings,
@@ -25,6 +25,11 @@ import {
   sanitizeTeamQuestionEntry
 } from '../utils/rules.js';
 import { sanitizeRuleCondition } from '../utils/ruleConditions.js';
+import {
+  normalizeProjectFilterConfig,
+  resetProjectFiltersConfig,
+  updateProjectFilterField
+} from '../utils/projectFilters.js';
 
 const QUESTION_TYPE_META = {
   choice: {
@@ -329,6 +334,23 @@ const getPriorityBadgeClasses = (priority) => {
   }
 };
 
+const PROJECT_FILTER_TYPE_LABELS = {
+  text: 'Champ texte',
+  select: 'Liste déroulante',
+  sort: 'Tri par date'
+};
+
+const PROJECT_FILTER_FIELD_DESCRIPTIONS = {
+  projectName:
+    'Permet de rechercher un projet par le titre saisi lors de la qualification.',
+  teamLead:
+    'Filtre les projets en fonction du nom du lead renseigné dans le questionnaire.',
+  teamLeadTeam:
+    'Affiche une liste des équipes possibles pour retrouver rapidement les initiatives associées.',
+  dateOrder:
+    "Définit l'ordre d'affichage par défaut des projets (du plus récent au plus ancien ou inversement)."
+};
+
 export const BackOffice = ({
   questions,
   setQuestions,
@@ -339,7 +361,9 @@ export const BackOffice = ({
   riskWeights,
   setRiskWeights,
   teams,
-  setTeams
+  setTeams,
+  projectFilters,
+  setProjectFilters
 }) => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [editingRule, setEditingRule] = useState(null);
@@ -353,6 +377,60 @@ export const BackOffice = ({
     () => normalizeRiskWeighting(riskWeights),
     [riskWeights]
   );
+
+  const normalizedProjectFilters = useMemo(
+    () => normalizeProjectFilterConfig(projectFilters),
+    [projectFilters]
+  );
+
+  const defaultProjectFiltersConfig = useMemo(
+    () => normalizeProjectFilterConfig(resetProjectFiltersConfig()),
+    []
+  );
+
+  const projectFiltersAreDefault = useMemo(
+    () => JSON.stringify(normalizedProjectFilters) === JSON.stringify(defaultProjectFiltersConfig),
+    [normalizedProjectFilters, defaultProjectFiltersConfig]
+  );
+
+  const handleProjectFilterToggle = useCallback((fieldId, enabled) => {
+    if (typeof setProjectFilters !== 'function') {
+      return;
+    }
+
+    setProjectFilters(prev => updateProjectFilterField(prev, fieldId, { enabled }));
+  }, [setProjectFilters]);
+
+  const handleProjectFilterLabelChange = useCallback((fieldId, label) => {
+    if (typeof setProjectFilters !== 'function') {
+      return;
+    }
+
+    setProjectFilters(prev => updateProjectFilterField(prev, fieldId, { label }));
+  }, [setProjectFilters]);
+
+  const handleProjectFilterDefaultSortChange = useCallback((value) => {
+    if (typeof setProjectFilters !== 'function') {
+      return;
+    }
+
+    const direction = value === 'asc' ? 'asc' : 'desc';
+    setProjectFilters(prev => {
+      const updated = updateProjectFilterField(prev, 'dateOrder', { defaultValue: direction });
+      return {
+        ...updated,
+        sortOrder: direction
+      };
+    });
+  }, [setProjectFilters]);
+
+  const handleResetProjectFilters = useCallback(() => {
+    if (typeof setProjectFilters !== 'function') {
+      return;
+    }
+
+    setProjectFilters(resetProjectFiltersConfig());
+  }, [setProjectFilters]);
 
   const handleRiskWeightChange = (key, rawValue) => {
     if (typeof setRiskWeights !== 'function') {
@@ -1406,8 +1484,137 @@ export const BackOffice = ({
               id="backoffice-tabpanel-dashboard"
               role="tabpanel"
               aria-labelledby="backoffice-tab-dashboard"
-              className="space-y-4"
+              className="space-y-6"
             >
+              <article className="space-y-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hv-surface">
+                <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="space-y-2">
+                    <h2 className="text-2xl font-bold text-gray-800">Filtres de la page d'accueil</h2>
+                    <p className="text-sm text-gray-600">
+                      Activez ou personnalisez les filtres mis à disposition des chefs de projet sur l'écran d'accueil.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleResetProjectFilters}
+                    className={`inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors hv-button ${
+                      projectFiltersAreDefault
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700 hv-button-primary'
+                    }`}
+                    disabled={projectFiltersAreDefault}
+                  >
+                    Réinitialiser les filtres
+                  </button>
+                </header>
+
+                <div className="space-y-4">
+                  {normalizedProjectFilters.fields.map((field) => {
+                    const typeLabel = PROJECT_FILTER_TYPE_LABELS[field.type] || 'Paramètre';
+                    const description = PROJECT_FILTER_FIELD_DESCRIPTIONS[field.id] || '';
+                    const labelInputId = `project-filter-label-${field.id}`;
+                    const sortDefault = field.type === 'sort' && field.defaultValue === 'asc' ? 'asc' : 'desc';
+
+                    return (
+                      <article
+                        key={field.id}
+                        className="border border-gray-200 rounded-xl bg-white p-5 shadow-sm hv-surface"
+                      >
+                        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                          <div className="space-y-2">
+                            <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide">
+                              <span className="rounded-full bg-blue-100 px-2 py-1 text-blue-700">
+                                {typeLabel}
+                              </span>
+                              <span
+                                className={`rounded-full px-2 py-1 ${
+                                  field.enabled
+                                    ? 'bg-emerald-100 text-emerald-700'
+                                    : 'bg-gray-100 text-gray-600'
+                                }`}
+                              >
+                                {field.enabled ? 'Activé' : 'Désactivé'}
+                              </span>
+                            </div>
+                            <h3 className="text-lg font-semibold text-gray-800">{field.label}</h3>
+                            {description && <p className="text-sm text-gray-600">{description}</p>}
+                          </div>
+                          <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
+                            <input
+                              type="checkbox"
+                              checked={field.enabled}
+                              onChange={(event) => handleProjectFilterToggle(field.id, event.target.checked)}
+                              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <span>Activer ce filtre</span>
+                          </label>
+                        </div>
+
+                        <div className="mt-4 grid gap-4 md:grid-cols-2">
+                          <div className="flex flex-col gap-2">
+                            <label htmlFor={labelInputId} className="text-sm font-medium text-gray-700">
+                              Libellé affiché
+                            </label>
+                            <input
+                              id={labelInputId}
+                              type="text"
+                              value={field.label}
+                              onChange={(event) => handleProjectFilterLabelChange(field.id, event.target.value)}
+                              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                            />
+                            <p className="text-xs text-gray-500">
+                              Ce titre s'affiche sur la page d'accueil à côté du champ de filtre.
+                            </p>
+                          </div>
+
+                          {field.type === 'sort' ? (
+                            <fieldset className="flex flex-col gap-2">
+                              <legend className="text-sm font-medium text-gray-700">Ordre par défaut</legend>
+                              <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                                <input
+                                  type="radio"
+                                  name={`project-filter-sort-order-${field.id}`}
+                                  value="desc"
+                                  checked={sortDefault === 'desc'}
+                                  onChange={() => handleProjectFilterDefaultSortChange('desc')}
+                                  className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <span>Antéchronologique (plus récents en premier)</span>
+                              </label>
+                              <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                                <input
+                                  type="radio"
+                                  name={`project-filter-sort-order-${field.id}`}
+                                  value="asc"
+                                  checked={sortDefault === 'asc'}
+                                  onChange={() => handleProjectFilterDefaultSortChange('asc')}
+                                  className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <span>Chronologique (plus anciens en premier)</span>
+                              </label>
+                            </fieldset>
+                          ) : field.type === 'select' ? (
+                            <div className="flex flex-col gap-2 text-sm text-gray-600">
+                              <span className="font-medium text-gray-700">Options proposées</span>
+                              <p className="text-xs text-gray-500">
+                                Les valeurs proviennent des réponses collectées et des options configurées dans le questionnaire.
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col gap-2 text-sm text-gray-600">
+                              <span className="font-medium text-gray-700">Comportement</span>
+                              <p className="text-xs text-gray-500">
+                                Recherche plein texte sur la réponse saisie par le chef de projet.
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </article>
+
               <div className="rounded-2xl border border-dashed border-blue-200 bg-blue-50/60 p-6 text-center text-blue-700">
                 <h2 className="text-2xl font-bold text-blue-900">Dashboard</h2>
                 <p className="mt-2 text-sm">
