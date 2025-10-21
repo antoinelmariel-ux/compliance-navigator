@@ -59,7 +59,8 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
       type: source.type || 'choice',
       options: source.options || [],
       guidance: ensureGuidance(source.guidance),
-      placeholder: typeof source.placeholder === 'string' ? source.placeholder : ''
+      placeholder: typeof source.placeholder === 'string' ? source.placeholder : '',
+      numberUnit: typeof source.numberUnit === 'string' ? source.numberUnit : ''
     };
 
     const groups = sanitizeConditionGroups(normalizeConditionGroups(base));
@@ -149,6 +150,9 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
         ? (prev.placeholder && prev.placeholder.trim() !== ''
           ? prev.placeholder
           : getDefaultPlaceholder(newType))
+        : '',
+      numberUnit: newType === 'number'
+        ? (typeof prev.numberUnit === 'string' ? prev.numberUnit : '')
         : ''
     }));
   };
@@ -298,7 +302,15 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
   const dialogTitleId = 'question-editor-title';
 
   const handleSave = () => {
-    onSave(applyConditionGroups(editedQuestion, conditionGroups));
+    const sanitizedQuestion = applyConditionGroups(editedQuestion, conditionGroups);
+    const unitLabel = typeof editedQuestion.numberUnit === 'string'
+      ? editedQuestion.numberUnit.trim()
+      : '';
+
+    onSave({
+      ...sanitizedQuestion,
+      numberUnit: unitLabel
+    });
   };
 
   const overlayRef = useRef(null);
@@ -429,6 +441,22 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                   )}
                   <p className="text-xs text-gray-500 mt-1">
                     Personnalisez le texte indicatif affiché dans le champ de réponse. Laissez vide pour utiliser la formulation par défaut.
+                  </p>
+                </div>
+              )}
+
+              {questionType === 'number' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Unité de mesure affichée</label>
+                  <input
+                    type="text"
+                    value={editedQuestion.numberUnit || ''}
+                    onChange={(e) => setEditedQuestion(prev => ({ ...prev, numberUnit: e.target.value }))}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Ex : K€, %, jours"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Ce libellé s&apos;affiche à droite du champ numérique pour préciser l&apos;unité attendue (optionnel).
                   </p>
                 </div>
               )}

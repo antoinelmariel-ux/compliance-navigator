@@ -1145,6 +1145,7 @@ export const BackOffice = ({
     conditionLogic: 'all',
     conditionGroups: [],
     placeholder: '',
+    numberUnit: '',
     guidance: {
       objective: '',
       details: '',
@@ -1456,6 +1457,10 @@ export const BackOffice = ({
                 const conditionSummary = buildConditionSummary(question, questions);
                 const guidance = question.guidance || {};
                 const tips = formatGuidanceTips(guidance);
+                const numberUnitLabel =
+                  question.type === 'number' && typeof question.numberUnit === 'string'
+                    ? question.numberUnit.trim()
+                    : '';
                 const isShowcaseQuestion = Boolean(question && question.showcase);
                 const deleteButtonClasses = isShowcaseQuestion
                   ? 'p-2 text-gray-300 bg-gray-100 cursor-not-allowed rounded hv-button'
@@ -1497,6 +1502,12 @@ export const BackOffice = ({
                         <h3 className="text-xl font-semibold text-gray-800">{question.question}</h3>
                         <p id={`question-${question.id}-position`} className="text-xs text-gray-500">Position {index + 1} sur {questions.length}</p>
                         <p className="text-sm text-gray-500">{typeMeta.description}</p>
+                        {numberUnitLabel && (
+                          <p className="inline-flex items-center gap-2 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-100 px-3 py-1 rounded-full">
+                            <Info className="w-4 h-4" />
+                            Unité affichée : {numberUnitLabel}
+                          </p>
+                        )}
                       </div>
 
                       <div className="flex flex-wrap gap-2">

@@ -461,25 +461,37 @@ export const QuestionnaireScreen = ({
             </p>
           </div>
         );
-      case 'number':
+      case 'number': {
+        const unitLabel =
+          typeof currentQuestion.numberUnit === 'string' && currentQuestion.numberUnit.trim() !== ''
+            ? currentQuestion.numberUnit.trim()
+            : '';
         return (
           <div className="mb-8">
             <label className="block text-sm sm:text-base font-medium text-gray-700 mb-3" htmlFor={`${currentQuestion.id}-number`}>
               Renseignez une valeur numérique
             </label>
-            <input
-              type="number"
-              inputMode="decimal"
-              value={currentAnswer ?? ''}
-              onChange={(e) => onAnswer(currentQuestion.id, e.target.value)}
-              id={`${currentQuestion.id}-number`}
-              className="w-full px-4 py-2.5 sm:py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent hv-focus-ring"
-            />
+            <div className={`flex items-center gap-3 ${unitLabel ? 'flex-wrap sm:flex-nowrap' : ''}`}>
+              <input
+                type="number"
+                inputMode="decimal"
+                value={currentAnswer ?? ''}
+                onChange={(e) => onAnswer(currentQuestion.id, e.target.value)}
+                id={`${currentQuestion.id}-number`}
+                className="w-full flex-1 min-w-0 px-4 py-2.5 sm:py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent hv-focus-ring"
+              />
+              {unitLabel && (
+                <span className="inline-flex items-center px-4 py-2.5 sm:py-3 border-2 border-blue-100 bg-blue-50 text-sm font-semibold text-blue-700 rounded-xl whitespace-nowrap">
+                  {unitLabel}
+                </span>
+              )}
+            </div>
             <p className="text-xs text-gray-500 mt-2">
               Vous pouvez saisir un nombre entier ou décimal.
             </p>
           </div>
         );
+      }
       case 'url':
         return (
           <div className="mb-8">

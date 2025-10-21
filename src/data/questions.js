@@ -425,6 +425,7 @@ export const initialQuestions = [
     "conditionLogic": "all",
     "conditionGroups": [],
     "placeholder": "",
+    "numberUnit": "K€",
     "guidance": {
       "objective": "",
       "details": "",
