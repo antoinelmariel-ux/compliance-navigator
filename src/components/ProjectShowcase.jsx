@@ -137,20 +137,52 @@ const formatVigilanceStatusMessage = (alert) => {
   }
 
   if (alert.status === 'breach') {
-    const diffParts = [];
-    if (alert.diff && typeof alert.diff.diffInWeeks === 'number') {
-      diffParts.push(formatWeeksValue(alert.diff.diffInWeeks));
-    }
-    if (alert.diff && typeof alert.diff.diffInDays === 'number') {
-      diffParts.push(formatDaysValue(alert.diff.diffInDays));
-    }
+    const diffWeeks = alert.diff && typeof alert.diff.diffInWeeks === 'number'
+      ? alert.diff.diffInWeeks
+      : null;
+    const diffDays = alert.diff && typeof alert.diff.diffInDays === 'number'
+      ? alert.diff.diffInDays
+      : null;
+
+    const requiredWeeks = typeof alert.requiredWeeks === 'number' ? alert.requiredWeeks : null;
+    const requiredDays = typeof alert.requiredDays === 'number' ? alert.requiredDays : null;
 
     const requiredParts = [];
-    if (typeof alert.requiredWeeks === 'number') {
-      requiredParts.push(`${formatNumberFR(alert.requiredWeeks)} sem.`);
+    if (requiredWeeks !== null) {
+      requiredParts.push(`${formatNumberFR(requiredWeeks)} sem.`);
     }
-    if (typeof alert.requiredDays === 'number') {
-      requiredParts.push(`${formatNumberFR(alert.requiredDays)} j.`);
+    if (requiredDays !== null) {
+      requiredParts.push(`${formatNumberFR(requiredDays)} j.`);
+    }
+
+    const missingParts = [];
+    if (requiredWeeks !== null && diffWeeks !== null) {
+      const missingWeeks = requiredWeeks - diffWeeks;
+      if (missingWeeks > 0.0001) {
+        missingParts.push(formatWeeksValue(missingWeeks));
+      }
+    }
+    if (requiredDays !== null && diffDays !== null) {
+      const missingDays = requiredDays - diffDays;
+      if (missingDays > 0.0001) {
+        missingParts.push(formatDaysValue(missingDays));
+      }
+    }
+
+    if (missingParts.length > 0 && requiredParts.length > 0) {
+      return `Écart à combler : ${missingParts.join(' / ')} pour atteindre le minimum requis de ${requiredParts.join(' / ')}. Ajuster le planning en conséquence.`;
+    }
+
+    if (missingParts.length > 0) {
+      return `Écart à combler : ${missingParts.join(' / ')}. Ajuster le planning en conséquence.`;
+    }
+
+    const diffParts = [];
+    if (diffWeeks !== null) {
+      diffParts.push(formatWeeksValue(diffWeeks));
+    }
+    if (diffDays !== null) {
+      diffParts.push(formatDaysValue(diffDays));
     }
 
     if (diffParts.length === 0 && requiredParts.length === 0) {
