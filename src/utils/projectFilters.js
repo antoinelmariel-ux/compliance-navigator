@@ -3,19 +3,23 @@ const DEFAULT_FIELDS = [
     id: 'projectName',
     label: 'Titre du projet',
     type: 'text',
-    enabled: true
+    enabled: true,
+    sourceQuestionId: 'projectName'
   },
   {
     id: 'teamLead',
     label: 'Lead du projet',
     type: 'text',
-    enabled: true
+    enabled: true,
+    sourceQuestionId: 'teamLead'
   },
   {
     id: 'teamLeadTeam',
     label: 'Équipe du lead projet',
     type: 'select',
-    enabled: true
+    enabled: true,
+    sourceQuestionId: 'teamLeadTeam',
+    emptyOptionLabel: 'Toutes les équipes'
   },
   {
     id: 'dateOrder',
@@ -28,10 +32,19 @@ const DEFAULT_FIELDS = [
 
 const DEFAULT_SORT_VALUE = 'desc';
 
-const DEFAULT_ORDER_INDEX = new Map(DEFAULT_FIELDS.map((field, index) => [field.id, index]));
+const DEFAULT_FIELD_MAP = new Map(DEFAULT_FIELDS.map((field) => [field.id, field]));
+
+const sanitizeIdentifier = (value) => {
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : '';
+};
 
 export const createDefaultProjectFiltersConfig = () => ({
-  fields: DEFAULT_FIELDS.map(field => ({ ...field })),
+  fields: DEFAULT_FIELDS.map((field) => ({ ...field })),
   sortOrder: DEFAULT_SORT_VALUE
 });
 
@@ -55,6 +68,31 @@ const sanitizeSortValue = (value, fallback = DEFAULT_SORT_VALUE) => {
   return value === 'asc' || value === 'desc' ? value : fallback;
 };
 
+const sanitizeEmptyOptionLabel = (value, fallback) => {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : fallback;
+};
+
+const sanitizeOptionsList = (options) => {
+  if (!Array.isArray(options)) {
+    return undefined;
+  }
+
+  const sanitized = Array.from(
+    new Set(
+      options
+        .map((option) => (typeof option === 'string' ? option.trim() : ''))
+        .filter((option) => option.length > 0)
+    )
+  );
+
+  return sanitized.length > 0 ? sanitized : undefined;
+};
+
 export const normalizeProjectFilterConfig = (config) => {
   const base = createDefaultProjectFiltersConfig();
 
@@ -63,7 +101,7 @@ export const normalizeProjectFilterConfig = (config) => {
   }
 
   const normalizedFields = [];
-  const seen = new Set();
+  const seenIds = new Set();
 
   if (Array.isArray(config.fields)) {
     config.fields.forEach((field) => {
@@ -71,46 +109,90 @@ export const normalizeProjectFilterConfig = (config) => {
         return;
       }
 
-      const defaultIndex = DEFAULT_ORDER_INDEX.get(field.id);
-      if (defaultIndex === undefined) {
+      const rawId = sanitizeIdentifier(field.id);
+      if (rawId.length === 0 || seenIds.has(rawId)) {
         return;
       }
 
-      const defaultField = DEFAULT_FIELDS[defaultIndex];
+      const defaultField = DEFAULT_FIELD_MAP.get(rawId);
+
+      if (defaultField) {
+        const normalizedField = {
+          ...defaultField,
+          label: sanitizeLabel(field.label, defaultField.label),
+          enabled: sanitizeBoolean(field.enabled, defaultField.enabled)
+        };
+
+        if (defaultField.type === 'sort') {
+          normalizedField.defaultValue = sanitizeSortValue(
+            field.defaultValue,
+            defaultField.defaultValue || DEFAULT_SORT_VALUE
+          );
+        }
+
+        if (defaultField.sourceQuestionId) {
+          normalizedField.sourceQuestionId = sanitizeIdentifier(field.sourceQuestionId) || defaultField.sourceQuestionId;
+        }
+
+        if (defaultField.type === 'select') {
+          normalizedField.emptyOptionLabel = sanitizeEmptyOptionLabel(
+            field.emptyOptionLabel,
+            defaultField.emptyOptionLabel || 'Toutes les valeurs'
+          );
+          const presetOptions = sanitizeOptionsList(field.options);
+          if (presetOptions) {
+            normalizedField.options = presetOptions;
+          }
+        }
+
+        normalizedFields.push(normalizedField);
+        seenIds.add(rawId);
+        return;
+      }
+
+      const normalizedType = field.type === 'select' ? 'select' : 'text';
+      const sourceQuestionId = sanitizeIdentifier(field.sourceQuestionId) || rawId;
       const normalizedField = {
-        ...defaultField,
-        label: sanitizeLabel(field.label, defaultField.label),
-        enabled: sanitizeBoolean(field.enabled, defaultField.enabled)
+        id: rawId,
+        label: sanitizeLabel(field.label, 'Filtre personnalisé'),
+        type: normalizedType,
+        enabled: sanitizeBoolean(field.enabled, true)
       };
 
-      if (defaultField.type === 'sort') {
-        normalizedField.defaultValue = sanitizeSortValue(field.defaultValue, defaultField.defaultValue || DEFAULT_SORT_VALUE);
+      if (normalizedType === 'select') {
+        normalizedField.emptyOptionLabel = sanitizeEmptyOptionLabel(
+          field.emptyOptionLabel,
+          'Toutes les valeurs'
+        );
+        const presetOptions = sanitizeOptionsList(field.options);
+        if (presetOptions) {
+          normalizedField.options = presetOptions;
+        }
+      }
+
+      if (sourceQuestionId) {
+        normalizedField.sourceQuestionId = sourceQuestionId;
       }
 
       normalizedFields.push(normalizedField);
-      seen.add(field.id);
+      seenIds.add(rawId);
     });
   }
 
-  DEFAULT_FIELDS.forEach((field) => {
-    if (!seen.has(field.id)) {
-      normalizedFields.push({ ...field });
-    }
-  });
+  if (normalizedFields.length === 0) {
+    return {
+      fields: [],
+      sortOrder: sanitizeSortValue(config.sortOrder, DEFAULT_SORT_VALUE)
+    };
+  }
 
-  normalizedFields.sort((a, b) => {
-    const indexA = DEFAULT_ORDER_INDEX.get(a.id) ?? 0;
-    const indexB = DEFAULT_ORDER_INDEX.get(b.id) ?? 0;
-    return indexA - indexB;
-  });
-
+  const sortField = normalizedFields.find((field) => field && field.type === 'sort');
   const sortOrder = sanitizeSortValue(config.sortOrder, DEFAULT_SORT_VALUE);
 
-  const normalizedSortField = normalizedFields.find(field => field.id === 'dateOrder');
-  if (normalizedSortField) {
-    normalizedSortField.defaultValue = sanitizeSortValue(
-      normalizedSortField.defaultValue,
-      DEFAULT_FIELDS.find(field => field.id === 'dateOrder')?.defaultValue || DEFAULT_SORT_VALUE
+  if (sortField && sortField.type === 'sort') {
+    sortField.defaultValue = sanitizeSortValue(
+      sortField.defaultValue,
+      DEFAULT_FIELD_MAP.get(sortField.id)?.defaultValue || DEFAULT_SORT_VALUE
     );
   }
 
@@ -137,8 +219,56 @@ export const updateProjectFilterField = (config, fieldId, updates = {}) => {
       patch.enabled = sanitizeBoolean(updates.enabled, field.enabled);
     }
 
+    if (Object.prototype.hasOwnProperty.call(updates, 'type')) {
+      const normalizedType = updates.type === 'select' ? 'select' : updates.type === 'sort' ? 'sort' : 'text';
+      patch.type = normalizedType;
+
+      if (normalizedType === 'sort') {
+        patch.defaultValue = sanitizeSortValue(updates.defaultValue, field.defaultValue || DEFAULT_SORT_VALUE);
+      } else if (normalizedType === 'select') {
+        patch.emptyOptionLabel = sanitizeEmptyOptionLabel(
+          updates.emptyOptionLabel,
+          field.emptyOptionLabel || 'Toutes les valeurs'
+        );
+        const presetOptions = sanitizeOptionsList(updates.options);
+        if (presetOptions) {
+          patch.options = presetOptions;
+        } else {
+          delete patch.options;
+        }
+      } else {
+        delete patch.emptyOptionLabel;
+        delete patch.options;
+      }
+    }
+
     if (field.type === 'sort' && Object.prototype.hasOwnProperty.call(updates, 'defaultValue')) {
       patch.defaultValue = sanitizeSortValue(updates.defaultValue, field.defaultValue);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(updates, 'emptyOptionLabel') && field.type === 'select') {
+      patch.emptyOptionLabel = sanitizeEmptyOptionLabel(
+        updates.emptyOptionLabel,
+        field.emptyOptionLabel || 'Toutes les valeurs'
+      );
+    }
+
+    if (Object.prototype.hasOwnProperty.call(updates, 'options') && field.type === 'select') {
+      const presetOptions = sanitizeOptionsList(updates.options);
+      if (presetOptions) {
+        patch.options = presetOptions;
+      } else {
+        delete patch.options;
+      }
+    }
+
+    if (Object.prototype.hasOwnProperty.call(updates, 'sourceQuestionId')) {
+      const sanitizedSource = sanitizeIdentifier(updates.sourceQuestionId);
+      if (sanitizedSource) {
+        patch.sourceQuestionId = sanitizedSource;
+      } else {
+        delete patch.sourceQuestionId;
+      }
     }
 
     return patch;

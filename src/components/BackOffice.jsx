@@ -374,6 +374,16 @@ const PROJECT_FILTER_TYPE_LABELS = {
   sort: 'Tri par date'
 };
 
+const FILTER_COMPATIBLE_QUESTION_TYPES = new Set([
+  'choice',
+  'multi_choice',
+  'text',
+  'long_text',
+  'number',
+  'url',
+  'date'
+]);
+
 const PROJECT_FILTER_FIELD_DESCRIPTIONS = {
   projectName:
     'Permet de rechercher un projet par le titre saisi lors de la qualification.',
@@ -411,6 +421,7 @@ export const BackOffice = ({
   const [ruleTeamFilter, setRuleTeamFilter] = useState('all');
   const [expandedQuestionIds, setExpandedQuestionIds] = useState(() => new Set());
   const [expandedRuleIds, setExpandedRuleIds] = useState(() => new Set());
+  const [selectedFilterQuestionId, setSelectedFilterQuestionId] = useState('');
   const undoStackRef = useRef([]);
   const [canUndo, setCanUndo] = useState(false);
   const [undoMessage, setUndoMessage] = useState('');
@@ -491,11 +502,28 @@ export const BackOffice = ({
         setReorderAnnouncement('Suppression d’équipe annulée.');
         break;
       }
+      case 'projectFilter': {
+        if (typeof setProjectFilters === 'function') {
+          setProjectFilters((prevFilters) => {
+            const normalized = normalizeProjectFilterConfig(prevFilters);
+            const fields = Array.isArray(normalized.fields) ? normalized.fields.slice() : [];
+            const insertIndex = Math.max(0, Math.min(entry.index ?? fields.length, fields.length));
+            fields.splice(insertIndex, 0, entry.item);
+            return {
+              ...normalized,
+              fields
+            };
+          });
+        }
+        setUndoMessage(`Le filtre « ${entry.item?.label || entry.item?.id || 'filtre'} » a été restauré.`);
+        setReorderAnnouncement('Suppression de filtre annulée.');
+        break;
+      }
       default:
         setUndoMessage('Dernière action annulée.');
         break;
     }
-  }, [setQuestions, setRules, setRiskLevelRules, setTeams, setReorderAnnouncement]);
+  }, [setQuestions, setRules, setRiskLevelRules, setTeams, setProjectFilters, setReorderAnnouncement]);
 
   const confirmDeletion = useCallback((message) => {
     if (typeof window === 'undefined') {
@@ -831,6 +859,52 @@ export const BackOffice = ({
     [normalizedProjectFilters, defaultProjectFiltersConfig]
   );
 
+  const filterFields = Array.isArray(normalizedProjectFilters.fields)
+    ? normalizedProjectFilters.fields
+    : [];
+
+  const availableFilterQuestionOptions = useMemo(() => {
+    const usedQuestionIds = new Set();
+    if (Array.isArray(normalizedProjectFilters.fields)) {
+      normalizedProjectFilters.fields.forEach((field) => {
+        if (!field) {
+          return;
+        }
+
+        const sourceId = typeof field.sourceQuestionId === 'string' && field.sourceQuestionId.trim().length > 0
+          ? field.sourceQuestionId.trim()
+          : field.id;
+
+        if (sourceId) {
+          usedQuestionIds.add(sourceId);
+        }
+      });
+    }
+
+    const options = Array.isArray(questions)
+      ? questions
+          .filter((question) => question && FILTER_COMPATIBLE_QUESTION_TYPES.has(question.type))
+          .map((question) => ({
+            value: question.id,
+            label: question.question || question.id,
+            disabled: usedQuestionIds.has(question.id),
+            type: question.type
+          }))
+      : [];
+
+    return options.sort((a, b) => a.label.localeCompare(b.label, 'fr', { sensitivity: 'base' }));
+  }, [questions, normalizedProjectFilters]);
+
+  const selectedFilterOption = useMemo(() => {
+    if (!selectedFilterQuestionId) {
+      return null;
+    }
+
+    return availableFilterQuestionOptions.find((option) => option.value === selectedFilterQuestionId) || null;
+  }, [availableFilterQuestionOptions, selectedFilterQuestionId]);
+
+  const canAddProjectFilter = Boolean(selectedFilterOption && !selectedFilterOption.disabled);
+
   const handleProjectFilterToggle = useCallback((fieldId, enabled) => {
     if (typeof setProjectFilters !== 'function') {
       return;
@@ -846,6 +920,118 @@ export const BackOffice = ({
 
     setProjectFilters(prev => updateProjectFilterField(prev, fieldId, { label }));
   }, [setProjectFilters]);
+
+  const handleAddProjectFilter = useCallback(() => {
+    if (typeof setProjectFilters !== 'function') {
+      return;
+    }
+
+    const questionId = typeof selectedFilterQuestionId === 'string'
+      ? selectedFilterQuestionId.trim()
+      : '';
+
+    if (questionId.length === 0) {
+      return;
+    }
+
+    const question = Array.isArray(questions)
+      ? questions.find((item) => item && item.id === questionId)
+      : null;
+
+    if (!question || !FILTER_COMPATIBLE_QUESTION_TYPES.has(question.type)) {
+      return;
+    }
+
+    setProjectFilters((prev) => {
+      const normalized = normalizeProjectFilterConfig(prev);
+      const existing = Array.isArray(normalized.fields)
+        ? normalized.fields.some((field) => {
+            if (!field) {
+              return false;
+            }
+
+            const sourceId = typeof field.sourceQuestionId === 'string' && field.sourceQuestionId.trim().length > 0
+              ? field.sourceQuestionId.trim()
+              : field.id;
+
+            return sourceId === questionId;
+          })
+        : false;
+
+      if (existing) {
+        return normalized;
+      }
+
+      const type = question.type === 'choice' ? 'select' : 'text';
+      const newField = {
+        id: question.id,
+        label: question.question || question.id,
+        type,
+        enabled: true,
+        sourceQuestionId: question.id
+      };
+
+      if (type === 'select') {
+        newField.emptyOptionLabel = question.id === 'teamLeadTeam' ? 'Toutes les équipes' : 'Toutes les valeurs';
+      }
+
+      const fields = Array.isArray(normalized.fields) ? [...normalized.fields, newField] : [newField];
+
+      return {
+        ...normalized,
+        fields
+      };
+    });
+
+    setSelectedFilterQuestionId('');
+  }, [questions, selectedFilterQuestionId, setProjectFilters]);
+
+  const handleRemoveProjectFilter = useCallback((field) => {
+    if (!field || typeof setProjectFilters !== 'function') {
+      return;
+    }
+
+    if (field.id === 'dateOrder') {
+      return;
+    }
+
+    const label = field.label || field.id || 'filtre';
+    const confirmationMessage = `Voulez-vous vraiment supprimer le filtre « ${label} » ?`;
+    const shouldDelete = confirmDeletion(confirmationMessage);
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    const currentFields = Array.isArray(normalizedProjectFilters.fields)
+      ? normalizedProjectFilters.fields
+      : [];
+
+    const index = currentFields.findIndex((item) => item && item.id === field.id);
+    if (index === -1) {
+      return;
+    }
+
+    const removedField = currentFields[index];
+    pushUndoEntry({
+      type: 'projectFilter',
+      item: removedField,
+      index,
+      message: `Le filtre « ${removedField.label || removedField.id || 'filtre'} » a été supprimé. Appuyez sur Ctrl+Z pour annuler.`
+    });
+
+    setProjectFilters((prev) => {
+      const normalized = normalizeProjectFilterConfig(prev);
+      const fields = Array.isArray(normalized.fields)
+        ? normalized.fields.filter((item) => item && item.id !== field.id)
+        : [];
+
+      return {
+        ...normalized,
+        fields
+      };
+    });
+  }, [confirmDeletion, normalizedProjectFilters, pushUndoEntry, setProjectFilters]);
 
   const handleProjectFilterDefaultSortChange = useCallback((value) => {
     if (typeof setProjectFilters !== 'function') {
@@ -1680,6 +1866,11 @@ export const BackOffice = ({
       panelId: 'backoffice-tabpanel-dashboard'
     },
     {
+      id: 'filters',
+      label: `Filtres d'accueil (${filterFields.length})`,
+      panelId: 'backoffice-tabpanel-filters'
+    },
+    {
       id: 'questions',
       label: `Questions (${questions.length})`,
       panelId: 'backoffice-tabpanel-questions'
@@ -2085,12 +2276,31 @@ export const BackOffice = ({
               aria-labelledby="backoffice-tab-dashboard"
               className="space-y-6"
             >
+              <div className="rounded-2xl border border-dashed border-blue-200 bg-blue-50/60 p-6 text-center text-blue-700">
+                <h2 className="text-2xl font-bold text-blue-900">Dashboard</h2>
+                <p className="mt-2 text-sm">
+                  Cette section proposera prochainement des indicateurs clés pour analyser les projets soumis.
+                </p>
+                <p className="mt-1 text-xs text-blue-600">
+                  Revenez bientôt pour suivre vos KPIs et faciliter vos prises de décision.
+                </p>
+              </div>
+            </section>
+          )}
+
+          {activeTab === 'filters' && (
+            <section
+              id="backoffice-tabpanel-filters"
+              role="tabpanel"
+              aria-labelledby="backoffice-tab-filters"
+              className="space-y-6"
+            >
               <article className="space-y-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hv-surface">
                 <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="space-y-2">
                     <h2 className="text-2xl font-bold text-gray-800">Filtres de la page d'accueil</h2>
                     <p className="text-sm text-gray-600">
-                      Activez ou personnalisez les filtres mis à disposition des chefs de projet sur l'écran d'accueil.
+                      Activez, ajoutez ou personnalisez les filtres mis à disposition des chefs de projet sur l'écran d'accueil.
                     </p>
                   </div>
                   <button
@@ -2107,122 +2317,197 @@ export const BackOffice = ({
                   </button>
                 </header>
 
-                <div className="space-y-4">
-                  {normalizedProjectFilters.fields.map((field) => {
-                    const typeLabel = PROJECT_FILTER_TYPE_LABELS[field.type] || 'Paramètre';
-                    const description = PROJECT_FILTER_FIELD_DESCRIPTIONS[field.id] || '';
-                    const labelInputId = `project-filter-label-${field.id}`;
-                    const sortDefault = field.type === 'sort' && field.defaultValue === 'asc' ? 'asc' : 'desc';
-
-                    return (
-                      <article
-                        key={field.id}
-                        className="border border-gray-200 rounded-xl bg-white p-5 shadow-sm hv-surface"
+                <div className="flex flex-col gap-4">
+                  <div className="rounded-xl border border-dashed border-blue-200 bg-blue-50/70 p-4 md:flex md:items-end md:justify-between md:gap-4">
+                    <div className="flex-1 space-y-2">
+                      <label htmlFor="new-filter-question" className="text-sm font-medium text-blue-900">
+                        Ajouter un filtre basé sur une question
+                      </label>
+                      <select
+                        id="new-filter-question"
+                        value={selectedFilterQuestionId}
+                        onChange={(event) => setSelectedFilterQuestionId(event.target.value)}
+                        className="w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                       >
-                        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                          <div className="space-y-2">
-                            <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide">
-                              <span className="rounded-full bg-blue-100 px-2 py-1 text-blue-700">
-                                {typeLabel}
-                              </span>
-                              <span
-                                className={`rounded-full px-2 py-1 ${
-                                  field.enabled
-                                    ? 'bg-emerald-100 text-emerald-700'
-                                    : 'bg-gray-100 text-gray-600'
-                                }`}
-                              >
-                                {field.enabled ? 'Activé' : 'Désactivé'}
-                              </span>
-                            </div>
-                            <h3 className="text-lg font-semibold text-gray-800">{field.label}</h3>
-                            {description && <p className="text-sm text-gray-600">{description}</p>}
-                          </div>
-                          <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
-                            <input
-                              type="checkbox"
-                              checked={field.enabled}
-                              onChange={(event) => handleProjectFilterToggle(field.id, event.target.checked)}
-                              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            />
-                            <span>Activer ce filtre</span>
-                          </label>
-                        </div>
+                        <option value="">Sélectionnez une question…</option>
+                        {availableFilterQuestionOptions.map((option) => (
+                          <option key={option.value} value={option.value} disabled={option.disabled}>
+                            {option.label}{option.disabled ? ' (déjà utilisé)' : ''}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-xs text-blue-700">
+                        Les champs texte et listes à choix unique du questionnaire peuvent être transformés en filtres.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAddProjectFilter}
+                      disabled={!canAddProjectFilter}
+                      className={`mt-4 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors hv-button md:mt-0 ${
+                        canAddProjectFilter
+                          ? 'bg-blue-600 text-white hover:bg-blue-700 hv-button-primary'
+                          : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      }`}
+                    >
+                      <Plus className="w-4 h-4" /> Ajouter le filtre
+                    </button>
+                  </div>
 
-                        <div className="mt-4 grid gap-4 md:grid-cols-2">
-                          <div className="flex flex-col gap-2">
-                            <label htmlFor={labelInputId} className="text-sm font-medium text-gray-700">
-                              Libellé affiché
-                            </label>
-                            <input
-                              id={labelInputId}
-                              type="text"
-                              value={field.label}
-                              onChange={(event) => handleProjectFilterLabelChange(field.id, event.target.value)}
-                              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                            />
-                            <p className="text-xs text-gray-500">
-                              Ce titre s'affiche sur la page d'accueil à côté du champ de filtre.
-                            </p>
-                          </div>
+                  <div className="space-y-4">
+                    {filterFields.length === 0 ? (
+                      <div className="rounded-xl border border-gray-200 bg-gray-50 p-5 text-sm text-gray-600">
+                        Aucun filtre n'est configuré pour le moment. Utilisez le menu ci-dessus pour en ajouter.
+                      </div>
+                    ) : (
+                      filterFields.map((field) => {
+                        const typeLabel = PROJECT_FILTER_TYPE_LABELS[field.type] || 'Paramètre';
+                        const description = PROJECT_FILTER_FIELD_DESCRIPTIONS[field.id] || '';
+                        const labelInputId = `project-filter-label-${field.id}`;
+                        const sortDefault = field.type === 'sort' && field.defaultValue === 'asc' ? 'asc' : 'desc';
+                        const sourceQuestionId = field.sourceQuestionId || field.id;
+                        const sourceQuestion = Array.isArray(questions)
+                          ? questions.find((question) => question && question.id === sourceQuestionId)
+                          : null;
+                        const sourceLabel = sourceQuestion?.question;
+                        const canRemoveFilter = field.id !== 'dateOrder';
 
-                          {field.type === 'sort' ? (
-                            <fieldset className="flex flex-col gap-2">
-                              <legend className="text-sm font-medium text-gray-700">Ordre par défaut</legend>
-                              <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-                                <input
-                                  type="radio"
-                                  name={`project-filter-sort-order-${field.id}`}
-                                  value="desc"
-                                  checked={sortDefault === 'desc'}
-                                  onChange={() => handleProjectFilterDefaultSortChange('desc')}
-                                  className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
-                                />
-                                <span>Antéchronologique (plus récents en premier)</span>
-                              </label>
-                              <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-                                <input
-                                  type="radio"
-                                  name={`project-filter-sort-order-${field.id}`}
-                                  value="asc"
-                                  checked={sortDefault === 'asc'}
-                                  onChange={() => handleProjectFilterDefaultSortChange('asc')}
-                                  className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
-                                />
-                                <span>Chronologique (plus anciens en premier)</span>
-                              </label>
-                            </fieldset>
-                          ) : field.type === 'select' ? (
-                            <div className="flex flex-col gap-2 text-sm text-gray-600">
-                              <span className="font-medium text-gray-700">Options proposées</span>
-                              <p className="text-xs text-gray-500">
-                                Les valeurs proviennent des réponses collectées et des options configurées dans le questionnaire.
-                              </p>
+                        return (
+                          <article
+                            key={field.id}
+                            className="border border-gray-200 rounded-xl bg-white p-5 shadow-sm hv-surface"
+                          >
+                            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                              <div className="space-y-2">
+                                <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide">
+                                  <span className="rounded-full bg-blue-100 px-2 py-1 text-blue-700">
+                                    {typeLabel}
+                                  </span>
+                                  <span
+                                    className={`rounded-full px-2 py-1 ${
+                                      field.enabled
+                                        ? 'bg-emerald-100 text-emerald-700'
+                                        : 'bg-gray-100 text-gray-600'
+                                    }`}
+                                  >
+                                    {field.enabled ? 'Activé' : 'Désactivé'}
+                                  </span>
+                                </div>
+                                <h3 className="text-lg font-semibold text-gray-800">{field.label}</h3>
+                                {description && <p className="text-sm text-gray-600">{description}</p>}
+                                {sourceQuestionId && (
+                                  <p className="text-xs text-gray-500">
+                                    Source : <span className="font-medium">{sourceQuestionId}</span>
+                                    {sourceLabel ? ` – ${sourceLabel}` : ''}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
+                                  <input
+                                    type="checkbox"
+                                    checked={field.enabled}
+                                    onChange={(event) => handleProjectFilterToggle(field.id, event.target.checked)}
+                                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                  />
+                                  <span>Activer</span>
+                                </label>
+                                {canRemoveFilter && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveProjectFilter(field)}
+                                    className="inline-flex items-center gap-1 rounded-lg border border-red-100 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100 hv-button"
+                                  >
+                                    <Trash2 className="w-4 h-4" /> Supprimer
+                                  </button>
+                                )}
+                              </div>
                             </div>
-                          ) : (
-                            <div className="flex flex-col gap-2 text-sm text-gray-600">
-                              <span className="font-medium text-gray-700">Comportement</span>
-                              <p className="text-xs text-gray-500">
-                                Recherche plein texte sur la réponse saisie par le chef de projet.
-                              </p>
+
+                            <div className="mt-4 grid gap-4 md:grid-cols-2">
+                              <div className="flex flex-col gap-2">
+                                <label htmlFor={labelInputId} className="text-sm font-medium text-gray-700">
+                                  Libellé affiché
+                                </label>
+                                <input
+                                  id={labelInputId}
+                                  type="text"
+                                  value={field.label}
+                                  onChange={(event) => handleProjectFilterLabelChange(field.id, event.target.value)}
+                                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                />
+                                <p className="text-xs text-gray-500">
+                                  Ce titre s'affiche sur la page d'accueil à côté du champ de filtre.
+                                </p>
+                              </div>
+
+                              {field.type === 'sort' ? (
+                                <fieldset className="flex flex-col gap-2">
+                                  <legend className="text-sm font-medium text-gray-700">Ordre par défaut</legend>
+                                  <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                                    <input
+                                      type="radio"
+                                      name={`project-filter-sort-order-${field.id}`}
+                                      value="desc"
+                                      checked={sortDefault === 'desc'}
+                                      onChange={() => handleProjectFilterDefaultSortChange('desc')}
+                                      className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <span>Antéchronologique (plus récents en premier)</span>
+                                  </label>
+                                  <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                                    <input
+                                      type="radio"
+                                      name={`project-filter-sort-order-${field.id}`}
+                                      value="asc"
+                                      checked={sortDefault === 'asc'}
+                                      onChange={() => handleProjectFilterDefaultSortChange('asc')}
+                                      className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <span>Chronologique (plus anciens en premier)</span>
+                                  </label>
+                                </fieldset>
+                              ) : field.type === 'select' ? (
+                                <div className="flex flex-col gap-2">
+                                  <label
+                                    htmlFor={`project-filter-empty-option-${field.id}`}
+                                    className="text-sm font-medium text-gray-700"
+                                  >
+                                    Libellé de l'option « toutes »
+                                  </label>
+                                  <input
+                                    id={`project-filter-empty-option-${field.id}`}
+                                    type="text"
+                                    value={field.emptyOptionLabel || 'Toutes les valeurs'}
+                                    onChange={(event) =>
+                                      setProjectFilters((prev) =>
+                                        updateProjectFilterField(prev, field.id, {
+                                          emptyOptionLabel: event.target.value
+                                        })
+                                      )
+                                    }
+                                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                  />
+                                  <p className="text-xs text-gray-500">
+                                    Texte affiché pour représenter l'ensemble des valeurs disponibles.
+                                  </p>
+                                </div>
+                              ) : (
+                                <div className="flex flex-col gap-2 text-sm text-gray-600">
+                                  <span className="font-medium text-gray-700">Comportement</span>
+                                  <p className="text-xs text-gray-500">
+                                    Recherche plein texte sur la réponse saisie par le chef de projet.
+                                  </p>
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                      </article>
-                    );
-                  })}
+                          </article>
+                        );
+                      })
+                    )}
+                  </div>
                 </div>
               </article>
-
-              <div className="rounded-2xl border border-dashed border-blue-200 bg-blue-50/60 p-6 text-center text-blue-700">
-                <h2 className="text-2xl font-bold text-blue-900">Dashboard</h2>
-                <p className="mt-2 text-sm">
-                  Cette section proposera prochainement des indicateurs clés pour analyser les projets soumis.
-                </p>
-                <p className="mt-1 text-xs text-blue-600">
-                  Revenez bientôt pour suivre vos KPIs et faciliter vos prises de décision.
-                </p>
-              </div>
             </section>
           )}
 
