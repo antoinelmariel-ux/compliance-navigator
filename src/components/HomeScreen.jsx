@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from '../react.js';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from '../react.js';
 import {
   Plus,
   Target,
@@ -166,6 +166,120 @@ export const HomeScreen = ({
   );
   const [filtersState, setFiltersState] = useState(() => buildInitialFiltersState(normalizedFilters));
   const fileInputRef = useRef(null);
+  const [deleteDialogState, setDeleteDialogState] = useState(() => ({
+    isOpen: false,
+    project: null
+  }));
+  const deleteCancelButtonRef = useRef(null);
+  const deleteConfirmButtonRef = useRef(null);
+  const previouslyFocusedElementRef = useRef(null);
+
+  const closeDeleteDialog = useCallback(() => {
+    setDeleteDialogState({ isOpen: false, project: null });
+  }, []);
+
+  const handleCancelDeleteProject = useCallback(() => {
+    closeDeleteDialog();
+  }, [closeDeleteDialog]);
+
+  const handleRequestProjectDeletion = useCallback((project) => {
+    if (!project || !project.id || typeof onDeleteProject !== 'function') {
+      return;
+    }
+
+    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+      previouslyFocusedElementRef.current = document.activeElement;
+    } else {
+      previouslyFocusedElementRef.current = null;
+    }
+
+    setDeleteDialogState({
+      isOpen: true,
+      project
+    });
+  }, [onDeleteProject]);
+
+  const handleConfirmDeleteProject = useCallback(() => {
+    if (!deleteDialogState.project || typeof onDeleteProject !== 'function') {
+      closeDeleteDialog();
+      return;
+    }
+
+    onDeleteProject(deleteDialogState.project.id);
+    closeDeleteDialog();
+  }, [closeDeleteDialog, deleteDialogState.project, onDeleteProject]);
+
+  useEffect(() => {
+    if (!deleteDialogState.isOpen) {
+      if (
+        previouslyFocusedElementRef.current &&
+        typeof previouslyFocusedElementRef.current.focus === 'function'
+      ) {
+        const shouldRestoreFocus =
+          typeof document === 'undefined' ||
+          document.contains(previouslyFocusedElementRef.current);
+
+        if (shouldRestoreFocus) {
+          previouslyFocusedElementRef.current.focus();
+        }
+
+        previouslyFocusedElementRef.current = null;
+      }
+      return undefined;
+    }
+
+    const timeoutId = typeof window !== 'undefined'
+      ? window.setTimeout(() => {
+        if (deleteCancelButtonRef.current && typeof deleteCancelButtonRef.current.focus === 'function') {
+          deleteCancelButtonRef.current.focus();
+        }
+      }, 0)
+      : null;
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        handleCancelDeleteProject();
+        return;
+      }
+
+      if (event.key === 'Tab') {
+        const focusableElements = [deleteCancelButtonRef.current, deleteConfirmButtonRef.current].filter(
+          (element) => element && typeof element.focus === 'function'
+        );
+
+        if (focusableElements.length === 0) {
+          return;
+        }
+
+        const activeElement = typeof document !== 'undefined' ? document.activeElement : null;
+        const currentIndex = focusableElements.indexOf(activeElement);
+        let nextIndex = currentIndex;
+
+        if (event.shiftKey) {
+          nextIndex = currentIndex <= 0 ? focusableElements.length - 1 : currentIndex - 1;
+        } else {
+          nextIndex = currentIndex === focusableElements.length - 1 ? 0 : currentIndex + 1;
+        }
+
+        event.preventDefault();
+        focusableElements[nextIndex]?.focus();
+      }
+    };
+
+    if (typeof document !== 'undefined') {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('keydown', handleKeyDown);
+      }
+      if (timeoutId !== null && typeof window !== 'undefined') {
+        window.clearTimeout(timeoutId);
+      }
+    };
+  }, [deleteDialogState.isOpen, handleCancelDeleteProject]);
 
   useEffect(() => {
     setFiltersState(prevState => {
@@ -316,6 +430,23 @@ export const HomeScreen = ({
 
   const hasProjects = projects.length > 0;
   const hasFilteredProjects = filteredProjects.length > 0;
+  const pendingDeletionProjectName = useMemo(() => {
+    if (!deleteDialogState.project) {
+      return '';
+    }
+
+    const directName = getSafeString(deleteDialogState.project.projectName);
+    if (directName.trim().length > 0) {
+      return directName;
+    }
+
+    const answerName = getSafeString(deleteDialogState.project.answers?.projectName);
+    if (answerName.trim().length > 0) {
+      return answerName;
+    }
+
+    return 'Projet sans nom';
+  }, [deleteDialogState.project]);
 
   const hasActiveFilters = useMemo(() => {
     const fields = Array.isArray(normalizedFilters.fields) ? normalizedFilters.fields : [];
@@ -655,7 +786,7 @@ export const HomeScreen = ({
                             {isDraft && typeof onDeleteProject === 'function' && (
                               <button
                                 type="button"
-                                onClick={() => onDeleteProject(project.id)}
+                                onClick={() => handleRequestProjectDeletion(project)}
                                 className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors hv-button hv-focus-ring"
                                 aria-label={`Supprimer le projet ${project.projectName || 'sans nom'}`}
                                 title="Supprimer le projet"
@@ -746,6 +877,55 @@ export const HomeScreen = ({
           )}
         </section>
       </div>
+      {deleteDialogState.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
+          <div
+            className="absolute inset-0 bg-gray-900 bg-opacity-60"
+            aria-hidden="true"
+            onClick={handleCancelDeleteProject}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-project-dialog-title"
+            aria-describedby="delete-project-dialog-description"
+            className="relative z-10 w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl focus:outline-none hv-surface"
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600">
+                <Trash2 className="h-6 w-6" aria-hidden="true" />
+              </div>
+              <div>
+                <h2 id="delete-project-dialog-title" className="text-xl font-semibold text-gray-900">
+                  Supprimer le projet ?
+                </h2>
+                <p id="delete-project-dialog-description" className="mt-2 text-sm text-gray-600">
+                  Vous êtes sur le point de supprimer « {pendingDeletionProjectName || 'Projet sans nom'} ». Cette action est
+                  définitive et le projet ne pourra pas être restauré.
+                </p>
+              </div>
+            </div>
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
+              <button
+                type="button"
+                ref={deleteCancelButtonRef}
+                onClick={handleCancelDeleteProject}
+                className="inline-flex items-center justify-center rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition-colors hv-button hv-focus-ring"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                ref={deleteConfirmButtonRef}
+                onClick={handleConfirmDeleteProject}
+                className="inline-flex items-center justify-center rounded-lg border border-red-200 bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 transition-colors hv-button hv-button-danger"
+              >
+                Supprimer définitivement
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
