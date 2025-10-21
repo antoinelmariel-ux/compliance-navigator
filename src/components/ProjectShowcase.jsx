@@ -201,9 +201,28 @@ const buildVigilanceAlerts = (analysis, questions, resolveTeamLabel) => {
         ? alert.riskDescription.trim()
         : alert.ruleName;
 
+      const normalizedRuleId = alert?.ruleId != null
+        ? (() => {
+            const value = String(alert.ruleId).trim();
+            return value.length > 0 ? value : null;
+          })()
+        : null;
+      const normalizedRiskId = alert?.riskId != null
+        ? (() => {
+            const value = String(alert.riskId).trim();
+            return value.length > 0 ? value : null;
+          })()
+        : null;
+      const normalizedRiskDescription = typeof alert?.riskDescription === 'string'
+        ? alert.riskDescription.trim()
+        : '';
+
       return {
         id: alert.id || `${alert.ruleId || 'rule'}-${alert.riskId || index}`,
+        ruleId: normalizedRuleId,
         ruleName: alert.ruleName,
+        riskId: normalizedRiskId,
+        riskDescription: normalizedRiskDescription,
         title,
         priority: alert.priority || '',
         requirementSummary: formatTimingRequirementSummary(questions, alert.timingConstraint),
@@ -226,8 +245,68 @@ const mergeTimelineSummariesWithAlerts = (summaries, alerts) => {
     return { summaries: safeSummaries, unmatchedAlerts: safeAlerts };
   }
 
-  const alertIdMap = new Map();
-  const alertRuleNameMap = new Map();
+  const alertKeyMap = new Map();
+
+  const registerKey = (map, key, entry) => {
+    if (key === null || key === undefined) {
+      return;
+    }
+
+    const stringKey = typeof key === 'string' ? key : String(key);
+    if (stringKey.length === 0) {
+      return;
+    }
+
+    if (!map.has(stringKey)) {
+      map.set(stringKey, entry);
+    }
+
+    const normalized = stringKey.trim().toLowerCase();
+    if (normalized.length > 0 && !map.has(normalized)) {
+      map.set(normalized, entry);
+    }
+  };
+
+  const registerTextKey = (map, text, entry) => {
+    if (typeof text !== 'string') {
+      return;
+    }
+
+    const trimmed = text.trim();
+    if (trimmed.length === 0) {
+      return;
+    }
+
+    registerKey(map, trimmed, entry);
+  };
+
+  const registerCompositeKey = (map, parts, entry) => {
+    if (!Array.isArray(parts)) {
+      return;
+    }
+
+    const normalizedParts = parts
+      .map(part => {
+        if (part === null || part === undefined) {
+          return null;
+        }
+
+        if (typeof part === 'string') {
+          const trimmed = part.trim();
+          return trimmed.length > 0 ? trimmed : null;
+        }
+
+        const stringified = String(part);
+        return stringified.length > 0 ? stringified : null;
+      })
+      .filter(Boolean);
+
+    if (normalizedParts.length === 0) {
+      return;
+    }
+
+    registerKey(map, normalizedParts.join('::'), entry);
+  };
 
   safeAlerts.forEach((alert, index) => {
     if (!alert || typeof alert !== 'object') {
@@ -236,23 +315,32 @@ const mergeTimelineSummariesWithAlerts = (summaries, alerts) => {
 
     const entry = { alert, index };
 
-    if (alert.id) {
-      alertIdMap.set(alert.id, entry);
-    }
+    registerTextKey(alertKeyMap, alert.id, entry);
+    registerTextKey(alertKeyMap, alert.ruleId, entry);
+    registerTextKey(alertKeyMap, alert.ruleName, entry);
+    registerTextKey(alertKeyMap, alert.title, entry);
+    registerTextKey(alertKeyMap, alert.riskDescription, entry);
 
     if (alert.ruleId) {
-      alertIdMap.set(alert.ruleId, entry);
-    }
+      if (alert.riskId != null) {
+        const riskId = String(alert.riskId);
+        registerKey(alertKeyMap, `${alert.ruleId}-${riskId}`, entry);
+        registerKey(alertKeyMap, `${alert.ruleId}__${riskId}`, entry);
+        registerCompositeKey(alertKeyMap, [alert.ruleId, riskId], entry);
+      } else {
+        registerKey(alertKeyMap, `${alert.ruleId}-risk`, entry);
+      }
 
-    if (typeof alert.ruleName === 'string') {
-      const normalizedRuleName = alert.ruleName.trim().toLowerCase();
-      if (normalizedRuleName.length > 0) {
-        if (!alertRuleNameMap.has(normalizedRuleName)) {
-          alertRuleNameMap.set(normalizedRuleName, entry);
-        }
-        if (!alertIdMap.has(normalizedRuleName)) {
-          alertIdMap.set(normalizedRuleName, entry);
-        }
+      if (typeof alert.title === 'string' && alert.title.trim().length > 0) {
+        registerCompositeKey(alertKeyMap, [alert.ruleId, alert.title], entry);
+      }
+
+      if (typeof alert.riskDescription === 'string' && alert.riskDescription.trim().length > 0) {
+        registerCompositeKey(alertKeyMap, [alert.ruleId, alert.riskDescription], entry);
+      }
+
+      if (typeof alert.ruleName === 'string' && alert.ruleName.trim().length > 0) {
+        registerCompositeKey(alertKeyMap, [alert.ruleId, alert.ruleName], entry);
       }
     }
   });
@@ -274,10 +362,46 @@ const mergeTimelineSummariesWithAlerts = (summaries, alerts) => {
       candidateKeys.push(summary.source);
     }
 
+    if (summary.ruleId) {
+      candidateKeys.push(summary.ruleId);
+
+      if (summary.ruleLabel) {
+        candidateKeys.push(`${summary.ruleId}::${summary.ruleLabel}`);
+      }
+
+      if (summary.ruleName && typeof summary.ruleName === 'string') {
+        candidateKeys.push(`${summary.ruleId}::${summary.ruleName}`);
+      }
+
+      if (summary.riskDescription) {
+        candidateKeys.push(`${summary.ruleId}::${summary.riskDescription}`);
+      }
+
+      if (!summary.riskId && summary.source) {
+        candidateKeys.push(`${summary.ruleId}-${summary.source}`);
+        candidateKeys.push(`${summary.ruleId}::${summary.source}`);
+      }
+    }
+
+    if (summary.ruleLabel) {
+      candidateKeys.push(summary.ruleLabel);
+    }
+
     if (summary.ruleName && typeof summary.ruleName === 'string') {
-      const normalizedRuleName = summary.ruleName.trim().toLowerCase();
-      if (normalizedRuleName.length > 0) {
-        candidateKeys.push(normalizedRuleName);
+      candidateKeys.push(summary.ruleName);
+    }
+
+    if (summary.riskDescription) {
+      candidateKeys.push(summary.riskDescription);
+    }
+
+    if (summary.riskId != null) {
+      candidateKeys.push(summary.riskId);
+
+      if (summary.ruleId) {
+        candidateKeys.push(`${summary.ruleId}-${summary.riskId}`);
+        candidateKeys.push(`${summary.ruleId}__${summary.riskId}`);
+        candidateKeys.push(`${summary.ruleId}::${summary.riskId}`);
       }
     }
 
@@ -288,19 +412,15 @@ const mergeTimelineSummariesWithAlerts = (summaries, alerts) => {
         continue;
       }
 
-      if (alertIdMap.has(key)) {
-        matchedEntry = alertIdMap.get(key);
+      if (alertKeyMap.has(key)) {
+        matchedEntry = alertKeyMap.get(key);
         break;
       }
 
       if (typeof key === 'string') {
         const normalizedKey = key.trim().toLowerCase();
-        if (alertIdMap.has(normalizedKey)) {
-          matchedEntry = alertIdMap.get(normalizedKey);
-          break;
-        }
-        if (alertRuleNameMap.has(normalizedKey)) {
-          matchedEntry = alertRuleNameMap.get(normalizedKey);
+        if (alertKeyMap.has(normalizedKey)) {
+          matchedEntry = alertKeyMap.get(normalizedKey);
           break;
         }
       }
@@ -730,12 +850,31 @@ const computeTimelineSummaries = (timelineDetails) => {
       const summaryLabel = riskLabel.length > 0 ? riskLabel : detail?.ruleName;
       const hasProfiles = Array.isArray(detail?.profiles) && detail.profiles.length > 0;
       const source = typeof detail?.source === 'string' ? detail.source : null;
+      const ruleId = detail?.ruleId != null
+        ? (() => {
+            const value = String(detail.ruleId).trim();
+            return value.length > 0 ? value : null;
+          })()
+        : null;
+      const riskId = detail?.riskId != null
+        ? (() => {
+            const value = String(detail.riskId).trim();
+            return value.length > 0 ? value : null;
+          })()
+        : null;
+      const ruleLabel = typeof detail?.ruleName === 'string'
+        ? detail.ruleName.trim()
+        : '';
       const identifier = detail?.id
-        || `${detail?.ruleId || detail?.ruleName || 'rule'}-${detail?.riskId || source || index}`;
+        || `${ruleId || ruleLabel || 'rule'}-${riskId || source || index}`;
 
       return {
         id: identifier,
+        ruleId,
         ruleName: summaryLabel,
+        ruleLabel,
+        riskId,
+        riskDescription: riskLabel,
         satisfied: detail?.satisfied ?? false,
         weeks,
         days,
