@@ -587,7 +587,7 @@ export const QuestionnaireScreen = ({
               <p className="mt-4 text-xs italic text-gray-400">
                 Le LFB traite les données recueillies pour gérer les projets à soumettre aux équipes compliance.{' '}
                 <a
-                  href="/mentions-legales.html"
+                  href="./mentions-legales.html"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="underline hover:text-gray-500"
