@@ -73,6 +73,8 @@ const QUESTION_TYPE_META = {
   }
 };
 
+const PROTECTED_QUESTION_IDS = new Set(['ProjectType']);
+
 const getQuestionTypeMeta = (type) => {
   const key = type || 'choice';
   return QUESTION_TYPE_META[key] || QUESTION_TYPE_META.choice;
@@ -1944,6 +1946,10 @@ export const BackOffice = ({
   };
 
   const deleteQuestion = (id) => {
+    if (PROTECTED_QUESTION_IDS.has(id)) {
+      return;
+    }
+
     const targetIndex = questions.findIndex((question) => question.id === id);
     if (targetIndex < 0) {
       return;
@@ -2608,12 +2614,16 @@ export const BackOffice = ({
                       ? question.numberUnit.trim()
                       : '';
                   const isShowcaseQuestion = Boolean(question && question.showcase);
-                  const deleteButtonClasses = isShowcaseQuestion
+                  const isProtectedQuestion = question?.id === 'ProjectType';
+                  const deleteButtonDisabled = isShowcaseQuestion || isProtectedQuestion;
+                  const deleteButtonClasses = deleteButtonDisabled
                     ? 'p-2 text-gray-300 bg-gray-100 cursor-not-allowed rounded hv-button'
                     : 'p-2 text-red-600 hover:bg-red-50 rounded hv-button';
                   const deleteButtonTitle = isShowcaseQuestion
                     ? 'Cette question alimente la vitrine showcase et ne peut pas être supprimée.'
-                    : `Supprimer la question ${question.id}`;
+                    : isProtectedQuestion
+                      ? 'Cette question est indispensable pour identifier le type de projet et ne peut pas être supprimée.'
+                      : `Supprimer la question ${question.id}`;
                   const questionTeams = questionTeamAssignments.get(question.id) || [];
                   const questionTeamLabels = questionTeams.map((teamId) => getTeamLabel(teamId, teams));
                   const isExpanded = expandedQuestionIds.has(question.id);
@@ -2718,7 +2728,7 @@ export const BackOffice = ({
                             <button
                               type="button"
                               onClick={() => {
-                                if (isShowcaseQuestion) {
+                                if (deleteButtonDisabled) {
                                   return;
                                 }
 
@@ -2733,8 +2743,8 @@ export const BackOffice = ({
                               }}
                               className={deleteButtonClasses}
                               aria-label={deleteButtonTitle}
-                              aria-disabled={isShowcaseQuestion}
-                              disabled={isShowcaseQuestion}
+                              aria-disabled={deleteButtonDisabled}
+                              disabled={deleteButtonDisabled}
                               title={deleteButtonTitle}
                             >
                               <Trash2 className="w-5 h-5" />

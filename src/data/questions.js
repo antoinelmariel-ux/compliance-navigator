@@ -79,7 +79,7 @@ export const initialQuestions = [
     "conditionGroups": []
   },
   {
-    "id": "q9",
+    "id": "ProjectType",
     "type": "multi_choice",
     "question": "De quel type de projet s'agit-il ?",
     "options": [

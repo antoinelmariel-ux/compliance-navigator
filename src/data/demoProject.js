@@ -44,7 +44,7 @@ const demoProjectAnswers = {
   teamLeadTeam: 'Marketing',
   teamCoreMembers:
     'Julien Morel - Directeur du site de production de Lille\nClaire Martin - Responsable Médicale\nSophie Leclerc - Responsable Communication Digitale\nStudio Nova - Agence de communication scientifique et design interactif',
-  q9: ['Support d\'information / sensibilisation'],
+  ProjectType: ['Support d\'information / sensibilisation'],
   q11: ['Site internet', 'Communication sur les réseaux sociaux'],
   q3: ['Oui - Données personnelles standard'],
   q13: 'Oui',
