@@ -25,7 +25,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.134';
+const APP_VERSION = 'v1.0.135';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -1925,7 +1925,7 @@ export const App = () => {
               <div className="space-y-4">
                 {showcaseProjectContext.status !== 'draft' && (
                   <div className="rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800 hv-surface">
-                    Ce projet n'est pas en mode brouillon. La vitrine est consultable en lecture seule.
+                    Ce projet a été soumis. La vitrine est consultable en lecture seule.
                   </div>
                 )}
                 <ProjectShowcase
