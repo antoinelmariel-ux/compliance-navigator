@@ -25,7 +25,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.126';
+const APP_VERSION = 'v1.0.127';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -752,6 +752,7 @@ export const App = () => {
 
   const handleAnswer = useCallback((questionId, answer) => {
     let answerChanged = false;
+    let nextAnswersSnapshot = null;
 
     setAnswers(prevAnswers => {
       const previousValue = prevAnswers[questionId];
@@ -766,6 +767,9 @@ export const App = () => {
         .map(q => q.id);
 
       if (questionsToRemove.length === 0) {
+        if (answerChanged) {
+          nextAnswersSnapshot = nextAnswers;
+        }
         return answerChanged ? nextAnswers : prevAnswers;
       }
 
@@ -794,18 +798,91 @@ export const App = () => {
         }
       }
 
+      if (answerChanged) {
+        nextAnswersSnapshot = sanitizedAnswers;
+      }
+
       return answerChanged ? sanitizedAnswers : prevAnswers;
     });
 
-    if (answerChanged) {
-      setHasUnsavedChanges(true);
+    if (!answerChanged || !nextAnswersSnapshot) {
+      setValidationError(prev => {
+        if (!prev) return null;
+        return prev.questionId === questionId ? null : prev;
+      });
+      return;
+    }
+
+    setHasUnsavedChanges(true);
+
+    const updatedAnalysis = Object.keys(nextAnswersSnapshot).length > 0
+      ? analyzeAnswers(nextAnswersSnapshot, rules, riskLevelRules, riskWeights)
+      : null;
+
+    setAnalysis(updatedAnalysis);
+
+    const relevantQuestions = questions.filter(question => shouldShowQuestion(question, nextAnswersSnapshot));
+    const answeredQuestionsCount = relevantQuestions.length > 0
+      ? relevantQuestions.filter(question => isAnswerProvided(nextAnswersSnapshot[question.id])).length
+      : Object.keys(nextAnswersSnapshot).length;
+    const inferredName = extractProjectName(nextAnswersSnapshot, questions);
+    const normalizedInferredName = typeof inferredName === 'string' ? inferredName.trim() : '';
+
+    if (activeProjectId && isActiveProjectDraft) {
+      setProjects(prevProjects => {
+        const projectIndex = prevProjects.findIndex(project => project.id === activeProjectId);
+        if (projectIndex === -1) {
+          return prevProjects;
+        }
+
+        const project = prevProjects[projectIndex];
+        if (!project || project.status !== 'draft') {
+          return prevProjects;
+        }
+
+        const totalQuestions = relevantQuestions.length > 0
+          ? relevantQuestions.length
+          : project.totalQuestions || questions.length || 0;
+        const sanitizedName = normalizedInferredName.length > 0
+          ? normalizedInferredName
+          : project.projectName;
+        const lastQuestionIndex = totalQuestions > 0
+          ? Math.min(Math.max(project.lastQuestionIndex ?? totalQuestions - 1, 0), totalQuestions - 1)
+          : project.lastQuestionIndex ?? 0;
+
+        const updatedProject = {
+          ...project,
+          answers: nextAnswersSnapshot,
+          analysis: updatedAnalysis,
+          projectName: sanitizedName,
+          totalQuestions,
+          answeredQuestions: Math.min(answeredQuestionsCount, totalQuestions || answeredQuestionsCount),
+          lastQuestionIndex,
+          lastUpdated: new Date().toISOString()
+        };
+
+        const nextProjects = prevProjects.slice();
+        nextProjects[projectIndex] = updatedProject;
+        return nextProjects;
+      });
     }
 
     setValidationError(prev => {
       if (!prev) return null;
       return prev.questionId === questionId ? null : prev;
     });
-  }, [questions, setHasUnsavedChanges]);
+  }, [
+    activeProjectId,
+    analyzeAnswers,
+    extractProjectName,
+    isActiveProjectDraft,
+    questions,
+    riskLevelRules,
+    riskWeights,
+    rules,
+    setHasUnsavedChanges,
+    shouldShowQuestion
+  ]);
 
   const handleUpdateAnswers = useCallback((updates) => {
     if (!isActiveProjectDraft) {
