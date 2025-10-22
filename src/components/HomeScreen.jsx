@@ -13,7 +13,8 @@ import {
   Save,
   Upload,
   Copy,
-  Trash2
+  Trash2,
+  Sparkles
 } from './icons.js';
 import { normalizeProjectFilterConfig } from '../utils/projectFilters.js';
 
