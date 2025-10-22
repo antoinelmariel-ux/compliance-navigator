@@ -4,7 +4,6 @@ import {
   Target,
   Rocket,
   Compass,
-  FileText,
   Users,
   Calendar,
   CheckCircle,
@@ -807,17 +806,27 @@ export const HomeScreen = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6" role="list">
                   {filteredProjects.map(project => {
                     const complexity = project.analysis?.complexity;
-                    const relevantTeams = project.analysis?.relevantTeams;
-                    const analysisTeamIds = project.analysis?.teams;
-                    const teamsCount = Array.isArray(relevantTeams)
-                      ? relevantTeams.length
-                      : Array.isArray(analysisTeamIds)
-                        ? analysisTeamIds.length
-                        : 0;
                     const risksCount = project.analysis?.risks?.length ?? 0;
                     const projectStatus = statusStyles[project.status] || statusStyles.submitted;
                     const progress = computeProgress(project);
                     const isDraft = project.status === 'draft';
+                    const leadName = getSafeString(project?.answers?.teamLead).trim();
+                    const leadTeam = getSafeString(project?.answers?.teamLeadTeam).trim();
+                    const leadDisplay = leadName.length > 0
+                      ? `${leadName}${leadTeam.length > 0 ? ` (${leadTeam})` : ''}`
+                      : leadTeam.length > 0
+                        ? `(${leadTeam})`
+                        : 'Lead du projet non renseigné';
+                    const projectTypeRaw = project?.answers?.q9;
+                    const projectType = Array.isArray(projectTypeRaw)
+                      ? projectTypeRaw
+                          .map(item => (typeof item === 'string' ? item.trim() : ''))
+                          .filter(item => item.length > 0)
+                          .join(', ')
+                      : getSafeString(projectTypeRaw).trim();
+                    const projectTypeDisplay = projectType.length > 0
+                      ? projectType
+                      : 'Type de projet non renseigné';
 
                     return (
                       <article
@@ -880,8 +889,12 @@ export const HomeScreen = ({
 
                         <dl className="mt-4 grid grid-cols-1 gap-3 text-sm text-gray-600">
                           <div className="flex items-center gap-2">
-                            <FileText className="w-4 h-4" />
-                            <span className="font-medium text-gray-700">{Object.keys(project.answers || {}).length} réponse{Object.keys(project.answers || {}).length > 1 ? 's' : ''}</span>
+                            <Users className="w-4 h-4" />
+                            <span className="font-medium text-gray-700">{leadDisplay}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Target className="w-4 h-4" />
+                            <span>{projectTypeDisplay}</span>
                           </div>
                           {progress !== null && (
                             <div className="flex items-center gap-2">
@@ -889,10 +902,6 @@ export const HomeScreen = ({
                               <span>{progress}% du questionnaire complété</span>
                             </div>
                           )}
-                          <div className="flex items-center gap-2">
-                            <Users className="w-4 h-4" />
-                            <span>{teamsCount} équipe{teamsCount > 1 ? 's' : ''} recommandée{teamsCount > 1 ? 's' : ''}</span>
-                          </div>
                           <div className="flex items-center gap-2">
                             <AlertTriangle className="w-4 h-4" />
                             <span>{risksCount} risque{risksCount > 1 ? 's' : ''} identifié{risksCount > 1 ? 's' : ''}</span>
