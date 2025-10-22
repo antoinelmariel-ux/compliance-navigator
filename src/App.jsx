@@ -4,7 +4,7 @@ import { SynthesisReport } from './components/SynthesisReport.jsx';
 import { HomeScreen } from './components/HomeScreen.jsx';
 import { BackOffice } from './components/BackOffice.jsx';
 import { ProjectShowcase } from './components/ProjectShowcase.jsx';
-import { CheckCircle, Settings } from './components/icons.js';
+import { CheckCircle, Settings, Sparkles } from './components/icons.js';
 import { MandatoryQuestionsSummary } from './components/MandatoryQuestionsSummary.jsx';
 import { initialQuestions } from './data/questions.js';
 import { initialRules } from './data/rules.js';
@@ -25,7 +25,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.131';
+const APP_VERSION = 'v1.0.132';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -1798,19 +1798,31 @@ export const App = () => {
                 </button>
               )}
               {mode === 'user' && (
-                <button
-                  type="button"
-                  onClick={() => setScreen('home')}
-                  className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button ${
-                    screen === 'home'
-                      ? 'bg-blue-600 text-white hv-button-primary'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                  aria-pressed={screen === 'home'}
-                  aria-label="Retourner à l'accueil des projets"
-                >
-                  Accueil projets
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setScreen('home')}
+                    className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button ${
+                      screen === 'home'
+                        ? 'bg-blue-600 text-white hv-button-primary'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                    aria-pressed={screen === 'home'}
+                    aria-label="Retourner à l'accueil des projets"
+                  >
+                    Accueil projets
+                  </button>
+                  <a
+                    href="https://forms.gle/EtUZAPanXWpig9A38"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button text-white bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 hover:from-pink-600 hover:via-red-600 hover:to-yellow-600 focus-visible:ring-pink-400 hv-focus-ring"
+                    aria-label="Partagez votre avis sur Compliance Navigator (nouvelle fenêtre)"
+                  >
+                    <Sparkles className="text-lg sm:text-xl" aria-hidden="true" />
+                    <span>Partagez votre avis</span>
+                  </a>
+                </>
               )}
               {mode === 'admin' && (
                 <button
