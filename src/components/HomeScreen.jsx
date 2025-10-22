@@ -817,7 +817,7 @@ export const HomeScreen = ({
                       : leadTeam.length > 0
                         ? `(${leadTeam})`
                         : 'Lead du projet non renseigné';
-                    const projectTypeRaw = project?.answers?.q9;
+                    const projectTypeRaw = project?.answers?.ProjectType;
                     const projectType = Array.isArray(projectTypeRaw)
                       ? projectTypeRaw
                           .map(item => (typeof item === 'string' ? item.trim() : ''))
