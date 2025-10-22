@@ -37,7 +37,13 @@
 
     const transformed = global.Babel.transform(source, {
       presets: [
-        ['env', { modules: 'commonjs' }],
+        [
+          'env',
+          {
+            modules: 'commonjs',
+            exclude: ['transform-regenerator', 'transform-async-to-generator']
+          }
+        ],
         'react'
       ],
       sourceType: 'module'
