@@ -1223,7 +1223,7 @@
 
 [data-showcase-theme='aurora'] .aurora-roadmap__label {
   font-weight: 600;
-  color: rgba(224, 236, 255, 0.95);
+  color: rgb(255 255 255);
 }
 
 [data-showcase-theme='aurora'] .aurora-roadmap__caption {
@@ -1265,12 +1265,12 @@
   margin-top: 1rem;
   font-size: 0.95rem;
   line-height: 1.7;
-  color: rgba(224, 236, 255, 0.88);
+  color: rgba(255, 255, 255, 0.95);
 }
 
 [data-showcase-theme='aurora'] .aurora-roadmap__summary-detail--status {
   font-style: italic;
-  color: rgba(255, 255, 255, 0.94);
+  color: rgba(255, 255, 255, 0.95);
 }
 
 [data-showcase-theme='aurora'] .aurora-roadmap__summary-team {
@@ -1278,7 +1278,7 @@
   font-size: 0.8rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgb(0 0 0 / 100%);
 }
 
 [data-showcase-theme='aurora'] .aurora-roadmap__value {
