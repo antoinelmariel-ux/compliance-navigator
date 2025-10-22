@@ -41,15 +41,15 @@ const TIME_FILTER_OPTIONS = [
 ];
 
 const CHART_COLORS = [
-  '#2563eb',
-  '#7c3aed',
-  '#f97316',
-  '#059669',
-  '#ef4444',
-  '#14b8a6',
-  '#6366f1',
-  '#f59e0b',
-  '#0f172a'
+  '#1f77b4',
+  '#ff7f0e',
+  '#2ca02c',
+  '#d62728',
+  '#9467bd',
+  '#8c564b',
+  '#e377c2',
+  '#7f7f7f',
+  '#17becf'
 ];
 
 const numberFormatter = new Intl.NumberFormat('fr-FR');
