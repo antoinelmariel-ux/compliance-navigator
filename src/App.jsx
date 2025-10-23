@@ -25,7 +25,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.143';
+const APP_VERSION = 'v1.0.144';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -826,7 +826,9 @@ export const App = () => {
     setValidationError
   ]);
 
-  const finishOnboarding = useCallback(() => {
+  const finishOnboarding = useCallback((options = {}) => {
+    const { shouldReloadHome = false } = options || {};
+
     if (!isOnboardingActive) {
       return;
     }
@@ -846,6 +848,26 @@ export const App = () => {
     tourInstanceRef.current = null;
 
     restoreOnboardingSnapshot();
+
+    if (shouldReloadHome && typeof window !== 'undefined') {
+      const reload = () => {
+        try {
+          if (window.location && typeof window.location.reload === 'function') {
+            window.location.reload();
+          }
+        } catch (error) {
+          if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+            console.warn('[Onboarding] Impossible de recharger la page d\'accueil :', error);
+          }
+        }
+      };
+
+      if (typeof window.requestAnimationFrame === 'function') {
+        window.requestAnimationFrame(() => reload());
+      } else if (typeof window.setTimeout === 'function') {
+        window.setTimeout(() => reload(), 0);
+      }
+    }
   }, [isOnboardingActive, restoreOnboardingSnapshot]);
 
   const handleOnboardingStepEnter = useCallback((stepId) => {
@@ -1148,7 +1170,7 @@ export const App = () => {
     });
 
     tour.on('finish', () => {
-      finishOnboarding();
+      finishOnboarding({ shouldReloadHome: true });
     });
 
     tour.start();
