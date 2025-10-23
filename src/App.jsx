@@ -25,7 +25,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.150';
+const APP_VERSION = 'v1.0.151';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -907,7 +907,7 @@ export const App = () => {
   ]);
 
   const finishOnboarding = useCallback((options = {}) => {
-    const { shouldReloadHome = false } = options || {};
+    const { shouldLoadIndex = false } = options || {};
 
     if (!isOnboardingActive) {
       return;
@@ -929,23 +929,27 @@ export const App = () => {
 
     restoreOnboardingSnapshot();
 
-    if (shouldReloadHome && typeof window !== 'undefined') {
-      const reload = () => {
+    if (shouldLoadIndex && typeof window !== 'undefined') {
+      const redirect = () => {
         try {
-          if (window.location && typeof window.location.reload === 'function') {
-            window.location.reload();
+          if (window.location) {
+            if (typeof window.location.assign === 'function') {
+              window.location.assign('./index.html');
+            } else {
+              window.location.href = './index.html';
+            }
           }
         } catch (error) {
           if (typeof console !== 'undefined' && typeof console.warn === 'function') {
-            console.warn('[Onboarding] Impossible de recharger la page d\'accueil :', error);
+            console.warn('[Onboarding] Impossible de charger la page d\'accueil :', error);
           }
         }
       };
 
       if (typeof window.requestAnimationFrame === 'function') {
-        window.requestAnimationFrame(() => reload());
+        window.requestAnimationFrame(() => redirect());
       } else if (typeof window.setTimeout === 'function') {
-        window.setTimeout(() => reload(), 0);
+        window.setTimeout(() => redirect(), 0);
       }
     }
   }, [isOnboardingActive, restoreOnboardingSnapshot]);
@@ -1253,11 +1257,11 @@ export const App = () => {
     });
 
     tour.on('close', () => {
-      finishOnboarding();
+      finishOnboarding({ shouldLoadIndex: true });
     });
 
     tour.on('finish', () => {
-      finishOnboarding({ shouldReloadHome: true });
+      finishOnboarding({ shouldLoadIndex: true });
     });
 
     tour.start();
