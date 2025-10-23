@@ -4,7 +4,7 @@ import { SynthesisReport } from './components/SynthesisReport.jsx';
 import { HomeScreen } from './components/HomeScreen.jsx';
 import { BackOffice } from './components/BackOffice.jsx';
 import { ProjectShowcase } from './components/ProjectShowcase.jsx';
-import { CheckCircle, Settings, Sparkles } from './components/icons.js';
+import { CheckCircle, Lock, Settings, Sparkles } from './components/icons.js';
 import { MandatoryQuestionsSummary } from './components/MandatoryQuestionsSummary.jsx';
 import { initialQuestions } from './data/questions.js';
 import { initialRules } from './data/rules.js';
@@ -25,7 +25,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.135';
+const APP_VERSION = 'v1.0.136';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -424,6 +424,7 @@ export const App = () => {
   const [isHydrated, setIsHydrated] = useState(false);
   const [isBackOfficeUnlocked, setIsBackOfficeUnlocked] = useState(false);
   const [backOfficeAuthError, setBackOfficeAuthError] = useState(null);
+  const [adminView, setAdminView] = useState('home');
   const persistTimeoutRef = useRef(null);
   const previousScreenRef = useRef(null);
 
@@ -453,6 +454,12 @@ export const App = () => {
   useEffect(() => {
     projectsRef.current = projects;
   }, [projects]);
+
+  useEffect(() => {
+    if (mode !== 'admin') {
+      setAdminView('home');
+    }
+  }, [mode]);
 
   const updateProjectFilters = useCallback((updater) => {
     setProjectFiltersState(prevConfig => {
@@ -748,7 +755,10 @@ export const App = () => {
     return extractProjectName(answers, questions);
   }, [activeProject, answers, questions]);
 
-  const isActiveProjectDraft = activeProject ? activeProject.status === 'draft' : true;
+  const isAdminMode = mode === 'admin';
+  const isAdminHomeView = isAdminMode && adminView === 'home';
+  const isAdminBackOfficeView = isAdminMode && adminView === 'back-office';
+  const isActiveProjectEditable = isAdminMode || !activeProject || activeProject.status === 'draft';
 
   const handleAnswer = useCallback((questionId, answer) => {
     let answerChanged = false;
@@ -828,7 +838,7 @@ export const App = () => {
     const inferredName = extractProjectName(nextAnswersSnapshot, questions);
     const normalizedInferredName = typeof inferredName === 'string' ? inferredName.trim() : '';
 
-    if (activeProjectId && isActiveProjectDraft) {
+    if (activeProjectId && isActiveProjectEditable) {
       setProjects(prevProjects => {
         const projectIndex = prevProjects.findIndex(project => project.id === activeProjectId);
         if (projectIndex === -1) {
@@ -836,7 +846,12 @@ export const App = () => {
         }
 
         const project = prevProjects[projectIndex];
-        if (!project || project.status !== 'draft') {
+        if (!project) {
+          return prevProjects;
+        }
+
+        const canUpdateProject = project.status === 'draft' || isAdminMode;
+        if (!canUpdateProject) {
           return prevProjects;
         }
 
@@ -875,7 +890,8 @@ export const App = () => {
     activeProjectId,
     analyzeAnswers,
     extractProjectName,
-    isActiveProjectDraft,
+    isActiveProjectEditable,
+    isAdminMode,
     questions,
     riskLevelRules,
     riskWeights,
@@ -885,7 +901,7 @@ export const App = () => {
   ]);
 
   const handleUpdateAnswers = useCallback((updates) => {
-    if (!isActiveProjectDraft) {
+    if (!isActiveProjectEditable) {
       return;
     }
 
@@ -914,7 +930,12 @@ export const App = () => {
           }
 
           const project = prevProjects[projectIndex];
-          if (!project || project.status !== 'draft') {
+          if (!project) {
+            return prevProjects;
+          }
+
+          const canUpdateProject = project.status === 'draft' || isAdminMode;
+          if (!canUpdateProject) {
             return prevProjects;
           }
 
@@ -954,7 +975,8 @@ export const App = () => {
     activeProjectId,
     analyzeAnswers,
     extractProjectName,
-    isActiveProjectDraft,
+    isActiveProjectEditable,
+    isAdminMode,
     setHasUnsavedChanges,
     questions,
     riskLevelRules,
@@ -972,27 +994,22 @@ export const App = () => {
     setHasUnsavedChanges(false);
   }, [setHasUnsavedChanges]);
 
-  const handleBackOfficeClick = useCallback(async () => {
-    if (mode === 'admin') {
-      return;
-    }
-
+  const requestAdminAccess = useCallback(async () => {
     if (isBackOfficeUnlocked) {
       setBackOfficeAuthError(null);
-      setMode('admin');
-      return;
+      return true;
     }
 
     if (typeof window === 'undefined' || typeof window.prompt !== 'function') {
       setBackOfficeAuthError('La saisie du mot de passe est indisponible dans cet environnement.');
-      return;
+      return false;
     }
 
     const userInput = window.prompt('Veuillez saisir le mot de passe du back-office :');
 
     if (userInput === null) {
       setBackOfficeAuthError(null);
-      return;
+      return false;
     }
 
     const isValid = await verifyBackOfficePassword(userInput);
@@ -1000,18 +1017,44 @@ export const App = () => {
     if (isValid) {
       setIsBackOfficeUnlocked(true);
       setBackOfficeAuthError(null);
-      setMode('admin');
-    } else {
-      setIsBackOfficeUnlocked(false);
-      setBackOfficeAuthError('Mot de passe incorrect. Veuillez réessayer.');
+      return true;
     }
+
+    setIsBackOfficeUnlocked(false);
+    setBackOfficeAuthError('Mot de passe incorrect. Veuillez réessayer.');
+    return false;
   }, [
     isBackOfficeUnlocked,
-    mode,
-    setMode,
     setBackOfficeAuthError,
     setIsBackOfficeUnlocked
   ]);
+
+  const handleBackOfficeClick = useCallback(async () => {
+    const hasAccess = await requestAdminAccess();
+    if (!hasAccess) {
+      return;
+    }
+
+    setMode('admin');
+    setAdminView('back-office');
+  }, [requestAdminAccess, setMode]);
+
+  const handleActivateAdminOnHome = useCallback(async () => {
+    const hasAccess = await requestAdminAccess();
+    if (!hasAccess) {
+      return;
+    }
+
+    setMode('admin');
+    setAdminView('home');
+    setScreen('home');
+  }, [requestAdminAccess, setMode, setScreen]);
+
+  const handleReturnToProjectMode = useCallback(() => {
+    setMode('user');
+    setAdminView('home');
+    setBackOfficeAuthError(null);
+  }, [setBackOfficeAuthError, setMode]);
 
   const handleCreateNewProject = useCallback(() => {
     resetProjectState();
@@ -1471,7 +1514,7 @@ export const App = () => {
     if (
       !showcaseProjectContext ||
       !showcaseProjectContext.projectId ||
-      showcaseProjectContext.status !== 'draft'
+      (showcaseProjectContext.status !== 'draft' && !isAdminMode)
     ) {
       return;
     }
@@ -1482,7 +1525,7 @@ export const App = () => {
 
     setProjects(prevProjects => {
       const project = prevProjects.find(entry => entry.id === projectId);
-      if (!project || project.status !== 'draft') {
+      if (!project || (project.status !== 'draft' && !isAdminMode)) {
         return prevProjects;
       }
 
@@ -1567,6 +1610,7 @@ export const App = () => {
   }, [
     analyzeAnswers,
     extractProjectName,
+    isAdminMode,
     setHasUnsavedChanges,
     questions,
     riskLevelRules,
@@ -1827,7 +1871,7 @@ export const App = () => {
               {mode === 'admin' && (
                 <button
                   type="button"
-                  onClick={() => setMode('user')}
+                  onClick={handleReturnToProjectMode}
                   className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button ${
                     mode === 'user'
                       ? 'bg-blue-600 text-white hv-button-primary'
@@ -1841,13 +1885,28 @@ export const App = () => {
               )}
               <button
                 type="button"
-                onClick={handleBackOfficeClick}
+                onClick={handleActivateAdminOnHome}
                 className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button flex items-center justify-center ${
-                  mode === 'admin'
+                  isAdminHomeView
                     ? 'bg-blue-600 text-white hv-button-primary'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
-                aria-pressed={mode === 'admin'}
+                aria-pressed={isAdminHomeView}
+                aria-label="Activer le mode administrateur sur la page d'accueil"
+                title="Activer le mode administrateur sur l'accueil"
+              >
+                <Lock className="text-lg sm:text-xl" />
+                <span className="sr-only">Mode Administrateur (Accueil)</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleBackOfficeClick}
+                className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button flex items-center justify-center ${
+                  isAdminBackOfficeView
+                    ? 'bg-blue-600 text-white hv-button-primary'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                aria-pressed={isAdminBackOfficeView}
                 aria-label="Accéder au back-office"
                 title="Accéder au back-office"
               >
@@ -1865,87 +1924,7 @@ export const App = () => {
       </nav>
 
       <main id="main-content" tabIndex="-1" className="focus:outline-none hv-background">
-        {mode === 'user' ? (
-          screen === 'home' ? (
-            <HomeScreen
-              projects={projects}
-              projectFilters={projectFilters}
-              teamLeadOptions={teamLeadTeamOptions}
-              onStartNewProject={handleCreateNewProject}
-              onOpenProject={handleOpenProject}
-              onDeleteProject={handleDeleteProject}
-              onShowProjectShowcase={handleShowProjectShowcase}
-              onImportProject={handleImportProject}
-              onDuplicateProject={handleDuplicateProject}
-            />
-          ) : screen === 'questionnaire' ? (
-            <QuestionnaireScreen
-              questions={activeQuestions}
-              currentIndex={currentQuestionIndex}
-              answers={answers}
-              onAnswer={handleAnswer}
-              onNext={handleNext}
-              onBack={handleBack}
-              allQuestions={questions}
-              onSaveDraft={handleSaveDraft}
-              saveFeedback={saveFeedback}
-              onDismissSaveFeedback={handleDismissSaveFeedback}
-              validationError={validationError}
-            />
-          ) : screen === 'mandatory-summary' ? (
-            <MandatoryQuestionsSummary
-              pendingQuestions={pendingMandatoryQuestions}
-              totalQuestions={activeQuestions.length}
-              onBackToQuestionnaire={handleBackToQuestionnaire}
-              onNavigateToQuestion={handleNavigateToQuestion}
-              onProceedToSynthesis={handleProceedToSynthesis}
-            />
-          ) : screen === 'synthesis' ? (
-            <SynthesisReport
-              answers={answers}
-              analysis={analysis}
-              teams={teams}
-              questions={activeQuestions}
-              projectStatus={activeProject?.status || null}
-              projectId={activeProjectId}
-              projectName={activeProjectName}
-              onOpenProjectShowcase={handleOpenActiveProjectShowcase}
-              isProjectEditable={isActiveProjectDraft}
-              onRestart={handleRestart}
-              onBack={isActiveProjectDraft ? handleBackToQuestionnaire : undefined}
-              onUpdateAnswers={isActiveProjectDraft ? handleUpdateAnswers : undefined}
-              onSubmitProject={handleSubmitProject}
-              isExistingProject={Boolean(activeProjectId)}
-              onSaveDraft={isActiveProjectDraft ? handleSaveDraft : undefined}
-              saveFeedback={saveFeedback}
-              onDismissSaveFeedback={handleDismissSaveFeedback}
-            />
-          ) : screen === 'showcase' ? (
-            showcaseProjectContext ? (
-              <div className="space-y-4">
-                {showcaseProjectContext.status !== 'draft' && (
-                  <div className="rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800 hv-surface">
-                    Ce projet a été soumis. La vitrine est consultable en lecture seule.
-                  </div>
-                )}
-                <ProjectShowcase
-                  projectName={showcaseProjectContext.projectName}
-                  onClose={handleCloseProjectShowcase}
-                  analysis={showcaseProjectContext.analysis}
-                  relevantTeams={showcaseProjectContext.relevantTeams}
-                  questions={showcaseProjectContext.questions}
-                  answers={showcaseProjectContext.answers}
-                  timelineDetails={showcaseProjectContext.timelineDetails}
-                  onUpdateAnswers={
-                    showcaseProjectContext.status === 'draft'
-                      ? handleUpdateProjectShowcaseAnswers
-                      : undefined
-                  }
-                />
-              </div>
-            ) : null
-          ) : null
-        ) : (
+        {isAdminBackOfficeView ? (
           <BackOffice
             projects={projects}
             questions={questions}
@@ -1961,7 +1940,87 @@ export const App = () => {
             projectFilters={projectFilters}
             setProjectFilters={updateProjectFilters}
           />
-        )}
+        ) : screen === 'home' ? (
+          <HomeScreen
+            projects={projects}
+            projectFilters={projectFilters}
+            teamLeadOptions={teamLeadTeamOptions}
+            onStartNewProject={handleCreateNewProject}
+            onOpenProject={handleOpenProject}
+            onDeleteProject={handleDeleteProject}
+            onShowProjectShowcase={handleShowProjectShowcase}
+            onImportProject={handleImportProject}
+            onDuplicateProject={handleDuplicateProject}
+          />
+        ) : screen === 'questionnaire' ? (
+          <QuestionnaireScreen
+            questions={activeQuestions}
+            currentIndex={currentQuestionIndex}
+            answers={answers}
+            onAnswer={handleAnswer}
+            onNext={handleNext}
+            onBack={handleBack}
+            allQuestions={questions}
+            onSaveDraft={handleSaveDraft}
+            saveFeedback={saveFeedback}
+            onDismissSaveFeedback={handleDismissSaveFeedback}
+            validationError={validationError}
+          />
+        ) : screen === 'mandatory-summary' ? (
+          <MandatoryQuestionsSummary
+            pendingQuestions={pendingMandatoryQuestions}
+            totalQuestions={activeQuestions.length}
+            onBackToQuestionnaire={handleBackToQuestionnaire}
+            onNavigateToQuestion={handleNavigateToQuestion}
+            onProceedToSynthesis={handleProceedToSynthesis}
+          />
+        ) : screen === 'synthesis' ? (
+          <SynthesisReport
+            answers={answers}
+            analysis={analysis}
+            teams={teams}
+            questions={activeQuestions}
+            projectStatus={activeProject?.status || null}
+            projectId={activeProjectId}
+            projectName={activeProjectName}
+            onOpenProjectShowcase={handleOpenActiveProjectShowcase}
+            isProjectEditable={isActiveProjectEditable}
+            onRestart={handleRestart}
+            onBack={isActiveProjectEditable ? handleBackToQuestionnaire : undefined}
+            onUpdateAnswers={isActiveProjectEditable ? handleUpdateAnswers : undefined}
+            onSubmitProject={handleSubmitProject}
+            isExistingProject={Boolean(activeProjectId)}
+            onSaveDraft={isActiveProjectEditable ? handleSaveDraft : undefined}
+            saveFeedback={saveFeedback}
+            onDismissSaveFeedback={handleDismissSaveFeedback}
+          />
+        ) : screen === 'showcase' ? (
+          showcaseProjectContext ? (
+            <div className="space-y-4">
+              {showcaseProjectContext.status !== 'draft' && (
+                <div className="rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800 hv-surface">
+                  {isAdminMode
+                    ? 'Ce projet a été soumis. Vous pouvez le modifier car vous êtes en mode administrateur.'
+                    : 'Ce projet a été soumis. La vitrine est consultable en lecture seule.'}
+                </div>
+              )}
+              <ProjectShowcase
+                projectName={showcaseProjectContext.projectName}
+                onClose={handleCloseProjectShowcase}
+                analysis={showcaseProjectContext.analysis}
+                relevantTeams={showcaseProjectContext.relevantTeams}
+                questions={showcaseProjectContext.questions}
+                answers={showcaseProjectContext.answers}
+                timelineDetails={showcaseProjectContext.timelineDetails}
+                onUpdateAnswers={
+                  showcaseProjectContext.status === 'draft' || isAdminMode
+                    ? handleUpdateProjectShowcaseAnswers
+                    : undefined
+                }
+              />
+            </div>
+          ) : null
+        ) : null}
       </main>
 
       <footer className="bg-white border-t border-gray-200 mt-10" aria-label="Pied de page">
