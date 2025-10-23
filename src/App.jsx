@@ -25,7 +25,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.149';
+const APP_VERSION = 'v1.0.150';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -507,6 +507,31 @@ export const App = () => {
   useEffect(() => {
     projectsRef.current = projects;
   }, [projects]);
+
+  useEffect(() => {
+    if (isOnboardingActive) {
+      return;
+    }
+
+    setProjects(prevProjects => {
+      if (!Array.isArray(prevProjects) || prevProjects.length === 0) {
+        return prevProjects;
+      }
+
+      const containsOnboardingProjects = prevProjects.some(isOnboardingProject);
+      if (!containsOnboardingProjects) {
+        return prevProjects;
+      }
+
+      const sanitizedProjects = prevProjects.filter(project => !isOnboardingProject(project));
+
+      if (sanitizedProjects.length === 0) {
+        return buildInitialProjectsState();
+      }
+
+      return cloneDeep(sanitizedProjects);
+    });
+  }, [isOnboardingActive, setProjects]);
 
   useEffect(() => {
     if (mode !== 'admin') {
