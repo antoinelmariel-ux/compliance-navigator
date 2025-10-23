@@ -204,7 +204,8 @@ export const HomeScreen = ({
   onDeleteProject,
   onShowProjectShowcase,
   onImportProject,
-  onDuplicateProject
+  onDuplicateProject,
+  isAdminMode = false
 }) => {
   const normalizedFilters = useMemo(
     () => normalizeProjectFilterConfig(projectFilters),
@@ -798,6 +799,7 @@ export const HomeScreen = ({
                     const projectStatus = statusStyles[project.status] || statusStyles.submitted;
                     const progress = computeProgress(project);
                     const isDraft = project.status === 'draft';
+                    const adminCanEditSubmitted = isAdminMode && !isDraft;
                     const leadName = getSafeString(project?.answers?.teamLead).trim();
                     const leadTeam = getSafeString(project?.answers?.teamLeadTeam).trim();
                     const leadDisplay = leadName.length > 0
@@ -899,9 +901,21 @@ export const HomeScreen = ({
                         <div className="mt-6 flex flex-wrap gap-3">
                           <button
                             type="button"
-                            onClick={() => onOpenProject(project.id)}
+                            onClick={() => {
+                              if (isDraft) {
+                                onOpenProject(project.id);
+                                return;
+                              }
+
+                              if (adminCanEditSubmitted) {
+                                onOpenProject(project.id, { view: 'questionnaire' });
+                                return;
+                              }
+
+                              onOpenProject(project.id);
+                            }}
                             className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all hv-button ${
-                              isDraft
+                              isDraft || adminCanEditSubmitted
                                 ? 'hv-button-draft text-white'
                                 : 'bg-blue-600 text-white hover:bg-blue-700 hv-button-primary'
                             }`}
@@ -911,6 +925,11 @@ export const HomeScreen = ({
                                 <Edit className="w-4 h-4" aria-hidden="true" />
                                 <span>Continuer l'édition</span>
                               </>
+                            ) : adminCanEditSubmitted ? (
+                              <>
+                                <Edit className="w-4 h-4" aria-hidden="true" />
+                                <span>Modifier le projet</span>
+                              </>
                             ) : (
                               <>
                                 <Eye className="w-4 h-4" aria-hidden="true" />
@@ -918,6 +937,16 @@ export const HomeScreen = ({
                               </>
                             )}
                           </button>
+                          {adminCanEditSubmitted && (
+                            <button
+                              type="button"
+                              onClick={() => onOpenProject(project.id, { view: 'synthesis' })}
+                              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all hv-button bg-blue-600 text-white hover:bg-blue-700 hv-button-primary"
+                            >
+                              <Eye className="w-4 h-4" aria-hidden="true" />
+                              <span>Consulter la synthèse</span>
+                            </button>
+                          )}
                           {onShowProjectShowcase && (
                             <button
                               type="button"
