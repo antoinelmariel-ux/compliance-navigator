@@ -25,7 +25,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.136';
+const APP_VERSION = 'v1.0.135';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -426,7 +426,6 @@ export const App = () => {
   const [backOfficeAuthError, setBackOfficeAuthError] = useState(null);
   const persistTimeoutRef = useRef(null);
   const previousScreenRef = useRef(null);
-  const previousModeContextRef = useRef(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -973,59 +972,14 @@ export const App = () => {
     setHasUnsavedChanges(false);
   }, [setHasUnsavedChanges]);
 
-  const activateBackOfficeMode = useCallback(() => {
-    previousModeContextRef.current = {
-      screen,
-      activeProjectId,
-      showcaseProjectContext
-    };
-
-    setBackOfficeAuthError(null);
-    setMode('admin');
-    setShowcaseProjectContext(null);
-    setActiveProjectId(null);
-    setScreen('home');
-  }, [
-    activeProjectId,
-    screen,
-    setActiveProjectId,
-    setBackOfficeAuthError,
-    setMode,
-    setScreen,
-    setShowcaseProjectContext,
-    showcaseProjectContext
-  ]);
-
-  const handleExitBackOffice = useCallback(() => {
-    const previousContext = previousModeContextRef.current;
-
-    setMode('user');
-
-    if (previousContext) {
-      setScreen(previousContext.screen || 'home');
-      setActiveProjectId(previousContext.activeProjectId || null);
-      setShowcaseProjectContext(previousContext.showcaseProjectContext || null);
-    } else {
-      setScreen('home');
-      setActiveProjectId(null);
-      setShowcaseProjectContext(null);
-    }
-
-    previousModeContextRef.current = null;
-  }, [
-    setActiveProjectId,
-    setMode,
-    setScreen,
-    setShowcaseProjectContext
-  ]);
-
   const handleBackOfficeClick = useCallback(async () => {
     if (mode === 'admin') {
       return;
     }
 
     if (isBackOfficeUnlocked) {
-      activateBackOfficeMode();
+      setBackOfficeAuthError(null);
+      setMode('admin');
       return;
     }
 
@@ -1045,15 +999,17 @@ export const App = () => {
 
     if (isValid) {
       setIsBackOfficeUnlocked(true);
-      activateBackOfficeMode();
+      setBackOfficeAuthError(null);
+      setMode('admin');
     } else {
       setIsBackOfficeUnlocked(false);
       setBackOfficeAuthError('Mot de passe incorrect. Veuillez réessayer.');
     }
   }, [
-    activateBackOfficeMode,
     isBackOfficeUnlocked,
     mode,
+    setMode,
+    setBackOfficeAuthError,
     setIsBackOfficeUnlocked
   ]);
 
@@ -1871,9 +1827,13 @@ export const App = () => {
               {mode === 'admin' && (
                 <button
                   type="button"
-                  onClick={handleExitBackOffice}
-                  className="w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button bg-blue-600 text-white hv-button-primary"
-                  aria-pressed={false}
+                  onClick={() => setMode('user')}
+                  className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button ${
+                    mode === 'user'
+                      ? 'bg-blue-600 text-white hv-button-primary'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                  aria-pressed={mode === 'user'}
                   aria-label="Basculer vers le mode chef de projet"
                 >
                   Mode Chef de Projet
