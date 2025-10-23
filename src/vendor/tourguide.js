@@ -550,11 +550,8 @@
         ? step.highlightPadding
         : this.options.highlightPadding;
 
-      const scrollX = typeof window !== 'undefined' ? window.scrollX : 0;
-      const scrollY = typeof window !== 'undefined' ? window.scrollY : 0;
-
-      const top = rect.top + scrollY - padding;
-      const left = rect.left + scrollX - padding;
+      const top = rect.top - padding;
+      const left = rect.left - padding;
       const width = rect.width + padding * 2;
       const height = rect.height + padding * 2;
 
@@ -602,44 +599,42 @@
         };
       }
 
-      const scrollX = typeof window !== 'undefined' ? window.scrollX : 0;
-      const scrollY = typeof window !== 'undefined' ? window.scrollY : 0;
       const tooltipRect = tooltip.getBoundingClientRect();
 
       const availableWidth = typeof window !== 'undefined' ? window.innerWidth : tooltipRect.width;
       const availableHeight = typeof window !== 'undefined' ? window.innerHeight : tooltipRect.height;
 
-      let top = rect.bottom + scrollY + padding + 16;
-      let left = rect.left + scrollX;
+      let top = rect.bottom + padding + 16;
+      let left = rect.left;
 
       const placement = (step.placement || 'auto').toLowerCase();
 
       if (placement === 'top') {
-        top = rect.top + scrollY - tooltipRect.height - padding - 16;
+        top = rect.top - tooltipRect.height - padding - 16;
       } else if (placement === 'left') {
-        top = rect.top + scrollY + rect.height / 2 - tooltipRect.height / 2;
-        left = rect.left + scrollX - tooltipRect.width - padding - 16;
+        top = rect.top + rect.height / 2 - tooltipRect.height / 2;
+        left = rect.left - tooltipRect.width - padding - 16;
       } else if (placement === 'right') {
-        top = rect.top + scrollY + rect.height / 2 - tooltipRect.height / 2;
-        left = rect.right + scrollX + padding + 16;
+        top = rect.top + rect.height / 2 - tooltipRect.height / 2;
+        left = rect.right + padding + 16;
       } else if (placement === 'center') {
-        top = scrollY + (availableHeight - tooltipRect.height) / 2;
-        left = scrollX + (availableWidth - tooltipRect.width) / 2;
+        top = (availableHeight - tooltipRect.height) / 2;
+        left = (availableWidth - tooltipRect.width) / 2;
       } else {
-        if (top + tooltipRect.height > scrollY + availableHeight - 16) {
-          top = rect.top + scrollY - tooltipRect.height - padding - 16;
+        if (top + tooltipRect.height > availableHeight - 16) {
+          top = rect.top - tooltipRect.height - padding - 16;
         }
       }
 
-      if (left + tooltipRect.width > scrollX + availableWidth - 16) {
-        left = scrollX + availableWidth - tooltipRect.width - 16;
+      if (left + tooltipRect.width > availableWidth - 16) {
+        left = availableWidth - tooltipRect.width - 16;
       }
-      if (left < scrollX + 16) {
-        left = scrollX + 16;
+      if (left < 16) {
+        left = 16;
       }
 
-      if (top < scrollY + 16) {
-        top = scrollY + 16;
+      if (top < 16) {
+        top = 16;
       }
 
       tooltip.style.top = `${Math.round(top)}px`;
