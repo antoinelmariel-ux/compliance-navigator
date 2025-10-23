@@ -25,7 +25,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.144';
+const APP_VERSION = 'v1.0.145';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -2486,19 +2486,17 @@ export const App = () => {
                     <Sparkles className="text-lg sm:text-xl" aria-hidden="true" />
                     <span>Guide interactif</span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setScreen('home')}
-                    className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button ${
-                      screen === 'home'
-                        ? 'bg-blue-600 text-white hv-button-primary'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                    aria-pressed={screen === 'home'}
-                    aria-label="Retourner à l'accueil des projets"
-                  >
-                    Accueil projets
-                  </button>
+                  {screen !== 'home' && (
+                    <button
+                      type="button"
+                      onClick={() => setScreen('home')}
+                      className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button bg-gray-100 text-gray-700 hover:bg-gray-200`}
+                      aria-pressed={false}
+                      aria-label="Retourner à l'accueil des projets"
+                    >
+                      Accueil projets
+                    </button>
+                  )}
                   <a
                     href="https://forms.gle/EtUZAPanXWpig9A38"
                     target="_blank"
