@@ -25,7 +25,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.136';
+const APP_VERSION = 'v1.0.137';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -995,6 +995,12 @@ export const App = () => {
   }, [setHasUnsavedChanges]);
 
   const requestAdminAccess = useCallback(async () => {
+    if (isAdminMode) {
+      setIsBackOfficeUnlocked(true);
+      setBackOfficeAuthError(null);
+      return true;
+    }
+
     if (isBackOfficeUnlocked) {
       setBackOfficeAuthError(null);
       return true;
@@ -1024,6 +1030,7 @@ export const App = () => {
     setBackOfficeAuthError('Mot de passe incorrect. Veuillez réessayer.');
     return false;
   }, [
+    isAdminMode,
     isBackOfficeUnlocked,
     setBackOfficeAuthError,
     setIsBackOfficeUnlocked
@@ -1898,21 +1905,23 @@ export const App = () => {
                 <Lock className="text-lg sm:text-xl" />
                 <span className="sr-only">Mode Administrateur (Accueil)</span>
               </button>
-              <button
-                type="button"
-                onClick={handleBackOfficeClick}
-                className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button flex items-center justify-center ${
-                  isAdminBackOfficeView
-                    ? 'bg-blue-600 text-white hv-button-primary'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-                aria-pressed={isAdminBackOfficeView}
-                aria-label="Accéder au back-office"
-                title="Accéder au back-office"
-              >
-                <Settings className="text-lg sm:text-xl" />
-                <span className="sr-only">Back-office</span>
-              </button>
+              {isAdminMode && (
+                <button
+                  type="button"
+                  onClick={handleBackOfficeClick}
+                  className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button flex items-center justify-center ${
+                    isAdminBackOfficeView
+                      ? 'bg-blue-600 text-white hv-button-primary'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                  aria-pressed={isAdminBackOfficeView}
+                  aria-label="Accéder au back-office"
+                  title="Accéder au back-office"
+                >
+                  <Settings className="text-lg sm:text-xl" />
+                  <span>Accéder au back-office</span>
+                </button>
+              )}
               {backOfficeAuthError && (
                 <p className="w-full text-sm text-red-600 sm:w-auto" role="alert">
                   {backOfficeAuthError}
