@@ -556,7 +556,7 @@ export const SynthesisReport = ({
   const reminderCloseButtonRef = useRef(null);
   const complianceCommentFeedbackTimeoutRef = useRef(null);
   useEffect(() => {
-    if (!tourContext?.isActive || tourContext.activeStep !== 'compliance-report') {
+    if (!tourContext?.isActive) {
       return;
     }
 
@@ -564,9 +564,21 @@ export const SynthesisReport = ({
       return;
     }
 
-    const element = document.querySelector('[data-tour-id="synthesis-summary"]');
+    const stepToSelectorMap = {
+      'compliance-report': '[data-tour-id="synthesis-summary"]',
+      'compliance-report-top': '[data-tour-id="synthesis-summary"]',
+      'compliance-teams': '[data-tour-id="synthesis-teams"]',
+      'compliance-risks': '[data-tour-id="synthesis-risks"]'
+    };
+
+    const selector = stepToSelectorMap[tourContext.activeStep];
+    if (!selector) {
+      return;
+    }
+
+    const element = document.querySelector(selector);
     if (element && typeof element.scrollIntoView === 'function') {
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [tourContext]);
   const relevantTeams = teams.filter(team => (analysis?.teams || []).includes(team.id));
@@ -1059,7 +1071,7 @@ export const SynthesisReport = ({
 
 
           {/* Équipes à solliciter */}
-          <section className="mb-8" aria-labelledby="teams-heading">
+          <section className="mb-8" aria-labelledby="teams-heading" data-tour-id="synthesis-teams">
             <h2 id="teams-heading" className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
               <Users className="w-6 h-6 mr-2 text-blue-600" />
               Équipes à solliciter ({relevantTeams.length})
