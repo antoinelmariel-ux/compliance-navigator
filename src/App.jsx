@@ -1061,19 +1061,19 @@ export const App = () => {
         id: 'project-save-anytime',
         target: '[data-tour-id="question-save-draft"]',
         title: 'Sauvegarder à tout moment',
-        content: 'Téléchargez un brouillon de votre projet quand vous le souhaitez et rechargez-le depuis l’accueil.'
+        content: 'Téléchargez un brouillon de votre projet quand vous le souhaitez et rechargez-le depuis l’accueil. Attention, il n'y a pas de sauvegarde automatique.'
       },
       {
         id: 'questionnaire-finish',
         target: '[data-tour-id="questionnaire-finish"]',
-        title: 'Atteindre la fin du formulaire',
+        title: 'Fin du formulaire',
         content: 'Sur la dernière question, cliquez sur “Voir la synthèse” pour accéder au rapport complet.'
       },
       {
         id: 'compliance-report-top',
         target: '[data-tour-id="synthesis-summary"]',
         title: 'Le rapport de compliance',
-        content: 'Retrouvez ici le résumé du projet : statut, équipes clés et informations essentielles.'
+        content: 'Retrouvez ici le résumé du projet avec l'ensemble des informations que vous avez remplies. Vous pouvez revenir en arrière pour les modifier.'
       },
       {
         id: 'compliance-risks',
@@ -1121,7 +1121,7 @@ export const App = () => {
         id: 'showcase-edit',
         target: '[data-tour-id="showcase-edit-panel"]',
         title: 'Personnaliser la vitrine',
-        content: 'Adaptez textes, messages clés et jalons pour refléter fidèlement votre projet.'
+        content: 'Adaptez textes, messages clés et jalons pour refléter fidèlement votre projet. Ses informations sont automatiquement mise à jour dans le rapport de compliance.'
       },
       {
         id: 'showcase-save-edits',
@@ -1133,13 +1133,13 @@ export const App = () => {
         id: 'showcase-back-to-report',
         target: '[data-tour-id="showcase-back-to-report"]',
         title: 'Retourner au rapport compliance',
-        content: 'Revenez au rapport de synthèse pour poursuivre votre préparation.'
+        content: 'Revenez au rapport de synthèse pour poursuivre votre préparation et éventuellement enregistrer la dernière version de votre projet.'
       },
       {
         id: 'project-import',
         target: '[data-tour-id="home-import-project"]',
         title: 'Charger un projet existant',
-        content: 'Vous pouvez importer un projet partagé par un collègue et continuer la qualification.'
+        content: 'Vous pouvez importer un projet enregistrer pour reprendre son édition avant soumission à la compliance.'
       },
       {
         id: 'project-filters',
