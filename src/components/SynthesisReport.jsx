@@ -1299,7 +1299,7 @@ export const SynthesisReport = ({
 
                 {hasComplianceComment ? (
                   <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Réponse</span>
+                  
                     <p className="mt-2 text-sm text-gray-800 whitespace-pre-line">
                       {renderTextWithLinks(complianceCommentValue)}
                     </p>
