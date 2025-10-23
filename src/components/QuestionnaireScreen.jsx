@@ -92,7 +92,8 @@ export const QuestionnaireScreen = ({
   onSaveDraft,
   saveFeedback,
   onDismissSaveFeedback,
-  validationError
+  validationError,
+  tourContext = null
 }) => {
   const currentQuestion = questions[currentIndex];
   const questionBank = allQuestions || questions;
@@ -164,6 +165,44 @@ export const QuestionnaireScreen = ({
       return normalizedAnswer;
     });
   }, [currentAnswer, currentQuestion.id, questionType]);
+
+  useEffect(() => {
+    if (!tourContext?.isActive) {
+      return;
+    }
+
+    if (tourContext.activeStep === 'question-guidance') {
+      setShowGuidance(true);
+    } else if (tourContext.activeStep !== 'question-guidance' && showGuidance) {
+      setShowGuidance(false);
+    }
+  }, [tourContext, showGuidance]);
+
+  useEffect(() => {
+    if (!tourContext?.isActive) {
+      return;
+    }
+
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    const { activeStep } = tourContext;
+    let selector = null;
+
+    if (activeStep === 'question-guidance') {
+      selector = '[data-tour-id="question-guidance-toggle"]';
+    } else if (activeStep === 'question-save') {
+      selector = '[data-tour-id="question-save-draft"]';
+    }
+
+    if (selector) {
+      const element = document.querySelector(selector);
+      if (element && typeof element.scrollIntoView === 'function') {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }, [tourContext]);
 
   const guidance = currentQuestion.guidance || {};
   const guidanceTips = useMemo(() => (
@@ -649,6 +688,7 @@ export const QuestionnaireScreen = ({
                   }`}
                   aria-expanded={showGuidance}
                   aria-controls={guidancePanelId}
+                  data-tour-id="question-guidance-toggle"
                 >
                   <Info className="w-4 h-4 mr-2" />
                   {showGuidance ? "Masquer l'aide" : 'Comprendre cette question'}
@@ -810,6 +850,7 @@ export const QuestionnaireScreen = ({
                 type="button"
                 onClick={onSaveDraft}
                 className="flex items-center justify-center px-6 py-3 rounded-lg font-medium bg-yellow-500 text-white hover:bg-yellow-600 transition-all hv-button w-full sm:w-auto text-sm sm:text-base"
+                data-tour-id="question-save-draft"
               >
                 <Save className="w-5 h-5 mr-2" />
                 Enregistrer le projet

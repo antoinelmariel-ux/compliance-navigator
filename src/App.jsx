@@ -15,7 +15,7 @@ import { loadPersistedState, persistState } from './utils/storage.js';
 import { shouldShowQuestion } from './utils/questions.js';
 import { analyzeAnswers } from './utils/rules.js';
 import { extractProjectName } from './utils/projects.js';
-import { createDemoProject } from './data/demoProject.js';
+import { createDemoProject, demoProjectAnswersSnapshot } from './data/demoProject.js';
 import { exportProjectToFile } from './utils/projectExport.js';
 import { normalizeRiskWeighting } from './utils/risk.js';
 import { normalizeProjectEntry, normalizeProjectsCollection } from './utils/projectNormalization.js';
@@ -25,7 +25,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.140';
+const APP_VERSION = 'v1.0.141';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -76,6 +76,26 @@ const verifyBackOfficePassword = async (value) => {
   }
 
   return digest === BACK_OFFICE_PASSWORD_FALLBACK_DIGEST;
+};
+
+const cloneDeep = (value) => {
+  if (value === null || value === undefined) {
+    return value;
+  }
+
+  if (typeof structuredClone === 'function') {
+    try {
+      return structuredClone(value);
+    } catch (error) {
+      // Fallback to JSON strategy below
+    }
+  }
+
+  try {
+    return JSON.parse(JSON.stringify(value));
+  } catch (error) {
+    return value;
+  }
 };
 
 const restoreShowcaseQuestions = (currentQuestions, referenceQuestions = initialQuestions) => {
@@ -414,6 +434,12 @@ export const App = () => {
   const [saveFeedback, setSaveFeedback] = useState(null);
   const [showcaseProjectContext, setShowcaseProjectContext] = useState(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isOnboardingActive, setIsOnboardingActive] = useState(false);
+  const [onboardingStepId, setOnboardingStepId] = useState(null);
+  const [isTourGuideReady, setIsTourGuideReady] = useState(false);
+  const tourInstanceRef = useRef(null);
+  const onboardingStateRef = useRef(null);
+  const onboardingDemoDataRef = useRef(null);
 
   const [questions, setQuestions] = useState(() => restoreShowcaseQuestions(initialQuestions));
   const [rules, setRules] = useState(initialRules);
@@ -617,6 +643,505 @@ export const App = () => {
   }, []);
 
   useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    let disposed = false;
+
+    const updateStatus = () => {
+      if (disposed) {
+        return;
+      }
+      setIsTourGuideReady(Boolean(window.TourGuideClient));
+    };
+
+    updateStatus();
+
+    if (window.TourGuideClient) {
+      return () => {
+        disposed = true;
+      };
+    }
+
+    const intervalId = window.setInterval(() => {
+      if (window.TourGuideClient) {
+        updateStatus();
+        window.clearInterval(intervalId);
+      }
+    }, 500);
+
+    return () => {
+      disposed = true;
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
+  const noop = useCallback(() => {}, []);
+
+  const computeDemoData = useCallback(() => {
+    const answers = cloneDeep(demoProjectAnswersSnapshot) || {};
+    const visibleQuestions = questions.filter(question => shouldShowQuestion(question, answers));
+    const analysisResult = analyzeAnswers(answers, rules, riskLevelRules, riskWeights);
+    const relevantTeamsList = Array.isArray(teams)
+      ? teams.filter(team => (analysisResult?.teams || []).includes(team.id))
+      : [];
+    const timelineDetails = analysisResult?.timeline?.details || [];
+    const projectName = typeof answers.projectName === 'string' && answers.projectName.trim().length > 0
+      ? answers.projectName.trim()
+      : 'Projet de démonstration';
+
+    return {
+      answers,
+      analysis: analysisResult,
+      questions: visibleQuestions.length > 0 ? visibleQuestions : questions,
+      projectName,
+      relevantTeams: relevantTeamsList,
+      timelineDetails
+    };
+  }, [questions, riskLevelRules, riskWeights, rules, shouldShowQuestion, teams]);
+
+  const getDemoData = useCallback(() => {
+    if (!onboardingDemoDataRef.current) {
+      onboardingDemoDataRef.current = computeDemoData();
+    }
+
+    return onboardingDemoDataRef.current;
+  }, [computeDemoData]);
+
+  const buildOnboardingProjects = useCallback((demoData) => {
+    const baseAnswers = cloneDeep(demoData?.answers || demoProjectAnswersSnapshot || {});
+    const now = Date.now();
+
+    const createEntry = (config) => {
+      const offsetMs = typeof config.offsetMs === 'number' ? config.offsetMs : 0;
+      const timestamp = config.timestamp || new Date(now - offsetMs).toISOString();
+      const answersPatch = config.answers || {};
+      const answers = cloneDeep({ ...baseAnswers, ...answersPatch });
+      if (config.projectName) {
+        answers.projectName = config.projectName;
+      }
+
+      const projectName = typeof answers.projectName === 'string' && answers.projectName.trim().length > 0
+        ? answers.projectName.trim()
+        : 'Projet sans nom';
+
+      const analysisResult = analyzeAnswers(answers, rules, riskLevelRules, riskWeights);
+      const visibleQuestions = questions.filter(question => shouldShowQuestion(question, answers));
+      const totalQuestions = visibleQuestions.length > 0 ? visibleQuestions.length : questions.length;
+      const answeredQuestions = visibleQuestions.filter(question => isAnswerProvided(answers[question.id])).length;
+      const status = config.status || 'draft';
+
+      return {
+        id: config.id,
+        projectName,
+        answers,
+        analysis: analysisResult,
+        status,
+        lastUpdated: config.lastUpdated || timestamp,
+        generatedAt: config.generatedAt || timestamp,
+        submittedAt: status === 'submitted' ? (config.submittedAt || timestamp) : undefined,
+        totalQuestions,
+        answeredQuestions: Math.min(answeredQuestions, totalQuestions || answeredQuestions),
+        lastQuestionIndex:
+          typeof config.lastQuestionIndex === 'number'
+            ? config.lastQuestionIndex
+            : (status === 'submitted' && totalQuestions > 0
+              ? totalQuestions - 1
+              : Math.max(totalQuestions - 2, 0)),
+        isDemo: true
+      };
+    };
+
+    return [
+      createEntry({
+        id: 'tour-draft-1',
+        projectName: 'Atlas Connect',
+        status: 'draft',
+        offsetMs: 86400000,
+        answers: {
+          teamLead: 'Léa Martin',
+          teamLeadTeam: 'Digital'
+        }
+      }),
+      createEntry({
+        id: 'tour-submitted',
+        projectName: 'Pulse Live',
+        status: 'submitted',
+        offsetMs: 432000000,
+        answers: {
+          teamLead: 'Noah Carpentier',
+          teamLeadTeam: 'Marketing'
+        }
+      }),
+      createEntry({
+        id: 'tour-draft-demo',
+        projectName: demoData?.projectName || 'Plasma 360',
+        status: 'draft',
+        offsetMs: 172800000,
+        answers: {}
+      })
+    ];
+  }, [analyzeAnswers, questions, riskLevelRules, riskWeights, rules, shouldShowQuestion]);
+
+  const restoreOnboardingSnapshot = useCallback(() => {
+    const snapshot = onboardingStateRef.current;
+    onboardingStateRef.current = null;
+    onboardingDemoDataRef.current = null;
+
+    if (!snapshot) {
+      return;
+    }
+
+    setMode(snapshot.mode);
+    setAdminView(snapshot.adminView);
+    setScreen(snapshot.screen);
+    setAnswers(snapshot.answers);
+    setAnalysis(snapshot.analysis);
+    setProjects(snapshot.projects);
+    setProjectFiltersState(snapshot.projectFilters);
+    setCurrentQuestionIndex(snapshot.currentQuestionIndex);
+    setValidationError(snapshot.validationError);
+    setSaveFeedback(snapshot.saveFeedback);
+    setActiveProjectId(snapshot.activeProjectId);
+    setShowcaseProjectContext(snapshot.showcaseProjectContext);
+    setHasUnsavedChanges(snapshot.hasUnsavedChanges);
+    setBackOfficeAuthError(snapshot.backOfficeAuthError);
+    setIsBackOfficeUnlocked(snapshot.isBackOfficeUnlocked);
+  }, [
+    setActiveProjectId,
+    setAdminView,
+    setAnalysis,
+    setAnswers,
+    setBackOfficeAuthError,
+    setCurrentQuestionIndex,
+    setHasUnsavedChanges,
+    setIsBackOfficeUnlocked,
+    setMode,
+    setProjectFiltersState,
+    setProjects,
+    setSaveFeedback,
+    setScreen,
+    setShowcaseProjectContext,
+    setValidationError
+  ]);
+
+  const finishOnboarding = useCallback(() => {
+    if (!isOnboardingActive) {
+      return;
+    }
+
+    setIsOnboardingActive(false);
+    setOnboardingStepId(null);
+
+    if (tourInstanceRef.current && typeof tourInstanceRef.current.stop === 'function') {
+      try {
+        tourInstanceRef.current.stop();
+      } catch (error) {
+        if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+          console.warn('[Onboarding] Impossible de stopper le guide :', error);
+        }
+      }
+    }
+    tourInstanceRef.current = null;
+
+    restoreOnboardingSnapshot();
+  }, [isOnboardingActive, restoreOnboardingSnapshot]);
+
+  const handleOnboardingStepEnter = useCallback((stepId) => {
+    if (!stepId) {
+      return;
+    }
+
+    const demoData = getDemoData();
+
+    switch (stepId) {
+      case 'welcome':
+      case 'create-project': {
+        setScreen('home');
+        setShowcaseProjectContext(null);
+        setActiveProjectId(null);
+        setValidationError(null);
+        setSaveFeedback(null);
+        setHasUnsavedChanges(false);
+        break;
+      }
+      case 'question-guidance': {
+        setScreen('questionnaire');
+        setActiveProjectId('onboarding-demo');
+        setAnswers(cloneDeep(demoData.answers));
+        setCurrentQuestionIndex(0);
+        setAnalysis(null);
+        setValidationError(null);
+        setSaveFeedback(null);
+        setHasUnsavedChanges(false);
+        break;
+      }
+      case 'compliance-report': {
+        setAnswers(cloneDeep(demoData.answers));
+        setAnalysis(demoData.analysis);
+        setCurrentQuestionIndex(0);
+        setValidationError(null);
+        setScreen('synthesis');
+        setSaveFeedback(null);
+        setHasUnsavedChanges(false);
+        break;
+      }
+      case 'showcase': {
+        openProjectShowcase({
+          projectId: null,
+          projectName: demoData.projectName,
+          answers: cloneDeep(demoData.answers),
+          analysis: demoData.analysis,
+          relevantTeams: demoData.relevantTeams,
+          questions: demoData.questions,
+          timelineDetails: demoData.timelineDetails,
+          status: 'draft'
+        });
+        setHasUnsavedChanges(false);
+        break;
+      }
+      case 'showcase-edit': {
+        if (screen !== 'showcase') {
+          openProjectShowcase({
+            projectId: null,
+            projectName: demoData.projectName,
+            answers: cloneDeep(demoData.answers),
+            analysis: demoData.analysis,
+            relevantTeams: demoData.relevantTeams,
+            questions: demoData.questions,
+            timelineDetails: demoData.timelineDetails,
+            status: 'draft'
+          });
+        }
+        setHasUnsavedChanges(false);
+        break;
+      }
+      case 'question-save': {
+        setShowcaseProjectContext(null);
+        setScreen('questionnaire');
+        setAnswers(cloneDeep(demoData.answers));
+        setCurrentQuestionIndex(0);
+        setAnalysis(null);
+        setValidationError(null);
+        setSaveFeedback(null);
+        setHasUnsavedChanges(false);
+        break;
+      }
+      case 'project-import':
+      case 'project-filters': {
+        setShowcaseProjectContext(null);
+        setScreen('home');
+        setActiveProjectId(null);
+        setValidationError(null);
+        setSaveFeedback(null);
+        setHasUnsavedChanges(false);
+        break;
+      }
+      default:
+        break;
+    }
+  }, [
+    getDemoData,
+    openProjectShowcase,
+    screen,
+    setActiveProjectId,
+    setAnalysis,
+    setAnswers,
+    setCurrentQuestionIndex,
+    setHasUnsavedChanges,
+    setSaveFeedback,
+    setScreen,
+    setShowcaseProjectContext,
+    setValidationError
+  ]);
+
+  const handleStartOnboarding = useCallback(() => {
+    if (isOnboardingActive) {
+      return;
+    }
+
+    if (typeof window === 'undefined' || typeof window.TourGuideClient !== 'function') {
+      if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+        window.alert('Le guide interactif est momentanément indisponible.');
+      }
+      return;
+    }
+
+    onboardingStateRef.current = {
+      mode,
+      screen,
+      adminView,
+      answers: cloneDeep(answers),
+      analysis: cloneDeep(analysis),
+      projects: cloneDeep(projects),
+      projectFilters: cloneDeep(projectFilters),
+      currentQuestionIndex,
+      validationError: cloneDeep(validationError),
+      saveFeedback: cloneDeep(saveFeedback),
+      activeProjectId,
+      showcaseProjectContext: cloneDeep(showcaseProjectContext),
+      hasUnsavedChanges,
+      backOfficeAuthError,
+      isBackOfficeUnlocked
+    };
+
+    const demoData = getDemoData();
+    onboardingDemoDataRef.current = demoData;
+    const onboardingProjects = buildOnboardingProjects(demoData);
+
+    setIsOnboardingActive(true);
+    setOnboardingStepId(null);
+    setMode('user');
+    setAdminView('home');
+    setScreen('home');
+    setShowcaseProjectContext(null);
+    setActiveProjectId(null);
+    setAnswers({});
+    setAnalysis(null);
+    setValidationError(null);
+    setSaveFeedback(null);
+    setHasUnsavedChanges(false);
+    setBackOfficeAuthError(null);
+    setIsBackOfficeUnlocked(false);
+    setProjects(onboardingProjects);
+    setProjectFiltersState(createDefaultProjectFiltersConfig());
+
+    const steps = [
+      {
+        id: 'welcome',
+        target: '#tour-onboarding-anchor',
+        title: 'Bienvenue sur Compliance Navigator',
+        content: 'Découvrons ensemble comment cadrer votre projet pas à pas.'
+      },
+      {
+        id: 'create-project',
+        target: '[data-tour-id="home-create-project"]',
+        title: 'Lancer un nouveau projet',
+        content: 'Cliquez ici pour démarrer. Nous allons utiliser un projet de démonstration pour l’exemple.',
+        placement: 'bottom'
+      },
+      {
+        id: 'question-guidance',
+        target: '[data-tour-id="question-guidance-toggle"]',
+        title: 'Comprendre chaque question',
+        content: 'Chaque étape propose des conseils contextualisés pour répondre sereinement.'
+      },
+      {
+        id: 'compliance-report',
+        target: '[data-tour-id="synthesis-summary"]',
+        title: 'Lire le rapport de compliance',
+        content: 'Retrouvez la synthèse des risques, les équipes à mobiliser et les prochaines étapes clés.'
+      },
+      {
+        id: 'showcase',
+        target: '[data-tour-id="showcase-preview"]',
+        title: 'Présenter votre projet',
+        content: 'Une vitrine générée automatiquement pour partager la valeur de votre initiative.'
+      },
+      {
+        id: 'showcase-edit',
+        target: '[data-tour-id="showcase-edit-panel"]',
+        title: 'Personnaliser la vitrine',
+        content: 'Modifiez les contenus avant diffusion : texte, messages clés et jalons restent éditables.'
+      },
+      {
+        id: 'question-save',
+        target: '[data-tour-id="question-save-draft"]',
+        title: 'Sauvegarder votre avancement',
+        content: 'Enregistrez votre brouillon à tout moment pour reprendre plus tard.'
+      },
+      {
+        id: 'project-import',
+        target: '[data-tour-id="home-import-project"]',
+        title: 'Charger un projet existant',
+        content: 'Vous pouvez importer un projet partagé par un collègue et continuer la qualification.'
+      },
+      {
+        id: 'project-filters',
+        target: '[data-tour-id="home-filters"]',
+        title: 'Retrouver vos projets',
+        content: 'Filtrez vos initiatives par nom, équipe ou date pour retrouver rapidement vos dossiers.'
+      }
+    ];
+
+    const tour = new window.TourGuideClient({
+      steps,
+      labels: {
+        next: 'Suivant',
+        prev: 'Précédent',
+        close: 'Fermer',
+        finish: 'Terminer'
+      }
+    });
+
+    tour.on('stepChange', ({ step }) => {
+      const stepId = step?.id || null;
+      handleOnboardingStepEnter(stepId);
+      setOnboardingStepId(stepId);
+    });
+
+    tour.on('close', () => {
+      finishOnboarding();
+    });
+
+    tour.on('finish', () => {
+      finishOnboarding();
+    });
+
+    tour.start();
+    tourInstanceRef.current = tour;
+  }, [
+    isOnboardingActive,
+    mode,
+    screen,
+    adminView,
+    answers,
+    analysis,
+    projects,
+    projectFilters,
+    currentQuestionIndex,
+    validationError,
+    saveFeedback,
+    activeProjectId,
+    showcaseProjectContext,
+    hasUnsavedChanges,
+    backOfficeAuthError,
+    isBackOfficeUnlocked,
+    getDemoData,
+    buildOnboardingProjects,
+    handleOnboardingStepEnter,
+    finishOnboarding,
+    setMode,
+    setAdminView,
+    setScreen,
+    setShowcaseProjectContext,
+    setActiveProjectId,
+    setAnswers,
+    setAnalysis,
+    setValidationError,
+    setSaveFeedback,
+    setHasUnsavedChanges,
+    setBackOfficeAuthError,
+    setIsBackOfficeUnlocked,
+    setProjects,
+    setProjectFiltersState
+  ]);
+
+  useEffect(() => () => {
+    if (tourInstanceRef.current && typeof tourInstanceRef.current.stop === 'function') {
+      try {
+        tourInstanceRef.current.stop();
+      } catch (error) {
+        if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+          console.warn('[Onboarding] Nettoyage du guide impossible :', error);
+        }
+      }
+    }
+    tourInstanceRef.current = null;
+  }, []);
+
+  useEffect(() => {
     return () => {
       if (persistTimeoutRef.current) {
         clearTimeout(persistTimeoutRef.current);
@@ -626,7 +1151,7 @@ export const App = () => {
   }, []);
 
   useEffect(() => {
-    if (!isHydrated) return undefined;
+    if (!isHydrated || isOnboardingActive) return undefined;
 
     if (persistTimeoutRef.current) {
       clearTimeout(persistTimeoutRef.current);
@@ -673,8 +1198,14 @@ export const App = () => {
     projects,
     activeProjectId,
     projectFilters,
-    isHydrated
+    isHydrated,
+    isOnboardingActive
   ]);
+
+  const tourContext = useMemo(
+    () => (isOnboardingActive ? { isActive: true, activeStep: onboardingStepId } : null),
+    [isOnboardingActive, onboardingStepId]
+  );
 
   const activeQuestions = useMemo(
     () => questions.filter(q => shouldShowQuestion(q, answers)),
@@ -1819,6 +2350,9 @@ export const App = () => {
 
   return (
     <div className="min-h-screen">
+      <div id="tour-onboarding-anchor" className="sr-only" aria-hidden="true">
+        Guide interactif
+      </div>
       <nav className="bg-white shadow-sm border-b border-gray-200 hv-surface">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 py-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -1850,6 +2384,23 @@ export const App = () => {
               )}
               {mode === 'user' && (
                 <>
+                  <button
+                    type="button"
+                    onClick={handleStartOnboarding}
+                    className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button flex items-center justify-center gap-2 ${
+                      isOnboardingActive
+                        ? 'bg-blue-600 text-white hv-button-primary'
+                        : isTourGuideReady
+                          ? 'bg-white text-blue-600 border border-blue-200 hover:bg-blue-50 hv-focus-ring'
+                          : 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed'
+                    }`}
+                    disabled={!isTourGuideReady || isOnboardingActive}
+                    data-tour-id="nav-onboarding-trigger"
+                    aria-label="Lancer le guide interactif"
+                  >
+                    <Sparkles className="text-lg sm:text-xl" aria-hidden="true" />
+                    <span>Guide interactif</span>
+                  </button>
                   <button
                     type="button"
                     onClick={() => setScreen('home')}
@@ -1963,6 +2514,7 @@ export const App = () => {
             onImportProject={handleImportProject}
             onDuplicateProject={handleDuplicateProject}
             isAdminMode={isAdminMode}
+            tourContext={tourContext}
           />
         ) : screen === 'questionnaire' ? (
           <QuestionnaireScreen
@@ -1973,10 +2525,11 @@ export const App = () => {
             onNext={handleNext}
             onBack={handleBack}
             allQuestions={questions}
-            onSaveDraft={handleSaveDraft}
+            onSaveDraft={isOnboardingActive ? noop : handleSaveDraft}
             saveFeedback={saveFeedback}
             onDismissSaveFeedback={handleDismissSaveFeedback}
             validationError={validationError}
+            tourContext={tourContext}
           />
         ) : screen === 'mandatory-summary' ? (
           <MandatoryQuestionsSummary
@@ -2002,10 +2555,17 @@ export const App = () => {
             onUpdateAnswers={isActiveProjectEditable ? handleUpdateAnswers : undefined}
             onSubmitProject={handleSubmitProject}
             isExistingProject={Boolean(activeProjectId)}
-            onSaveDraft={isActiveProjectEditable ? handleSaveDraft : undefined}
+            onSaveDraft={
+              isOnboardingActive
+                ? noop
+                : isActiveProjectEditable
+                  ? handleSaveDraft
+                  : undefined
+            }
             saveFeedback={saveFeedback}
             onDismissSaveFeedback={handleDismissSaveFeedback}
             isAdminMode={isAdminMode}
+            tourContext={tourContext}
           />
         ) : screen === 'showcase' ? (
           showcaseProjectContext ? (
@@ -2026,10 +2586,13 @@ export const App = () => {
                 answers={showcaseProjectContext.answers}
                 timelineDetails={showcaseProjectContext.timelineDetails}
                 onUpdateAnswers={
-                  showcaseProjectContext.status === 'draft' || isAdminMode
-                    ? handleUpdateProjectShowcaseAnswers
-                    : undefined
+                  isOnboardingActive
+                    ? noop
+                    : showcaseProjectContext.status === 'draft' || isAdminMode
+                      ? handleUpdateProjectShowcaseAnswers
+                      : undefined
                 }
+                tourContext={tourContext}
               />
             </div>
           ) : null
