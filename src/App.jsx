@@ -25,7 +25,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.146';
+const APP_VERSION = 'v1.0.147';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -1062,7 +1062,7 @@ export const App = () => {
         id: 'project-save-anytime',
         target: '[data-tour-id="question-save-draft"]',
         title: 'Sauvegarder à tout moment',
-        content: 'Téléchargez un brouillon de votre projet quand vous le souhaitez et rechargez-le depuis l’accueil. Attention, il n'y a pas de sauvegarde automatique.'
+        content: "Téléchargez un brouillon de votre projet quand vous le souhaitez et rechargez-le depuis l’accueil. Attention, il n'y a pas de sauvegarde automatique."
       },
       {
         id: 'questionnaire-finish',
@@ -1074,7 +1074,7 @@ export const App = () => {
         id: 'compliance-report-top',
         target: '[data-tour-id="synthesis-summary"]',
         title: 'Lire le rapport de compliance',
-        content: 'Retrouvez ici le résumé du projet avec l'ensemble des informations que vous avez remplies. Vous pouvez revenir en arrière pour les modifier.'
+        content: "Retrouvez ici le résumé du projet avec l'ensemble des informations que vous avez remplies. Vous pouvez revenir en arrière pour les modifier."
       },
       {
         id: 'compliance-teams',
