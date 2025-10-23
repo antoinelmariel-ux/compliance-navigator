@@ -51,6 +51,13 @@ export const Settings = createIcon(
   </React.Fragment>
 );
 
+export const Lock = createIcon(
+  <React.Fragment>
+    <rect x="5" y="11" width="14" height="10" rx="2" />
+    <path d="M7 11V8a5 5 0 1110 0v3" />
+  </React.Fragment>
+);
+
 export const FileText = createIcon(
   <React.Fragment>
     <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
