@@ -25,7 +25,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.142';
+const APP_VERSION = 'v1.0.143';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -866,7 +866,10 @@ export const App = () => {
         setHasUnsavedChanges(false);
         break;
       }
-      case 'question-guidance': {
+      case 'question-overview':
+      case 'question-guidance':
+      case 'project-save-anytime': {
+        setShowcaseProjectContext(null);
         setScreen('questionnaire');
         setActiveProjectId('onboarding-demo');
         setAnswers(cloneDeep(demoData.answers));
@@ -877,7 +880,27 @@ export const App = () => {
         setHasUnsavedChanges(false);
         break;
       }
-      case 'compliance-report': {
+      case 'questionnaire-finish': {
+        setShowcaseProjectContext(null);
+        setScreen('questionnaire');
+        setActiveProjectId('onboarding-demo');
+        setAnswers(cloneDeep(demoData.answers));
+        setAnalysis(null);
+        setValidationError(null);
+        setSaveFeedback(null);
+        setHasUnsavedChanges(false);
+        const totalQuestionsCount = Array.isArray(demoData.questions) && demoData.questions.length > 0
+          ? demoData.questions.length
+          : questions.length;
+        const lastIndex = totalQuestionsCount > 0 ? totalQuestionsCount - 1 : 0;
+        setCurrentQuestionIndex(lastIndex);
+        break;
+      }
+      case 'compliance-report-top':
+      case 'compliance-risks':
+      case 'compliance-submit':
+      case 'compliance-save':
+      case 'compliance-showcase-button': {
         setAnswers(cloneDeep(demoData.answers));
         setAnalysis(demoData.analysis);
         setCurrentQuestionIndex(0);
@@ -887,7 +910,12 @@ export const App = () => {
         setHasUnsavedChanges(false);
         break;
       }
-      case 'showcase': {
+      case 'showcase-top':
+      case 'showcase-bottom':
+      case 'showcase-edit-trigger':
+      case 'showcase-edit':
+      case 'showcase-save-edits':
+      case 'showcase-back-to-report': {
         openProjectShowcase({
           projectId: null,
           projectName: demoData.projectName,
@@ -898,33 +926,6 @@ export const App = () => {
           timelineDetails: demoData.timelineDetails,
           status: 'draft'
         });
-        setHasUnsavedChanges(false);
-        break;
-      }
-      case 'showcase-edit': {
-        if (screen !== 'showcase') {
-          openProjectShowcase({
-            projectId: null,
-            projectName: demoData.projectName,
-            answers: cloneDeep(demoData.answers),
-            analysis: demoData.analysis,
-            relevantTeams: demoData.relevantTeams,
-            questions: demoData.questions,
-            timelineDetails: demoData.timelineDetails,
-            status: 'draft'
-          });
-        }
-        setHasUnsavedChanges(false);
-        break;
-      }
-      case 'question-save': {
-        setShowcaseProjectContext(null);
-        setScreen('questionnaire');
-        setAnswers(cloneDeep(demoData.answers));
-        setCurrentQuestionIndex(0);
-        setAnalysis(null);
-        setValidationError(null);
-        setSaveFeedback(null);
         setHasUnsavedChanges(false);
         break;
       }
@@ -945,6 +946,7 @@ export const App = () => {
     getDemoData,
     openProjectShowcase,
     screen,
+    questions,
     setActiveProjectId,
     setAnalysis,
     setAnswers,
@@ -1022,34 +1024,94 @@ export const App = () => {
         placement: 'bottom'
       },
       {
+        id: 'question-overview',
+        target: '[data-tour-id="question-main-content"]',
+        title: 'Répondre aux questions',
+        content: 'Renseignez les informations demandées étape par étape pour qualifier votre initiative.'
+      },
+      {
         id: 'question-guidance',
         target: '[data-tour-id="question-guidance-toggle"]',
         title: 'Comprendre chaque question',
         content: 'Chaque étape propose des conseils contextualisés pour répondre sereinement.'
       },
       {
-        id: 'compliance-report',
-        target: '[data-tour-id="synthesis-summary"]',
-        title: 'Lire le rapport de compliance',
-        content: 'Retrouvez la synthèse des risques, les équipes à mobiliser et les prochaines étapes clés.'
+        id: 'project-save-anytime',
+        target: '[data-tour-id="question-save-draft"]',
+        title: 'Sauvegarder à tout moment',
+        content: 'Téléchargez un brouillon de votre projet quand vous le souhaitez et rechargez-le depuis l’accueil.'
       },
       {
-        id: 'showcase',
+        id: 'questionnaire-finish',
+        target: '[data-tour-id="questionnaire-finish"]',
+        title: 'Atteindre la fin du formulaire',
+        content: 'Sur la dernière question, cliquez sur “Voir la synthèse” pour accéder au rapport complet.'
+      },
+      {
+        id: 'compliance-report-top',
+        target: '[data-tour-id="synthesis-summary"]',
+        title: 'Le rapport de compliance',
+        content: 'Retrouvez ici le résumé du projet : statut, équipes clés et informations essentielles.'
+      },
+      {
+        id: 'compliance-risks',
+        target: '[data-tour-id="synthesis-risks"]',
+        title: 'Risques et points de vigilance',
+        content: 'Analysez les risques identifiés et les points de vigilance compliance à adresser en priorité.'
+      },
+      {
+        id: 'compliance-submit',
+        target: '[data-tour-id="synthesis-submit"]',
+        title: 'Soumettre le projet',
+        content: 'Envoyez votre rapport directement par e-mail aux équipes concernées.'
+      },
+      {
+        id: 'compliance-save',
+        target: '[data-tour-id="synthesis-save"]',
+        title: 'Sauvegarder depuis la synthèse',
+        content: 'Téléchargez le fichier du projet pour le partager ou le reprendre ultérieurement.'
+      },
+      {
+        id: 'compliance-showcase-button',
+        target: '[data-tour-id="synthesis-showcase"]',
+        title: 'Ouvrir la vitrine projet',
+        content: 'Accédez à la vitrine marketing générée automatiquement pour présenter votre initiative.'
+      },
+      {
+        id: 'showcase-top',
         target: '[data-tour-id="showcase-preview"]',
         title: 'Présenter votre projet',
-        content: 'Une vitrine générée automatiquement pour partager la valeur de votre initiative.'
+        content: 'Parcourez la vitrine depuis son en-tête pour découvrir la mise en scène de votre projet.'
+      },
+      {
+        id: 'showcase-bottom',
+        target: '[data-tour-id="showcase-preview-bottom"]',
+        title: 'Explorer la suite de la vitrine',
+        content: 'Descendez jusqu’aux jalons et indicateurs pour montrer l’intégralité du showcase.'
+      },
+      {
+        id: 'showcase-edit-trigger',
+        target: '[data-tour-id="showcase-edit-trigger"]',
+        title: 'Modifier la vitrine',
+        content: 'Activez le mode édition pour ajuster les contenus avant diffusion.'
       },
       {
         id: 'showcase-edit',
         target: '[data-tour-id="showcase-edit-panel"]',
         title: 'Personnaliser la vitrine',
-        content: 'Modifiez les contenus avant diffusion : texte, messages clés et jalons restent éditables.'
+        content: 'Adaptez textes, messages clés et jalons pour refléter fidèlement votre projet.'
       },
       {
-        id: 'question-save',
-        target: '[data-tour-id="question-save-draft"]',
-        title: 'Sauvegarder votre avancement',
-        content: 'Enregistrez votre brouillon à tout moment pour reprendre plus tard.'
+        id: 'showcase-save-edits',
+        target: '[data-tour-id="showcase-save-edits"]',
+        title: 'Enregistrer les modifications',
+        content: 'Validez vos ajustements pour mettre à jour immédiatement la vitrine.'
+      },
+      {
+        id: 'showcase-back-to-report',
+        target: '[data-tour-id="showcase-back-to-report"]',
+        title: 'Retourner au rapport compliance',
+        content: 'Revenez au rapport de synthèse pour poursuivre votre préparation.'
       },
       {
         id: 'project-import',
@@ -1060,8 +1122,8 @@ export const App = () => {
       {
         id: 'project-filters',
         target: '[data-tour-id="home-filters"]',
-        title: 'Retrouver vos projets',
-        content: 'Filtrez vos initiatives par nom, équipe ou date pour retrouver rapidement vos dossiers.'
+        title: 'Découvrir les projets',
+        content: 'Filtrez les initiatives par nom, équipe ou date et laissez vous inspirer.'
       }
     ];
 
@@ -2378,6 +2440,7 @@ export const App = () => {
                   className="w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button bg-blue-600 text-white hv-button-primary"
                   aria-label="Revenir au rapport compliance du projet"
                   title="Revenir au rapport compliance du projet"
+                  data-tour-id="showcase-back-to-report"
                 >
                   Rapport compliance
                 </button>

@@ -964,6 +964,7 @@ export const SynthesisReport = ({
                   type="button"
                   onClick={handleDownloadProject}
                   className="px-4 py-2 bg-white border border-blue-200 text-blue-600 hover:bg-blue-50 rounded-lg font-medium transition-all flex items-center justify-center hv-button hv-focus-ring w-full sm:w-auto text-sm sm:text-base"
+                  data-tour-id="synthesis-save"
                 >
                   <Save className="w-4 h-4 mr-2" />
                   Sauvegarder le projet
@@ -973,6 +974,7 @@ export const SynthesisReport = ({
                 type="button"
                 onClick={handleSubmitByEmail}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all flex items-center justify-center hv-button hv-button-primary w-full sm:w-auto text-sm sm:text-base"
+                data-tour-id="synthesis-submit"
               >
                 <Send className="w-4 h-4 mr-2" />
                 Soumettre par e-mail
@@ -981,6 +983,7 @@ export const SynthesisReport = ({
                 type="button"
                 onClick={handleOpenShowcase}
                 className="px-4 py-2 bg-white border border-blue-200 text-blue-600 hover:bg-blue-50 rounded-lg font-medium transition-all flex items-center justify-center hv-button hv-focus-ring w-full sm:w-auto text-sm sm:text-base"
+                data-tour-id="synthesis-showcase"
               >
                 <Sparkles className="w-4 h-4 mr-2" />
                 Vitrine du projet
@@ -1112,115 +1115,122 @@ export const SynthesisReport = ({
             </div>
           </section>
 
-          {/* Risques identifiés */}
-          <section aria-labelledby="risks-heading">
-            <h2 id="risks-heading" className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-              <AlertTriangle className="w-6 h-6 mr-2 text-red-500" />
-              Risques identifiés ({analysis.risks.length})
-            </h2>
-            <div className="space-y-3">
-          {analysis.risks.map((risk, idx) => {
-            const timingViolationMessage = formatRiskTimingViolation(risk.timingViolation);
-
-            return (
-              <div key={idx} className={`p-4 rounded-xl border hv-surface ${riskColors[risk.level]}`} role="article" aria-label={`Risque ${risk.level}`}>
-                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                      <span className="text-sm font-semibold text-gray-700">{risk.level}</span>
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold border hv-badge ${priorityColors[risk.priority]}`}>
-                        {risk.priority}
-                      </span>
-                    </div>
-                    <p className="text-gray-800 font-medium">{renderTextWithLinks(risk.description)}</p>
-                    {timingViolationMessage && (
-                      <p className="text-xs text-red-600 mt-2">{timingViolationMessage}</p>
-                    )}
-                    <p className="text-xs text-gray-600 mt-2">
-                      <span className="font-semibold text-gray-700">Équipe référente :</span>{' '}
-                      {(() => {
-                        const associatedTeam = teams.find(team => {
-                          if (risk.teamId) {
-                          return team.id === risk.teamId;
-                        }
-                        if (Array.isArray(risk.teams)) {
-                          return risk.teams.includes(team.id);
-                        }
-                        return false;
-                      });
-
-                      if (associatedTeam) {
-                        return associatedTeam.name;
-                      }
-
-                      if (risk.teamId) {
-                        return risk.teamId;
-                      }
-
-                      if (Array.isArray(risk.teams) && risk.teams.length > 0) {
-                        return risk.teams[0];
-                      }
-
-                      return 'Non renseignée';
-                    })()}
-                    </p>
-                    <p className="text-sm text-gray-600 mt-2">
-                      <span className="font-semibold text-gray-700">Mitigation :</span>{' '}
-                      {renderTextWithLinks(risk.mitigation)}
-                    </p>
-                  </div>
-            );
-          })}
-        </div>
-      </section>
-
-          {vigilanceAlerts.length > 0 && (
-            <section aria-labelledby="vigilance-heading" className="mt-8">
-              <h2 id="vigilance-heading" className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
-                <CheckCircle className="w-6 h-6 mr-2 text-emerald-500" />
-                Points de vigilance ({vigilanceAlerts.length})
+          <div data-tour-id="synthesis-risks" className="space-y-8">
+            {/* Risques identifiés */}
+            <section aria-labelledby="risks-heading">
+              <h2 id="risks-heading" className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+                <AlertTriangle className="w-6 h-6 mr-2 text-red-500" />
+                Risques identifiés ({analysis.risks.length})
               </h2>
               <div className="space-y-3">
-                {vigilanceAlerts.map(alert => {
-                  const priorityClass = priorityColors[alert.priority] || 'bg-emerald-100 text-emerald-800 border-emerald-300';
-                  const statusClass = vigilanceStatusClasses[alert.status] || vigilanceStatusClasses.unknown;
-                  const title = alert.riskDescription && alert.riskDescription.trim().length > 0
-                    ? alert.riskDescription
-                    : alert.ruleName;
-                  const teamLabel = resolveTeamLabel(alert.teamId);
+                {analysis.risks.map((risk, idx) => {
+                  const timingViolationMessage = formatRiskTimingViolation(risk.timingViolation);
 
                   return (
                     <div
-                      key={alert.id || `${alert.ruleId}-${alert.riskId || 'risk'}`}
-                      className={`p-4 rounded-xl border hv-surface ${statusClass}`}
+                      key={idx}
+                      className={`p-4 rounded-xl border hv-surface ${riskColors[risk.level]}`}
                       role="article"
-                      aria-label={`Point de vigilance ${alert.ruleName}`}
+                      aria-label={`Risque ${risk.level}`}
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                        <span className="text-sm font-semibold text-gray-700">{alert.ruleName}</span>
-                        {alert.priority && (
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold border hv-badge ${priorityClass}`}>
-                            {alert.priority}
-                          </span>
-                        )}
+                        <span className="text-sm font-semibold text-gray-700">{risk.level}</span>
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold border hv-badge ${priorityColors[risk.priority]}`}>
+                          {risk.priority}
+                        </span>
                       </div>
-                      <p className="text-gray-800 font-medium">{renderTextWithLinks(title)}</p>
-                      {alert.requirementSummary && (
-                        <p className="text-xs text-emerald-800 mt-2">{alert.requirementSummary}</p>
+                      <p className="text-gray-800 font-medium">{renderTextWithLinks(risk.description)}</p>
+                      {timingViolationMessage && (
+                        <p className="text-xs text-red-600 mt-2">{timingViolationMessage}</p>
                       )}
-                      {alert.statusMessage && (
-                        <p className="text-xs text-gray-600 mt-2">{alert.statusMessage}</p>
-                      )}
-                      {teamLabel && (
-                        <p className="text-xs text-gray-600 mt-2">
-                          <span className="font-semibold text-gray-700">Équipe référente :</span>{' '}
-                          {teamLabel}
-                        </p>
-                      )}
+                      <p className="text-xs text-gray-600 mt-2">
+                        <span className="font-semibold text-gray-700">Équipe référente :</span>{' '}
+                        {(() => {
+                          const associatedTeam = teams.find(team => {
+                            if (risk.teamId) {
+                              return team.id === risk.teamId;
+                            }
+                            if (Array.isArray(risk.teams)) {
+                              return risk.teams.includes(team.id);
+                            }
+                            return false;
+                          });
+
+                          if (associatedTeam) {
+                            return associatedTeam.name;
+                          }
+
+                          if (risk.teamId) {
+                            return risk.teamId;
+                          }
+
+                          if (Array.isArray(risk.teams) && risk.teams.length > 0) {
+                            return risk.teams[0];
+                          }
+
+                          return 'Non renseignée';
+                        })()}
+                      </p>
+                      <p className="text-sm text-gray-600 mt-2">
+                        <span className="font-semibold text-gray-700">Mitigation :</span>{' '}
+                        {renderTextWithLinks(risk.mitigation)}
+                      </p>
                     </div>
                   );
                 })}
               </div>
             </section>
-          )}
+
+            {vigilanceAlerts.length > 0 && (
+              <section aria-labelledby="vigilance-heading" className="mt-8">
+                <h2 id="vigilance-heading" className="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+                  <CheckCircle className="w-6 h-6 mr-2 text-emerald-500" />
+                  Points de vigilance ({vigilanceAlerts.length})
+                </h2>
+                <div className="space-y-3">
+                  {vigilanceAlerts.map(alert => {
+                    const priorityClass = priorityColors[alert.priority] || 'bg-emerald-100 text-emerald-800 border-emerald-300';
+                    const statusClass = vigilanceStatusClasses[alert.status] || vigilanceStatusClasses.unknown;
+                    const title = alert.riskDescription && alert.riskDescription.trim().length > 0
+                      ? alert.riskDescription
+                      : alert.ruleName;
+                    const teamLabel = resolveTeamLabel(alert.teamId);
+
+                    return (
+                      <div
+                        key={alert.id || `${alert.ruleId}-${alert.riskId || 'risk'}`}
+                        className={`p-4 rounded-xl border hv-surface ${statusClass}`}
+                        role="article"
+                        aria-label={`Point de vigilance ${alert.ruleName}`}
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                          <span className="text-sm font-semibold text-gray-700">{alert.ruleName}</span>
+                          {alert.priority && (
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold border hv-badge ${priorityClass}`}>
+                              {alert.priority}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-gray-800 font-medium">{renderTextWithLinks(title)}</p>
+                        {alert.requirementSummary && (
+                          <p className="text-xs text-emerald-800 mt-2">{alert.requirementSummary}</p>
+                        )}
+                        {alert.statusMessage && (
+                          <p className="text-xs text-gray-600 mt-2">{alert.statusMessage}</p>
+                        )}
+                        {teamLabel && (
+                          <p className="text-xs text-gray-600 mt-2">
+                            <span className="font-semibold text-gray-700">Équipe référente :</span>{' '}
+                            {teamLabel}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+          </div>
 
           {(isAdminMode || hasComplianceComment) && (
             <section className="mt-8" aria-labelledby="compliance-comments-heading">
