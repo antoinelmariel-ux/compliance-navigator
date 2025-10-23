@@ -25,7 +25,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.139';
+const APP_VERSION = 'v1.0.140';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -1890,26 +1890,28 @@ export const App = () => {
                   Mode Chef de Projet
                 </button>
               )}
-              <button
-                type="button"
-                onClick={handleActivateAdminOnHome}
-                className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button flex items-center justify-center ${
-                  isAdminHomeView
-                    ? 'bg-blue-600 text-white hv-button-primary'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-                aria-pressed={isAdminHomeView}
-                aria-label="Activer le mode administrateur sur la page d'accueil"
-                title="Activer le mode administrateur sur l'accueil"
-              >
-                <Lock className="text-lg sm:text-xl" />
-                <span className="sr-only">Mode Administrateur (Accueil)</span>
-              </button>
+              {!isAdminMode && (
+                <button
+                  type="button"
+                  onClick={handleActivateAdminOnHome}
+                  className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button flex items-center justify-center ${
+                    isAdminHomeView
+                      ? 'bg-blue-600 text-white hv-button-primary'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                  aria-pressed={isAdminHomeView}
+                  aria-label="Activer le mode administrateur sur la page d'accueil"
+                  title="Activer le mode administrateur sur l'accueil"
+                >
+                  <Lock className="text-lg sm:text-xl" />
+                  <span className="sr-only">Mode Administrateur (Accueil)</span>
+                </button>
+              )}
               {isAdminMode && (
                 <button
                   type="button"
                   onClick={handleBackOfficeClick}
-                  className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button flex items-center justify-center ${
+                  className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button flex items-center justify-center gap-3 ${
                     isAdminBackOfficeView
                       ? 'bg-blue-600 text-white hv-button-primary'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -1918,8 +1920,8 @@ export const App = () => {
                   aria-label="Accéder au back-office"
                   title="Accéder au back-office"
                 >
-                  <Settings className="text-lg sm:text-xl" />
                   <span>Accéder au back-office</span>
+                  <Settings className="text-lg sm:text-xl" aria-hidden="true" />
                 </button>
               )}
               {backOfficeAuthError && (
