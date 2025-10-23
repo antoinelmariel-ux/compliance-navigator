@@ -25,7 +25,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.147';
+const APP_VERSION = 'v1.0.149';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -421,6 +421,33 @@ const buildInitialProjectsState = () => {
   })];
 };
 
+const isOnboardingProject = (project) => {
+  if (!project || typeof project !== 'object') {
+    return false;
+  }
+
+  const { id } = project;
+  if (typeof id !== 'string' || id.length === 0) {
+    return false;
+  }
+
+  return id === 'onboarding-demo' || id.startsWith('tour-');
+};
+
+const sanitizeRestoredProjects = (projects) => {
+  if (!Array.isArray(projects)) {
+    return [];
+  }
+
+  const restored = projects.filter(project => !isOnboardingProject(project));
+
+  if (restored.length === 0) {
+    return [];
+  }
+
+  return cloneDeep(restored);
+};
+
 export const App = () => {
   const [mode, setMode] = useState('user');
   const [screen, setScreen] = useState('home');
@@ -790,24 +817,52 @@ export const App = () => {
     onboardingDemoDataRef.current = null;
 
     if (!snapshot) {
+      setMode('user');
+      setAdminView('home');
+      setScreen('home');
+      setAnswers({});
+      setAnalysis(null);
+      setProjects(buildInitialProjectsState());
+      setProjectFiltersState(createDefaultProjectFiltersConfig());
+      setCurrentQuestionIndex(0);
+      setValidationError(null);
+      setSaveFeedback(null);
+      setActiveProjectId(null);
+      setShowcaseProjectContext(null);
+      setHasUnsavedChanges(false);
+      setBackOfficeAuthError(null);
+      setIsBackOfficeUnlocked(false);
       return;
     }
 
-    setMode(snapshot.mode);
-    setAdminView(snapshot.adminView);
-    setScreen(snapshot.screen);
-    setAnswers(snapshot.answers);
-    setAnalysis(snapshot.analysis);
-    setProjects(snapshot.projects);
-    setProjectFiltersState(snapshot.projectFilters);
-    setCurrentQuestionIndex(snapshot.currentQuestionIndex);
-    setValidationError(snapshot.validationError);
-    setSaveFeedback(snapshot.saveFeedback);
-    setActiveProjectId(snapshot.activeProjectId);
-    setShowcaseProjectContext(snapshot.showcaseProjectContext);
-    setHasUnsavedChanges(snapshot.hasUnsavedChanges);
-    setBackOfficeAuthError(snapshot.backOfficeAuthError);
-    setIsBackOfficeUnlocked(snapshot.isBackOfficeUnlocked);
+    setMode(snapshot.mode || 'user');
+    setAdminView(snapshot.adminView || 'home');
+    setScreen(snapshot.screen || 'home');
+    setAnswers(snapshot.answers || {});
+    setAnalysis(typeof snapshot.analysis !== 'undefined' ? snapshot.analysis : null);
+    const restoredProjects = sanitizeRestoredProjects(snapshot.projects);
+    setProjects(
+      restoredProjects.length > 0
+        ? restoredProjects
+        : buildInitialProjectsState()
+    );
+    setProjectFiltersState(
+      snapshot.projectFilters
+        ? normalizeProjectFilterConfig(snapshot.projectFilters)
+        : createDefaultProjectFiltersConfig()
+    );
+    setCurrentQuestionIndex(
+      typeof snapshot.currentQuestionIndex === 'number' && snapshot.currentQuestionIndex >= 0
+        ? snapshot.currentQuestionIndex
+        : 0
+    );
+    setValidationError(snapshot.validationError || null);
+    setSaveFeedback(snapshot.saveFeedback || null);
+    setActiveProjectId(typeof snapshot.activeProjectId === 'string' ? snapshot.activeProjectId : null);
+    setShowcaseProjectContext(snapshot.showcaseProjectContext || null);
+    setHasUnsavedChanges(Boolean(snapshot.hasUnsavedChanges));
+    setBackOfficeAuthError(snapshot.backOfficeAuthError || null);
+    setIsBackOfficeUnlocked(Boolean(snapshot.isBackOfficeUnlocked));
   }, [
     setActiveProjectId,
     setAdminView,
