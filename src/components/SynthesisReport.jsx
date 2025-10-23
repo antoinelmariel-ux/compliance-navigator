@@ -862,6 +862,7 @@ export const SynthesisReport = ({
                   type="button"
                   onClick={handleDownloadProject}
                   className="px-4 py-2 bg-white border border-blue-200 text-blue-600 hover:bg-blue-50 rounded-lg font-medium transition-all flex items-center justify-center hv-button hv-focus-ring w-full sm:w-auto text-sm sm:text-base"
+                  data-tour-id="report-save-button"
                 >
                   <Save className="w-4 h-4 mr-2" />
                   Sauvegarder le projet
@@ -879,6 +880,7 @@ export const SynthesisReport = ({
                 type="button"
                 onClick={handleOpenShowcase}
                 className="px-4 py-2 bg-white border border-blue-200 text-blue-600 hover:bg-blue-50 rounded-lg font-medium transition-all flex items-center justify-center hv-button hv-focus-ring w-full sm:w-auto text-sm sm:text-base"
+                data-tour-id="report-showcase-button"
               >
                 <Sparkles className="w-4 h-4 mr-2" />
                 Vitrine du projet
@@ -917,7 +919,11 @@ export const SynthesisReport = ({
           )}
 
           {/* Vue d'ensemble */}
-          <section className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-5 sm:p-6 mb-8 border border-blue-200 hv-surface" aria-labelledby="overview-heading">
+          <section
+            className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-5 sm:p-6 mb-8 border border-blue-200 hv-surface"
+            aria-labelledby="overview-heading"
+            data-tour-id="report-overview-section"
+          >
             <h2 id="overview-heading" className="text-xl font-bold text-gray-800 mb-4 flex items-center">
               <FileText className="w-6 h-6 mr-2 text-blue-600" />
               Vue d'ensemble du projet
