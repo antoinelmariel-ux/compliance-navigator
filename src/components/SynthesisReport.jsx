@@ -7,7 +7,8 @@ import {
   Sparkles,
   CheckCircle,
   Save,
-  Mail
+  Mail,
+  Info
 } from './icons.js';
 import { formatAnswer } from '../utils/questions.js';
 import { renderTextWithLinks } from '../utils/linkify.js';
@@ -36,6 +37,8 @@ const escapeHtml = (value) => {
 const formatNumber = (value, options = {}) => {
   return Number(value).toLocaleString('fr-FR', options);
 };
+
+const COMPLIANCE_COMMENTS_KEY = '__compliance_team_comments__';
 
 const formatWeeksValue = (weeks) => {
   if (weeks === undefined || weeks === null) {
@@ -543,15 +546,24 @@ export const SynthesisReport = ({
   onSubmitProject,
   onSaveDraft,
   saveFeedback,
-  onDismissSaveFeedback
+  onDismissSaveFeedback,
+  isAdminMode = false
 }) => {
   const [isShowcaseFallbackOpen, setIsShowcaseFallbackOpen] = useState(false);
   const showcaseFallbackRef = useRef(null);
   const [attachmentReminder, setAttachmentReminder] = useState(null);
   const reminderCloseButtonRef = useRef(null);
+  const complianceCommentFeedbackTimeoutRef = useRef(null);
   const relevantTeams = teams.filter(team => (analysis?.teams || []).includes(team.id));
   const hasSaveFeedback = Boolean(saveFeedback?.message);
   const isSaveSuccess = saveFeedback?.status === 'success';
+  const complianceCommentValue =
+    typeof answers?.[COMPLIANCE_COMMENTS_KEY] === 'string' ? answers[COMPLIANCE_COMMENTS_KEY] : '';
+  const [complianceCommentDraft, setComplianceCommentDraft] = useState(complianceCommentValue);
+  const [complianceCommentFeedback, setComplianceCommentFeedback] = useState(null);
+  const hasComplianceComment = complianceCommentValue.trim().length > 0;
+  const isComplianceCommentDirty = complianceCommentDraft !== complianceCommentValue;
+  const canSaveComplianceComment = typeof onUpdateAnswers === 'function' && isComplianceCommentDirty;
 
   const resolveTeamLabel = useCallback(
     (teamId) => {
@@ -666,6 +678,76 @@ export const SynthesisReport = ({
       reminderCloseButtonRef.current.focus();
     }
   }, [attachmentReminder]);
+
+  useEffect(() => {
+    setComplianceCommentDraft(complianceCommentValue);
+  }, [complianceCommentValue]);
+
+  useEffect(() => {
+    return () => {
+      if (complianceCommentFeedbackTimeoutRef.current) {
+        clearTimeout(complianceCommentFeedbackTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleComplianceCommentSubmit = useCallback(
+    (event) => {
+      if (event && typeof event.preventDefault === 'function') {
+        event.preventDefault();
+      }
+
+      if (!canSaveComplianceComment) {
+        return;
+      }
+
+      const normalizedDraft =
+        typeof complianceCommentDraft === 'string' ? complianceCommentDraft.replace(/\r\n/g, '\n') : '';
+      const trimmedDraft = normalizedDraft.trim();
+      const nextValue = trimmedDraft.length > 0 ? trimmedDraft : null;
+
+      onUpdateAnswers({
+        [COMPLIANCE_COMMENTS_KEY]: nextValue
+      });
+
+      setComplianceCommentDraft(trimmedDraft);
+
+      if (complianceCommentFeedbackTimeoutRef.current) {
+        clearTimeout(complianceCommentFeedbackTimeoutRef.current);
+      }
+
+      setComplianceCommentFeedback(
+        nextValue
+          ? 'Commentaire enregistré. Il sera visible par le Chef de projet.'
+          : 'Commentaire effacé.'
+      );
+
+      complianceCommentFeedbackTimeoutRef.current = setTimeout(() => {
+        setComplianceCommentFeedback(null);
+      }, 4000);
+    },
+    [
+      canSaveComplianceComment,
+      complianceCommentDraft,
+      onUpdateAnswers
+    ]
+  );
+
+  const handleComplianceCommentChange = useCallback(
+    (event) => {
+      const nextValue = event?.target?.value ?? '';
+      setComplianceCommentDraft(nextValue);
+
+      if (complianceCommentFeedback) {
+        if (complianceCommentFeedbackTimeoutRef.current) {
+          clearTimeout(complianceCommentFeedbackTimeoutRef.current);
+          complianceCommentFeedbackTimeoutRef.current = null;
+        }
+        setComplianceCommentFeedback(null);
+      }
+    },
+    [complianceCommentFeedback]
+  );
 
   const handleOpenShowcase = useCallback(() => {
     if (typeof onOpenProjectShowcase === 'function') {
@@ -1116,6 +1198,77 @@ export const SynthesisReport = ({
                     </div>
                   );
                 })}
+              </div>
+            </section>
+          )}
+
+          {(isAdminMode || hasComplianceComment) && (
+            <section className="mt-8" aria-labelledby="compliance-comments-heading">
+              <div className="bg-white rounded-xl border border-blue-200 p-6 hv-surface">
+                <div className="flex items-center mb-4">
+                  <Info className="w-6 h-6 mr-2 text-blue-600" />
+                  <h2 id="compliance-comments-heading" className="text-2xl font-bold text-gray-800">
+                    Commentaires des équipes compliance
+                  </h2>
+                </div>
+
+                {isAdminMode && (
+                  <form onSubmit={handleComplianceCommentSubmit} className="space-y-3 mb-6">
+                    <label
+                      htmlFor="compliance-comments-textarea"
+                      className="block text-sm font-medium text-gray-700"
+                    >
+                      Renseignez les informations clés à partager avec le Chef de projet.
+                    </label>
+                    <textarea
+                      id="compliance-comments-textarea"
+                      name="compliance-comments"
+                      rows={5}
+                      className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                      placeholder="Ajoutez ici vos recommandations ou points d'attention compliance..."
+                      value={complianceCommentDraft}
+                      onChange={handleComplianceCommentChange}
+                    />
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-xs text-gray-500">
+                        Ces commentaires sont enregistrés dans le rapport et visibles par le Chef de projet.
+                      </p>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                        <button
+                          type="submit"
+                          className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all hv-button ${
+                            canSaveComplianceComment
+                              ? 'bg-blue-600 text-white hover:bg-blue-700 hv-button-primary'
+                              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          }`}
+                          disabled={!canSaveComplianceComment}
+                        >
+                          Enregistrer le commentaire
+                        </button>
+                        {complianceCommentFeedback && (
+                          <span className="text-xs font-medium text-emerald-700">
+                            {complianceCommentFeedback}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </form>
+                )}
+
+                {hasComplianceComment ? (
+                  <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Réponse</span>
+                    <p className="mt-2 text-sm text-gray-800 whitespace-pre-line">
+                      {renderTextWithLinks(complianceCommentValue)}
+                    </p>
+                  </div>
+                ) : (
+                  !isAdminMode && (
+                    <p className="text-sm text-gray-500">
+                      Aucun commentaire compliance pour le moment.
+                    </p>
+                  )
+                )}
               </div>
             </section>
           )}

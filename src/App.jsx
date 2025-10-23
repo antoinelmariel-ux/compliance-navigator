@@ -25,7 +25,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.137';
+const APP_VERSION = 'v1.0.138';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -2002,6 +2002,7 @@ export const App = () => {
             onSaveDraft={isActiveProjectEditable ? handleSaveDraft : undefined}
             saveFeedback={saveFeedback}
             onDismissSaveFeedback={handleDismissSaveFeedback}
+            isAdminMode={isAdminMode}
           />
         ) : screen === 'showcase' ? (
           showcaseProjectContext ? (
