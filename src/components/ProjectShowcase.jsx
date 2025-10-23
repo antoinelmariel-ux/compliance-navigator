@@ -994,7 +994,8 @@ export const ProjectShowcase = ({
   answers,
   timelineDetails,
   renderInStandalone = false,
-  onUpdateAnswers
+  onUpdateAnswers,
+  tourContext = null
 }) => {
   const rawProjectName = typeof projectName === 'string' ? projectName.trim() : '';
   const safeProjectName = rawProjectName.length > 0 ? rawProjectName : 'Votre projet';
@@ -1042,6 +1043,47 @@ export const ProjectShowcase = ({
       resetMilestoneDragState();
     }
   }, [isEditing, resetMilestoneDragState]);
+
+  useEffect(() => {
+    if (!tourContext?.isActive) {
+      return;
+    }
+
+    if (tourContext.activeStep === 'showcase-edit') {
+      setDraftValues(buildDraftValues(editableFields, answers, rawProjectName));
+      resetMilestoneDragState();
+      setIsEditing(true);
+    } else if (isEditing && tourContext.activeStep !== 'showcase-edit') {
+      setIsEditing(false);
+    }
+
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    const { activeStep } = tourContext;
+    let selector = null;
+
+    if (activeStep === 'showcase') {
+      selector = '[data-tour-id="showcase-preview"]';
+    } else if (activeStep === 'showcase-edit') {
+      selector = '[data-tour-id="showcase-edit-panel"]';
+    }
+
+    if (selector) {
+      const element = document.querySelector(selector);
+      if (element && typeof element.scrollIntoView === 'function') {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }, [
+    tourContext,
+    editableFields,
+    answers,
+    rawProjectName,
+    resetMilestoneDragState,
+    isEditing
+  ]);
 
   const canEdit = typeof onUpdateAnswers === 'function';
   const shouldShowPreview = !isEditing || !canEdit;
@@ -1346,7 +1388,7 @@ export const ProjectShowcase = ({
   );
 
   const previewContent = shouldShowPreview ? (
-    <div className="aurora-sections">
+    <div className="aurora-sections" data-tour-id="showcase-preview">
       <section className="aurora-section aurora-hero" data-showcase-section="hero">
         <div className="aurora-section__inner">
           <div className="aurora-hero__copy">
@@ -1671,7 +1713,12 @@ export const ProjectShowcase = ({
   );
 
   const editPanel = isEditing && canEdit ? (
-    <form id={formId} onSubmit={handleSubmitEdit} className="aurora-edit-panel">
+    <form
+      id={formId}
+      onSubmit={handleSubmitEdit}
+      className="aurora-edit-panel"
+      data-tour-id="showcase-edit-panel"
+    >
       <div className="aurora-edit-panel__header">
         <div>
           <p className="aurora-eyebrow aurora-eyebrow--soft">Mode édition actif</p>

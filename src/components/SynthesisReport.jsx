@@ -547,13 +547,28 @@ export const SynthesisReport = ({
   onSaveDraft,
   saveFeedback,
   onDismissSaveFeedback,
-  isAdminMode = false
+  isAdminMode = false,
+  tourContext = null
 }) => {
   const [isShowcaseFallbackOpen, setIsShowcaseFallbackOpen] = useState(false);
   const showcaseFallbackRef = useRef(null);
   const [attachmentReminder, setAttachmentReminder] = useState(null);
   const reminderCloseButtonRef = useRef(null);
   const complianceCommentFeedbackTimeoutRef = useRef(null);
+  useEffect(() => {
+    if (!tourContext?.isActive || tourContext.activeStep !== 'compliance-report') {
+      return;
+    }
+
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    const element = document.querySelector('[data-tour-id="synthesis-summary"]');
+    if (element && typeof element.scrollIntoView === 'function') {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [tourContext]);
   const relevantTeams = teams.filter(team => (analysis?.teams || []).includes(team.id));
   const hasSaveFeedback = Boolean(saveFeedback?.message);
   const isSaveSuccess = saveFeedback?.status === 'success';
@@ -912,7 +927,12 @@ export const SynthesisReport = ({
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 px-4 py-6 sm:px-8 sm:py-10 hv-background">
       <div className="max-w-6xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 mb-6 hv-surface" role="region" aria-label="Synthèse du projet">
+        <div
+          className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 mb-6 hv-surface"
+          role="region"
+          aria-label="Synthèse du projet"
+          data-tour-id="synthesis-summary"
+        >
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-6">
             <div className="flex flex-col gap-2">
               <h1 className="text-3xl font-bold text-gray-800 sm:text-4xl">Rapport de Compliance</h1>
