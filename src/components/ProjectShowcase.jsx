@@ -1049,11 +1049,14 @@ export const ProjectShowcase = ({
       return;
     }
 
-    if (tourContext.activeStep === 'showcase-edit') {
+    const { activeStep } = tourContext;
+    const shouldForceEditing = activeStep === 'showcase-edit' || activeStep === 'showcase-save-edits';
+
+    if (shouldForceEditing) {
       setDraftValues(buildDraftValues(editableFields, answers, rawProjectName));
       resetMilestoneDragState();
       setIsEditing(true);
-    } else if (isEditing && tourContext.activeStep !== 'showcase-edit') {
+    } else if (isEditing && activeStep !== 'showcase-edit' && activeStep !== 'showcase-save-edits') {
       setIsEditing(false);
     }
 
@@ -1061,28 +1064,40 @@ export const ProjectShowcase = ({
       return;
     }
 
-    const { activeStep } = tourContext;
     let selector = null;
+    let scrollOptions = { behavior: 'smooth', block: 'center' };
 
-    if (activeStep === 'showcase') {
+    if (activeStep === 'showcase-top') {
       selector = '[data-tour-id="showcase-preview"]';
-    } else if (activeStep === 'showcase-edit') {
+      scrollOptions = { behavior: 'smooth', block: 'start' };
+    } else if (activeStep === 'showcase-bottom') {
+      selector = '[data-tour-id="showcase-preview-bottom"]';
+      scrollOptions = { behavior: 'smooth', block: 'end' };
+    } else if (activeStep === 'showcase-edit-trigger') {
+      selector = '[data-tour-id="showcase-edit-trigger"]';
+    } else if (activeStep === 'showcase-edit' || activeStep === 'showcase-save-edits') {
       selector = '[data-tour-id="showcase-edit-panel"]';
     }
 
     if (selector) {
-      const element = document.querySelector(selector);
+      let element = document.querySelector(selector);
+      if (!element && activeStep === 'showcase-bottom') {
+        element = document.querySelector('[data-tour-id="showcase-preview"]');
+        scrollOptions = { behavior: 'smooth', block: 'end' };
+      }
       if (element && typeof element.scrollIntoView === 'function') {
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.scrollIntoView(scrollOptions);
       }
     }
   }, [
     tourContext,
     editableFields,
+    buildDraftValues,
     answers,
     rawProjectName,
     resetMilestoneDragState,
-    isEditing
+    isEditing,
+    setDraftValues
   ]);
 
   const canEdit = typeof onUpdateAnswers === 'function';
@@ -1581,7 +1596,11 @@ export const ProjectShowcase = ({
       </section>
 
       {hasTimelineSection && (
-        <section className="aurora-section aurora-roadmap" data-showcase-section="timeline">
+        <section
+          className="aurora-section aurora-roadmap"
+          data-showcase-section="timeline"
+          data-tour-id="showcase-preview-bottom"
+        >
           <div className="aurora-section__inner">
             <div className="aurora-section__header aurora-section__header--split">
               <div>
@@ -2080,7 +2099,11 @@ export const ProjectShowcase = ({
         <button type="button" onClick={handleCancelEditing} className="aurora-button aurora-button--ghost">
           Annuler
         </button>
-        <button type="submit" className="aurora-button aurora-button--primary">
+        <button
+          type="submit"
+          className="aurora-button aurora-button--primary"
+          data-tour-id="showcase-save-edits"
+        >
           <CheckCircle className="aurora-button__icon" />
           Enregistrer les modifications
         </button>
@@ -2095,6 +2118,7 @@ export const ProjectShowcase = ({
           type="button"
           onClick={handleStartEditing}
           className="aurora-button aurora-button--outline aurora-edit-bar__trigger"
+          data-tour-id="showcase-edit-trigger"
         >
           <Edit className="aurora-button__icon" />
           Modifier

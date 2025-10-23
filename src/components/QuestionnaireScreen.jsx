@@ -252,7 +252,7 @@ export const QuestionnaireScreen = ({
     switch (questionType) {
       case 'date':
         return (
-          <div className="mb-8">
+          <div className="mb-8" data-tour-id="question-main-content">
             <label className="block text-sm sm:text-base font-medium text-gray-700 mb-3" htmlFor={`${currentQuestion.id}-date`}>
               <span className="flex items-center">
                 <Calendar className="w-4 h-4 mr-2" />
@@ -390,7 +390,7 @@ export const QuestionnaireScreen = ({
         const emptyState = milestoneDrafts.length === 0;
 
         return (
-          <div className="mb-8">
+          <div className="mb-8" data-tour-id="question-main-content">
             <fieldset className="space-y-4" aria-describedby={currentIndex === 0 ? instructionsId : undefined}>
               <legend className="sr-only">{currentQuestion.question}</legend>
               {emptyState && (
@@ -667,7 +667,7 @@ export const QuestionnaireScreen = ({
             </div>
           )}
 
-          <div className="mb-8">
+          <div className="mb-8" data-tour-id="question-main-content">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
               <h2 id={questionTextId} className="text-2xl font-bold text-gray-800 sm:text-3xl">
                 {currentQuestion.question}
@@ -833,6 +833,7 @@ export const QuestionnaireScreen = ({
                 ? 'sm:justify-end'
                 : 'sm:justify-between'
             }`}
+            data-tour-id="questionnaire-finish"
           >
             {currentIndex > 0 && (
               <button
