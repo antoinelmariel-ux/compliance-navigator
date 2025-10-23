@@ -25,7 +25,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.145';
+const APP_VERSION = 'v1.0.146';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -919,6 +919,7 @@ export const App = () => {
         break;
       }
       case 'compliance-report-top':
+      case 'compliance-teams':
       case 'compliance-risks':
       case 'compliance-submit':
       case 'compliance-save':
@@ -1072,8 +1073,14 @@ export const App = () => {
       {
         id: 'compliance-report-top',
         target: '[data-tour-id="synthesis-summary"]',
-        title: 'Le rapport de compliance',
+        title: 'Lire le rapport de compliance',
         content: 'Retrouvez ici le résumé du projet avec l'ensemble des informations que vous avez remplies. Vous pouvez revenir en arrière pour les modifier.'
+      },
+      {
+        id: 'compliance-teams',
+        target: '[data-tour-id="synthesis-teams"]',
+        title: 'Identifier les équipes compliance',
+        content: 'Visualisez les interlocuteurs clés, leurs priorités et les questions à anticiper pour préparer vos échanges.'
       },
       {
         id: 'compliance-risks',
