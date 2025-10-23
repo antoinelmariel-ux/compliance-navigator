@@ -25,7 +25,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.148';
+const APP_VERSION = 'v1.0.149';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -421,6 +421,33 @@ const buildInitialProjectsState = () => {
   })];
 };
 
+const isOnboardingProject = (project) => {
+  if (!project || typeof project !== 'object') {
+    return false;
+  }
+
+  const { id } = project;
+  if (typeof id !== 'string' || id.length === 0) {
+    return false;
+  }
+
+  return id === 'onboarding-demo' || id.startsWith('tour-');
+};
+
+const sanitizeRestoredProjects = (projects) => {
+  if (!Array.isArray(projects)) {
+    return [];
+  }
+
+  const restored = projects.filter(project => !isOnboardingProject(project));
+
+  if (restored.length === 0) {
+    return [];
+  }
+
+  return cloneDeep(restored);
+};
+
 export const App = () => {
   const [mode, setMode] = useState('user');
   const [screen, setScreen] = useState('home');
@@ -813,7 +840,12 @@ export const App = () => {
     setScreen(snapshot.screen || 'home');
     setAnswers(snapshot.answers || {});
     setAnalysis(typeof snapshot.analysis !== 'undefined' ? snapshot.analysis : null);
-    setProjects(Array.isArray(snapshot.projects) ? snapshot.projects : buildInitialProjectsState());
+    const restoredProjects = sanitizeRestoredProjects(snapshot.projects);
+    setProjects(
+      restoredProjects.length > 0
+        ? restoredProjects
+        : buildInitialProjectsState()
+    );
     setProjectFiltersState(
       snapshot.projectFilters
         ? normalizeProjectFilterConfig(snapshot.projectFilters)
