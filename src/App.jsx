@@ -1116,7 +1116,7 @@ export const App = () => {
         id: 'showcase-bottom',
         target: '[data-tour-id="showcase-preview-bottom"]',
         title: 'Explorer la suite de la vitrine',
-        content: 'Descendez jusqu’aux jalons et indicateurs pour montrer l’intégralité du showcase.'
+        content: 'Vous retrouvez sur la vitrine les jalons de votre projet mais également les alertes liées à des problématiques de respect de certains délais.'
       },
       {
         id: 'showcase-edit-trigger',
