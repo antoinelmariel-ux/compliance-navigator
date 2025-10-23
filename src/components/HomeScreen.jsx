@@ -595,6 +595,7 @@ export const HomeScreen = ({
                   type="button"
                   onClick={onStartNewProject}
                   className="inline-flex items-center justify-center gap-3 px-5 py-3 text-base font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md transition-all hv-button hv-button-primary"
+                  data-tour-id="home-create-project"
                 >
                   <Plus className="w-5 h-5" aria-hidden="true" />
                   <span className="flex flex-col leading-tight text-left">
@@ -606,6 +607,7 @@ export const HomeScreen = ({
                   type="button"
                   onClick={handleTriggerImport}
                   className="inline-flex items-center justify-center gap-3 px-5 py-3 text-base font-semibold text-blue-600 bg-white hover:bg-blue-50 rounded-xl border border-blue-200 transition-all hv-button hv-focus-ring"
+                  data-tour-id="home-load-project"
                 >
                   <Upload className="w-5 h-5" aria-hidden="true" />
                   <span className="flex flex-col leading-tight text-left">
@@ -698,6 +700,7 @@ export const HomeScreen = ({
                   className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hv-surface space-y-4"
                   role="region"
                   aria-label="Filtres des projets"
+                  data-tour-id="home-project-filters"
                 >
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-700">

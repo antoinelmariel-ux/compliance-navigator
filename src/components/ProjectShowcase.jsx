@@ -2043,7 +2043,7 @@ export const ProjectShowcase = ({
 
   const editBar =
     canEdit && !isEditing ? (
-      <div className="aurora-edit-bar">
+      <div className="aurora-edit-bar" data-tour-id="showcase-edit-bar">
         <button
           type="button"
           onClick={handleStartEditing}

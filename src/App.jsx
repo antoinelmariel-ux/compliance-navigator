@@ -25,7 +25,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.135';
+const APP_VERSION = 'v1.0.136';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -426,6 +426,9 @@ export const App = () => {
   const [backOfficeAuthError, setBackOfficeAuthError] = useState(null);
   const persistTimeoutRef = useRef(null);
   const previousScreenRef = useRef(null);
+  const tourGuideRef = useRef(null);
+  const isStartingTourRef = useRef(false);
+  const onboardingDraftProjectRef = useRef(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -1766,6 +1769,398 @@ export const App = () => {
     setScreen('synthesis');
   }, [analyzeAnswers, answers, riskLevelRules, riskWeights, rules, unansweredMandatoryQuestions]);
 
+  const waitForIdle = useCallback((duration = 120) => {
+    return new Promise((resolve) => {
+      const scheduler = typeof window !== 'undefined' && typeof window.setTimeout === 'function'
+        ? window.setTimeout
+        : setTimeout;
+
+      scheduler(() => resolve(), duration);
+    });
+  }, []);
+
+  const waitForElement = useCallback(async (selector, attempts = 25, delay = 80) => {
+    if (!selector || typeof document === 'undefined') {
+      return null;
+    }
+
+    let element = document.querySelector(selector);
+    let tries = 0;
+
+    while (!element && tries < attempts) {
+      // eslint-disable-next-line no-await-in-loop
+      await waitForIdle(delay);
+      element = document.querySelector(selector);
+      tries += 1;
+    }
+
+    return element;
+  }, [waitForIdle]);
+
+  const ensureOnboardingDraftProject = useCallback(() => {
+    if (onboardingDraftProjectRef.current) {
+      return onboardingDraftProjectRef.current;
+    }
+
+    const referenceProject = projects.find(project => project && project.status === 'submitted')
+      || projects[0];
+    const referenceAnswers = referenceProject?.answers && typeof referenceProject.answers === 'object'
+      ? referenceProject.answers
+      : answers;
+
+    const entry = handleSaveProject({
+      id: 'onboarding-draft',
+      projectName: referenceProject?.projectName
+        ? `[Onboarding] ${referenceProject.projectName}`
+        : '[Onboarding] Exemple de projet',
+      answers: referenceAnswers,
+      status: 'draft'
+    });
+
+    if (entry && entry.id) {
+      onboardingDraftProjectRef.current = entry.id;
+      return entry.id;
+    }
+
+    return null;
+  }, [answers, handleSaveProject, projects]);
+
+  const applyOnboardingStepContext = useCallback(
+    async (stepId) => {
+      if (mode !== 'user') {
+        setMode('user');
+      }
+
+      const ensureHome = async () => {
+        if (screen === 'showcase') {
+          handleCloseProjectShowcase();
+          await waitForIdle();
+        }
+        if (screen !== 'home') {
+          setShowcaseProjectContext(null);
+          setScreen('home');
+        }
+        await waitForIdle();
+      };
+
+      const ensureQuestionnaire = async () => {
+        if (screen !== 'questionnaire') {
+          handleCreateNewProject();
+          await waitForIdle();
+        } else {
+          setCurrentQuestionIndex(0);
+          await waitForIdle();
+        }
+      };
+
+      const ensureSynthesis = async () => {
+        const projectId = ensureOnboardingDraftProject();
+        if (!projectId) {
+          return;
+        }
+
+        if (screen === 'showcase') {
+          handleReturnToComplianceReport();
+          await waitForIdle();
+        }
+
+        await waitForIdle(160);
+        handleOpenProject(projectId, { view: 'synthesis' });
+        await waitForIdle(180);
+      };
+
+      switch (stepId) {
+        case 'welcome':
+        case 'home-create-project':
+        case 'home-load-project':
+        case 'home-project-filters':
+          await ensureHome();
+          break;
+        case 'question-guidance':
+        case 'question-optional':
+        case 'question-quickfill':
+          await ensureQuestionnaire();
+          break;
+        case 'report-overview':
+        case 'report-showcase':
+        case 'report-save':
+          await ensureSynthesis();
+          break;
+        case 'showcase-edit': {
+          const projectId = ensureOnboardingDraftProject();
+          if (!projectId) {
+            await ensureSynthesis();
+            break;
+          }
+
+          await ensureSynthesis();
+          handleOpenActiveProjectShowcase({ projectId });
+          await waitForIdle(160);
+          break;
+        }
+        default:
+          break;
+      }
+    },
+    [
+      ensureOnboardingDraftProject,
+      handleCloseProjectShowcase,
+      handleCreateNewProject,
+      handleOpenActiveProjectShowcase,
+      handleOpenProject,
+      handleReturnToComplianceReport,
+      mode,
+      screen,
+      setMode,
+      setCurrentQuestionIndex,
+      setScreen,
+      setShowcaseProjectContext,
+      waitForIdle
+    ]
+  );
+
+  const onboardingSteps = useMemo(
+    () => [
+      {
+        id: 'welcome',
+        selector: null,
+        config: {
+          id: 'welcome',
+          title: 'Bienvenue dans Compliance Navigator',
+          content:
+            'Suivez ce guide interactif pour découvrir comment préparer rapidement vos projets et partager votre rapport de compliance.',
+          orphan: true
+        }
+      },
+      {
+        id: 'home-create-project',
+        selector: '[data-tour-id="home-create-project"]',
+        config: {
+          id: 'home-create-project',
+          title: 'Créer un nouveau projet',
+          content:
+            'Démarrez un nouveau dossier en un clic. Nous ouvrons ensuite le questionnaire pour cadrer votre initiative.',
+          target: '[data-tour-id="home-create-project"]',
+          placement: 'bottom'
+        }
+      },
+      {
+        id: 'question-guidance',
+        selector: '[data-tour-id="question-guidance-toggle"]',
+        config: {
+          id: 'question-guidance',
+          title: 'Des conseils à portée de main',
+          content:
+            'Chaque question peut proposer des explications et bonnes pratiques. Activez-les ici pour avancer sereinement.',
+          target: '[data-tour-id="question-guidance-toggle"]',
+          placement: 'left'
+        }
+      },
+      {
+        id: 'question-optional',
+        selector: '[data-tour-id="question-next-button"]',
+        config: {
+          id: 'question-optional',
+          title: 'Passez les questions facultatives',
+          content:
+            'Les questions affichées comme facultatives peuvent être ignorées. Utilisez le bouton “Suivant” pour avancer sans réponse.',
+          target: '[data-tour-id="question-next-button"]',
+          placement: 'top'
+        }
+      },
+      {
+        id: 'question-quickfill',
+        selector: '[data-tour-id="question-answer-area"]',
+        config: {
+          id: 'question-quickfill',
+          title: 'Saisissez votre contenu rapidement',
+          content:
+            'Renseignez vos éléments clés ou collez un texte existant : les zones de réponse acceptent le multi-ligne et les listes.',
+          target: '[data-tour-id="question-answer-area"]',
+          placement: 'top'
+        }
+      },
+      {
+        id: 'report-overview',
+        selector: '[data-tour-id="report-overview-section"]',
+        config: {
+          id: 'report-overview',
+          title: 'Votre rapport de compliance',
+          content:
+            'Retrouvez ici la synthèse du projet, les points de vigilance et les équipes à mobiliser pour sécuriser votre démarche.',
+          target: '[data-tour-id="report-overview-section"]',
+          placement: 'top'
+        }
+      },
+      {
+        id: 'report-showcase',
+        selector: '[data-tour-id="report-showcase-button"]',
+        config: {
+          id: 'report-showcase',
+          title: 'Ouvrir la vitrine projet',
+          content:
+            'Partagez un rendu prêt à l’emploi avec vos parties prenantes grâce à la vitrine générée automatiquement.',
+          target: '[data-tour-id="report-showcase-button"]',
+          placement: 'left'
+        }
+      },
+      {
+        id: 'showcase-edit',
+        selector: '[data-tour-id="showcase-edit-bar"]',
+        config: {
+          id: 'showcase-edit',
+          title: 'Personnaliser la vitrine',
+          content:
+            'Adaptez les textes marketing du showcase. Le mode édition vous permet d’ajuster chaque bloc avant diffusion.',
+          target: '[data-tour-id="showcase-edit-bar"]',
+          placement: 'bottom'
+        }
+      },
+      {
+        id: 'report-save',
+        selector: '[data-tour-id="report-save-button"]',
+        config: {
+          id: 'report-save',
+          title: 'Sauvegarder votre travail',
+          content:
+            'Téléchargez votre projet à tout moment pour conserver une copie locale et revenir dessus plus tard.',
+          target: '[data-tour-id="report-save-button"]',
+          placement: 'left'
+        }
+      },
+      {
+        id: 'home-load-project',
+        selector: '[data-tour-id="home-load-project"]',
+        config: {
+          id: 'home-load-project',
+          title: 'Recharger un projet existant',
+          content:
+            'Importez un dossier sauvegardé pour reprendre là où vous vous étiez arrêté, seul ou en équipe.',
+          target: '[data-tour-id="home-load-project"]',
+          placement: 'bottom'
+        }
+      },
+      {
+        id: 'home-project-filters',
+        selector: '[data-tour-id="home-project-filters"]',
+        config: {
+          id: 'home-project-filters',
+          title: 'Filtrer et retrouver vos projets',
+          content:
+            'Affinez la liste par typologie, sponsor ou statut pour comparer rapidement vos initiatives.',
+          target: '[data-tour-id="home-project-filters"]',
+          placement: 'top'
+        }
+      }
+    ],
+    []
+  );
+
+  const startOnboarding = useCallback(async () => {
+    if (isStartingTourRef.current) {
+      return;
+    }
+
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const TourGuideConstructor =
+      window.TourGuide
+      || window.TourGuideClient
+      || (window.tourguide && (window.tourguide.TourGuide || window.tourguide.TourGuideClient));
+
+    if (typeof TourGuideConstructor !== 'function') {
+      if (typeof window.alert === 'function') {
+        window.alert("Le module d'onboarding est indisponible. Vérifiez le chargement de TourGuide JS.");
+      }
+      return;
+    }
+
+    isStartingTourRef.current = true;
+
+    try {
+      if (tourGuideRef.current && typeof tourGuideRef.current.destroy === 'function') {
+        tourGuideRef.current.destroy();
+        tourGuideRef.current = null;
+      }
+
+      const steps = onboardingSteps.map(step => step.config);
+      const instance = new TourGuideConstructor({
+        steps,
+        allowClose: true,
+        showStepDots: true,
+        keyboardNavigation: true,
+        exitOnClickOutside: true
+      });
+
+      const prepareStep = async (index) => {
+        const stepDefinition = onboardingSteps[index];
+        if (!stepDefinition) {
+          return;
+        }
+
+        await applyOnboardingStepContext(stepDefinition.id);
+        await waitForIdle(120);
+        await waitForElement(stepDefinition.selector);
+      };
+
+      if (typeof instance.showStep === 'function') {
+        const originalShowStep = instance.showStep.bind(instance);
+        instance.showStep = (index, ...rest) => {
+          prepareStep(index)
+            .then(() => {
+              originalShowStep(index, ...rest);
+            })
+            .catch((error) => {
+              if (typeof console !== 'undefined' && typeof console.error === 'function') {
+                console.error('[onboarding] Erreur lors de la préparation de l\'étape', error);
+              }
+              originalShowStep(index, ...rest);
+            });
+        };
+      }
+
+      if (typeof instance.destroy === 'function') {
+        const originalDestroy = instance.destroy.bind(instance);
+        instance.destroy = (...args) => {
+          const result = originalDestroy(...args);
+          if (tourGuideRef.current === instance) {
+            tourGuideRef.current = null;
+          }
+          return result;
+        };
+      }
+
+      tourGuideRef.current = instance;
+
+      await prepareStep(0);
+
+      if (typeof instance.start === 'function') {
+        instance.start();
+      } else if (typeof instance.open === 'function') {
+        instance.open();
+      }
+    } finally {
+      isStartingTourRef.current = false;
+    }
+  }, [
+    applyOnboardingStepContext,
+    onboardingSteps,
+    tourGuideRef,
+    waitForElement,
+    waitForIdle
+  ]);
+
+  useEffect(() => {
+    return () => {
+      if (tourGuideRef.current && typeof tourGuideRef.current.destroy === 'function') {
+        tourGuideRef.current.destroy();
+        tourGuideRef.current = null;
+      }
+    };
+  }, []);
+
   return (
     <div className="min-h-screen">
       <nav className="bg-white shadow-sm border-b border-gray-200 hv-surface">
@@ -1811,6 +2206,14 @@ export const App = () => {
                     aria-label="Retourner à l'accueil des projets"
                   >
                     Accueil projets
+                  </button>
+                  <button
+                    type="button"
+                    onClick={startOnboarding}
+                    className="w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button bg-white border border-blue-200 text-blue-600 hover:bg-blue-50"
+                    aria-label="Lancer le guide interactif"
+                  >
+                    Guide interactif
                   </button>
                   <a
                     href="https://forms.gle/EtUZAPanXWpig9A38"

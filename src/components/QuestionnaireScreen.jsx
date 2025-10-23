@@ -213,7 +213,7 @@ export const QuestionnaireScreen = ({
     switch (questionType) {
       case 'date':
         return (
-          <div className="mb-8">
+          <div className="mb-8" data-tour-id="question-answer-area">
             <label className="block text-sm sm:text-base font-medium text-gray-700 mb-3" htmlFor={`${currentQuestion.id}-date`}>
               <span className="flex items-center">
                 <Calendar className="w-4 h-4 mr-2" />
@@ -235,7 +235,11 @@ export const QuestionnaireScreen = ({
         );
       case 'choice':
         return (
-          <fieldset className="space-y-3 mb-8" aria-describedby={currentIndex === 0 ? instructionsId : undefined}>
+          <fieldset
+            className="space-y-3 mb-8"
+            aria-describedby={currentIndex === 0 ? instructionsId : undefined}
+            data-tour-id="question-answer-area"
+          >
             <legend className="sr-only">{currentQuestion.question}</legend>
             {currentQuestion.options.map((option, idx) => {
               const isSelected = answers[currentQuestion.id] === option;
@@ -271,7 +275,7 @@ export const QuestionnaireScreen = ({
         );
       case 'multi_choice':
         return (
-          <div className="space-y-3 mb-8">
+          <div className="space-y-3 mb-8" data-tour-id="question-answer-area">
             {currentQuestion.options.map((option, idx) => {
               const isSelected = multiSelection.includes(option);
               const optionId = `${currentQuestion.id}-multi-option-${idx}`;
@@ -351,7 +355,7 @@ export const QuestionnaireScreen = ({
         const emptyState = milestoneDrafts.length === 0;
 
         return (
-          <div className="mb-8">
+          <div className="mb-8" data-tour-id="question-answer-area">
             <fieldset className="space-y-4" aria-describedby={currentIndex === 0 ? instructionsId : undefined}>
               <legend className="sr-only">{currentQuestion.question}</legend>
               {emptyState && (
@@ -417,7 +421,7 @@ export const QuestionnaireScreen = ({
       }
       case 'text':
         return (
-          <div className="mb-8">
+          <div className="mb-8" data-tour-id="question-answer-area">
             <label className="block text-sm sm:text-base font-medium text-gray-700 mb-3" htmlFor={`${currentQuestion.id}-text`}>
               Renseignez votre réponse
             </label>
@@ -440,7 +444,7 @@ export const QuestionnaireScreen = ({
         );
       case 'long_text':
         return (
-          <div className="mb-8">
+          <div className="mb-8" data-tour-id="question-answer-area">
             <label className="block text-sm sm:text-base font-medium text-gray-700 mb-3" htmlFor={`${currentQuestion.id}-long-text`}>
               Décrivez les éléments pertinents
             </label>
@@ -467,7 +471,7 @@ export const QuestionnaireScreen = ({
             ? currentQuestion.numberUnit.trim()
             : '';
         return (
-          <div className="mb-8">
+          <div className="mb-8" data-tour-id="question-answer-area">
             <label className="block text-sm sm:text-base font-medium text-gray-700 mb-3" htmlFor={`${currentQuestion.id}-number`}>
               Renseignez une valeur numérique
             </label>
@@ -494,7 +498,7 @@ export const QuestionnaireScreen = ({
       }
       case 'url':
         return (
-          <div className="mb-8">
+          <div className="mb-8" data-tour-id="question-answer-area">
             <label className="block text-sm sm:text-base font-medium text-gray-700 mb-3" htmlFor={`${currentQuestion.id}-url`}>
               Indiquez une adresse URL
             </label>
@@ -513,7 +517,7 @@ export const QuestionnaireScreen = ({
         );
       case 'file':
         return (
-          <div className="mb-8">
+          <div className="mb-8" data-tour-id="question-answer-area">
             <label className="block text-sm sm:text-base font-medium text-gray-700 mb-3" htmlFor={`${currentQuestion.id}-file`}>
               Téléversez un fichier de référence
             </label>
@@ -634,7 +638,10 @@ export const QuestionnaireScreen = ({
                 {currentQuestion.question}
               </h2>
               {!currentQuestion.required && (
-                <span className="inline-flex items-center px-3 py-1 text-xs font-semibold uppercase tracking-wide bg-gray-100 text-gray-600 rounded-full border border-gray-200 hv-badge self-start">
+                <span
+                  className="inline-flex items-center px-3 py-1 text-xs font-semibold uppercase tracking-wide bg-gray-100 text-gray-600 rounded-full border border-gray-200 hv-badge self-start"
+                  data-tour-id="question-optional-badge"
+                >
                   Réponse facultative
                 </span>
               )}
@@ -649,6 +656,7 @@ export const QuestionnaireScreen = ({
                   }`}
                   aria-expanded={showGuidance}
                   aria-controls={guidancePanelId}
+                  data-tour-id="question-guidance-toggle"
                 >
                   <Info className="w-4 h-4 mr-2" />
                   {showGuidance ? "Masquer l'aide" : 'Comprendre cette question'}
@@ -820,6 +828,7 @@ export const QuestionnaireScreen = ({
               type="button"
               onClick={onNext}
               className="flex items-center justify-center px-6 py-3 rounded-lg font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all hv-button hv-button-primary w-full sm:w-auto text-sm sm:text-base"
+              data-tour-id="question-next-button"
             >
               {currentIndex === questions.length - 1 ? 'Voir la synthèse' : 'Suivant'}
               <ChevronRight className="w-5 h-5 ml-2" />
