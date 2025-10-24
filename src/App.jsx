@@ -25,7 +25,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.151';
+const APP_VERSION = 'v1.0.152';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -467,6 +467,7 @@ export const App = () => {
   const tourInstanceRef = useRef(null);
   const onboardingStateRef = useRef(null);
   const onboardingDemoDataRef = useRef(null);
+  const isOnboardingActiveRef = useRef(false);
 
   const [questions, setQuestions] = useState(() => restoreShowcaseQuestions(initialQuestions));
   const [rules, setRules] = useState(initialRules);
@@ -507,6 +508,10 @@ export const App = () => {
   useEffect(() => {
     projectsRef.current = projects;
   }, [projects]);
+
+  useEffect(() => {
+    isOnboardingActiveRef.current = isOnboardingActive;
+  }, [isOnboardingActive]);
 
   useEffect(() => {
     if (isOnboardingActive) {
@@ -908,26 +913,33 @@ export const App = () => {
 
   const finishOnboarding = useCallback((options = {}) => {
     const { shouldLoadIndex = false } = options || {};
+    const snapshotExists = Boolean(onboardingStateRef.current);
+    const wasOnboardingActive = isOnboardingActiveRef.current;
 
-    if (!isOnboardingActive) {
+    if (!wasOnboardingActive && !snapshotExists) {
       return;
     }
 
+    isOnboardingActiveRef.current = false;
     setIsOnboardingActive(false);
     setOnboardingStepId(null);
 
-    if (tourInstanceRef.current && typeof tourInstanceRef.current.stop === 'function') {
+    const tourInstance = tourInstanceRef.current;
+    tourInstanceRef.current = null;
+
+    if (tourInstance && typeof tourInstance.stop === 'function') {
       try {
-        tourInstanceRef.current.stop();
+        tourInstance.stop();
       } catch (error) {
         if (typeof console !== 'undefined' && typeof console.warn === 'function') {
           console.warn('[Onboarding] Impossible de stopper le guide :', error);
         }
       }
     }
-    tourInstanceRef.current = null;
 
-    restoreOnboardingSnapshot();
+    if (snapshotExists) {
+      restoreOnboardingSnapshot();
+    }
 
     if (shouldLoadIndex && typeof window !== 'undefined') {
       const redirect = () => {
@@ -952,7 +964,7 @@ export const App = () => {
         window.setTimeout(() => redirect(), 0);
       }
     }
-  }, [isOnboardingActive, restoreOnboardingSnapshot]);
+  }, [restoreOnboardingSnapshot]);
 
   const handleOnboardingStepEnter = useCallback((stepId) => {
     if (!stepId) {
@@ -1099,6 +1111,7 @@ export const App = () => {
     onboardingDemoDataRef.current = demoData;
     const onboardingProjects = buildOnboardingProjects(demoData);
 
+    isOnboardingActiveRef.current = true;
     setIsOnboardingActive(true);
     setOnboardingStepId(null);
     setMode('user');
