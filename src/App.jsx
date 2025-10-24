@@ -25,7 +25,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.151';
+const APP_VERSION = 'v1.0.152';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -462,6 +462,7 @@ export const App = () => {
   const [showcaseProjectContext, setShowcaseProjectContext] = useState(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isOnboardingActive, setIsOnboardingActive] = useState(false);
+  const isOnboardingActiveRef = useRef(isOnboardingActive);
   const [onboardingStepId, setOnboardingStepId] = useState(null);
   const [isTourGuideReady, setIsTourGuideReady] = useState(false);
   const tourInstanceRef = useRef(null);
@@ -507,6 +508,10 @@ export const App = () => {
   useEffect(() => {
     projectsRef.current = projects;
   }, [projects]);
+
+  useEffect(() => {
+    isOnboardingActiveRef.current = isOnboardingActive;
+  }, [isOnboardingActive]);
 
   useEffect(() => {
     if (isOnboardingActive) {
@@ -836,12 +841,17 @@ export const App = () => {
     ];
   }, [analyzeAnswers, questions, riskLevelRules, riskWeights, rules, shouldShowQuestion]);
 
-  const restoreOnboardingSnapshot = useCallback(() => {
+  const restoreOnboardingSnapshot = useCallback((options = {}) => {
+    const { fallbackToInitialState = true } = options || {};
     const snapshot = onboardingStateRef.current;
     onboardingStateRef.current = null;
     onboardingDemoDataRef.current = null;
 
     if (!snapshot) {
+      if (!fallbackToInitialState) {
+        return;
+      }
+
       setMode('user');
       setAdminView('home');
       setScreen('home');
@@ -908,11 +918,13 @@ export const App = () => {
 
   const finishOnboarding = useCallback((options = {}) => {
     const { shouldLoadIndex = false } = options || {};
+    const hasSnapshot = Boolean(onboardingStateRef.current);
 
-    if (!isOnboardingActive) {
+    if (!isOnboardingActiveRef.current && !hasSnapshot) {
       return;
     }
 
+    isOnboardingActiveRef.current = false;
     setIsOnboardingActive(false);
     setOnboardingStepId(null);
 
@@ -927,7 +939,7 @@ export const App = () => {
     }
     tourInstanceRef.current = null;
 
-    restoreOnboardingSnapshot();
+    restoreOnboardingSnapshot({ fallbackToInitialState: !hasSnapshot });
 
     if (shouldLoadIndex && typeof window !== 'undefined') {
       const redirect = () => {
@@ -952,7 +964,7 @@ export const App = () => {
         window.setTimeout(() => redirect(), 0);
       }
     }
-  }, [isOnboardingActive, restoreOnboardingSnapshot]);
+  }, [restoreOnboardingSnapshot]);
 
   const handleOnboardingStepEnter = useCallback((stepId) => {
     if (!stepId) {
@@ -1066,7 +1078,7 @@ export const App = () => {
   ]);
 
   const handleStartOnboarding = useCallback(() => {
-    if (isOnboardingActive) {
+    if (isOnboardingActiveRef.current) {
       return;
     }
 
@@ -1099,6 +1111,7 @@ export const App = () => {
     onboardingDemoDataRef.current = demoData;
     const onboardingProjects = buildOnboardingProjects(demoData);
 
+    isOnboardingActiveRef.current = true;
     setIsOnboardingActive(true);
     setOnboardingStepId(null);
     setMode('user');
