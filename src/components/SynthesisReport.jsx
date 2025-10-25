@@ -745,7 +745,7 @@ export const SynthesisReport = ({
 
       setComplianceCommentFeedback(
         nextValue
-          ? 'Commentaire enregistré. Il sera visible par le Chef de projet.'
+          ? 'Commentaire enregistré. Enregistrez ensuite le projet et chargez-le dans le dossier « submitted-projects » pour le rendre visible au porteur de projet.'
           : 'Commentaire effacé.'
       );
 
@@ -1273,7 +1273,7 @@ export const SynthesisReport = ({
                     />
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <p className="text-xs text-gray-500">
-                        Ces commentaires sont enregistrés dans le rapport et visibles par le Chef de projet.
+                        Ces commentaires sont enregistrés dans le rapport. Enregistrez ensuite le projet et chargez-le dans le dossier « submitted-projects » pour qu’ils soient visibles par le Chef de projet.
                       </p>
                       <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                         <button
