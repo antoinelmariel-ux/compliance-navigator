@@ -10,12 +10,170 @@
     showStepDots: true,
     highlightPadding: 12,
     scrollIntoViewOptions: DEFAULT_SCROLL_OPTIONS,
+    scrollDuration: undefined,
     labels: {
       next: 'Suivant',
       prev: 'Précédent',
       close: 'Fermer',
       finish: 'Terminer'
     }
+  };
+
+  const easeInOutCubic = (value) =>
+    value < 0.5 ? 4 * value * value * value : 1 - Math.pow(-2 * value + 2, 3) / 2;
+
+  const sanitizeScrollDuration = (value) => {
+    const numberValue = Number(value);
+    if (!Number.isFinite(numberValue) || numberValue <= 0) {
+      return undefined;
+    }
+    return numberValue;
+  };
+
+  let activeScrollAnimation = null;
+
+  const cancelScrollAnimation = () => {
+    if (activeScrollAnimation && typeof activeScrollAnimation.cancel === 'function') {
+      activeScrollAnimation.cancel();
+    }
+    activeScrollAnimation = null;
+  };
+
+  const animateWindowScrollTo = (targetY, duration) => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (typeof duration !== 'number' || duration <= 0) {
+      cancelScrollAnimation();
+      window.scrollTo(0, targetY);
+      return;
+    }
+
+    const requestFrame = window.requestAnimationFrame;
+    const cancelFrame = window.cancelAnimationFrame;
+
+    if (typeof requestFrame !== 'function') {
+      cancelScrollAnimation();
+      window.scrollTo(0, targetY);
+      return;
+    }
+
+    const docElement = typeof document !== 'undefined' ? document.documentElement : null;
+    const startY = window.pageYOffset || docElement?.scrollTop || 0;
+    const distance = targetY - startY;
+
+    if (Math.abs(distance) < 1) {
+      cancelScrollAnimation();
+      window.scrollTo(0, targetY);
+      return;
+    }
+
+    cancelScrollAnimation();
+
+    const getNow = () =>
+      (window.performance && typeof window.performance.now === 'function'
+        ? window.performance.now()
+        : Date.now());
+
+    const startTime = getNow();
+
+    const animationState = {
+      requestId: null,
+      active: true,
+      cancel() {
+        if (!this.active) {
+          return;
+        }
+        this.active = false;
+        if (typeof cancelFrame === 'function' && this.requestId !== null) {
+          cancelFrame(this.requestId);
+        }
+      }
+    };
+
+    const step = (timestamp) => {
+      if (!animationState.active) {
+        return;
+      }
+
+      const currentTime = typeof timestamp === 'number' ? timestamp : getNow();
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(1, elapsed / duration);
+      const easedProgress = easeInOutCubic(progress);
+      const nextY = startY + distance * easedProgress;
+
+      window.scrollTo(0, nextY);
+
+      if (progress < 1) {
+        animationState.requestId = requestFrame(step);
+      } else {
+        animationState.active = false;
+        activeScrollAnimation = null;
+      }
+    };
+
+    animationState.requestId = requestFrame(step);
+    activeScrollAnimation = animationState;
+  };
+
+  const computeScrollTargetTop = (element, scrollOptions) => {
+    if (
+      typeof window === 'undefined' ||
+      typeof document === 'undefined' ||
+      !element ||
+      typeof element.getBoundingClientRect !== 'function'
+    ) {
+      return null;
+    }
+
+    const rect = element.getBoundingClientRect();
+    const viewportHeight = window.innerHeight || document.documentElement?.clientHeight || 0;
+    const currentScroll = window.pageYOffset || document.documentElement?.scrollTop || 0;
+    const scrollHeight = Math.max(
+      document.documentElement?.scrollHeight || 0,
+      document.body?.scrollHeight || 0
+    );
+    const maxScroll = Math.max(0, scrollHeight - viewportHeight);
+
+    const block = typeof scrollOptions?.block === 'string' ? scrollOptions.block.toLowerCase() : 'center';
+
+    let targetY;
+
+    if (block === 'start') {
+      targetY = currentScroll + rect.top;
+    } else if (block === 'end') {
+      targetY = currentScroll + rect.bottom - viewportHeight;
+    } else if (block === 'nearest') {
+      const startTarget = currentScroll + rect.top;
+      const endTarget = currentScroll + rect.bottom - viewportHeight;
+      const distanceToStart = Math.abs(startTarget - currentScroll);
+      const distanceToEnd = Math.abs(endTarget - currentScroll);
+      targetY = distanceToStart <= distanceToEnd ? startTarget : endTarget;
+    } else {
+      const safeViewportHeight = viewportHeight > 0 ? viewportHeight : window.innerHeight;
+      const elementHeight = Math.min(rect.height, safeViewportHeight || rect.height);
+      const offset = ((safeViewportHeight || rect.height) - elementHeight) / 2;
+      targetY = currentScroll + rect.top - offset;
+    }
+
+    if (!Number.isFinite(targetY)) {
+      return null;
+    }
+
+    if (maxScroll === 0) {
+      return Math.max(0, targetY);
+    }
+
+    if (targetY < 0) {
+      return 0;
+    }
+
+    if (targetY > maxScroll) {
+      return maxScroll;
+    }
+
+    return targetY;
   };
 
   const FRAME_DELAY = 2;
@@ -80,7 +238,8 @@
         ...DEFAULT_OPTIONS,
         ...options,
         labels: cloneLabels(options.labels),
-        scrollIntoViewOptions: cloneScrollIntoViewOptions(options.scrollIntoViewOptions)
+        scrollIntoViewOptions: cloneScrollIntoViewOptions(options.scrollIntoViewOptions),
+        scrollDuration: sanitizeScrollDuration(options.scrollDuration)
       };
 
       this.options = mergedOptions;
@@ -100,6 +259,10 @@
               step && hasOwn.call(step, 'scrollIntoViewOptions')
                 ? cloneScrollIntoViewOptions(step.scrollIntoViewOptions)
                 : undefined,
+            scrollDuration:
+              step && hasOwn.call(step, 'scrollDuration')
+                ? sanitizeScrollDuration(step.scrollDuration)
+                : mergedOptions.scrollDuration,
             onBeforeStep: typeof step?.onBeforeStep === 'function' ? step.onBeforeStep : null,
             onAfterStep: typeof step?.onAfterStep === 'function' ? step.onAfterStep : null
           })
@@ -625,13 +788,26 @@
             rectRight <= viewportWidth;
 
           if (!isInViewport) {
-            try {
-              target.scrollIntoView(scrollOptions);
-            } catch (error) {
+            const scrollDuration = typeof step.scrollDuration === 'number' ? step.scrollDuration : undefined;
+            let didCustomScroll = false;
+
+            if (scrollDuration) {
+              const targetY = computeScrollTargetTop(target, scrollOptions);
+              if (typeof targetY === 'number') {
+                animateWindowScrollTo(targetY, scrollDuration);
+                didCustomScroll = true;
+              }
+            }
+
+            if (!didCustomScroll) {
               try {
-                target.scrollIntoView(true);
-              } catch (fallbackError) {
-                target.scrollIntoView();
+                target.scrollIntoView(scrollOptions);
+              } catch (error) {
+                try {
+                  target.scrollIntoView(true);
+                } catch (fallbackError) {
+                  target.scrollIntoView();
+                }
               }
             }
           }
