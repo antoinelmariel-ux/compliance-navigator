@@ -614,13 +614,25 @@
         );
 
         if (scrollOptions !== false) {
-          try {
-            target.scrollIntoView(scrollOptions);
-          } catch (error) {
+          const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 0;
+          const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 0;
+          const rectBottom = rect.top + rect.height;
+          const rectRight = rect.left + rect.width;
+          const isInViewport =
+            rect.top >= 0 &&
+            rectBottom <= viewportHeight &&
+            rect.left >= 0 &&
+            rectRight <= viewportWidth;
+
+          if (!isInViewport) {
             try {
-              target.scrollIntoView(true);
-            } catch (fallbackError) {
-              target.scrollIntoView();
+              target.scrollIntoView(scrollOptions);
+            } catch (error) {
+              try {
+                target.scrollIntoView(true);
+              } catch (fallbackError) {
+                target.scrollIntoView();
+              }
             }
           }
         }
