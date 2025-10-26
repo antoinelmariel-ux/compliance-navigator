@@ -1265,7 +1265,13 @@ export const App = () => {
         target: '[data-tour-id="showcase-hero"]',
         title: 'Présenter votre projet',
         content:
-          'Parcourez la vitrine présentant votre projet avec une mise en page le mettant en valeur. Parfait pour une présentation à votre manager !'
+          'Parcourez la vitrine présentant votre projet avec une mise en page le mettant en valeur. Parfait pour une présentation à votre manager !',
+         scrollIntoViewOptions: {
+          behavior: 'smooth',
+          block: 'center',
+          inline: 'nearest'
+        },
+        scrollDuration: 3200
       },
       {
         id: 'showcase-bottom',
