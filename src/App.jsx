@@ -25,7 +25,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.158';
+const APP_VERSION = 'v1.0.159';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -1270,7 +1270,12 @@ export const App = () => {
         id: 'showcase-bottom',
         target: '[data-tour-id="showcase-preview-bottom"]',
         title: 'Explorer la suite de la vitrine',
-        content: 'Vous retrouvez sur la vitrine les jalons de votre projet mais également les alertes liées à des problématiques de respect de certains délais.'
+        content: 'Vous retrouvez sur la vitrine les jalons de votre projet mais également les alertes liées à des problématiques de respect de certains délais.',
+        scrollIntoViewOptions: {
+          behavior: 'smooth',
+          block: 'center',
+          inline: 'nearest'
+        }
       },
       {
         id: 'showcase-edit-trigger',
