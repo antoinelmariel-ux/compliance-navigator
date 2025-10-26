@@ -1271,7 +1271,7 @@ export const App = () => {
           block: 'center',
           inline: 'nearest'
         },
-        scrollDuration: 3200
+        scrollDuration: 13200
       },
       {
         id: 'showcase-bottom',
