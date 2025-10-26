@@ -1404,7 +1404,11 @@ export const ProjectShowcase = ({
 
   const previewContent = shouldShowPreview ? (
     <div className="aurora-sections" data-tour-id="showcase-preview">
-      <section className="aurora-section aurora-hero" data-showcase-section="hero">
+      <section
+        className="aurora-section aurora-hero"
+        data-showcase-section="hero"
+        data-tour-id="showcase-hero"
+      >
         <div className="aurora-section__inner">
           <div className="aurora-hero__copy">
             
