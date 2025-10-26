@@ -1265,7 +1265,7 @@ export const App = () => {
         target: '[data-tour-id="showcase-hero"]',
         title: 'Présenter votre projet',
         content:
-          'La section hero met immédiatement en valeur votre initiative : explorez son titre, son slogan et ses indicateurs clés.'
+          'Parcourez la vitrine présentant votre projet avec une mise en page le mettant en valeur. Parfait pour une présentation à votre manager !'
       },
       {
         id: 'showcase-bottom',
