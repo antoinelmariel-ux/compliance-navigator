@@ -1,4 +1,17 @@
 import { initialQuestions } from '../data/questions.js';
+import { shouldShowQuestion } from './questions.js';
+
+const isAnswerProvided = (value) => {
+  if (Array.isArray(value)) {
+    return value.length > 0;
+  }
+
+  if (typeof value === 'string') {
+    return value.trim().length > 0;
+  }
+
+  return value !== null && value !== undefined;
+};
 
 export const normalizeProjectEntry = (
   project = {},
@@ -8,17 +21,43 @@ export const normalizeProjectEntry = (
     ? project.answers
     : {};
 
+  const questionCatalog = Array.isArray(project.availableQuestions)
+    ? project.availableQuestions
+    : Array.isArray(project.questions)
+      ? project.questions
+      : initialQuestions;
+
+  const visibleQuestions = questionCatalog.filter(question => {
+    if (!question || typeof question !== 'object') {
+      return false;
+    }
+
+    return shouldShowQuestion(question, answers);
+  });
+  const derivedTotalQuestions = visibleQuestions.length;
+  const derivedAnsweredQuestions = visibleQuestions.length > 0
+    ? visibleQuestions.filter(question => {
+      if (!question || typeof question.id === 'undefined') {
+        return false;
+      }
+
+      return isAnswerProvided(answers[question.id]);
+    }).length
+    : Object.keys(answers).length;
+
   const computedTotalQuestions =
     typeof project.totalQuestions === 'number' && project.totalQuestions > 0
       ? project.totalQuestions
-      : fallbackQuestionsLength > 0
-        ? fallbackQuestionsLength
-        : Object.keys(answers).length;
+      : derivedTotalQuestions > 0
+        ? derivedTotalQuestions
+        : fallbackQuestionsLength > 0
+          ? fallbackQuestionsLength
+          : Object.keys(answers).length;
 
   const answeredQuestionsCount =
     typeof project.answeredQuestions === 'number'
       ? project.answeredQuestions
-      : Object.keys(answers).length;
+      : derivedAnsweredQuestions;
 
   let lastQuestionIndex =
     typeof project.lastQuestionIndex === 'number'
