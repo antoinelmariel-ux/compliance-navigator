@@ -25,7 +25,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.156';
+const APP_VERSION = 'v1.0.157';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -973,6 +973,64 @@ export const App = () => {
 
     const demoData = getDemoData();
 
+    const openDemoShowcase = () => {
+      openProjectShowcase({
+        projectId: null,
+        projectName: demoData.projectName,
+        answers: cloneDeep(demoData.answers),
+        analysis: demoData.analysis,
+        relevantTeams: demoData.relevantTeams,
+        questions: demoData.questions,
+        timelineDetails: demoData.timelineDetails,
+        status: 'draft'
+      });
+      setHasUnsavedChanges(false);
+    };
+
+    const ensureShowcaseTopVisible = () => {
+      if (typeof window === 'undefined') {
+        return;
+      }
+
+      const scrollToTop = () => {
+        try {
+          if (typeof document !== 'undefined') {
+            const topSection = document.querySelector('[data-tour-id="showcase-preview"]');
+            if (topSection && typeof topSection.scrollIntoView === 'function') {
+              topSection.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+              return;
+            }
+          }
+
+          if (typeof window.scrollTo === 'function') {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        } catch (error) {
+          if (typeof window.scrollTo === 'function') {
+            window.scrollTo({ top: 0 });
+          }
+        }
+      };
+
+      if (typeof window.requestAnimationFrame === 'function') {
+        window.requestAnimationFrame(() => {
+          if (typeof window.setTimeout === 'function') {
+            window.setTimeout(scrollToTop, 0);
+          } else {
+            scrollToTop();
+          }
+        });
+        return;
+      }
+
+      if (typeof window.setTimeout === 'function') {
+        window.setTimeout(scrollToTop, 0);
+        return;
+      }
+
+      scrollToTop();
+    };
+
     switch (stepId) {
       case 'welcome':
       case 'create-project': {
@@ -1029,23 +1087,17 @@ export const App = () => {
         setHasUnsavedChanges(false);
         break;
       }
-      case 'showcase-top':
+      case 'showcase-top': {
+        openDemoShowcase();
+        ensureShowcaseTopVisible();
+        break;
+      }
       case 'showcase-bottom':
       case 'showcase-edit-trigger':
       case 'showcase-edit':
       case 'showcase-save-edits':
       case 'showcase-back-to-report': {
-        openProjectShowcase({
-          projectId: null,
-          projectName: demoData.projectName,
-          answers: cloneDeep(demoData.answers),
-          analysis: demoData.analysis,
-          relevantTeams: demoData.relevantTeams,
-          questions: demoData.questions,
-          timelineDetails: demoData.timelineDetails,
-          status: 'draft'
-        });
-        setHasUnsavedChanges(false);
+        openDemoShowcase();
         break;
       }
       case 'project-import':
