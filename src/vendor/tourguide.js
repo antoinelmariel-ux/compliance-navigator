@@ -1,8 +1,15 @@
 (function () {
+  const DEFAULT_SCROLL_OPTIONS = {
+    behavior: 'smooth',
+    block: 'center',
+    inline: 'center'
+  };
+
   const DEFAULT_OPTIONS = {
     allowClose: true,
     showStepDots: true,
     highlightPadding: 12,
+    scrollIntoViewOptions: DEFAULT_SCROLL_OPTIONS,
     labels: {
       next: 'Suivant',
       prev: 'Précédent',
@@ -26,6 +33,40 @@
     };
   };
 
+  const cloneScrollIntoViewOptions = (value) => {
+    if (value === false) {
+      return false;
+    }
+
+    if (!value || typeof value !== 'object') {
+      return { ...DEFAULT_SCROLL_OPTIONS };
+    }
+
+    return { ...DEFAULT_SCROLL_OPTIONS, ...value };
+  };
+
+  const resolveScrollIntoViewOptions = (stepOption, defaultOption) => {
+    if (stepOption === false) {
+      return false;
+    }
+
+    if (stepOption && typeof stepOption === 'object') {
+      return { ...DEFAULT_SCROLL_OPTIONS, ...stepOption };
+    }
+
+    if (defaultOption === false) {
+      return false;
+    }
+
+    if (defaultOption && typeof defaultOption === 'object') {
+      return { ...DEFAULT_SCROLL_OPTIONS, ...defaultOption };
+    }
+
+    return { ...DEFAULT_SCROLL_OPTIONS };
+  };
+
+  const hasOwn = Object.prototype.hasOwnProperty;
+
   const getStepOrder = (step, index) => {
     if (step && typeof step.order === 'number') {
       return step.order;
@@ -38,7 +79,8 @@
       const mergedOptions = {
         ...DEFAULT_OPTIONS,
         ...options,
-        labels: cloneLabels(options.labels)
+        labels: cloneLabels(options.labels),
+        scrollIntoViewOptions: cloneScrollIntoViewOptions(options.scrollIntoViewOptions)
       };
 
       this.options = mergedOptions;
@@ -53,6 +95,10 @@
             highlightPadding:
               typeof step?.highlightPadding === 'number'
                 ? step.highlightPadding
+                : undefined,
+            scrollIntoViewOptions:
+              step && hasOwn.call(step, 'scrollIntoViewOptions')
+                ? cloneScrollIntoViewOptions(step.scrollIntoViewOptions)
                 : undefined,
             onBeforeStep: typeof step?.onBeforeStep === 'function' ? step.onBeforeStep : null,
             onAfterStep: typeof step?.onAfterStep === 'function' ? step.onAfterStep : null
@@ -561,10 +607,22 @@
       this.highlightElement.style.height = `${Math.max(0, height)}px`;
 
       if (target && typeof target.scrollIntoView === 'function') {
-        try {
-          target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
-        } catch (error) {
-          target.scrollIntoView(true);
+        const hasStepScrollOption = step && hasOwn.call(step, 'scrollIntoViewOptions');
+        const scrollOptions = resolveScrollIntoViewOptions(
+          hasStepScrollOption ? step.scrollIntoViewOptions : undefined,
+          this.options.scrollIntoViewOptions
+        );
+
+        if (scrollOptions !== false) {
+          try {
+            target.scrollIntoView(scrollOptions);
+          } catch (error) {
+            try {
+              target.scrollIntoView(true);
+            } catch (fallbackError) {
+              target.scrollIntoView();
+            }
+          }
         }
       } else if (typeof window !== 'undefined') {
         window.scrollTo({ top: Math.max(0, top - 120), behavior: 'smooth' });
