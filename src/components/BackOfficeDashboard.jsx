@@ -40,17 +40,90 @@ const TIME_FILTER_OPTIONS = [
   }
 ];
 
-const CHART_COLORS = [
-  '#1f77b4',
-  '#ff7f0e',
-  '#2ca02c',
-  '#d62728',
-  '#9467bd',
-  '#8c564b',
-  '#e377c2',
-  '#7f7f7f',
-  '#17becf'
+const COLORBLIND_SAFE_PALETTE = [
+  {
+    color: '#0072B2',
+    pattern:
+      'repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.35) 0, rgba(255, 255, 255, 0.35) 8px, transparent 8px, transparent 16px)',
+    backgroundSize: '16px 16px'
+  },
+  {
+    color: '#D55E00',
+    pattern:
+      'repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.35) 0, rgba(255, 255, 255, 0.35) 8px, transparent 8px, transparent 16px)',
+    backgroundSize: '16px 16px'
+  },
+  {
+    color: '#009E73',
+    pattern:
+      'repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.35) 0, rgba(255, 255, 255, 0.35) 6px, transparent 6px, transparent 12px)',
+    backgroundSize: '12px 12px'
+  },
+  {
+    color: '#CC79A7',
+    pattern:
+      'repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.35) 0, rgba(255, 255, 255, 0.35) 10px, transparent 10px, transparent 20px)',
+    backgroundSize: '20px 20px'
+  },
+  {
+    color: '#56B4E9',
+    pattern:
+      'repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0, rgba(255, 255, 255, 0.3) 6px, transparent 6px, transparent 12px)',
+    backgroundSize: '12px 12px'
+  },
+  {
+    color: '#E69F00',
+    pattern:
+      'repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.3) 0, rgba(255, 255, 255, 0.3) 12px, transparent 12px, transparent 24px)',
+    backgroundSize: '24px 24px'
+  },
+  {
+    color: '#F0E442',
+    pattern:
+      'repeating-linear-gradient(225deg, rgba(17, 24, 39, 0.2) 0, rgba(17, 24, 39, 0.2) 6px, transparent 6px, transparent 12px)',
+    backgroundSize: '12px 12px'
+  },
+  {
+    color: '#000000',
+    pattern:
+      'repeating-linear-gradient(315deg, rgba(255, 255, 255, 0.35) 0, rgba(255, 255, 255, 0.35) 4px, transparent 4px, transparent 8px)',
+    backgroundSize: '8px 8px'
+  }
 ];
+
+const getPaletteEntry = (index, palette = COLORBLIND_SAFE_PALETTE) => {
+  const source = Array.isArray(palette) && palette.length > 0 ? palette : COLORBLIND_SAFE_PALETTE;
+  return source[index % source.length];
+};
+
+const resolveColor = (entry) => {
+  if (typeof entry === 'string') {
+    return entry;
+  }
+  return entry?.color || '#4B5563';
+};
+
+const buildPatternStyle = (input, palette = COLORBLIND_SAFE_PALETTE) => {
+  const entry =
+    typeof input === 'number' || typeof input === 'bigint'
+      ? getPaletteEntry(Number(input), palette)
+      : input;
+
+  if (typeof entry === 'string') {
+    return {
+      backgroundColor: entry,
+      border: '1px solid rgba(17, 24, 39, 0.15)'
+    };
+  }
+
+  return {
+    backgroundColor: entry.color,
+    backgroundImage: entry.pattern,
+    backgroundSize: entry.backgroundSize,
+    backgroundBlendMode: entry.backgroundBlendMode || 'multiply',
+    border: entry.border || '1px solid rgba(17, 24, 39, 0.15)'
+  };
+};
 
 const numberFormatter = new Intl.NumberFormat('fr-FR');
 const decimalFormatter = new Intl.NumberFormat('fr-FR', {
@@ -146,7 +219,7 @@ const getLaunchDate = (project) => {
   return parseDate(answers.launchDate || answers.projectLaunchDate);
 };
 
-const PieChart = ({ data, colors = CHART_COLORS, size = 180, strokeWidth = 26, title }) => {
+const PieChart = ({ data, colors = COLORBLIND_SAFE_PALETTE, size = 180, strokeWidth = 26, title }) => {
   const total = data.reduce((sum, item) => sum + Math.max(item.value, 0), 0);
 
   if (total <= 0) {
@@ -160,7 +233,36 @@ const PieChart = ({ data, colors = CHART_COLORS, size = 180, strokeWidth = 26, t
 
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
+  const segments = [];
   let cumulative = 0;
+
+  data.forEach((item, index) => {
+    const value = Math.max(item.value, 0);
+    if (value <= 0) {
+      return;
+    }
+
+    const segmentLength = (value / total) * circumference;
+    const percentage = (value / total) * 100;
+    const paletteEntry = getPaletteEntry(segments.length, colors);
+    const midAngle = ((cumulative + segmentLength / 2) / circumference) * 2 * Math.PI - Math.PI / 2;
+
+    segments.push({
+      key: item.id || item.label || index,
+      item,
+      value,
+      percentage,
+      segmentLength,
+      startOffset: cumulative,
+      paletteEntry,
+      midAngle,
+      displayIndex: segments.length
+    });
+
+    cumulative += segmentLength;
+  });
+
+  const labelRadius = Math.max(radius - strokeWidth / 2 - 8, radius * 0.45);
 
   return (
     <div className="flex flex-col items-center gap-4">
@@ -178,56 +280,74 @@ const PieChart = ({ data, colors = CHART_COLORS, size = 180, strokeWidth = 26, t
             stroke="#E5E7EB"
             strokeWidth={strokeWidth}
           />
-          {data.map((item, index) => {
-            const value = Math.max(item.value, 0);
-            if (value <= 0) {
-              return null;
-            }
-            const segmentLength = (value / total) * circumference;
-            const dashArray = `${segmentLength} ${circumference}`;
-            const element = (
-              <circle
-                key={item.id || item.label || index}
-                r={radius}
-                fill="transparent"
-                stroke={colors[index % colors.length]}
-                strokeWidth={strokeWidth}
-                strokeDasharray={dashArray}
-                strokeDashoffset={-cumulative}
-                strokeLinecap="butt"
-              />
+          {segments.map((segment) => {
+            const dashArray = `${segment.segmentLength} ${circumference}`;
+            const color = resolveColor(segment.paletteEntry);
+            return (
+              <g key={`segment-${segment.key}`}>
+                <circle
+                  r={radius}
+                  fill="transparent"
+                  stroke={color}
+                  strokeWidth={strokeWidth}
+                  strokeDasharray={dashArray}
+                  strokeDashoffset={-segment.startOffset}
+                  strokeLinecap="butt"
+                >
+                  <title>
+                    {`${segment.item.label} : ${numberFormatter.format(segment.value)} (${decimalFormatter.format(segment.percentage)}%)`}
+                  </title>
+                </circle>
+              </g>
             );
-            cumulative += segmentLength;
-            return element;
+          })}
+          {segments.map((segment) => {
+            const angle = segment.midAngle;
+            const x = Math.cos(angle) * labelRadius;
+            const y = Math.sin(angle) * labelRadius;
+            return (
+              <text
+                key={`label-${segment.key}`}
+                x={x}
+                y={y}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fill="#111827"
+                fontSize={12}
+                fontWeight={700}
+                stroke="#ffffff"
+                strokeWidth={3}
+                style={{ paintOrder: 'stroke fill' }}
+                aria-hidden="true"
+              >
+                {segment.displayIndex + 1}
+              </text>
+            );
           })}
         </g>
       </svg>
       <div className="grid w-full gap-2 text-sm">
-        {data.map((item, index) => {
-          const value = Math.max(item.value, 0);
-          if (value <= 0) {
-            return null;
-          }
-          const percentage = (value / total) * 100;
-          return (
-            <div
-              key={item.id || item.label || index}
-              className="flex items-center justify-between rounded-lg border border-gray-100 bg-white/70 px-3 py-2"
-            >
-              <div className="flex items-center gap-2">
-                <span
-                  className="h-2 w-8 rounded-full"
-                  style={{ backgroundColor: colors[index % colors.length] }}
-                  aria-hidden="true"
-                />
-                <span className="font-medium text-gray-700">{item.label}</span>
-              </div>
-              <span className="text-sm font-semibold text-gray-900">
-                {numberFormatter.format(value)} · {decimalFormatter.format(percentage)}%
+        {segments.map((segment) => (
+          <div
+            key={`legend-${segment.key}`}
+            className="flex items-center justify-between rounded-lg border border-gray-100 bg-white/70 px-3 py-2"
+          >
+            <div className="flex items-center gap-3">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-xs font-semibold text-gray-700">
+                {segment.displayIndex + 1}
               </span>
+              <span
+                className="h-3 w-10 rounded-full"
+                style={buildPatternStyle(segment.paletteEntry, colors)}
+                aria-hidden="true"
+              />
+              <span className="font-medium text-gray-700">{segment.item.label}</span>
             </div>
-          );
-        })}
+            <span className="text-sm font-semibold text-gray-900">
+              {numberFormatter.format(segment.value)} · {decimalFormatter.format(segment.percentage)}%
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -237,7 +357,7 @@ const BarChart = ({
   data,
   valueFormatter = (value) => numberFormatter.format(value),
   unitSuffix = '',
-  colors = CHART_COLORS,
+  colors = COLORBLIND_SAFE_PALETTE,
   emptyLabel = 'Aucune donnée à afficher'
 }) => {
   const cleanedData = data.filter((entry) => Number.isFinite(entry.value) && entry.value > 0);
@@ -256,6 +376,11 @@ const BarChart = ({
     <div className="space-y-4">
       {cleanedData.map((entry, index) => {
         const percentage = Math.max((entry.value / maxValue) * 100, 4);
+        const barStyle = {
+          width: `${percentage}%`,
+          ...buildPatternStyle(index, colors),
+          borderRadius: '9999px'
+        };
         return (
           <div key={entry.id || entry.label || index} className="space-y-1">
             <div className="flex items-center justify-between text-sm">
@@ -267,10 +392,7 @@ const BarChart = ({
             <div className="h-3 rounded-full bg-gray-100">
               <div
                 className="h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${percentage}%`,
-                  backgroundColor: colors[index % colors.length]
-                }}
+                style={barStyle}
                 aria-hidden="true"
               />
             </div>
