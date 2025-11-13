@@ -152,6 +152,15 @@ const breakpoints = {
   xl: '1280px',
 };
 
+const breakpointOrder = Object.fromEntries(
+  Object.keys(breakpoints).map((key, index) => [key, index])
+);
+
+const pseudoVariants = ['hover', 'focus', 'focus-visible', 'disabled'];
+const pseudoVariantOrder = Object.fromEntries(
+  pseudoVariants.map((key, index) => [key, index])
+);
+
 const spacingScale = {
   '0': '0rem',
   '0.5': '0.125rem',
@@ -897,10 +906,73 @@ function buildRule(cls) {
   return css;
 }
 
+const classMetaCache = new Map();
+
+function getClassMeta(cls) {
+  if (classMetaCache.has(cls)) {
+    return classMetaCache.get(cls);
+  }
+
+  const segments = cls.split(':');
+  segments.pop();
+
+  let maxBreakpointIndex = -1;
+  let pseudoIndex = -1;
+
+  for (const segment of segments) {
+    if (breakpoints[segment]) {
+      const index = breakpointOrder[segment] ?? 0;
+      if (index > maxBreakpointIndex) {
+        maxBreakpointIndex = index;
+      }
+    } else if (Object.prototype.hasOwnProperty.call(pseudoVariantOrder, segment)) {
+      const index = pseudoVariantOrder[segment];
+      if (index > pseudoIndex) {
+        pseudoIndex = index;
+      }
+    }
+  }
+
+  const hasResponsive = maxBreakpointIndex >= 0;
+  const hasPseudo = pseudoIndex >= 0;
+
+  let stage = 0;
+  if (hasResponsive && hasPseudo) {
+    stage = 3;
+  } else if (hasPseudo) {
+    stage = 2;
+  } else if (hasResponsive) {
+    stage = 1;
+  }
+
+  const meta = { stage, maxBreakpointIndex, pseudoIndex };
+  classMetaCache.set(cls, meta);
+  return meta;
+}
+
+const sortedClasses = [...classes].sort((a, b) => {
+  const aMeta = getClassMeta(a);
+  const bMeta = getClassMeta(b);
+
+  if (aMeta.stage !== bMeta.stage) {
+    return aMeta.stage - bMeta.stage;
+  }
+
+  if ((aMeta.stage === 1 || aMeta.stage === 3) && aMeta.maxBreakpointIndex !== bMeta.maxBreakpointIndex) {
+    return aMeta.maxBreakpointIndex - bMeta.maxBreakpointIndex;
+  }
+
+  if ((aMeta.stage === 2 || aMeta.stage === 3) && aMeta.pseudoIndex !== bMeta.pseudoIndex) {
+    return aMeta.pseudoIndex - bMeta.pseudoIndex;
+  }
+
+  return a.localeCompare(b);
+});
+
 const generated = [];
 const handled = new Set();
 
-for (const cls of classes) {
+for (const cls of sortedClasses) {
   if (!cls) continue;
   const css = buildRule(cls);
   if (css) {
