@@ -4,6 +4,8 @@ import { initialRiskLevelRules } from './riskLevelRules.js';
 import { initialRiskWeights } from './riskWeights.js';
 import { analyzeAnswers } from '../utils/rules.js';
 
+const COMPLIANCE_COMMENTS_KEY = '__compliance_team_comments__';
+
 const demoProjectAnswers = {
   projectName: 'Plasma 360',
   projectSlogan: 'Du don à la vie : découvrez comment chaque goutte de plasma devient un traitement vital',
@@ -51,6 +53,9 @@ const demoProjectAnswers = {
   q10: ['Prestataire de service', 'Professionnel de santé (via contrat à mettre en place)'],
   BUDGET: '30'
 };
+
+demoProjectAnswers[COMPLIANCE_COMMENTS_KEY] =
+  'Projet validé par les équipes compliance. Les risques ont été discutés avec les parties prenantes et validés.';
 
 const DEMO_VERSION = 1;
 const DEMO_TIMESTAMP = '2025-10-19T06:08:36.021Z';
