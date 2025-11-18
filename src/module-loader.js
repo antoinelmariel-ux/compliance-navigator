@@ -81,12 +81,17 @@
     return `${CACHE_VERSION}:${hash.toString(16)}`;
   };
 
+  const isFileProtocol = global.location && global.location.protocol === 'file:';
+
   const fetchSourceSync = url => {
     const xhr = new XMLHttpRequest();
     xhr.open('GET', url, false);
     xhr.send(null);
 
-    if (xhr.status >= 400 || xhr.status === 0) {
+    const isSuccessfulStatus = xhr.status >= 200 && xhr.status < 400;
+    const canAllowStatusZero = isFileProtocol && xhr.status === 0 && typeof xhr.responseText === 'string';
+
+    if (!isSuccessfulStatus && !canAllowStatusZero) {
       throw new Error(`Impossible de charger le module "${url}" (statut ${xhr.status}).`);
     }
 
