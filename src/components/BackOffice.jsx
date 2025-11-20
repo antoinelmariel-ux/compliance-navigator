@@ -2118,7 +2118,9 @@ export const BackOffice = ({
       id: getNextId(teams, 'team'),
       name: 'Nouvelle équipe',
       contact: 'email@company.com',
-      expertise: "Domaine d'expertise"
+      expertise: "Domaine d'expertise",
+      isAreaManager: false,
+      countries: []
     };
 
     setTeams([...teams, newTeam]);
@@ -3392,6 +3394,46 @@ export const BackOffice = ({
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-y hv-focus-ring"
                       rows={3}
                     />
+
+                    <div className="mt-4 space-y-3">
+                      <label className="inline-flex items-start gap-3">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(team.isAreaManager)}
+                          onChange={(event) => updateTeamField(index, 'isAreaManager', event.target.checked)}
+                          className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span>
+                          <span className="block text-sm font-semibold text-gray-800">Zone des Area Manager</span>
+                          <span className="block text-xs text-gray-600">
+                            Activez cette option si l'équipe joue un rôle d'Area Manager afin de préciser les pays couverts.
+                          </span>
+                        </span>
+                      </label>
+
+                      {team.isAreaManager ? (
+                        <fieldset className="country-fieldset space-y-2 rounded-lg border border-blue-100 bg-blue-50/50 p-3">
+                          <legend className="text-xs font-semibold uppercase tracking-wide text-blue-700">Pays couverts</legend>
+                          <p className="text-xs text-gray-600">
+                            Listez les pays ou zones gérés par cet Area Manager (séparés par des virgules ou des sauts de ligne).
+                          </p>
+                          <textarea
+                            value={Array.isArray(team.countries) ? team.countries.join('\n') : ''}
+                            onChange={(event) => {
+                              const countries = event.target.value
+                                .split(/[,\n]/)
+                                .map((country) => country.trim())
+                                .filter(Boolean);
+                              updateTeamField(index, 'countries', countries);
+                            }}
+                            className="w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-gray-800 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                            rows={3}
+                            placeholder="France\nBelgique\nSuisse"
+                            aria-label={`Pays couverts par ${team.name}`}
+                          />
+                        </fieldset>
+                      ) : null}
+                    </div>
                   </article>
                 ))}
               </div>
