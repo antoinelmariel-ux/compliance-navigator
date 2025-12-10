@@ -8,4 +8,4 @@ Compliance Navigator aide les équipes projets et compliance à qualifier rapide
 - **Espace Back-Office Compliance** : les experts peuvent administrer le référentiel (questions, règles, pondérations) et consulter l'historique des projets déposés.
 - **Export et suivi des dossiers** : les projets validés sont conservés dans le dossier `submitted-projects/` pour faciliter le partage, les audits et les analyses ultérieures.
 
-Pour démarrer, ouvrez `index.html` dans votre navigateur : l'application est entièrement autonome et ne nécessite aucune installation supplémentaire.
+ Pour démarrer, ouvrez `index.html` dans votre navigateur : l'application est entièrement autonome, ne nécessite aucune installation supplémentaire et peut désormais fonctionner en local sans serveur HTTP.
