@@ -9,6 +9,8 @@
 
   const isAbsoluteUrl = url => /^(?:[a-z]+:)?\/\//i.test(url);
 
+  const manifest = global.__COMPLIANCE_NAVIGATOR_MANIFEST__;
+
   const supportsLocalStorage = (() => {
     try {
       const { localStorage } = global;
@@ -83,7 +85,47 @@
 
   const isFileProtocol = global.location && global.location.protocol === 'file:';
 
+  const toRelativeFromRoot = (absoluteUrl) => {
+    if (!global.location || !absoluteUrl) {
+      return null;
+    }
+
+    try {
+      const parsedUrl = new URL(absoluteUrl);
+      const baseDirectory = new URL('.', global.location.href).pathname;
+      let relativePath = parsedUrl.pathname;
+
+      if (baseDirectory && relativePath.startsWith(baseDirectory)) {
+        relativePath = relativePath.slice(baseDirectory.length);
+      } else {
+        relativePath = relativePath.replace(/^\//, '');
+      }
+
+      return relativePath || null;
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const fetchFromManifest = (url) => {
+    if (!isFileProtocol || !manifest || typeof manifest !== 'object') {
+      return null;
+    }
+
+    const relativePath = toRelativeFromRoot(url);
+    if (!relativePath) {
+      return null;
+    }
+
+    return manifest[relativePath] || manifest[`./${relativePath}`] || null;
+  };
+
   const fetchSourceSync = url => {
+    const manifestSource = fetchFromManifest(url);
+    if (typeof manifestSource === 'string') {
+      return manifestSource;
+    }
+
     const xhr = new XMLHttpRequest();
     xhr.open('GET', url, false);
     xhr.send(null);
