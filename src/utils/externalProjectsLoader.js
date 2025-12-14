@@ -9,31 +9,75 @@ const SEQUENTIAL_PREFIX = 'projet';
 const SEQUENTIAL_MAX_ATTEMPTS = 100;
 const SEQUENTIAL_MAX_CONSECUTIVE_MISSES = 5;
 
-const fetchJson = async (url) => {
-  try {
-    const response = await fetch(url, { cache: 'no-cache' });
-    if (!response.ok) {
-      return null;
-    }
-    return await response.json();
-  } catch (error) {
-    if (typeof console !== 'undefined' && typeof console.warn === 'function') {
-      console.warn('[externalProjectsLoader] JSON introuvable :', url, error);
-    }
-    return null;
+const isFileProtocol = () =>
+  typeof window !== 'undefined' && window.location && window.location.protocol === 'file:';
+
+const fetchWithXmlHttpRequest = (url) => new Promise((resolve) => {
+  if (typeof XMLHttpRequest === 'undefined') {
+    resolve(null);
+    return;
   }
-};
+
+  try {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.onreadystatechange = () => {
+      if (xhr.readyState !== 4) {
+        return;
+      }
+
+      const isSuccessfulStatus = xhr.status >= 200 && xhr.status < 400;
+      const canAllowStatusZero = isFileProtocol() && xhr.status === 0 && typeof xhr.responseText === 'string';
+
+      if (isSuccessfulStatus || canAllowStatusZero) {
+        resolve(typeof xhr.responseText === 'string' ? xhr.responseText : null);
+        return;
+      }
+
+      resolve(null);
+    };
+
+    xhr.onerror = () => resolve(null);
+    xhr.send(null);
+  } catch (error) {
+    resolve(null);
+  }
+});
 
 const fetchText = async (url) => {
   try {
     const response = await fetch(url, { cache: 'no-cache' });
-    if (!response.ok) {
-      return null;
+    if (response.ok) {
+      return await response.text();
     }
-    return await response.text();
   } catch (error) {
     if (typeof console !== 'undefined' && typeof console.warn === 'function') {
       console.warn('[externalProjectsLoader] Ressource texte introuvable :', url, error);
+    }
+  }
+
+  if (isFileProtocol()) {
+    const fallbackText = await fetchWithXmlHttpRequest(url);
+    if (typeof fallbackText === 'string') {
+      return fallbackText;
+    }
+  }
+
+  return null;
+};
+
+const fetchJson = async (url) => {
+  const text = await fetchText(url);
+
+  if (typeof text !== 'string') {
+    return null;
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+      console.warn('[externalProjectsLoader] JSON introuvable :', url, error);
     }
     return null;
   }
@@ -83,6 +127,37 @@ const deduplicate = (items) => {
   });
 
   return result;
+};
+
+const getPredeclaredSnapshot = () => {
+  if (typeof window === 'undefined') {
+    return { files: [], inlineProjects: [], payloads: new Map() };
+  }
+
+  const snapshot = window.__COMPLIANCE_NAVIGATOR_SUBMITTED_PROJECTS__;
+
+  const files = Array.isArray(snapshot && snapshot.files)
+    ? snapshot.files
+        .filter(item => typeof item === 'string')
+        .map(item => sanitizeRelativePath(item))
+        .filter(Boolean)
+    : [];
+
+  const payloads = new Map();
+  if (snapshot && snapshot.payloads && typeof snapshot.payloads === 'object') {
+    Object.entries(snapshot.payloads).forEach(([key, value]) => {
+      const normalizedKey = sanitizeRelativePath(key);
+      if (normalizedKey) {
+        payloads.set(normalizedKey, value);
+      }
+    });
+  }
+
+  if (files.length === 0 && payloads.size === 0) {
+    return { files: [], inlineProjects: [], payloads: new Map() };
+  }
+
+  return { files: deduplicate(files), inlineProjects: [], payloads };
 };
 
 const extractFilesFromManifest = (manifest) => {
@@ -386,6 +461,11 @@ const discoverSequentiallyNamedProjects = async () => {
 };
 
 const discoverProjectFiles = async () => {
+  const snapshot = getPredeclaredSnapshot();
+  if (snapshot.files.length > 0 || snapshot.payloads.size > 0 || snapshot.inlineProjects.length > 0) {
+    return snapshot;
+  }
+
   for (const manifestFile of MANIFEST_CANDIDATES) {
     const manifest = await fetchJson(`${DIRECTORY_PATH}${manifestFile}`);
     const { files, inlineProjects } = extractFilesFromManifest(manifest);
