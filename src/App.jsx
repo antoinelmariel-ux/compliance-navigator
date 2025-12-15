@@ -25,7 +25,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.172';
+const APP_VERSION = 'v1.0.173';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -1185,7 +1185,7 @@ export const App = () => {
       {
         id: 'welcome',
         target: '#tour-onboarding-anchor',
-        title: 'Bienvenue sur Compliance Navigator',
+        title: 'Bienvenue sur Project Navigator',
         content: 'Découvrons ensemble comment cadrer votre projet pas à pas.'
       },
       {
@@ -2619,7 +2619,7 @@ export const App = () => {
                 <CheckCircle className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-gray-800 sm:text-xl">Compliance Navigator</h1>
+                <h1 className="text-lg font-bold text-gray-800 sm:text-xl">Project Navigator</h1>
                 <p className="text-xs text-gray-500">Outil d'aide à la décision</p>
               </div>
             </div>
@@ -2676,7 +2676,7 @@ export const App = () => {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button text-white bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 hover:from-pink-600 hover:via-red-600 hover:to-yellow-600 focus-visible:ring-pink-400 hv-focus-ring"
-                    aria-label="Partagez votre avis sur Compliance Navigator (nouvelle fenêtre)"
+                    aria-label="Partagez votre avis sur Project Navigator (nouvelle fenêtre)"
                   >
                     <Sparkles className="text-lg sm:text-xl" aria-hidden="true" />
                     <span>Partagez votre avis</span>
@@ -2858,7 +2858,7 @@ export const App = () => {
 
       <footer className="bg-white border-t border-gray-200 mt-10" aria-label="Pied de page">
         <p className="text-xs text-gray-400 text-center py-4">
-          Compliance Navigator · Version {APP_VERSION} ·{' '}
+          Project Navigator · Version {APP_VERSION} ·{' '}
           <a
             href="./mentions-legales.html"
             target="_blank"
