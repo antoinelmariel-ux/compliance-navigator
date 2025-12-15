@@ -618,7 +618,7 @@ export const HomeScreen = ({
                 Anticipez les besoins compliance de vos projets en quelques minutes
               </h1>
               <p className="text-lg text-gray-600 leading-relaxed max-w-2xl">
-                Compliance Navigator vous guide pas à pas pour qualifier votre initiative, identifier les interlocuteurs à mobiliser et sécuriser vos délais réglementaires.
+                Project Navigator vous guide pas à pas pour qualifier votre initiative, identifier les interlocuteurs à mobiliser et sécuriser vos délais réglementaires.
               </p>
               <div className="flex flex-col sm:flex-row gap-3" role="group" aria-label="Actions principales">
                 <button
