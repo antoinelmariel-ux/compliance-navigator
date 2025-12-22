@@ -11,6 +11,7 @@ import { initialRules } from './data/rules.js';
 import { initialRiskLevelRules } from './data/riskLevelRules.js';
 import { initialRiskWeights } from './data/riskWeights.js';
 import { initialTeams } from './data/teams.js';
+import { initialShowcaseThemes } from './data/showcaseThemes.js';
 import { loadPersistedState, persistState } from './utils/storage.js';
 import { shouldShowQuestion } from './utils/questions.js';
 import { analyzeAnswers } from './utils/rules.js';
@@ -25,7 +26,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.173';
+const APP_VERSION = 'v1.0.174';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -474,6 +475,7 @@ export const App = () => {
   const [riskLevelRules, setRiskLevelRules] = useState(initialRiskLevelRules);
   const [riskWeights, setRiskWeights] = useState(() => normalizeRiskWeighting(initialRiskWeights));
   const [teams, setTeams] = useState(initialTeams);
+  const [showcaseThemes, setShowcaseThemes] = useState(initialShowcaseThemes);
   const [projectFilters, setProjectFiltersState] = useState(() => createDefaultProjectFiltersConfig());
   const [isHydrated, setIsHydrated] = useState(false);
   const [isBackOfficeUnlocked, setIsBackOfficeUnlocked] = useState(false);
@@ -551,6 +553,51 @@ export const App = () => {
       return normalizeProjectFilterConfig(nextConfig);
     });
   }, []);
+
+  useEffect(() => {
+    if (!Array.isArray(showcaseThemes) || showcaseThemes.length === 0) {
+      return;
+    }
+
+    setQuestions((previousQuestions) => {
+      const nextQuestions = Array.isArray(previousQuestions)
+        ? previousQuestions.slice()
+        : [];
+      const themeQuestionIndex = nextQuestions.findIndex(question => question?.id === 'showcaseTheme');
+
+      if (themeQuestionIndex === -1) {
+        return previousQuestions;
+      }
+
+      const themeOptions = showcaseThemes
+        .map(theme => (typeof theme?.label === 'string' && theme.label.trim().length > 0
+          ? theme.label.trim()
+          : typeof theme?.id === 'string'
+            ? theme.id
+            : ''))
+        .filter(option => option.length > 0);
+
+      const existingOptions = Array.isArray(nextQuestions[themeQuestionIndex]?.options)
+        ? nextQuestions[themeQuestionIndex].options
+        : [];
+
+      if (
+        themeOptions.length === existingOptions.length &&
+        themeOptions.every((option, index) => option === existingOptions[index])
+      ) {
+        return previousQuestions;
+      }
+
+      const existingThemeQuestion = nextQuestions[themeQuestionIndex] || {};
+
+      nextQuestions[themeQuestionIndex] = {
+        ...existingThemeQuestion,
+        options: themeOptions
+      };
+
+      return nextQuestions;
+    });
+  }, [setQuestions, showcaseThemes]);
 
   const synchronizeExternalProjects = useCallback(async () => {
     const existingProjects = Array.isArray(projectsRef.current) ? projectsRef.current : [];
@@ -692,6 +739,7 @@ export const App = () => {
       setRiskWeights(normalizeRiskWeighting(savedState.riskWeights));
     }
     if (Array.isArray(savedState.teams)) setTeams(savedState.teams);
+    if (Array.isArray(savedState.showcaseThemes)) setShowcaseThemes(savedState.showcaseThemes);
     if (savedState && typeof savedState.projectFilters === 'object') {
       setProjectFiltersState(normalizeProjectFilterConfig(savedState.projectFilters));
     }
@@ -1429,6 +1477,7 @@ export const App = () => {
         riskLevelRules,
         riskWeights,
         teams,
+        showcaseThemes,
         projects,
         activeProjectId,
         projectFilters: normalizeProjectFilterConfig(projectFilters)
@@ -1453,6 +1502,7 @@ export const App = () => {
     riskLevelRules,
     riskWeights,
     teams,
+    showcaseThemes,
     projects,
     activeProjectId,
     projectFilters,
@@ -2756,6 +2806,8 @@ export const App = () => {
             setRiskWeights={setRiskWeights}
             teams={teams}
             setTeams={setTeams}
+            showcaseThemes={showcaseThemes}
+            setShowcaseThemes={setShowcaseThemes}
             projectFilters={projectFilters}
             setProjectFilters={updateProjectFilters}
           />
@@ -2842,6 +2894,7 @@ export const App = () => {
                 questions={showcaseProjectContext.questions}
                 answers={showcaseProjectContext.answers}
                 timelineDetails={showcaseProjectContext.timelineDetails}
+                showcaseThemes={showcaseThemes}
                 onUpdateAnswers={
                   isOnboardingActive
                     ? noop

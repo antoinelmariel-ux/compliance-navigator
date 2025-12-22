@@ -134,6 +134,34 @@ export const initialQuestions = [
     "conditionGroups": []
   },
   {
+    "id": "showcaseTheme",
+    "type": "choice",
+    "question": "Quel thème souhaitez-vous pour la vitrine ?",
+    "options": [
+      "Universel",
+      "Produit"
+    ],
+    "required": true,
+    "conditions": [],
+    "conditionLogic": "all",
+    "guidance": {
+      "objective": "Sélectionner la palette de couleurs qui servira de base à la vitrine marketing.",
+      "details": "Chaque thème peut être ajusté dans le back-office grâce aux color-pickers (fond, dégradés, accents). Choisissez celui qui correspond le mieux à votre projet.",
+      "tips": [
+        "Universel : reprend l'identité visuelle actuelle de la vitrine.",
+        "Produit : palette solaire et contrastée pour valoriser une offre produit."
+      ]
+    },
+    "showcase": {
+      "sections": [
+        "hero"
+      ],
+      "usage": "Pilote les couleurs et dégradés utilisés dans l'ensemble de la vitrine."
+    },
+    "placeholder": "",
+    "conditionGroups": []
+  },
+  {
     "id": "projectSlogan",
     "type": "text",
     "question": "Quel slogan pour votre projet ?",

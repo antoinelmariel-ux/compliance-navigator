@@ -7,6 +7,7 @@ import {
 } from './icons.js';
 import { formatAnswer } from '../utils/questions.js';
 import { renderTextWithLinks } from '../utils/linkify.js';
+import { initialShowcaseThemes } from '../data/showcaseThemes.js';
 
 const findQuestionById = (questions, id) => {
   if (!Array.isArray(questions)) {
@@ -477,15 +478,112 @@ const mergeTimelineSummariesWithAlerts = (summaries, alerts) => {
   };
 };
 
-const SHOWCASE_THEME = {
+const FALLBACK_SHOWCASE_THEME = initialShowcaseThemes[0] || {
   id: 'aurora',
   label: 'Aurora néon',
   description: 'Jeux de lumières et ambiance futuriste pour un rendu premium.',
+  palette: {}
+};
+
+const normalizeColorValue = (value, fallback) => {
+  if (typeof value === 'string' && value.trim().length > 0) {
+    return value.trim();
+  }
+
+  return fallback;
+};
+
+const toRgba = (value, alpha = 1, fallback = 'rgba(0, 0, 0, 1)') => {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    return fallback;
+  }
+
+  const normalized = value.trim();
+
+  if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(normalized)) {
+    let hex = normalized.slice(1);
+    if (hex.length === 3) {
+      hex = hex.split('').map(char => char + char).join('');
+    }
+
+    const numeric = parseInt(hex, 16);
+    const r = (numeric >> 16) & 255;
+    const g = (numeric >> 8) & 255;
+    const b = numeric & 255;
+    const safeAlpha = Math.min(1, Math.max(0, typeof alpha === 'number' ? alpha : 1));
+
+    return `rgba(${r}, ${g}, ${b}, ${safeAlpha})`;
+  }
+
+  if (/^rgba?\(/i.test(normalized)) {
+    if (normalized.startsWith('rgb(') && typeof alpha === 'number') {
+      return normalized.replace(/^rgb\((.*)\)$/i, `rgba($1, ${Math.min(1, Math.max(0, alpha))})`);
+    }
+
+    return normalized;
+  }
+
+  return fallback;
+};
+
+const buildThemeVariables = (theme) => {
+  const palette = (theme && typeof theme === 'object' ? theme.palette : null) || {};
+  const accentPrimary = normalizeColorValue(palette.accentPrimary, '#2563eb');
+  const accentSecondary = normalizeColorValue(palette.accentSecondary, '#06b6d4');
+  const borderBase = normalizeColorValue(palette.border, '#94a3b8');
+  const highlightBase = normalizeColorValue(palette.highlight, accentSecondary);
+
+  return {
+    '--showcase-bg-start': normalizeColorValue(palette.backgroundStart, '#020309'),
+    '--showcase-bg-mid': normalizeColorValue(palette.backgroundMid, '#050b18'),
+    '--showcase-bg-end': normalizeColorValue(palette.backgroundEnd, '#020309'),
+    '--showcase-glow-primary': toRgba(palette.glowPrimary || accentPrimary, 0.18, 'rgba(59, 130, 246, 0.18)'),
+    '--showcase-glow-secondary': toRgba(palette.glowSecondary || accentSecondary, 0.16, 'rgba(14, 165, 233, 0.16)'),
+    '--showcase-text-strong': normalizeColorValue(palette.textPrimary, '#f8fafc'),
+    '--showcase-text-soft': normalizeColorValue(palette.textSecondary, '#e2e8f0'),
+    '--showcase-accent-primary': accentPrimary,
+    '--showcase-accent-secondary': accentSecondary,
+    '--showcase-surface': toRgba(palette.surface, 0.78, 'rgba(8, 13, 22, 0.78)'),
+    '--showcase-border-strong': toRgba(borderBase, 0.25, 'rgba(148, 163, 184, 0.25)'),
+    '--showcase-border-soft': toRgba(borderBase, 0.28, 'rgba(148, 163, 184, 0.28)'),
+    '--showcase-highlight-strong': toRgba(highlightBase, 0.85, 'rgba(148, 197, 255, 0.85)'),
+    '--showcase-highlight-soft': toRgba(highlightBase, 0.7, 'rgba(148, 197, 255, 0.7)'),
+    '--showcase-shadow-soft': toRgba(accentSecondary, 0.32, 'rgba(14, 165, 233, 0.32)'),
+    '--showcase-shadow-strong': toRgba(accentSecondary, 0.4, 'rgba(14, 165, 233, 0.4)')
+  };
+};
+
+const normalizeThemeKey = (value) => (typeof value === 'string' ? value.trim().toLowerCase() : '');
+
+const resolveShowcaseTheme = (themes, answer) => {
+  const availableThemes = Array.isArray(themes) && themes.length > 0 ? themes : initialShowcaseThemes;
+  const normalizedAnswer = normalizeThemeKey(answer);
+
+  if (normalizedAnswer.length > 0) {
+    const matched = availableThemes.find(theme => {
+      if (!theme) {
+        return false;
+      }
+
+      const candidates = [theme.id, theme.label, ...(Array.isArray(theme.aliases) ? theme.aliases : [])]
+        .filter(Boolean)
+        .map(normalizeThemeKey);
+
+      return candidates.includes(normalizedAnswer);
+    });
+
+    if (matched) {
+      return matched;
+    }
+  }
+
+  return availableThemes[0] || FALLBACK_SHOWCASE_THEME;
 };
 
 const SHOWCASE_FIELD_CONFIG = [
   { id: 'projectName', fallbackLabel: 'Nom du projet', fallbackType: 'text' },
   { id: 'projectSlogan', fallbackLabel: 'Slogan du projet', fallbackType: 'text' },
+  { id: 'showcaseTheme', fallbackLabel: 'Thème de la vitrine', fallbackType: 'choice' },
   { id: 'targetAudience', fallbackLabel: 'Audience cible', fallbackType: 'multi_choice' },
   { id: 'problemPainPoints', fallbackLabel: 'Besoins utilisateurs', fallbackType: 'long_text' },
   { id: 'solutionDescription', fallbackLabel: 'Description de la solution', fallbackType: 'long_text' },
@@ -995,11 +1093,27 @@ export const ProjectShowcase = ({
   timelineDetails,
   renderInStandalone = false,
   onUpdateAnswers,
-  tourContext = null
+  tourContext = null,
+  showcaseThemes = initialShowcaseThemes
 }) => {
   const rawProjectName = typeof projectName === 'string' ? projectName.trim() : '';
   const safeProjectName = rawProjectName.length > 0 ? rawProjectName : 'Votre projet';
   const normalizedTeams = Array.isArray(relevantTeams) ? relevantTeams : [];
+  const availableThemes = useMemo(
+    () => (Array.isArray(showcaseThemes) && showcaseThemes.length > 0
+      ? showcaseThemes
+      : initialShowcaseThemes),
+    [showcaseThemes]
+  );
+  const selectedTheme = useMemo(
+    () => resolveShowcaseTheme(availableThemes, answers?.showcaseTheme),
+    [answers?.showcaseTheme, availableThemes]
+  );
+  const showcaseThemeId = selectedTheme?.id || FALLBACK_SHOWCASE_THEME.id;
+  const showcaseThemeVariables = useMemo(
+    () => buildThemeVariables(selectedTheme || FALLBACK_SHOWCASE_THEME),
+    [selectedTheme]
+  );
   const teamNameById = useMemo(() => {
     const map = new Map();
     normalizedTeams.forEach(team => {
@@ -1018,8 +1132,6 @@ export const ProjectShowcase = ({
       })),
     [questions]
   );
-
-  const showcaseThemeId = SHOWCASE_THEME.id;
 
   const [isEditing, setIsEditing] = useState(false);
   const [draftValues, setDraftValues] = useState(() =>
@@ -2144,6 +2256,7 @@ export const ProjectShowcase = ({
         data-showcase-scope
         data-showcase-theme={showcaseThemeId}
         className="aurora-shell aurora-shell--standalone"
+        style={showcaseThemeVariables}
       >
         {content}
       </div>
@@ -2155,6 +2268,7 @@ export const ProjectShowcase = ({
       data-showcase-scope
       data-showcase-theme={showcaseThemeId}
       className="aurora-shell"
+      style={showcaseThemeVariables}
       aria-label="Vitrine marketing du projet"
     >
       {content}
