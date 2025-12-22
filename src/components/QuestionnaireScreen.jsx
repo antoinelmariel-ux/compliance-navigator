@@ -93,7 +93,9 @@ export const QuestionnaireScreen = ({
   saveFeedback,
   onDismissSaveFeedback,
   validationError,
-  tourContext = null
+  tourContext = null,
+  onReturnToSynthesis,
+  isReturnToSynthesisRequested = false
 }) => {
   const currentQuestion = questions[currentIndex];
   const questionBank = allQuestions || questions;
@@ -825,6 +827,17 @@ export const QuestionnaireScreen = ({
             </div>
           )}
 
+          {isReturnToSynthesisRequested && (
+            <div
+              className="mb-4 flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800"
+              role="status"
+              aria-live="polite"
+            >
+              <Info className="mt-0.5 h-5 w-5" />
+              <p>Modification depuis le rapport Compliance. Validez vos changements pour y retourner.</p>
+            </div>
+          )}
+
           {renderQuestionInput()}
 
           <div
@@ -855,6 +868,17 @@ export const QuestionnaireScreen = ({
               >
                 <Save className="w-5 h-5 mr-2" />
                 Enregistrer le projet
+              </button>
+            )}
+
+            {onReturnToSynthesis && (
+              <button
+                type="button"
+                onClick={onReturnToSynthesis}
+                className="flex items-center justify-center px-6 py-3 rounded-lg font-medium bg-emerald-600 text-white hover:bg-emerald-700 transition-all hv-button w-full sm:w-auto text-sm sm:text-base"
+              >
+                <CheckCircle className="w-5 h-5 mr-2" />
+                Valider et revenir au rapport
               </button>
             )}
 
