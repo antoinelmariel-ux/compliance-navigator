@@ -10,6 +10,22 @@ import { renderTextWithLinks } from '../utils/linkify.js';
 import { initialShowcaseThemes } from '../data/showcaseThemes.js';
 import { RichTextEditor } from './RichTextEditor.jsx';
 
+const SHOWCASE_SECTION_OPTIONS = [
+  { id: 'notice', label: 'Message de complétude' },
+  { id: 'hero', label: 'Hero du projet' },
+  { id: 'problem', label: 'Le problème' },
+  { id: 'solution', label: 'La réponse' },
+  { id: 'innovation', label: 'Différenciation & impact' },
+  { id: 'team', label: 'Équipe & alliances' },
+  { id: 'timeline', label: 'Feuille de route' }
+];
+
+const buildDefaultLightSectionSelection = () =>
+  SHOWCASE_SECTION_OPTIONS.reduce((acc, section) => {
+    acc[section.id] = true;
+    return acc;
+  }, {});
+
 const findQuestionById = (questions, id) => {
   if (!Array.isArray(questions)) {
     return null;
@@ -1151,6 +1167,10 @@ export const ProjectShowcase = ({
     buildDraftValues(editableFields, answers, rawProjectName)
   );
   const [milestoneDragState, setMilestoneDragState] = useState(createEmptyMilestoneDragState);
+  const [displayMode, setDisplayMode] = useState('full');
+  const [lightSections, setLightSections] = useState(buildDefaultLightSectionSelection);
+  const [pendingLightSections, setPendingLightSections] = useState(lightSections);
+  const [isLightConfigOpen, setIsLightConfigOpen] = useState(false);
 
   const resetMilestoneDragState = useCallback(() => {
     setMilestoneDragState(createEmptyMilestoneDragState());
@@ -1168,6 +1188,38 @@ export const ProjectShowcase = ({
       resetMilestoneDragState();
     }
   }, [isEditing, resetMilestoneDragState]);
+
+  const handleDisplayModeChange = useCallback((mode) => {
+    if (mode === 'full' || mode === 'light') {
+      setDisplayMode(mode);
+    }
+  }, []);
+
+  const handleOpenLightConfig = useCallback(() => {
+    setPendingLightSections(lightSections);
+    setIsLightConfigOpen(true);
+  }, [lightSections]);
+
+  const handleCancelLightConfig = useCallback(() => {
+    setPendingLightSections(lightSections);
+    setIsLightConfigOpen(false);
+  }, [lightSections]);
+
+  const handleTogglePendingSection = useCallback((sectionId) => {
+    setPendingLightSections(prev => ({
+      ...prev,
+      [sectionId]: !prev[sectionId]
+    }));
+  }, []);
+
+  const handleSelectAllSections = useCallback(() => {
+    setPendingLightSections(buildDefaultLightSectionSelection());
+  }, []);
+
+  const handleValidateLightConfig = useCallback(() => {
+    setLightSections(pendingLightSections);
+    setIsLightConfigOpen(false);
+  }, [pendingLightSections]);
 
   useEffect(() => {
     if (!tourContext?.isActive) {
@@ -1224,6 +1276,18 @@ export const ProjectShowcase = ({
     isEditing,
     setDraftValues
   ]);
+
+  const isLightMode = displayMode === 'light';
+
+  const shouldDisplaySection = useCallback(
+    (sectionId) => displayMode === 'full' || lightSections[sectionId] !== false,
+    [displayMode, lightSections]
+  );
+
+  const selectedLightSectionsCount = useMemo(
+    () => Object.values(lightSections).filter(Boolean).length,
+    [lightSections]
+  );
 
   const canEdit = typeof onUpdateAnswers === 'function';
   const shouldShowPreview = !isEditing || !canEdit;
@@ -1529,7 +1593,7 @@ export const ProjectShowcase = ({
 
   const previewContent = shouldShowPreview ? (
     <div className="aurora-sections" data-tour-id="showcase-preview">
-      {hasIncompleteAnswers && (
+      {hasIncompleteAnswers && shouldDisplaySection('notice') && (
         <section className="aurora-section" data-showcase-section="notice">
           <div className="aurora-section__inner aurora-section__inner--narrow">
             <div className="rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
@@ -1538,102 +1602,108 @@ export const ProjectShowcase = ({
           </div>
         </section>
       )}
-      <section
-        className="aurora-section aurora-hero"
-        data-showcase-section="hero"
-        data-tour-id="showcase-hero"
-      >
-        <div className="aurora-section__inner">
-          <div className="aurora-hero__copy">
-            
-            <h1 className="aurora-hero__title">{safeProjectName}</h1>
-            {hasText(slogan) && (
-              <p className="aurora-hero__subtitle">{renderTextWithLinks(slogan)}</p>
-            )}
-            <div className="aurora-cta-group">
-              <button type="button" className="aurora-cta">Découvrir le projet</button>
+      {shouldDisplaySection('hero') && (
+        <section
+          className="aurora-section aurora-hero"
+          data-showcase-section="hero"
+          data-tour-id="showcase-hero"
+        >
+          <div className="aurora-section__inner">
+            <div className="aurora-hero__copy">
+
+              <h1 className="aurora-hero__title">{safeProjectName}</h1>
+              {hasText(slogan) && (
+                <p className="aurora-hero__subtitle">{renderTextWithLinks(slogan)}</p>
+              )}
+              <div className="aurora-cta-group">
+                <button type="button" className="aurora-cta">Découvrir le projet</button>
+              </div>
             </div>
+            {heroHighlights.length > 0 && (
+              <div className="aurora-hero__highlights">
+                {heroHighlights.map((highlight, index) => (
+                  <div
+                    key={highlight.id}
+                    className="aurora-hero-highlight"
+                    style={{ animationDelay: `${index * 0.15}s` }}
+                  >
+                    <p className="aurora-hero-highlight__label">{highlight.label}</p>
+                    <p className="aurora-hero-highlight__value">{highlight.value}</p>
+                    <p className="aurora-hero-highlight__caption">{highlight.caption}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-          {heroHighlights.length > 0 && (
-            <div className="aurora-hero__highlights">
-              {heroHighlights.map((highlight, index) => (
-                <div
-                  key={highlight.id}
-                  className="aurora-hero-highlight"
-                  style={{ animationDelay: `${index * 0.15}s` }}
-                >
-                  <p className="aurora-hero-highlight__label">{highlight.label}</p>
-                  <p className="aurora-hero-highlight__value">{highlight.value}</p>
-                  <p className="aurora-hero-highlight__caption">{highlight.caption}</p>
+        </section>
+      )}
+
+      {shouldDisplaySection('problem') && (
+        <section className="aurora-section aurora-why" data-showcase-section="problem">
+          <div className="aurora-section__inner aurora-section__inner--narrow">
+            <div className="aurora-section__header">
+              <p className="aurora-eyebrow">Le problème</p>
+              <h2 className="aurora-section__title">Pourquoi ce projet doit exister</h2>
+            </div>
+            {problemPainPoints.length > 0 && (
+              <div className="aurora-why__points">
+                {problemPainPoints.map((point, index) => (
+                  <div
+                    key={`${point}-${index}`}
+                    className="aurora-why__point"
+                    style={{ animationDelay: `${index * 0.12 + 0.1}s` }}
+                  >
+                    <span className="aurora-why__beam" />
+                    <span className="aurora-why__text">{renderTextWithLinks(point)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {shouldDisplaySection('solution') && (
+        <section className="aurora-section aurora-response" data-showcase-section="solution">
+          <div className="aurora-section__inner">
+            <div className="aurora-section__header aurora-section__header--split">
+              <div>
+                <p className="aurora-eyebrow">Notre solution</p>
+                <h2 className="aurora-section__title">Comment nous changeons la donne</h2>
+              </div>
+            </div>
+            <div className="aurora-pillars">
+              {hasText(solutionDescription) && (
+                <div className="aurora-pillar">
+                  <h3 className="aurora-pillar__title">En clair</h3>
+                  <p className="aurora-pillar__text">{renderTextWithLinks(solutionDescription)}</p>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section className="aurora-section aurora-why" data-showcase-section="problem">
-        <div className="aurora-section__inner aurora-section__inner--narrow">
-          <div className="aurora-section__header">
-            <p className="aurora-eyebrow">Le problème</p>
-            <h2 className="aurora-section__title">Pourquoi ce projet doit exister</h2>
-          </div>
-          {problemPainPoints.length > 0 && (
-            <div className="aurora-why__points">
-              {problemPainPoints.map((point, index) => (
-                <div
-                  key={`${point}-${index}`}
-                  className="aurora-why__point"
-                  style={{ animationDelay: `${index * 0.12 + 0.1}s` }}
-                >
-                  <span className="aurora-why__beam" />
-                  <span className="aurora-why__text">{renderTextWithLinks(point)}</span>
+              )}
+              {solutionBenefits.length > 0 && (
+                <div className="aurora-pillar">
+                  <h3 className="aurora-pillar__title">Bénéfices clefs</h3>
+                  <ul className="aurora-pillar__list">
+                    {solutionBenefits.map((benefit, index) => (
+                      <li key={`${benefit}-${index}`} className="aurora-pillar__item">
+                        <span className="aurora-pillar__bullet" />
+                        <span>{renderTextWithLinks(benefit)}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section className="aurora-section aurora-response" data-showcase-section="solution">
-        <div className="aurora-section__inner">
-          <div className="aurora-section__header aurora-section__header--split">
-            <div>
-              <p className="aurora-eyebrow">Notre solution</p>
-              <h2 className="aurora-section__title">Comment nous changeons la donne</h2>
+              )}
+              {hasText(solutionComparison) && (
+                <div className="aurora-pillar">
+                  <h3 className="aurora-pillar__title">Pourquoi c'est différent</h3>
+                  <p className="aurora-pillar__text">{renderTextWithLinks(solutionComparison)}</p>
+                </div>
+              )}
             </div>
           </div>
-          <div className="aurora-pillars">
-            {hasText(solutionDescription) && (
-              <div className="aurora-pillar">
-                <h3 className="aurora-pillar__title">En clair</h3>
-                <p className="aurora-pillar__text">{renderTextWithLinks(solutionDescription)}</p>
-              </div>
-            )}
-            {solutionBenefits.length > 0 && (
-              <div className="aurora-pillar">
-                <h3 className="aurora-pillar__title">Bénéfices clefs</h3>
-                <ul className="aurora-pillar__list">
-                  {solutionBenefits.map((benefit, index) => (
-                    <li key={`${benefit}-${index}`} className="aurora-pillar__item">
-                      <span className="aurora-pillar__bullet" />
-                      <span>{renderTextWithLinks(benefit)}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {hasText(solutionComparison) && (
-              <div className="aurora-pillar">
-                <h3 className="aurora-pillar__title">Pourquoi c'est différent</h3>
-                <p className="aurora-pillar__text">{renderTextWithLinks(solutionComparison)}</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
-      {(hasText(innovationProcess) || hasText(visionStatement)) && (
+      {shouldDisplaySection('innovation') && (hasText(innovationProcess) || hasText(visionStatement)) && (
         <section className="aurora-section aurora-difference" data-showcase-section="innovation">
           <div className="aurora-section__inner">
             <div className="aurora-section__header aurora-section__header--split">
@@ -1677,63 +1747,65 @@ export const ProjectShowcase = ({
         </section>
       )}
 
-      <section className="aurora-section aurora-team" data-showcase-section="team">
-        <div className="aurora-section__inner">
-          <div className="aurora-section__header">
-            <p className="aurora-eyebrow">Équipe & alliances</p>
-            <h2 className="aurora-section__title">L'équipe derrière le projet</h2>
-          </div>
-          <div className="aurora-team__layout">
-            <div className="aurora-team__lead">
-              {hasText(teamLead) && (
-                <div className="aurora-team__lead-info">
-                  <p className="aurora-team__lead-label">Lead du projet</p>
-                  <p className="aurora-team__lead-name">{renderTextWithLinks(teamLead)}</p>
-                  {hasText(teamLeadTeam) && (
-                    <p className="aurora-team__lead-team">{`Équipe : ${teamLeadTeam}`}</p>
-                  )}
+      {shouldDisplaySection('team') && (
+        <section className="aurora-section aurora-team" data-showcase-section="team">
+          <div className="aurora-section__inner">
+            <div className="aurora-section__header">
+              <p className="aurora-eyebrow">Équipe & alliances</p>
+              <h2 className="aurora-section__title">L'équipe derrière le projet</h2>
+            </div>
+            <div className="aurora-team__layout">
+              <div className="aurora-team__lead">
+                {hasText(teamLead) && (
+                  <div className="aurora-team__lead-info">
+                    <p className="aurora-team__lead-label">Lead du projet</p>
+                    <p className="aurora-team__lead-name">{renderTextWithLinks(teamLead)}</p>
+                    {hasText(teamLeadTeam) && (
+                      <p className="aurora-team__lead-team">{`Équipe : ${teamLeadTeam}`}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+              {teamMemberCards.length > 0 && (
+                <div className="aurora-team__members">
+                  <p className="aurora-team__members-label">Équipe projet</p>
+                  <div className="aurora-team__carousel">
+                    {teamMemberCards.map((member, index) => (
+                      <div
+                        key={member.id}
+                        className="aurora-team__card"
+                        style={{ animationDelay: `${index * 0.08}s` }}
+                      >
+                        <span className="aurora-team__avatar">{member.initials}</span>
+                        <div className="aurora-team__card-text">
+                          <p className="aurora-team__card-name">{member.name}</p>
+                          <p className="aurora-team__card-role">
+                            {member.details
+                              ? renderTextWithLinks(member.details)
+                              : renderTextWithLinks(member.fullText)}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
-            {teamMemberCards.length > 0 && (
-              <div className="aurora-team__members">
-                <p className="aurora-team__members-label">Équipe projet</p>
-                <div className="aurora-team__carousel">
-                  {teamMemberCards.map((member, index) => (
-                    <div
-                      key={member.id}
-                      className="aurora-team__card"
-                      style={{ animationDelay: `${index * 0.08}s` }}
-                    >
-                      <span className="aurora-team__avatar">{member.initials}</span>
-                      <div className="aurora-team__card-text">
-                        <p className="aurora-team__card-name">{member.name}</p>
-                        <p className="aurora-team__card-role">
-                          {member.details
-                            ? renderTextWithLinks(member.details)
-                            : renderTextWithLinks(member.fullText)}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+            {normalizedTeams.length > 0 && (
+              <div className="aurora-partners">
+                {normalizedTeams.map(team => (
+                  <div key={team.id} className="aurora-partner">
+                    <span className="aurora-partner__name">{team.name}</span>
+                    {team.expertise && <span className="aurora-partner__role">{team.expertise}</span>}
+                  </div>
+                ))}
               </div>
             )}
           </div>
-          {normalizedTeams.length > 0 && (
-            <div className="aurora-partners">
-              {normalizedTeams.map(team => (
-                <div key={team.id} className="aurora-partner">
-                  <span className="aurora-partner__name">{team.name}</span>
-                  {team.expertise && <span className="aurora-partner__role">{team.expertise}</span>}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
+        </section>
+      )}
 
-      {hasTimelineSection && (
+      {hasTimelineSection && shouldDisplaySection('timeline') && (
         <section
           className="aurora-section aurora-roadmap"
           data-showcase-section="timeline"
@@ -1866,6 +1938,117 @@ export const ProjectShowcase = ({
       <p className="aurora-preview-placeholder__text">
         Le rendu Aurora est temporairement masqué pendant vos ajustements.
       </p>
+    </div>
+  );
+
+  const modeSelectionPanel = (
+    <div className="mb-6 rounded-2xl border border-gray-200 bg-white/80 shadow-sm backdrop-blur">
+      <div
+        className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
+        role="group"
+        aria-label="Sélection du mode d'utilisation"
+      >
+        <div className="space-y-1">
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Sélection du mode d'utilisation</p>
+          <p className="text-sm text-gray-600">
+            Choisissez entre l'affichage complet ou Light pour ajuster la vitrine.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => handleDisplayModeChange('light')}
+            className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition ${
+              isLightMode
+                ? 'border-blue-200 bg-blue-50 text-blue-700 shadow-sm'
+                : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+            }`}
+            aria-pressed={isLightMode}
+          >
+            Mode Light
+            <span className="text-xs text-gray-500">({selectedLightSectionsCount}/{SHOWCASE_SECTION_OPTIONS.length})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleDisplayModeChange('full')}
+            className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition ${
+              !isLightMode
+                ? 'border-blue-200 bg-blue-50 text-blue-700 shadow-sm'
+                : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+            }`}
+            aria-pressed={!isLightMode}
+          >
+            Mode complet
+          </button>
+          <button
+            type="button"
+            onClick={handleOpenLightConfig}
+            className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:border-blue-200 hover:text-blue-700"
+          >
+            Configurer
+          </button>
+        </div>
+      </div>
+
+      {isLightConfigOpen && (
+        <div className="border-t border-gray-200 p-4">
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-gray-800">Sections visibles en mode Light</p>
+                <p className="text-xs text-gray-600">Décochez les sections à masquer dans l'affichage allégé.</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={handleSelectAllSections}
+                  className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-700 transition hover:border-blue-200 hover:text-blue-700"
+                >
+                  Tout sélectionner
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCancelLightConfig}
+                  className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-700 transition hover:border-gray-300"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  onClick={handleValidateLightConfig}
+                  className="rounded-full border border-blue-200 bg-blue-600 px-3 py-1 text-xs font-medium text-white shadow-sm transition hover:bg-blue-700"
+                >
+                  Valider
+                </button>
+              </div>
+            </div>
+
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {SHOWCASE_SECTION_OPTIONS.map(section => {
+                const checkboxId = `light-section-${section.id}`;
+                const isChecked = pendingLightSections[section.id] !== false;
+                return (
+                  <label
+                    key={section.id}
+                    htmlFor={checkboxId}
+                    className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 bg-white px-3 py-2 shadow-sm transition hover:border-blue-200"
+                  >
+                    <input
+                      id={checkboxId}
+                      name={checkboxId}
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => handleTogglePendingSection(section.id)}
+                      className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-800">{section.label}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -2282,6 +2465,7 @@ export const ProjectShowcase = ({
 
   const content = (
     <>
+      {modeSelectionPanel}
       {editBar}
       {editPanel}
       {previewContent}
