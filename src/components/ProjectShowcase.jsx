@@ -23,7 +23,18 @@ const getFormattedAnswer = (questions, answers, id) => {
     return '';
   }
 
-  return formatAnswer(question, answers?.[id]);
+  const formatted = formatAnswer(question, answers?.[id]);
+
+  if (typeof formatted === 'string') {
+    const trimmed = formatted.trim();
+    if (trimmed.length > 0) {
+      return trimmed;
+    }
+  } else if (formatted) {
+    return formatted;
+  }
+
+  return question.required ? 'Information à compléter' : '';
 };
 
 const getRawAnswer = (answers, id) => {
@@ -1094,10 +1105,11 @@ export const ProjectShowcase = ({
   renderInStandalone = false,
   onUpdateAnswers,
   tourContext = null,
-  showcaseThemes = initialShowcaseThemes
+  showcaseThemes = initialShowcaseThemes,
+  hasIncompleteAnswers = false
 }) => {
   const rawProjectName = typeof projectName === 'string' ? projectName.trim() : '';
-  const safeProjectName = rawProjectName.length > 0 ? rawProjectName : 'Votre projet';
+  const safeProjectName = rawProjectName.length > 0 ? rawProjectName : 'Information à compléter';
   const normalizedTeams = Array.isArray(relevantTeams) ? relevantTeams : [];
   const availableThemes = useMemo(
     () => (Array.isArray(showcaseThemes) && showcaseThemes.length > 0
@@ -1516,6 +1528,15 @@ export const ProjectShowcase = ({
 
   const previewContent = shouldShowPreview ? (
     <div className="aurora-sections" data-tour-id="showcase-preview">
+      {hasIncompleteAnswers && (
+        <section className="aurora-section" data-showcase-section="notice">
+          <div className="aurora-section__inner aurora-section__inner--narrow">
+            <div className="rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
+              En attente de l’ensemble des informations sur le projet pour une évaluation complète.
+            </div>
+          </div>
+        </section>
+      )}
       <section
         className="aurora-section aurora-hero"
         data-showcase-section="hero"

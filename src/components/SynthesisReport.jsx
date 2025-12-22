@@ -8,7 +8,8 @@ import {
   CheckCircle,
   Save,
   Mail,
-  Info
+  Info,
+  Edit
 } from './icons.js';
 import { formatAnswer } from '../utils/questions.js';
 import { renderTextWithLinks } from '../utils/linkify.js';
@@ -74,6 +75,32 @@ const formatRiskScore = (score) => {
     minimumFractionDigits: hasDecimals ? 1 : 0,
     maximumFractionDigits: hasDecimals ? 2 : 0
   });
+};
+
+const isAnswerProvided = (value) => {
+  if (Array.isArray(value)) {
+    return value.length > 0;
+  }
+
+  if (typeof value === 'string') {
+    return value.trim().length > 0;
+  }
+
+  return value !== null && value !== undefined;
+};
+
+const formatOverviewValue = (question, answer) => {
+  const formatted = formatAnswer(question, answer);
+
+  if (typeof formatted === 'string') {
+    if (formatted.trim().length > 0) {
+      return formatted;
+    }
+  } else if (formatted) {
+    return formatted;
+  }
+
+  return question?.required ? 'Information à compléter' : '';
 };
 
 const formatRiskTimingViolation = (violation) => {
@@ -544,11 +571,13 @@ export const SynthesisReport = ({
   onBack,
   onUpdateAnswers,
   onSubmitProject,
+  onNavigateToQuestion,
   onSaveDraft,
   saveFeedback,
   onDismissSaveFeedback,
   isAdminMode = false,
-  tourContext = null
+  tourContext = null,
+  hasIncompleteAnswers = false
 }) => {
   const [isShowcaseFallbackOpen, setIsShowcaseFallbackOpen] = useState(false);
   const showcaseFallbackRef = useRef(null);
@@ -1040,16 +1069,37 @@ export const SynthesisReport = ({
               Vue d'ensemble du projet
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {questions.map(q =>
-                answers[q.id] ? (
+              {questions.map(q => {
+                const answerValue = answers[q.id];
+                const shouldRenderCard = isAnswerProvided(answerValue) || q.required;
+
+                if (!shouldRenderCard) {
+                  return null;
+                }
+
+                const displayValue = formatOverviewValue(q, answerValue);
+
+                return (
                   <div key={q.id} className="bg-white rounded-lg p-4 border border-gray-200 hv-surface">
-                    <p className="text-sm text-gray-600 mb-1">{q.question}</p>
+                    <div className="flex items-start justify-between gap-3 mb-1">
+                      <p className="text-sm text-gray-600">{q.question}</p>
+                      {typeof onNavigateToQuestion === 'function' && isProjectEditable && (
+                        <button
+                          type="button"
+                          onClick={() => onNavigateToQuestion(q.id)}
+                          className="flex items-center justify-center w-8 h-8 rounded-full border border-gray-200 text-gray-500 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 transition-colors hv-button hv-focus-ring"
+                          aria-label={`Modifier la réponse pour « ${q.question} »`}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                     <p className="font-semibold text-gray-900 whitespace-pre-line">
-                      {renderTextWithLinks(formatAnswer(q, answers[q.id]))}
+                      {renderTextWithLinks(displayValue || 'Information à compléter')}
                     </p>
                   </div>
-                ) : null
-              )}
+                );
+              })}
             </div>
             <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between bg-white rounded-lg p-4 border border-gray-200 hv-surface" role="status" aria-live="polite">
               <span className="font-medium text-gray-700">Niveau de complexité compliance :</span>
@@ -1076,6 +1126,12 @@ export const SynthesisReport = ({
               <Users className="w-6 h-6 mr-2 text-blue-600" />
               Équipes à solliciter ({relevantTeams.length})
             </h2>
+            {hasIncompleteAnswers && (
+              <div className="mb-4 flex items-start gap-3 rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
+                <Info className="mt-0.5 h-5 w-5" />
+                <p>En attente de l’ensemble des informations sur le projet pour une évaluation complète.</p>
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {relevantTeams.map(team => {
                 const teamPriority = getTeamPriority(analysis, team.id);
@@ -1134,6 +1190,12 @@ export const SynthesisReport = ({
                 <AlertTriangle className="w-6 h-6 mr-2 text-red-500" />
                 Risques identifiés ({analysis.risks.length})
               </h2>
+              {hasIncompleteAnswers && (
+                <div className="mb-4 flex items-start gap-3 rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
+                  <Info className="mt-0.5 h-5 w-5" />
+                  <p>En attente de l’ensemble des informations sur le projet pour une évaluation complète.</p>
+                </div>
+              )}
               <div className="space-y-3">
                 {analysis.risks.map((risk, idx) => {
                   const timingViolationMessage = formatRiskTimingViolation(risk.timingViolation);

@@ -26,7 +26,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.174';
+const APP_VERSION = 'v1.0.175';
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -462,6 +462,7 @@ export const App = () => {
   const [saveFeedback, setSaveFeedback] = useState(null);
   const [showcaseProjectContext, setShowcaseProjectContext] = useState(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [returnToSynthesisAfterEdit, setReturnToSynthesisAfterEdit] = useState(false);
   const [isOnboardingActive, setIsOnboardingActive] = useState(false);
   const [onboardingStepId, setOnboardingStepId] = useState(null);
   const [isTourGuideReady, setIsTourGuideReady] = useState(false);
@@ -1535,6 +1536,11 @@ export const App = () => {
     [unansweredMandatoryQuestions, activeQuestions]
   );
 
+  const hasIncompleteAnswers = useMemo(
+    () => activeQuestions.some(question => !isAnswerProvided(answers[question.id])),
+    [activeQuestions, answers]
+  );
+
   const teamLeadTeamOptions = useMemo(() => {
     const leadTeamQuestion = questions.find(question => question?.id === 'teamLeadTeam');
     if (!leadTeamQuestion || !Array.isArray(leadTeamQuestion.options)) {
@@ -1831,6 +1837,7 @@ export const App = () => {
     setValidationError(null);
     setActiveProjectId(null);
     setHasUnsavedChanges(false);
+    setReturnToSynthesisAfterEdit(false);
   }, [setHasUnsavedChanges]);
 
   const requestAdminAccess = useCallback(async () => {
@@ -1983,11 +1990,11 @@ export const App = () => {
         setCurrentQuestionIndex(nextIndex);
         setValidationError(null);
         setActiveProjectId(entry.id);
-        setScreen(hasPendingMandatory ? 'mandatory-summary' : 'synthesis');
+        setScreen('synthesis');
         setSaveFeedback({
           status: 'success',
           message: hasPendingMandatory
-            ? 'Projet importé. Complétez les questions obligatoires avant de consulter la synthèse.'
+            ? 'Projet importé. Le rapport compliance est disponible. Complétez les questions obligatoires avant de soumettre.'
             : 'Projet importé. Le rapport compliance est disponible.'
         });
         setHasUnsavedChanges(false);
@@ -2031,6 +2038,14 @@ export const App = () => {
     analyzeAnswers
   ]);
 
+  const navigateToSynthesis = useCallback(() => {
+    const result = analyzeAnswers(answers, rules, riskLevelRules, riskWeights);
+    setAnalysis(result);
+    setValidationError(null);
+    setReturnToSynthesisAfterEdit(false);
+    setScreen('synthesis');
+  }, [analyzeAnswers, answers, riskLevelRules, riskWeights, rules]);
+
   const handleNext = useCallback(() => {
     if (currentQuestionIndex < activeQuestions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
@@ -2038,31 +2053,8 @@ export const App = () => {
       return;
     }
 
-    const firstMissingId = unansweredMandatoryQuestions[0]?.id;
-    if (firstMissingId) {
-      const targetIndex = activeQuestions.findIndex(question => question.id === firstMissingId);
-      if (targetIndex >= 0) {
-        setCurrentQuestionIndex(targetIndex);
-      }
-      setValidationError(null);
-      setScreen('mandatory-summary');
-      return;
-    }
-
-    const result = analyzeAnswers(answers, rules, riskLevelRules, riskWeights);
-    setAnalysis(result);
-    setValidationError(null);
-    setScreen('synthesis');
-  }, [
-    activeQuestions,
-    analyzeAnswers,
-    answers,
-    currentQuestionIndex,
-    riskLevelRules,
-    riskWeights,
-    rules,
-    unansweredMandatoryQuestions
-  ]);
+    navigateToSynthesis();
+  }, [activeQuestions, currentQuestionIndex, navigateToSynthesis]);
 
   const handleBack = useCallback(() => {
     if (currentQuestionIndex > 0) {
@@ -2135,13 +2127,7 @@ export const App = () => {
     }
 
     if (!targetScreen) {
-      if (project.status === 'draft') {
-        targetScreen = 'questionnaire';
-      } else if (missingMandatory.length > 0) {
-        targetScreen = 'mandatory-summary';
-      } else {
-        targetScreen = 'synthesis';
-      }
+      targetScreen = project.status === 'draft' ? 'questionnaire' : 'synthesis';
     }
 
     setScreen(targetScreen);
@@ -2263,6 +2249,10 @@ export const App = () => {
       ? visibleQuestions.filter(question => isAnswerProvided(answersSource[question.id])).length
       : Object.keys(answersSource).length;
 
+    const hasShowcaseIncompleteAnswers = visibleQuestions.length > 0
+      ? visibleQuestions.some(question => !isAnswerProvided(answersSource[question.id]))
+      : Object.keys(answersSource).length === 0;
+
     const totalQuestions = visibleQuestions.length > 0
       ? visibleQuestions.length
       : project?.totalQuestions || questions.length || 0;
@@ -2293,7 +2283,8 @@ export const App = () => {
       analysis: computedAnalysis,
       relevantTeams: relevantTeamsList,
       questions: visibleQuestions.length > 0 ? visibleQuestions : questions,
-      timelineDetails: timelineDetailsList
+      timelineDetails: timelineDetailsList,
+      hasIncompleteAnswers: hasShowcaseIncompleteAnswers
     });
     previousScreenRef.current = screen;
     setScreen('showcase');
@@ -2570,12 +2561,21 @@ export const App = () => {
   ]);
 
   const handleSubmitProject = useCallback((payload = {}) => {
+    if (unansweredMandatoryQuestions.length > 0) {
+      setSaveFeedback({
+        status: 'error',
+        message: 'Impossible de soumettre : complétez les questions obligatoires avant l’envoi.'
+      });
+      setScreen('synthesis');
+      return null;
+    }
+
     const entry = handleSaveProject({ ...payload, status: 'submitted' });
     if (entry) {
       setValidationError(null);
       setScreen('home');
     }
-  }, [handleSaveProject]);
+  }, [handleSaveProject, unansweredMandatoryQuestions]);
 
   const handleSaveDraft = useCallback((payload = {}) => {
     const { lastQuestionIndex: payloadLastQuestionIndex, ...otherPayload } = payload || {};
@@ -2644,17 +2644,18 @@ export const App = () => {
     setScreen('questionnaire');
   }, [activeQuestions]);
 
-  const handleProceedToSynthesis = useCallback(() => {
-    if (unansweredMandatoryQuestions.length > 0) {
-      setScreen('mandatory-summary');
-      return;
-    }
+  const handleNavigateToQuestionFromReport = useCallback((questionId) => {
+    setReturnToSynthesisAfterEdit(true);
+    handleNavigateToQuestion(questionId);
+  }, [handleNavigateToQuestion]);
 
-    const result = analyzeAnswers(answers, rules, riskLevelRules, riskWeights);
-    setAnalysis(result);
-    setValidationError(null);
-    setScreen('synthesis');
-  }, [analyzeAnswers, answers, riskLevelRules, riskWeights, rules, unansweredMandatoryQuestions]);
+  const handleReturnToSynthesisFromQuestionnaire = useCallback(() => {
+    navigateToSynthesis();
+  }, [navigateToSynthesis]);
+
+  const handleProceedToSynthesis = useCallback(() => {
+    navigateToSynthesis();
+  }, [navigateToSynthesis]);
 
   return (
     <div className="min-h-screen">
@@ -2838,6 +2839,10 @@ export const App = () => {
             saveFeedback={saveFeedback}
             onDismissSaveFeedback={handleDismissSaveFeedback}
             validationError={validationError}
+            onReturnToSynthesis={
+              returnToSynthesisAfterEdit ? handleReturnToSynthesisFromQuestionnaire : undefined
+            }
+            isReturnToSynthesisRequested={returnToSynthesisAfterEdit}
             tourContext={tourContext}
           />
         ) : screen === 'mandatory-summary' ? (
@@ -2863,6 +2868,7 @@ export const App = () => {
             onBack={isActiveProjectEditable ? handleBackToQuestionnaire : undefined}
             onUpdateAnswers={isActiveProjectEditable ? handleUpdateAnswers : undefined}
             onSubmitProject={handleSubmitProject}
+            onNavigateToQuestion={handleNavigateToQuestionFromReport}
             isExistingProject={Boolean(activeProjectId)}
             onSaveDraft={
               isOnboardingActive
@@ -2874,6 +2880,7 @@ export const App = () => {
             saveFeedback={saveFeedback}
             onDismissSaveFeedback={handleDismissSaveFeedback}
             isAdminMode={isAdminMode}
+            hasIncompleteAnswers={hasIncompleteAnswers}
             tourContext={tourContext}
           />
         ) : screen === 'showcase' ? (
@@ -2895,6 +2902,7 @@ export const App = () => {
                 answers={showcaseProjectContext.answers}
                 timelineDetails={showcaseProjectContext.timelineDetails}
                 showcaseThemes={showcaseThemes}
+                hasIncompleteAnswers={Boolean(showcaseProjectContext.hasIncompleteAnswers)}
                 onUpdateAnswers={
                   isOnboardingActive
                     ? noop
