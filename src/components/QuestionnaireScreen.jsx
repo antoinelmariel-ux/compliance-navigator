@@ -13,6 +13,7 @@ import {
 import { formatAnswer } from '../utils/questions.js';
 import { normalizeConditionGroups } from '../utils/conditionGroups.js';
 import { renderTextWithLinks } from '../utils/linkify.js';
+import { RichTextEditor } from './RichTextEditor.jsx';
 
 const OPERATOR_LABELS = {
   equals: 'est égal à',
@@ -462,21 +463,19 @@ export const QuestionnaireScreen = ({
             <label className="block text-sm sm:text-base font-medium text-gray-700 mb-3" htmlFor={`${currentQuestion.id}-text`}>
               Renseignez votre réponse
             </label>
-            <input
-              type="text"
+            <RichTextEditor
+              id={`${currentQuestion.id}-text`}
               value={currentAnswer ?? ''}
-              onChange={(e) => onAnswer(currentQuestion.id, e.target.value)}
+              onChange={(nextValue) => onAnswer(currentQuestion.id, nextValue)}
               placeholder={
                 typeof currentQuestion.placeholder === 'string' && currentQuestion.placeholder.trim() !== ''
                   ? currentQuestion.placeholder.trim()
-                  : 'Saisissez une réponse en une ligne'
+                  : 'Saisissez une réponse enrichie (liens cliquables)'
               }
-              id={`${currentQuestion.id}-text`}
-              className="w-full px-4 py-2.5 sm:py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent hv-focus-ring"
+              compact
+              ariaLabel="Zone de réponse en texte libre"
             />
-            <p className="text-xs text-gray-500 mt-2">
-              Utilisez ce champ pour des réponses courtes sous forme de texte libre.
-            </p>
+            <p className="text-xs text-gray-500 mt-2">Utilisez ce champ pour des réponses courtes avec mise en forme.</p>
           </div>
         );
       case 'long_text':
@@ -485,21 +484,18 @@ export const QuestionnaireScreen = ({
             <label className="block text-sm sm:text-base font-medium text-gray-700 mb-3" htmlFor={`${currentQuestion.id}-long-text`}>
               Décrivez les éléments pertinents
             </label>
-            <textarea
+            <RichTextEditor
+              id={`${currentQuestion.id}-long-text`}
               value={currentAnswer ?? ''}
-              onChange={(e) => onAnswer(currentQuestion.id, e.target.value)}
+              onChange={(nextValue) => onAnswer(currentQuestion.id, nextValue)}
               placeholder={
                 typeof currentQuestion.placeholder === 'string' && currentQuestion.placeholder.trim() !== ''
                   ? currentQuestion.placeholder.trim()
-                  : 'Renseignez ici les informations détaillées...'
+                  : 'Renseignez ici les informations détaillées (liens HTML autorisés)'
               }
-              rows={5}
-              id={`${currentQuestion.id}-long-text`}
-              className="w-full px-4 py-2.5 sm:py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-y hv-focus-ring"
+              ariaLabel="Zone de texte long en édition riche"
             />
-            <p className="text-xs text-gray-500 mt-2">
-              Ce champ accepte plusieurs lignes : structurez votre réponse librement.
-            </p>
+            <p className="text-xs text-gray-500 mt-2">Ce champ accepte plusieurs lignes et vos liens restent cliquables.</p>
           </div>
         );
       case 'number': {
