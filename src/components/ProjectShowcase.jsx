@@ -20,11 +20,136 @@ const SHOWCASE_SECTION_OPTIONS = [
   { id: 'timeline', label: 'Feuille de route' }
 ];
 
-const buildDefaultLightSectionSelection = () =>
-  SHOWCASE_SECTION_OPTIONS.reduce((acc, section) => {
-    acc[section.id] = true;
+const SECTION_TEMPLATES = [
+  {
+    id: 'highlight',
+    name: 'Bloc mise en avant',
+    description: 'Un bandeau court pour mettre un chiffre ou une promesse clé en lumière.',
+    placeholder: {
+      title: 'Impact attendu',
+      description: 'Un message synthétique pour convaincre immédiatement.',
+      accent: 'Nouveau'
+    }
+  },
+  {
+    id: 'story',
+    name: 'Bloc narratif',
+    description: 'Un encart avec un titre et un texte riche pour raconter une étape clé.',
+    placeholder: {
+      title: 'Une histoire qui marque',
+      description: 'Ajoutez un paragraphe clair, des liens et des éléments de contexte.'
+    }
+  },
+  {
+    id: 'checklist',
+    name: 'Points d’attention',
+    description: 'Une liste courte pour détailler des livrables, risques ou actions à suivre.',
+    placeholder: {
+      title: 'Nos priorités',
+      description: 'Listez 3 à 5 éléments concrets à surveiller.',
+      items: ['Point clé #1', 'Point clé #2', 'Point clé #3']
+    }
+  }
+];
+
+const buildDefaultLightSectionSelection = (sectionIds = SHOWCASE_SECTION_OPTIONS.map(section => section.id)) =>
+  sectionIds.reduce((acc, sectionId) => {
+    acc[sectionId] = true;
     return acc;
   }, {});
+
+const sanitizeCustomSections = (rawSections) => {
+  if (!Array.isArray(rawSections)) {
+    return [];
+  }
+
+  return rawSections
+    .map((section, index) => {
+      if (!section || typeof section !== 'object') {
+        return null;
+      }
+
+      const id = typeof section.id === 'string' && section.id.trim().length > 0
+        ? section.id.trim()
+        : `custom-section-${index}`;
+
+      const title = typeof section.title === 'string' ? section.title.trim() : '';
+      const description = typeof section.description === 'string' ? section.description.trim() : '';
+      const accent = typeof section.accent === 'string' ? section.accent.trim() : '';
+      const items = Array.isArray(section.items)
+        ? section.items.map(item => (typeof item === 'string' ? item.trim() : '')).filter(Boolean)
+        : [];
+      const type = typeof section.type === 'string' ? section.type : SECTION_TEMPLATES[0].id;
+
+      if (!title && !description && items.length === 0) {
+        return null;
+      }
+
+      return {
+        id,
+        type,
+        title,
+        description,
+        accent,
+        items
+      };
+    })
+    .filter(Boolean);
+};
+
+const normalizeSectionOrder = (rawOrder, customSections) => {
+  const baseOrder = SHOWCASE_SECTION_OPTIONS.map(section => section.id);
+  const customIds = Array.isArray(customSections) ? customSections.map(section => section.id) : [];
+  const fallbackOrder = [...baseOrder, ...customIds];
+
+  if (!Array.isArray(rawOrder)) {
+    return fallbackOrder;
+  }
+
+  const knownIds = new Set(fallbackOrder);
+  const seen = new Set();
+  const normalized = [];
+
+  rawOrder.forEach(entry => {
+    if (typeof entry !== 'string' || !knownIds.has(entry) || seen.has(entry)) {
+      return;
+    }
+    normalized.push(entry);
+    seen.add(entry);
+  });
+
+  fallbackOrder.forEach(entry => {
+    if (!seen.has(entry)) {
+      normalized.push(entry);
+    }
+  });
+
+  return normalized;
+};
+
+const areCustomSectionsEqual = (previous, next) => {
+  if (!Array.isArray(previous) && !Array.isArray(next)) {
+    return true;
+  }
+
+  if (!Array.isArray(previous) || !Array.isArray(next) || previous.length !== next.length) {
+    return false;
+  }
+
+  return previous.every((entry, index) => {
+    const candidate = next[index];
+    if (!candidate) {
+      return false;
+    }
+
+    return entry.id === candidate.id
+      && entry.title === candidate.title
+      && entry.description === candidate.description
+      && entry.accent === candidate.accent
+      && JSON.stringify(entry.items || []) === JSON.stringify(candidate.items || [])
+      && entry.type === candidate.type;
+  });
+};
 
 const findQuestionById = (questions, id) => {
   if (!Array.isArray(questions)) {
@@ -1166,11 +1291,26 @@ export const ProjectShowcase = ({
   const [draftValues, setDraftValues] = useState(() =>
     buildDraftValues(editableFields, answers, rawProjectName)
   );
+  const [customSections, setCustomSections] = useState(() =>
+    sanitizeCustomSections(answers?.customShowcaseSections)
+  );
+  const [sectionOrder, setSectionOrder] = useState(() =>
+    normalizeSectionOrder(answers?.showcaseSectionOrder, sanitizeCustomSections(answers?.customShowcaseSections))
+  );
   const [milestoneDragState, setMilestoneDragState] = useState(createEmptyMilestoneDragState);
   const [displayMode, setDisplayMode] = useState('full');
-  const [lightSections, setLightSections] = useState(buildDefaultLightSectionSelection);
+  const [lightSections, setLightSections] = useState(() =>
+    buildDefaultLightSectionSelection(sectionOrder)
+  );
   const [pendingLightSections, setPendingLightSections] = useState(lightSections);
   const [isLightConfigOpen, setIsLightConfigOpen] = useState(false);
+  const [sectionDragState, setSectionDragState] = useState({ sourceIndex: null, targetIndex: null });
+  const [isSectionModalOpen, setIsSectionModalOpen] = useState(false);
+  const [sectionModalStep, setSectionModalStep] = useState('templates');
+  const [selectedTemplateIndex, setSelectedTemplateIndex] = useState(0);
+  const [pendingInsertionIndex, setPendingInsertionIndex] = useState(null);
+  const [sectionDraft, setSectionDraft] = useState({ title: '', description: '', accent: '', items: [] });
+  const [sectionDraftItemsText, setSectionDraftItemsText] = useState('');
 
   const resetMilestoneDragState = useCallback(() => {
     setMilestoneDragState(createEmptyMilestoneDragState());
@@ -1181,6 +1321,9 @@ export const ProjectShowcase = ({
       return;
     }
     setDraftValues(buildDraftValues(editableFields, answers, rawProjectName));
+    const sanitizedSections = sanitizeCustomSections(answers?.customShowcaseSections);
+    setCustomSections(sanitizedSections);
+    setSectionOrder(normalizeSectionOrder(answers?.showcaseSectionOrder, sanitizedSections));
   }, [answers, editableFields, isEditing, rawProjectName]);
 
   useEffect(() => {
@@ -1188,6 +1331,29 @@ export const ProjectShowcase = ({
       resetMilestoneDragState();
     }
   }, [isEditing, resetMilestoneDragState]);
+
+  useEffect(() => {
+    setLightSections(previous => {
+      const nextState = { ...previous };
+      let changed = false;
+
+      sectionOrder.forEach(id => {
+        if (nextState[id] === undefined) {
+          nextState[id] = true;
+          changed = true;
+        }
+      });
+
+      Object.keys(nextState).forEach(id => {
+        if (!sectionOrder.includes(id)) {
+          delete nextState[id];
+          changed = true;
+        }
+      });
+
+      return changed ? nextState : previous;
+    });
+  }, [sectionOrder]);
 
   const handleDisplayModeChange = useCallback((mode) => {
     if (mode === 'full' || mode === 'light') {
@@ -1220,6 +1386,105 @@ export const ProjectShowcase = ({
     setLightSections(pendingLightSections);
     setIsLightConfigOpen(false);
   }, [pendingLightSections]);
+
+  const sanitizedCustomSections = useMemo(
+    () => sanitizeCustomSections(customSections),
+    [customSections]
+  );
+
+  const customSectionMap = useMemo(() => {
+    const map = new Map();
+    sanitizedCustomSections.forEach(section => {
+      map.set(section.id, section);
+    });
+    return map;
+  }, [sanitizedCustomSections]);
+
+  const handleOpenSectionModal = useCallback((insertionIndex = null) => {
+    setPendingInsertionIndex(insertionIndex);
+    setSectionModalStep('templates');
+    setSectionDraft({ title: '', description: '', accent: '', items: [] });
+    setSectionDraftItemsText('');
+    setIsSectionModalOpen(true);
+  }, []);
+
+  const handleCloseSectionModal = useCallback(() => {
+    setIsSectionModalOpen(false);
+    setSectionModalStep('templates');
+    setPendingInsertionIndex(null);
+    setSectionDraft({ title: '', description: '', accent: '', items: [] });
+    setSectionDraftItemsText('');
+  }, []);
+
+  const handleTemplateNavigation = useCallback((direction) => {
+    setSelectedTemplateIndex(previous => {
+      const nextIndex = (previous + direction + SECTION_TEMPLATES.length) % SECTION_TEMPLATES.length;
+      return nextIndex;
+    });
+  }, []);
+
+  const handleConfirmTemplateChoice = useCallback(() => {
+    const template = SECTION_TEMPLATES[selectedTemplateIndex];
+    const placeholder = template?.placeholder || {};
+    setSectionDraft({
+      title: placeholder.title || '',
+      description: placeholder.description || '',
+      accent: placeholder.accent || '',
+      items: Array.isArray(placeholder.items) ? placeholder.items : []
+    });
+    setSectionDraftItemsText(Array.isArray(placeholder.items) ? placeholder.items.join('\n') : '');
+    setSectionModalStep('form');
+  }, [selectedTemplateIndex]);
+
+  const handleSectionDraftChange = useCallback((field, value) => {
+    setSectionDraft(previous => ({
+      ...previous,
+      [field]: value
+    }));
+  }, []);
+
+  const handleSectionDraftItemsChange = useCallback((value) => {
+    setSectionDraftItemsText(value);
+    const items = value
+      .split(/\r?\n/)
+      .map(entry => entry.trim())
+      .filter(Boolean);
+    setSectionDraft(previous => ({
+      ...previous,
+      items
+    }));
+  }, []);
+
+  const handleSubmitNewSection = useCallback((event) => {
+    event.preventDefault();
+    const template = SECTION_TEMPLATES[selectedTemplateIndex];
+    const safeTemplateId = template?.id || SECTION_TEMPLATES[0].id;
+    const newSectionId = `custom-section-${Date.now()}`;
+
+    const newSection = {
+      id: newSectionId,
+      type: safeTemplateId,
+      title: sectionDraft.title?.trim() || template?.name || 'Nouvelle section',
+      description: sectionDraft.description?.trim() || '',
+      accent: sectionDraft.accent?.trim() || '',
+      items: Array.isArray(sectionDraft.items) ? sectionDraft.items : []
+    };
+
+    setCustomSections(previous => [...sanitizeCustomSections(previous), newSection]);
+    setSectionOrder(previousOrder => {
+      const base = Array.isArray(previousOrder) ? [...previousOrder] : [];
+      const insertionIndex = typeof pendingInsertionIndex === 'number'
+        ? Math.max(0, Math.min(base.length, pendingInsertionIndex))
+        : base.length;
+      base.splice(insertionIndex, 0, newSectionId);
+      return normalizeSectionOrder(base, [...sanitizeCustomSections(customSections), newSection]);
+    });
+    handleCloseSectionModal();
+  }, [customSections, handleCloseSectionModal, pendingInsertionIndex, sectionDraft, selectedTemplateIndex]);
+
+  const handleBackToTemplates = useCallback(() => {
+    setSectionModalStep('templates');
+  }, []);
 
   useEffect(() => {
     if (!tourContext?.isActive) {
@@ -1302,6 +1567,9 @@ export const ProjectShowcase = ({
   const handleCancelEditing = useCallback(() => {
     setDraftValues(buildDraftValues(editableFields, answers, rawProjectName));
     setIsEditing(false);
+    const sanitizedSections = sanitizeCustomSections(answers?.customShowcaseSections);
+    setCustomSections(sanitizedSections);
+    setSectionOrder(normalizeSectionOrder(answers?.showcaseSectionOrder, sanitizedSections));
   }, [answers, editableFields, rawProjectName]);
 
   const handleFieldChange = useCallback((fieldId, valueOrUpdater) => {
@@ -1321,6 +1589,75 @@ export const ProjectShowcase = ({
       };
     });
   }, []);
+
+  const handleRemoveCustomSection = useCallback((sectionId) => {
+    setCustomSections(previous => previous.filter(section => section.id !== sectionId));
+    setSectionOrder(previous => previous.filter(entry => entry !== sectionId));
+  }, []);
+
+  const handleSectionDragStart = useCallback((index, event) => {
+    if (event?.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      try {
+        event.dataTransfer.setData('text/plain', String(index));
+      } catch (_error) {
+        // Certains navigateurs bloquent l'écriture : on ignore.
+      }
+    }
+    setSectionDragState({ sourceIndex: index, targetIndex: index });
+  }, []);
+
+  const handleSectionDragEnter = useCallback((index) => {
+    setSectionDragState(previous => {
+      if (previous.sourceIndex === null || previous.targetIndex === index) {
+        return previous;
+      }
+      return { ...previous, targetIndex: index };
+    });
+  }, []);
+
+  const handleSectionDragLeave = useCallback((index, event) => {
+    if (event?.currentTarget?.contains(event?.relatedTarget)) {
+      return;
+    }
+    setSectionDragState(previous => {
+      if (previous.targetIndex !== index) {
+        return previous;
+      }
+      return { ...previous, targetIndex: previous.sourceIndex };
+    });
+  }, []);
+
+  const handleSectionDragOver = useCallback((event) => {
+    if (sectionDragState.sourceIndex !== null) {
+      event.preventDefault();
+      if (event?.dataTransfer) {
+        event.dataTransfer.dropEffect = 'move';
+      }
+    }
+  }, [sectionDragState.sourceIndex]);
+
+  const handleSectionDrop = useCallback((index, event) => {
+    if (sectionDragState.sourceIndex === null) {
+      return;
+    }
+    event.preventDefault();
+    const sourceIndex = Math.max(0, Math.min(sectionOrder.length - 1, sectionDragState.sourceIndex));
+    const targetIndex = Math.max(0, Math.min(sectionOrder.length - 1, index));
+
+    if (sourceIndex === targetIndex) {
+      setSectionDragState({ sourceIndex: null, targetIndex: null });
+      return;
+    }
+
+    setSectionOrder(previous => {
+      const next = [...previous];
+      const [removed] = next.splice(sourceIndex, 1);
+      next.splice(targetIndex, 0, removed);
+      return next;
+    });
+    setSectionDragState({ sourceIndex: null, targetIndex: null });
+  }, [sectionDragState.sourceIndex, sectionOrder.length]);
 
   const handleSubmitEdit = useCallback(
     (event) => {
@@ -1356,13 +1693,29 @@ export const ProjectShowcase = ({
         updates[id] = formatValueForUpdate(type, nextValue);
       });
 
+      const previousCustomSections = sanitizeCustomSections(answers?.customShowcaseSections);
+      const nextCustomSections = sanitizeCustomSections(customSections);
+      const previousSectionOrder = normalizeSectionOrder(answers?.showcaseSectionOrder, previousCustomSections);
+      const nextSectionOrder = normalizeSectionOrder(sectionOrder, nextCustomSections);
+
+      if (!areCustomSectionsEqual(previousCustomSections, nextCustomSections)) {
+        updates.customShowcaseSections = nextCustomSections;
+      }
+
+      if (!areCustomSectionsEqual(
+        previousSectionOrder.map(id => ({ id })),
+        nextSectionOrder.map(id => ({ id }))
+      )) {
+        updates.showcaseSectionOrder = nextSectionOrder;
+      }
+
       if (Object.keys(updates).length > 0) {
         onUpdateAnswers(updates);
       }
 
       setIsEditing(false);
     },
-    [answers, canEdit, draftValues, editableFields, onUpdateAnswers]
+    [answers, canEdit, customSections, draftValues, editableFields, onUpdateAnswers, sectionOrder]
   );
 
   const missingShowcaseQuestions = useMemo(() => {
@@ -1591,346 +1944,462 @@ export const ProjectShowcase = ({
     runway || hasTimelineSummaries || hasManualMilestones || hasTimelineProfiles || hasVigilanceAlerts
   );
 
-  const previewContent = shouldShowPreview ? (
-    <div className="aurora-sections" data-tour-id="showcase-preview">
-      {hasIncompleteAnswers && shouldDisplaySection('notice') && (
-        <section className="aurora-section" data-showcase-section="notice">
-          <div className="aurora-section__inner aurora-section__inner--narrow">
-            <div className="rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
-              En attente de l’ensemble des informations sur le projet pour une évaluation complète.
-            </div>
-          </div>
-        </section>
-      )}
-      {shouldDisplaySection('hero') && (
-        <section
-          className="aurora-section aurora-hero"
-          data-showcase-section="hero"
-          data-tour-id="showcase-hero"
-        >
-          <div className="aurora-section__inner">
-            <div className="aurora-hero__copy">
+  const renderBaseSection = useCallback((sectionId, index) => {
+    if (!shouldDisplaySection(sectionId)) {
+      return null;
+    }
 
-              <h1 className="aurora-hero__title">{safeProjectName}</h1>
-              {hasText(slogan) && (
-                <p className="aurora-hero__subtitle">{renderTextWithLinks(slogan)}</p>
-              )}
-              <div className="aurora-cta-group">
-                <button type="button" className="aurora-cta">Découvrir le projet</button>
+    switch (sectionId) {
+      case 'notice':
+        if (!hasIncompleteAnswers) {
+          return null;
+        }
+        return (
+          <section key={`${sectionId}-${index}`} className="aurora-section" data-showcase-section="notice">
+            <div className="aurora-section__inner aurora-section__inner--narrow">
+              <div className="rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
+                En attente de l’ensemble des informations sur le projet pour une évaluation complète.
               </div>
             </div>
-            {heroHighlights.length > 0 && (
-              <div className="aurora-hero__highlights">
-                {heroHighlights.map((highlight, index) => (
-                  <div
-                    key={highlight.id}
-                    className="aurora-hero-highlight"
-                    style={{ animationDelay: `${index * 0.15}s` }}
-                  >
-                    <p className="aurora-hero-highlight__label">{highlight.label}</p>
-                    <p className="aurora-hero-highlight__value">{highlight.value}</p>
-                    <p className="aurora-hero-highlight__caption">{highlight.caption}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-
-      {shouldDisplaySection('problem') && (
-        <section className="aurora-section aurora-why" data-showcase-section="problem">
-          <div className="aurora-section__inner aurora-section__inner--narrow">
-            <div className="aurora-section__header">
-              <p className="aurora-eyebrow">Le problème</p>
-              <h2 className="aurora-section__title">Pourquoi ce projet doit exister</h2>
-            </div>
-            {problemPainPoints.length > 0 && (
-              <div className="aurora-why__points">
-                {problemPainPoints.map((point, index) => (
-                  <div
-                    key={`${point}-${index}`}
-                    className="aurora-why__point"
-                    style={{ animationDelay: `${index * 0.12 + 0.1}s` }}
-                  >
-                    <span className="aurora-why__beam" />
-                    <span className="aurora-why__text">{renderTextWithLinks(point)}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-
-      {shouldDisplaySection('solution') && (
-        <section className="aurora-section aurora-response" data-showcase-section="solution">
-          <div className="aurora-section__inner">
-            <div className="aurora-section__header aurora-section__header--split">
-              <div>
-                <p className="aurora-eyebrow">Notre solution</p>
-                <h2 className="aurora-section__title">Comment nous changeons la donne</h2>
-              </div>
-            </div>
-            <div className="aurora-pillars">
-              {hasText(solutionDescription) && (
-                <div className="aurora-pillar">
-                  <h3 className="aurora-pillar__title">En clair</h3>
-                  <p className="aurora-pillar__text">{renderTextWithLinks(solutionDescription)}</p>
+          </section>
+        );
+      case 'hero':
+        return (
+          <section
+            key={`${sectionId}-${index}`}
+            className="aurora-section aurora-hero"
+            data-showcase-section="hero"
+            data-tour-id="showcase-hero"
+          >
+            <div className="aurora-section__inner">
+              <div className="aurora-hero__copy">
+                <h1 className="aurora-hero__title">{safeProjectName}</h1>
+                {hasText(slogan) && (
+                  <p className="aurora-hero__subtitle">{renderTextWithLinks(slogan)}</p>
+                )}
+                <div className="aurora-cta-group">
+                  <button type="button" className="aurora-cta">Découvrir le projet</button>
                 </div>
-              )}
-              {solutionBenefits.length > 0 && (
-                <div className="aurora-pillar">
-                  <h3 className="aurora-pillar__title">Bénéfices clefs</h3>
-                  <ul className="aurora-pillar__list">
-                    {solutionBenefits.map((benefit, index) => (
-                      <li key={`${benefit}-${index}`} className="aurora-pillar__item">
-                        <span className="aurora-pillar__bullet" />
-                        <span>{renderTextWithLinks(benefit)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {hasText(solutionComparison) && (
-                <div className="aurora-pillar">
-                  <h3 className="aurora-pillar__title">Pourquoi c'est différent</h3>
-                  <p className="aurora-pillar__text">{renderTextWithLinks(solutionComparison)}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {shouldDisplaySection('innovation') && (hasText(innovationProcess) || hasText(visionStatement)) && (
-        <section className="aurora-section aurora-difference" data-showcase-section="innovation">
-          <div className="aurora-section__inner">
-            <div className="aurora-section__header aurora-section__header--split">
-              <div>
-                <p className="aurora-eyebrow">Notre impact</p>
-                <h2 className="aurora-section__title">Délivrer le maximum de valeur</h2>
               </div>
-            </div>
-            <div className="aurora-difference__layout">
-              {hasText(innovationProcess) && (
-                <div className="aurora-difference__text">
-                  <div className="aurora-difference__text-section">
-                    <p className="aurora-eyebrow">Objectifs</p>
-                    <div className="aurora-difference__text-content">
-                      {renderTextWithLinks(innovationProcess)}
+              {heroHighlights.length > 0 && (
+                <div className="aurora-hero__highlights">
+                  {heroHighlights.map((highlight, highlightIndex) => (
+                    <div
+                      key={highlight.id}
+                      className="aurora-hero-highlight"
+                      style={{ animationDelay: `${highlightIndex * 0.15}s` }}
+                    >
+                      <p className="aurora-hero-highlight__label">{highlight.label}</p>
+                      <p className="aurora-hero-highlight__value">{highlight.value}</p>
+                      <p className="aurora-hero-highlight__caption">{highlight.caption}</p>
                     </div>
-                  </div>
+                  ))}
                 </div>
               )}
-              {(visionStatementEntries.length > 0 || hasText(visionStatement)) && (
-                <div className="aurora-difference__metrics">
-                  <p className="aurora-eyebrow">KPIs</p>
-                  {visionStatementEntries.length > 0 ? (
-                    <ul className="aurora-difference__metrics-list">
-                      {visionStatementEntries.map((entry, index) => (
-                        <li key={`kpi-${index}`} className="aurora-difference__metrics-item">
-                          <span className="aurora-difference__metrics-bullet" />
+            </div>
+          </section>
+        );
+      case 'problem':
+        return (
+          <section key={`${sectionId}-${index}`} className="aurora-section aurora-why" data-showcase-section="problem">
+            <div className="aurora-section__inner aurora-section__inner--narrow">
+              <div className="aurora-section__header">
+                <p className="aurora-eyebrow">Le problème</p>
+                <h2 className="aurora-section__title">Pourquoi ce projet doit exister</h2>
+              </div>
+              {problemPainPoints.length > 0 && (
+                <div className="aurora-why__points">
+                  {problemPainPoints.map((point, pointIndex) => (
+                    <div
+                      key={`${point}-${pointIndex}`}
+                      className="aurora-why__point"
+                      style={{ animationDelay: `${pointIndex * 0.12 + 0.1}s` }}
+                    >
+                      <span className="aurora-why__beam" />
+                      <span className="aurora-why__text">{renderTextWithLinks(point)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        );
+      case 'solution':
+        return (
+          <section key={`${sectionId}-${index}`} className="aurora-section aurora-response" data-showcase-section="solution">
+            <div className="aurora-section__inner">
+              <div className="aurora-section__header aurora-section__header--split">
+                <div>
+                  <p className="aurora-eyebrow">Notre solution</p>
+                  <h2 className="aurora-section__title">Comment nous changeons la donne</h2>
+                </div>
+              </div>
+              <div className="aurora-pillars">
+                {hasText(solutionDescription) && (
+                  <div className="aurora-pillar">
+                    <h3 className="aurora-pillar__title">En clair</h3>
+                    <p className="aurora-pillar__text">{renderTextWithLinks(solutionDescription)}</p>
+                  </div>
+                )}
+                {solutionBenefits.length > 0 && (
+                  <div className="aurora-pillar">
+                    <h3 className="aurora-pillar__title">Bénéfices clefs</h3>
+                    <ul className="aurora-pillar__list">
+                      {solutionBenefits.map((benefit, benefitIndex) => (
+                        <li key={`${benefit}-${benefitIndex}`} className="aurora-pillar__item">
+                          <span className="aurora-pillar__bullet" />
+                          <span>{renderTextWithLinks(benefit)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {hasText(solutionComparison) && (
+                  <div className="aurora-pillar">
+                    <h3 className="aurora-pillar__title">Pourquoi c'est différent</h3>
+                    <p className="aurora-pillar__text">{renderTextWithLinks(solutionComparison)}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+        );
+      case 'innovation':
+        if (!hasText(innovationProcess) && !hasText(visionStatement)) {
+          return null;
+        }
+        return (
+          <section key={`${sectionId}-${index}`} className="aurora-section aurora-difference" data-showcase-section="innovation">
+            <div className="aurora-section__inner">
+              <div className="aurora-section__header aurora-section__header--split">
+                <div>
+                  <p className="aurora-eyebrow">Notre impact</p>
+                  <h2 className="aurora-section__title">Délivrer le maximum de valeur</h2>
+                </div>
+                {hasText(budgetEstimate) && (
+                  <div className="aurora-card aurora-card--budget" data-tour-id="showcase-budget">
+                    <p className="aurora-eyebrow">Budget estimé</p>
+                    <p className="aurora-card__metric">{formattedBudgetEstimate} K€</p>
+                    <p className="aurora-card__caption">Prévision globale sur 12 mois.</p>
+                  </div>
+                )}
+              </div>
+              <div className="aurora-difference__grid">
+                {hasText(innovationProcess) && (
+                  <div className="aurora-difference__item">
+                    <p className="aurora-eyebrow">Comment on s'y prend</p>
+                    <h3 className="aurora-difference__title">Processus & expérimentation</h3>
+                    <p className="aurora-difference__text">{renderTextWithLinks(innovationProcess)}</p>
+                  </div>
+                )}
+                {visionStatementEntries.length > 0 && (
+                  <div className="aurora-difference__item">
+                    <p className="aurora-eyebrow">Indicateurs de valeur</p>
+                    <h3 className="aurora-difference__title">Comment nous mesurons l'impact</h3>
+                    <ul className="aurora-difference__list">
+                      {visionStatementEntries.map((entry, entryIndex) => (
+                        <li key={`${entry}-${entryIndex}`} className="aurora-difference__list-item">
+                          <span className="aurora-difference__bullet" />
                           <span>{renderTextWithLinks(entry)}</span>
                         </li>
                       ))}
                     </ul>
-                  ) : (
-                    <div className="aurora-difference__metrics-text">
-                      {renderTextWithLinks(visionStatement)}
-                    </div>
-                  )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+        );
+      case 'team':
+        if (!hasText(teamLead) && !hasText(teamLeadTeam) && teamCoreMembers.length === 0) {
+          return null;
+        }
+        return (
+          <section key={`${sectionId}-${index}`} className="aurora-section aurora-alliances" data-showcase-section="team">
+            <div className="aurora-section__inner">
+              <div className="aurora-section__header aurora-section__header--split">
+                <div>
+                  <p className="aurora-eyebrow">Équipe & alliances</p>
+                  <h2 className="aurora-section__title">Qui porte et sécurise le projet</h2>
                 </div>
-              )}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {shouldDisplaySection('team') && (
-        <section className="aurora-section aurora-team" data-showcase-section="team">
-          <div className="aurora-section__inner">
-            <div className="aurora-section__header">
-              <p className="aurora-eyebrow">Équipe & alliances</p>
-              <h2 className="aurora-section__title">L'équipe derrière le projet</h2>
-            </div>
-            <div className="aurora-team__layout">
-              <div className="aurora-team__lead">
+              </div>
+              <div className="aurora-alliances__grid">
                 {hasText(teamLead) && (
-                  <div className="aurora-team__lead-info">
-                    <p className="aurora-team__lead-label">Lead du projet</p>
-                    <p className="aurora-team__lead-name">{renderTextWithLinks(teamLead)}</p>
+                  <div className="aurora-alliances__item">
+                    <p className="aurora-eyebrow">Pilotage</p>
+                    <h3 className="aurora-alliances__title">{teamLead}</h3>
                     {hasText(teamLeadTeam) && (
-                      <p className="aurora-team__lead-team">{`Équipe : ${teamLeadTeam}`}</p>
+                      <p className="aurora-alliances__caption">{teamLeadTeam}</p>
                     )}
                   </div>
                 )}
-              </div>
-              {teamMemberCards.length > 0 && (
-                <div className="aurora-team__members">
-                  <p className="aurora-team__members-label">Équipe projet</p>
-                  <div className="aurora-team__carousel">
-                    {teamMemberCards.map((member, index) => (
-                      <div
-                        key={member.id}
-                        className="aurora-team__card"
-                        style={{ animationDelay: `${index * 0.08}s` }}
-                      >
-                        <span className="aurora-team__avatar">{member.initials}</span>
-                        <div className="aurora-team__card-text">
-                          <p className="aurora-team__card-name">{member.name}</p>
-                          <p className="aurora-team__card-role">
-                            {member.details
-                              ? renderTextWithLinks(member.details)
-                              : renderTextWithLinks(member.fullText)}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
+                {teamCoreMembers.length > 0 && (
+                  <div className="aurora-alliances__item">
+                    <p className="aurora-eyebrow">Équipe cœur</p>
+                    <ul className="aurora-alliances__list">
+                      {teamCoreMembers.map((member, memberIndex) => (
+                        <li key={`${member}-${memberIndex}`} className="aurora-alliances__list-item">
+                          <span className="aurora-alliances__badge" />
+                          <span>{renderTextWithLinks(member)}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                </div>
-              )}
-            </div>
-            {normalizedTeams.length > 0 && (
-              <div className="aurora-partners">
-                {normalizedTeams.map(team => (
-                  <div key={team.id} className="aurora-partner">
-                    <span className="aurora-partner__name">{team.name}</span>
-                    {team.expertise && <span className="aurora-partner__role">{team.expertise}</span>}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-
-      {hasTimelineSection && shouldDisplaySection('timeline') && (
-        <section
-          className="aurora-section aurora-roadmap"
-          data-showcase-section="timeline"
-          data-tour-id="showcase-preview-bottom"
-        >
-          <div className="aurora-section__inner">
-            <div className="aurora-section__header aurora-section__header--split">
-              <div>
-                <p className="aurora-eyebrow">Feuille de route</p>
-                <h2 className="aurora-section__title">Les prochains jalons</h2>
-              </div>
-              {hasText(formattedBudgetEstimate) && (
-                <div className="aurora-roadmap__budget">
-                  <p className="aurora-roadmap__budget-label">Budget estimé</p>
-                  <p className="aurora-roadmap__budget-value">{formattedBudgetEstimate}</p>
-                  <p className="aurora-roadmap__budget-caption">Montant total projeté pour l'initiative.</p>
-                </div>
-              )}
-            </div>
-            {runway && (
-              <p className="aurora-roadmap__intro">
-                {runway.isOverdue ? (
-                  <>Le lancement prévu le {runway.launchLabel} a déjà eu lieu.</>
-                ) : runway.isToday ? (
-                  <>Dernière ligne droite : lancement aujourd'hui ({runway.launchLabel}).</>
-                ) : (
-                  <>
-                    Compte à rebours : <span>{runway.weeksLabel}</span> ({runway.daysLabel}) avant le lancement prévu le {runway.launchLabel}.
-                  </>
                 )}
-              </p>
-            )}
-            {hasTimelineSummaries && (
-              timelineSummariesToDisplay.map((summary, index) => {
-                const summaryRuleLabel = summary?.alert?.ruleName || summary?.ruleName;
-                const alertTitle = summary?.alert?.title;
-
-                return (
-                  <div
-                    key={summary.id || `timeline-summary-${index}`}
-                    className={`aurora-roadmap__summary ${
-                      summary.satisfied
-                        ? 'aurora-roadmap__summary--ok'
-                        : 'aurora-roadmap__summary--alert'
-                    }`}
-                    style={{ animationDelay: `${index * 0.08}s` }}
-                  >
-                    {summaryRuleLabel && (
-                      <p className="aurora-roadmap__label">
-                        {renderTextWithLinks(summaryRuleLabel)}
-                      </p>
-                    )}
-                    {alertTitle && (
-                      <p className="aurora-roadmap__summary-title">
-                        {renderTextWithLinks(alertTitle)}
-                      </p>
-                    )}
-                    {summary.satisfied && (
-                      <>
-                        <p className="aurora-roadmap__value">{summary.weeks} semaines ({summary.days} jours)</p>
-                        <p className="aurora-roadmap__caption">Runway conforme aux exigences identifiées.</p>
-                      </>
-                    )}
-                    {summary.alert?.requirementSummary && (
-                      <p className="aurora-roadmap__summary-detail">
-                        {renderTextWithLinks(summary.alert.requirementSummary)}
-                      </p>
-                    )}
-                    {summary.alert?.statusMessage && (
-                      <p className="aurora-roadmap__summary-detail aurora-roadmap__summary-detail--status">
-                        {renderTextWithLinks(summary.alert.statusMessage)}
-                      </p>
-                    )}
-                    {summary.alert?.teamLabel && (
-                      <p className="aurora-roadmap__summary-team">Équipe référente : {summary.alert.teamLabel}</p>
-                    )}
-                  </div>
-                );
-              })
-            )}
-            {hasVigilanceAlerts && (
-              <div className="aurora-roadmap__watchpoints">
-                {unmatchedVigilanceAlerts.map((alert, index) => (
-                  <div
-                    key={alert.id}
-                    className={`aurora-roadmap__watchpoint aurora-roadmap__watchpoint--${alert.status}`}
-                    style={{ animationDelay: `${index * 0.08}s` }}
-                  >
-                    <p className="aurora-roadmap__watchpoint-eyebrow">{alert.ruleName}</p>
-                    <p className="aurora-roadmap__watchpoint-title">{renderTextWithLinks(alert.title)}</p>
-                    {alert.requirementSummary && (
-                      <p className="aurora-roadmap__watchpoint-text">{alert.requirementSummary}</p>
-                    )}
-                    {alert.statusMessage && (
-                      <p className="aurora-roadmap__watchpoint-caption">{alert.statusMessage}</p>
-                    )}
-                    {alert.teamLabel && (
-                      <p className="aurora-roadmap__watchpoint-team">Équipe référente : {alert.teamLabel}</p>
-                    )}
-                  </div>
-                ))}
               </div>
-            )}
-            {hasTimelineEntries && (
-              <ul className="aurora-roadmap__timeline">
-                {timelineEntries.map((entry, index) => (
-                  <li
-                    key={entry.id || `timeline-entry-${index}`}
-                    className="aurora-roadmap__step"
-                    style={{ animationDelay: `${index * 0.1}s` }}
-                  >
-                    <span className="aurora-roadmap__node" />
-                    <div>
-                      <p className="aurora-roadmap__label">{entry.label}</p>
-                      {entry.description && (
-                        <p className="aurora-roadmap__caption">{renderTextWithLinks(entry.description)}</p>
+            </div>
+          </section>
+        );
+      case 'timeline':
+        if (!hasTimelineSection) {
+          return null;
+        }
+        return (
+          <section
+            key={`${sectionId}-${index}`}
+            className="aurora-section aurora-roadmap"
+            data-showcase-section="timeline"
+            data-tour-id="showcase-roadmap"
+          >
+            <div className="aurora-section__inner">
+              <div className="aurora-section__header aurora-section__header--split">
+                <div>
+                  <p className="aurora-eyebrow">Feuille de route</p>
+                  <h2 className="aurora-section__title">Les étapes clés pour livrer</h2>
+                </div>
+                {hasText(runway?.launchLabel) && (
+                  <div className="aurora-chip aurora-chip--tone">
+                    <span className="aurora-chip__dot" />
+                    {runway.launchLabel}
+                  </div>
+                )}
+              </div>
+              {runway && (
+                <p className="aurora-roadmap__intro">
+                  {runway.isOverdue ? (
+                    <>Le lancement prévu le {runway.launchLabel} a déjà eu lieu.</>
+                  ) : runway.isToday ? (
+                    <>Dernière ligne droite : lancement aujourd'hui ({runway.launchLabel}).</>
+                  ) : (
+                    <>
+                      Compte à rebours : <span>{runway.weeksLabel}</span> ({runway.daysLabel}) avant le lancement prévu le {runway.launchLabel}.
+                    </>
+                  )}
+                </p>
+              )}
+              {hasTimelineSummaries && (
+                timelineSummariesToDisplay.map((summary, summaryIndex) => {
+                  const summaryRuleLabel = summary?.alert?.ruleName || summary?.ruleName;
+                  const alertTitle = summary?.alert?.title;
+
+                  return (
+                    <div
+                      key={summary.id || `timeline-summary-${summaryIndex}`}
+                      className={`${
+                        summary.satisfied
+                          ? 'aurora-roadmap__summary aurora-roadmap__summary--ok'
+                          : 'aurora-roadmap__summary aurora-roadmap__summary--alert'
+                      }`}
+                      style={{ animationDelay: `${summaryIndex * 0.08}s` }}
+                    >
+                      {summaryRuleLabel && (
+                        <p className="aurora-roadmap__label">
+                          {renderTextWithLinks(summaryRuleLabel)}
+                        </p>
+                      )}
+                      {alertTitle && (
+                        <p className="aurora-roadmap__summary-title">
+                          {renderTextWithLinks(alertTitle)}
+                        </p>
+                      )}
+                      {summary.satisfied && (
+                        <>
+                          <p className="aurora-roadmap__value">{summary.weeks} semaines ({summary.days} jours)</p>
+                          <p className="aurora-roadmap__caption">Runway conforme aux exigences identifiées.</p>
+                        </>
+                      )}
+                      {summary.alert?.requirementSummary && (
+                        <p className="aurora-roadmap__summary-detail">
+                          {renderTextWithLinks(summary.alert.requirementSummary)}
+                        </p>
+                      )}
+                      {summary.alert?.statusMessage && (
+                        <p className="aurora-roadmap__summary-detail aurora-roadmap__summary-detail--status">
+                          {renderTextWithLinks(summary.alert.statusMessage)}
+                        </p>
+                      )}
+                      {summary.alert?.teamLabel && (
+                        <p className="aurora-roadmap__summary-team">Équipe référente : {summary.alert.teamLabel}</p>
                       )}
                     </div>
-                  </li>
-                ))}
-              </ul>
-            )}
+                  );
+                })
+              )}
+              {hasVigilanceAlerts && (
+                <div className="aurora-roadmap__watchpoints">
+                  {unmatchedVigilanceAlerts.map((alert, alertIndex) => (
+                    <div
+                      key={alert.id}
+                      className={`aurora-roadmap__watchpoint aurora-roadmap__watchpoint--${alert.status}`}
+                      style={{ animationDelay: `${alertIndex * 0.08}s` }}
+                    >
+                      <p className="aurora-roadmap__watchpoint-eyebrow">{alert.ruleName}</p>
+                      <p className="aurora-roadmap__watchpoint-title">{renderTextWithLinks(alert.title)}</p>
+                      {alert.requirementSummary && (
+                        <p className="aurora-roadmap__watchpoint-text">{alert.requirementSummary}</p>
+                      )}
+                      {alert.statusMessage && (
+                        <p className="aurora-roadmap__watchpoint-caption">{alert.statusMessage}</p>
+                      )}
+                      {alert.teamLabel && (
+                        <p className="aurora-roadmap__watchpoint-team">Équipe référente : {alert.teamLabel}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {hasTimelineEntries && (
+                <ul className="aurora-roadmap__timeline">
+                  {timelineEntries.map((entry, entryIndex) => (
+                    <li
+                      key={entry.id || `timeline-entry-${entryIndex}`}
+                      className="aurora-roadmap__step"
+                      style={{ animationDelay: `${entryIndex * 0.1}s` }}
+                    >
+                      <span className="aurora-roadmap__node" />
+                      <div>
+                        <p className="aurora-roadmap__label">{entry.label}</p>
+                        {entry.description && (
+                          <p className="aurora-roadmap__caption">{renderTextWithLinks(entry.description)}</p>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </section>
+        );
+      default:
+        return null;
+    }
+  }, [
+    formattedBudgetEstimate,
+    hasIncompleteAnswers,
+    hasText,
+    hasTimelineEntries,
+    hasTimelineSection,
+    hasTimelineSummaries,
+    heroHighlights,
+    innovationProcess,
+    problemPainPoints,
+    runway,
+    shouldDisplaySection,
+    solutionBenefits,
+    solutionComparison,
+    solutionDescription,
+    teamCoreMembers,
+    teamLead,
+    teamLeadTeam,
+    timelineEntries,
+    timelineSummariesToDisplay,
+    unmatchedVigilanceAlerts,
+    visionStatement,
+    visionStatementEntries,
+    slogan,
+    safeProjectName
+  ]);
+
+  const renderCustomSection = useCallback((section, index) => {
+    if (!section) {
+      return null;
+    }
+
+    return (
+      <section
+        key={section.id}
+        className="aurora-section aurora-section--custom"
+        data-showcase-section={section.type || 'custom'}
+      >
+        <div className="aurora-section__inner aurora-section__inner--narrow">
+          <div className="aurora-section__header aurora-section__header--split">
+            <div>
+              <p className="aurora-eyebrow">{section.accent || 'Section additionnelle'}</p>
+              <h2 className="aurora-section__title">{section.title}</h2>
+            </div>
+            <div className="aurora-chip aurora-chip--ghost">Bloc personnalisé #{index + 1}</div>
           </div>
-        </section>
-      )}
+          {section.description && (
+            <p className="aurora-body-text">{renderTextWithLinks(section.description)}</p>
+          )}
+          {Array.isArray(section.items) && section.items.length > 0 && (
+            <ul className="mt-4 space-y-3">
+              {section.items.map((item, itemIndex) => (
+                <li key={`${section.id}-item-${itemIndex}`} className="flex items-start gap-3">
+                  <span className="mt-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-teal-400 text-xs font-semibold text-white">
+                    {itemIndex + 1}
+                  </span>
+                  <span className="text-base text-gray-800">{renderTextWithLinks(item)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </section>
+    );
+  }, []);
+
+  const orderedSections = useMemo(() => {
+    const sections = [];
+    sectionOrder.forEach((sectionId, index) => {
+      if (!shouldDisplaySection(sectionId)) {
+        return;
+      }
+
+      if (customSectionMap.has(sectionId)) {
+        const renderedCustom = renderCustomSection(customSectionMap.get(sectionId), index);
+        if (renderedCustom) {
+          sections.push(renderedCustom);
+        }
+        return;
+      }
+
+      const rendered = renderBaseSection(sectionId, index);
+      if (rendered) {
+        sections.push(rendered);
+      }
+    });
+
+    return sections;
+  }, [customSectionMap, renderBaseSection, renderCustomSection, sectionOrder, shouldDisplaySection]);
+
+  const sectionDescriptors = useMemo(() => {
+    return sectionOrder.map((sectionId) => {
+      const custom = customSectionMap.get(sectionId);
+      if (custom) {
+        return {
+          id: sectionId,
+          title: custom.title || 'Bloc personnalisé',
+          subtitle: 'Section personnalisée',
+          isCustom: true
+        };
+      }
+
+      const option = SHOWCASE_SECTION_OPTIONS.find(section => section.id === sectionId);
+      return {
+        id: sectionId,
+        title: option?.label || sectionId,
+        subtitle: 'Section standard',
+        isCustom: false
+      };
+    });
+  }, [customSectionMap, sectionOrder]);
+
+  const selectedTemplate = SECTION_TEMPLATES[selectedTemplateIndex] || SECTION_TEMPLATES[0];
+
+  const previewContent = shouldShowPreview ? (
+    <div className="aurora-sections" data-tour-id="showcase-preview">
+      {orderedSections}
     </div>
   ) : (
     <div className="aurora-preview-placeholder">
@@ -1941,6 +2410,165 @@ export const ProjectShowcase = ({
     </div>
   );
 
+  const sectionModal = isSectionModalOpen ? (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="absolute inset-0" onClick={handleCloseSectionModal} aria-hidden="true" />
+      <div
+        className="relative z-10 w-full max-w-4xl rounded-2xl bg-white p-6 shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="aurora-eyebrow aurora-eyebrow--soft">Nouvelle section</p>
+            <h3 className="text-xl font-bold text-gray-900">Choisissez un modèle puis complétez son contenu</h3>
+            <p className="text-sm text-gray-600">Les miniatures donnent un aperçu rapide du rendu final.</p>
+          </div>
+          <button
+            type="button"
+            onClick={handleCloseSectionModal}
+            className="rounded-full border border-gray-200 px-3 py-1 text-sm text-gray-600 transition hover:border-gray-300 hover:text-gray-800"
+          >
+            Fermer
+          </button>
+        </div>
+
+        {sectionModalStep === 'templates' ? (
+          <div className="mt-6 space-y-4">
+            <div className="flex flex-col items-center gap-4 md:flex-row md:items-stretch">
+              <button
+                type="button"
+                onClick={() => handleTemplateNavigation(-1)}
+                className="flex h-12 w-12 items-center justify-center rounded-full border border-gray-200 text-gray-700 transition hover:border-blue-200 hover:text-blue-700"
+                aria-label="Modèle précédent"
+              >
+                ←
+              </button>
+              <div className="flex-1 rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-gray-50 p-5 shadow-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-gray-500">Modèle {selectedTemplateIndex + 1}/{SECTION_TEMPLATES.length}</p>
+                    <h4 className="text-lg font-semibold text-gray-900">{selectedTemplate?.name}</h4>
+                    <p className="text-sm text-gray-600">{selectedTemplate?.description}</p>
+                  </div>
+                  <div className="h-12 w-24 rounded-lg bg-gradient-to-r from-blue-500/80 via-cyan-400/70 to-emerald-300/70 shadow-inner" />
+                </div>
+                <div className="mt-4 grid grid-cols-5 gap-2 rounded-xl bg-white p-4 shadow-inner">
+                  <div className="col-span-5 h-3 rounded-full bg-gradient-to-r from-blue-500 to-cyan-400" />
+                  <div className="col-span-3 h-2 rounded-full bg-gray-200" />
+                  <div className="col-span-2 h-2 rounded-full bg-gray-100" />
+                  <div className="col-span-2 h-20 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100" />
+                  <div className="col-span-3 space-y-2">
+                    <div className="h-2 rounded-full bg-gray-200" />
+                    <div className="h-2 rounded-full bg-gray-100" />
+                    <div className="h-2 rounded-full bg-gray-100" />
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleTemplateNavigation(1)}
+                className="flex h-12 w-12 items-center justify-center rounded-full border border-gray-200 text-gray-700 transition hover:border-blue-200 hover:text-blue-700"
+                aria-label="Modèle suivant"
+              >
+                →
+              </button>
+            </div>
+            <div className="flex flex-wrap justify-end gap-2">
+              <button
+                type="button"
+                onClick={handleCloseSectionModal}
+                className="rounded-full border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-300"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmTemplateChoice}
+                className="rounded-full border border-blue-200 bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+              >
+                Valider ce modèle
+              </button>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmitNewSection} className="mt-6 space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-1">
+                <label htmlFor="section-title" className="text-sm font-medium text-gray-800">Titre</label>
+                <input
+                  id="section-title"
+                  type="text"
+                  value={sectionDraft.title}
+                  onChange={(event) => handleSectionDraftChange('title', event.target.value)}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
+                  placeholder={selectedTemplate?.placeholder?.title || 'Titre du bloc'}
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="section-accent" className="text-sm font-medium text-gray-800">Accent (optionnel)</label>
+                <input
+                  id="section-accent"
+                  type="text"
+                  value={sectionDraft.accent}
+                  onChange={(event) => handleSectionDraftChange('accent', event.target.value)}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
+                  placeholder="Badge, statut ou enjeu"
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label htmlFor="section-description" className="text-sm font-medium text-gray-800">Description</label>
+              <textarea
+                id="section-description"
+                value={sectionDraft.description}
+                onChange={(event) => handleSectionDraftChange('description', event.target.value)}
+                rows={4}
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
+                placeholder={selectedTemplate?.placeholder?.description || 'Expliquez le contenu principal de cette section'}
+              />
+            </div>
+            <div className="space-y-1">
+              <label htmlFor="section-items" className="text-sm font-medium text-gray-800">Liste (une ligne par élément)</label>
+              <textarea
+                id="section-items"
+                value={sectionDraftItemsText}
+                onChange={(event) => handleSectionDraftItemsChange(event.target.value)}
+                rows={4}
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
+                placeholder={(selectedTemplate?.placeholder?.items || ['Élément #1', 'Élément #2']).join('\n')}
+              />
+            </div>
+            <div className="flex flex-wrap justify-between gap-2">
+              <button
+                type="button"
+                onClick={handleBackToTemplates}
+                className="rounded-full border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-300"
+              >
+                Retour aux modèles
+              </button>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={handleCloseSectionModal}
+                  className="rounded-full border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-300"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-full border border-blue-200 bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+                >
+                  Ajouter la section
+                </button>
+              </div>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  ) : null;
   const modeSelectionPanel = (
     <div className="mb-6 rounded-2xl border border-gray-200 bg-white/80 shadow-sm backdrop-blur">
       <div
@@ -1966,7 +2594,7 @@ export const ProjectShowcase = ({
             aria-pressed={isLightMode}
           >
             Mode Light
-            <span className="text-xs text-gray-500">({selectedLightSectionsCount}/{SHOWCASE_SECTION_OPTIONS.length})</span>
+            <span className="text-xs text-gray-500">({selectedLightSectionsCount}/{sectionOrder.length})</span>
           </button>
           <button
             type="button"
@@ -2067,6 +2695,83 @@ export const ProjectShowcase = ({
         <p className="aurora-edit-panel__intro">
           Chaque modification sera appliquée aux réponses du questionnaire correspondant.
         </p>
+      </div>
+      <div className="mb-6 rounded-2xl border border-gray-200 bg-gray-50/60 p-4 shadow-inner">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="aurora-eyebrow aurora-eyebrow--soft">Organisation des sections</p>
+            <h4 className="text-lg font-semibold text-gray-900">Réorganisez et ajoutez de nouveaux blocs</h4>
+            <p className="text-sm text-gray-600">Glissez-déposez pour changer l'ordre ou utilisez le bouton + pour insérer une nouvelle section.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleOpenSectionModal(0)}
+              className="hidden h-10 w-10 items-center justify-center rounded-full border border-dashed border-gray-300 text-gray-600 transition hover:border-blue-300 hover:text-blue-600 sm:inline-flex"
+              aria-label="Ajouter une section au début"
+            >
+              <Plus className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleOpenSectionModal(sectionOrder.length)}
+              className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+            >
+              <Plus className="h-4 w-4" />
+              Nouvelle section
+            </button>
+          </div>
+        </div>
+        <ol className="mt-4 space-y-3">
+          {sectionDescriptors.map((section, index) => {
+            const isTarget = sectionDragState.targetIndex === index;
+            return (
+              <li key={section.id} className="space-y-2">
+                <div
+                  draggable
+                  onDragStart={(event) => handleSectionDragStart(index, event)}
+                  onDragEnter={() => handleSectionDragEnter(index)}
+                  onDragOver={handleSectionDragOver}
+                  onDragLeave={(event) => handleSectionDragLeave(index, event)}
+                  onDrop={(event) => handleSectionDrop(index, event)}
+                  className={`flex items-center justify-between gap-3 rounded-xl border bg-white p-3 shadow-sm transition ${
+                    isTarget ? 'border-blue-400 shadow-md ring-1 ring-blue-100' : 'border-gray-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full border border-dashed border-gray-300 text-gray-500">
+                      ☰
+                    </span>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">{section.title}</p>
+                      <p className="text-xs text-gray-500">{section.subtitle}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenSectionModal(index + 1)}
+                      className="flex h-9 w-9 items-center justify-center rounded-full border border-dashed border-gray-300 text-gray-600 transition hover:border-blue-300 hover:text-blue-600"
+                      aria-label="Ajouter une section à cet endroit"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                    {section.isCustom && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCustomSection(section.id)}
+                        className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 text-gray-600 transition hover:border-red-200 hover:text-red-600"
+                        aria-label="Supprimer cette section personnalisée"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+        </ol>
       </div>
       <div className="aurora-edit-panel__grid">
         {editableFields.map(field => {
@@ -2468,6 +3173,7 @@ export const ProjectShowcase = ({
       {modeSelectionPanel}
       {editBar}
       {editPanel}
+      {sectionModal}
       {previewContent}
     </>
   );
