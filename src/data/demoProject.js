@@ -8,6 +8,7 @@ const COMPLIANCE_COMMENTS_KEY = '__compliance_team_comments__';
 
 const demoProjectAnswers = {
   projectName: 'Plasma 360',
+  showcaseTheme: 'Universel',
   projectSlogan: 'Du don à la vie : découvrez comment chaque goutte de plasma devient un traitement vital',
   targetAudience: ['Grand public', 'Patients', 'Professionnels de santé'],
   problemPainPoints:

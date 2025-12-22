@@ -33,6 +33,7 @@ import {
   resetProjectFiltersConfig,
   updateProjectFilterField
 } from '../utils/projectFilters.js';
+import { initialShowcaseThemes } from '../data/showcaseThemes.js';
 
 const QUESTION_TYPE_META = {
   choice: {
@@ -398,6 +399,21 @@ const PROJECT_FILTER_FIELD_DESCRIPTIONS = {
     "Définit l'ordre d'affichage par défaut des projets (du plus récent au plus ancien ou inversement)."
 };
 
+const SHOWCASE_THEME_PALETTE_FIELDS = [
+  { key: 'backgroundStart', label: 'Fond (début)', description: 'Couleur de départ du dégradé principal en arrière-plan.' },
+  { key: 'backgroundMid', label: 'Fond (milieu)', description: 'Couleur intermédiaire du dégradé principal.' },
+  { key: 'backgroundEnd', label: 'Fond (fin)', description: 'Couleur de fermeture du dégradé principal.' },
+  { key: 'glowPrimary', label: 'Halo principal', description: 'Teinte du halo radial principal utilisé pour la lumière de fond.' },
+  { key: 'glowSecondary', label: 'Halo secondaire', description: 'Teinte du halo secondaire pour adoucir les bords.' },
+  { key: 'accentPrimary', label: 'Accent principal', description: 'Première couleur du dégradé des boutons et badges.' },
+  { key: 'accentSecondary', label: 'Accent secondaire', description: 'Seconde couleur du dégradé des boutons et badges.' },
+  { key: 'surface', label: 'Surface', description: 'Couleur des panneaux de saisie et cartes (avec transparence appliquée).' },
+  { key: 'border', label: 'Contours', description: 'Base utilisée pour les bordures et lignes de séparation.' },
+  { key: 'textPrimary', label: 'Texte principal', description: 'Couleur du texte principal de la vitrine.' },
+  { key: 'textSecondary', label: 'Texte secondaire', description: 'Couleur du texte secondaire et des éléments discrets.' },
+  { key: 'highlight', label: 'Mise en avant', description: 'Couleur des petits accents (étiquettes, survols, repères visuels).' }
+];
+
 export const BackOffice = ({
   projects,
   questions,
@@ -410,6 +426,8 @@ export const BackOffice = ({
   setRiskWeights,
   teams,
   setTeams,
+  showcaseThemes,
+  setShowcaseThemes,
   projectFilters,
   setProjectFilters
 }) => {
@@ -435,6 +453,117 @@ export const BackOffice = ({
     () => normalizeRiskWeighting(riskWeights),
     [riskWeights]
   );
+  const safeShowcaseThemes = Array.isArray(showcaseThemes) && showcaseThemes.length > 0
+    ? showcaseThemes
+    : initialShowcaseThemes;
+  const showcaseThemeCount = safeShowcaseThemes.length;
+
+  const normalizeColorValue = useCallback((value, fallback = '#000000') => {
+    if (typeof value !== 'string') {
+      return fallback;
+    }
+
+    const trimmed = value.trim();
+    if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(trimmed)) {
+      return trimmed;
+    }
+
+    return fallback;
+  }, []);
+
+  const updateShowcaseThemeField = useCallback((themeIndex, field, value) => {
+    if (typeof setShowcaseThemes !== 'function') {
+      return;
+    }
+
+    setShowcaseThemes((previousThemes) => {
+      const nextThemes = Array.isArray(previousThemes) ? previousThemes.slice() : [];
+      const targetTheme = nextThemes[themeIndex];
+
+      if (!targetTheme) {
+        return previousThemes;
+      }
+
+      const aliases = Array.isArray(targetTheme.aliases) ? targetTheme.aliases.slice() : [];
+      if (field === 'label' && typeof targetTheme.label === 'string' && targetTheme.label.trim().length > 0) {
+        const currentLabel = targetTheme.label.trim();
+        if (!aliases.includes(currentLabel)) {
+          aliases.push(currentLabel);
+        }
+      }
+
+      nextThemes[themeIndex] = {
+        ...targetTheme,
+        [field]: value,
+        aliases
+      };
+
+      return nextThemes;
+    });
+  }, [setShowcaseThemes]);
+
+  const updateShowcaseThemePalette = useCallback((themeIndex, key, value) => {
+    if (typeof setShowcaseThemes !== 'function') {
+      return;
+    }
+
+    setShowcaseThemes((previousThemes) => {
+      const nextThemes = Array.isArray(previousThemes) ? previousThemes.slice() : [];
+      const targetTheme = nextThemes[themeIndex];
+
+      if (!targetTheme) {
+        return previousThemes;
+      }
+
+      const nextPalette = {
+        ...(targetTheme.palette || {}),
+        [key]: normalizeColorValue(value, targetTheme.palette?.[key] || '#000000')
+      };
+
+      nextThemes[themeIndex] = {
+        ...targetTheme,
+        palette: nextPalette
+      };
+
+      return nextThemes;
+    });
+  }, [normalizeColorValue, setShowcaseThemes]);
+
+  const addShowcaseTheme = useCallback(() => {
+    if (typeof setShowcaseThemes !== 'function') {
+      return;
+    }
+
+    const basePalette = safeShowcaseThemes[0]?.palette || initialShowcaseThemes[0]?.palette || {};
+    const nextIndex = Array.isArray(showcaseThemes) ? showcaseThemes.length + 1 : safeShowcaseThemes.length + 1;
+    const newTheme = {
+      id: `theme-${nextIndex}-${Date.now().toString(36).slice(2, 6)}`,
+      label: 'Nouveau thème',
+      description: 'Palette personnalisable via les color-pickers.',
+      aliases: ['Nouveau thème'],
+      palette: { ...basePalette }
+    };
+
+    setShowcaseThemes((previousThemes) => {
+      const nextThemes = Array.isArray(previousThemes) ? previousThemes.slice() : [];
+      nextThemes.push(newTheme);
+      return nextThemes;
+    });
+  }, [safeShowcaseThemes, setShowcaseThemes, showcaseThemes]);
+
+  const deleteShowcaseTheme = useCallback((themeId) => {
+    if (typeof setShowcaseThemes !== 'function' || !themeId || showcaseThemeCount <= 1) {
+      return;
+    }
+
+    setShowcaseThemes((previousThemes) => {
+      const nextThemes = Array.isArray(previousThemes)
+        ? previousThemes.filter(theme => theme?.id !== themeId)
+        : [];
+
+      return nextThemes.length > 0 ? nextThemes : previousThemes;
+    });
+  }, [setShowcaseThemes, showcaseThemeCount]);
 
   const handleUndo = useCallback(() => {
     const stack = undoStackRef.current;
@@ -1875,6 +2004,11 @@ export const BackOffice = ({
       panelId: 'backoffice-tabpanel-filters'
     },
     {
+      id: 'themes',
+      label: `Thèmes vitrine (${showcaseThemeCount})`,
+      panelId: 'backoffice-tabpanel-themes'
+    },
+    {
       id: 'questions',
       label: `Questions (${questions.length})`,
       panelId: 'backoffice-tabpanel-questions'
@@ -2507,6 +2641,142 @@ export const BackOffice = ({
                     )}
                   </div>
                 </div>
+              </article>
+            </section>
+          )}
+
+          {activeTab === 'themes' && (
+            <section
+              id="backoffice-tabpanel-themes"
+              role="tabpanel"
+              aria-labelledby="backoffice-tab-themes"
+              className="space-y-6"
+            >
+              <article className="space-y-4 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hv-surface">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="space-y-2">
+                    <h2 className="text-2xl font-bold text-gray-800">Thèmes de la vitrine</h2>
+                    <p className="text-sm text-gray-600">
+                      Pilotez les palettes couleurs utilisées dans la vitrine. Chaque couleur est éditable via un color-picker
+                      pour ajuster les dégradés, halos et surfaces principales.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addShowcaseTheme}
+                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 hv-button hv-button-primary"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Ajouter un thème
+                  </button>
+                </div>
+
+                {safeShowcaseThemes.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-gray-300 p-6 text-center text-gray-500">
+                    Aucun thème configuré.
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {safeShowcaseThemes.map((theme, index) => {
+                      const palette = theme?.palette || {};
+                      const themeId = theme?.id || `theme-${index + 1}`;
+                      const disableDelete = showcaseThemeCount <= 1;
+
+                      return (
+                        <article key={themeId} className="space-y-4 rounded-xl border border-gray-200 bg-gray-50 p-4 shadow-sm">
+                          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                            <div className="flex-1 space-y-3">
+                              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <div>
+                                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-600" htmlFor={`${themeId}-label`}>
+                                    Nom affiché
+                                  </label>
+                                  <input
+                                    id={`${themeId}-label`}
+                                    type="text"
+                                    value={theme?.label || ''}
+                                    onChange={(event) => updateShowcaseThemeField(index, 'label', event.target.value)}
+                                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm hv-focus-ring"
+                                    placeholder="Nom du thème"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-600" htmlFor={`${themeId}-id`}>
+                                    Clé technique
+                                  </label>
+                                  <input
+                                    id={`${themeId}-id`}
+                                    type="text"
+                                    value={themeId}
+                                    readOnly
+                                    className="w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-sm text-gray-600"
+                                  />
+                                  <p className="mt-1 text-xs text-gray-500">Utilisée pour identifier le thème dans les réponses.</p>
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-600" htmlFor={`${themeId}-description`}>
+                                  Description
+                                </label>
+                                <textarea
+                                  id={`${themeId}-description`}
+                                  rows={2}
+                                  value={theme?.description || ''}
+                                  onChange={(event) => updateShowcaseThemeField(index, 'description', event.target.value)}
+                                  className="w-full resize-y rounded-lg border border-gray-300 px-3 py-2 text-sm hv-focus-ring"
+                                  placeholder="Décrivez l'esprit du thème (tonalité, usage, cible)"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="flex justify-end gap-2 lg:flex-col lg:items-end">
+                              <span className="rounded-full bg-gray-200 px-3 py-1 text-xs font-semibold text-gray-700">#{index + 1}</span>
+                              <button
+                                type="button"
+                                onClick={() => deleteShowcaseTheme(themeId)}
+                                disabled={disableDelete}
+                                className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 hv-button disabled:cursor-not-allowed disabled:opacity-50"
+                                aria-disabled={disableDelete}
+                              >
+                                <Trash2 className="w-5 h-5" />
+                                Supprimer
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                            {SHOWCASE_THEME_PALETTE_FIELDS.map((field) => (
+                              <div key={`${themeId}-${field.key}`} className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
+                                <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-600" htmlFor={`${themeId}-${field.key}`}>
+                                  {field.label}
+                                </label>
+                                <div className="flex items-center gap-3">
+                                  <input
+                                    id={`${themeId}-${field.key}`}
+                                    type="color"
+                                    value={normalizeColorValue(palette[field.key], '#000000')}
+                                    onChange={(event) => updateShowcaseThemePalette(index, field.key, event.target.value)}
+                                    className="h-10 w-16 cursor-pointer rounded border border-gray-300 bg-white"
+                                    aria-label={`Sélectionner ${field.label.toLowerCase()}`}
+                                  />
+                                  <input
+                                    type="text"
+                                    value={palette[field.key] || ''}
+                                    onChange={(event) => updateShowcaseThemePalette(index, field.key, event.target.value)}
+                                    className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono hv-focus-ring"
+                                    placeholder="#000000"
+                                  />
+                                </div>
+                                <p className="mt-1 text-xs text-gray-500">{field.description}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                )}
               </article>
             </section>
           )}
