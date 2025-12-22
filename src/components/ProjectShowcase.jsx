@@ -8,6 +8,7 @@ import {
 import { formatAnswer } from '../utils/questions.js';
 import { renderTextWithLinks } from '../utils/linkify.js';
 import { initialShowcaseThemes } from '../data/showcaseThemes.js';
+import { RichTextEditor } from './RichTextEditor.jsx';
 
 const findQuestionById = (questions, id) => {
   if (!Array.isArray(questions)) {
@@ -1893,6 +1894,7 @@ export const ProjectShowcase = ({
           const fieldValue = draftValues[fieldId];
           const options = Array.isArray(question?.options) ? question.options : [];
           const isLong = type === 'long_text';
+          const isRichText = type === 'text' || type === 'long_text';
           const isMulti = type === 'multi_choice';
           const isChoice = type === 'choice';
           const isDate = type === 'date';
@@ -1902,6 +1904,12 @@ export const ProjectShowcase = ({
           const isChoiceWithOptions = isChoice && options.length > 0;
           const selectedValues = Array.isArray(fieldValue) ? fieldValue : [];
           const textValue = typeof fieldValue === 'string' ? fieldValue : '';
+          const placeholder =
+            typeof question?.placeholder === 'string' && question.placeholder.trim() !== ''
+              ? question.placeholder.trim()
+              : isLong
+                ? 'Ajoutez ici un texte riche pour la vitrine'
+                : 'Saisissez un texte riche ou un lien';
           const helperText = isMilestoneList
             ? 'Ajoutez une date (optionnelle) et un descriptif pour chaque jalon.'
             : isMultiWithOptions
@@ -2210,7 +2218,16 @@ export const ProjectShowcase = ({
                     </option>
                   ))}
                 </select>
-              ) : isLong || isMultiFreeform ? (
+              ) : isRichText ? (
+                <RichTextEditor
+                  id={`showcase-edit-${fieldId}`}
+                  value={textValue}
+                  onChange={(nextValue) => handleFieldChange(fieldId, nextValue)}
+                  placeholder={placeholder}
+                  compact={!isLong}
+                  ariaLabel={`${label} (édition riche)`}
+                />
+              ) : isMultiFreeform ? (
                 <textarea
                   id={`showcase-edit-${fieldId}`}
                   value={textValue}
