@@ -27,7 +27,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.180';
+const APP_VERSION = 'v1.0.181';
 
 const ANNOTATION_COLORS = [
   '#2563eb',
