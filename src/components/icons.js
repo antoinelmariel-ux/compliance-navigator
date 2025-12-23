@@ -253,4 +253,23 @@ export const Mail = createIcon(
   </React.Fragment>
 );
 
+export const MessageSquare = createIcon(
+  <React.Fragment>
+    <path d="M21 15a2 2 0 01-2 2H7l-4 3V5a2 2 0 012-2h14a2 2 0 012 2z" />
+  </React.Fragment>
+);
+
+export const Pause = createIcon(
+  <React.Fragment>
+    <rect x="6" y="4" width="4" height="16" rx="1" />
+    <rect x="14" y="4" width="4" height="16" rx="1" />
+  </React.Fragment>
+);
+
+export const Play = createIcon(
+  <React.Fragment>
+    <polygon points="6 4 20 12 6 20 6 4" />
+  </React.Fragment>
+);
+
 export { createIcon };
