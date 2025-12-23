@@ -822,9 +822,19 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                 </div>
 
                 <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Lightbulb className="w-5 h-5 text-amber-500" />
-                    <h4 className="text-lg font-semibold text-gray-800">Entrées de la base</h4>
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <div className="flex items-center gap-2">
+                      <Lightbulb className="w-5 h-5 text-amber-500" />
+                      <h4 className="text-lg font-semibold text-gray-800">Entrées de la base</h4>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={addRankingEntry}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Ajouter
+                    </button>
                   </div>
 
                   {editedQuestion.rankingConfig?.entries?.length === 0 ? (
