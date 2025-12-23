@@ -116,3 +116,17 @@
 @media (min-width: 640px) {
   :is([data-showcase-scope], [data-showcase-scope] *)[class*="sm:leading-[1.05]"] { line-height: 1.05; }
 }
+
+.annotation-sticky-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 200;
+}
+
+.annotation-sticky {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+  z-index: 210;
+}
