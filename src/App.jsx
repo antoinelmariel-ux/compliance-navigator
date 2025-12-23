@@ -27,7 +27,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.181';
+const APP_VERSION = 'v1.0.182';
 
 const ANNOTATION_COLORS = [
   '#2563eb',
@@ -536,6 +536,7 @@ export const App = () => {
   const [annotationNotes, setAnnotationNotes] = useState([]);
   const [annotationSources, setAnnotationSources] = useState({ session: ANNOTATION_COLORS[0] });
   const [showcaseAnnotationScope, setShowcaseAnnotationScope] = useState('display-full');
+  const [autoFocusAnnotationId, setAutoFocusAnnotationId] = useState(null);
   const annotationNotesRef = useRef(annotationNotes);
   const annotationFileInputRef = useRef(null);
 
@@ -1709,10 +1710,12 @@ export const App = () => {
     const sourceId = 'session';
     const color = registerAnnotationSource(sourceId);
 
+    const newNoteId = createAnnotationId();
+
     setAnnotationNotes(prevNotes => [
       ...prevNotes,
       {
-        id: createAnnotationId(),
+        id: newNoteId,
         x,
         y,
         text: '',
@@ -1723,6 +1726,7 @@ export const App = () => {
         sourceId
       }
     ]);
+    setAutoFocusAnnotationId(newNoteId);
   }, [activeAnnotationContextKey, registerAnnotationSource, screen, showcaseProjectContext]);
 
   const handleAnnotationTextChange = useCallback((noteId, text) => {
@@ -2959,6 +2963,8 @@ export const App = () => {
         activeContextId={activeAnnotationContextKey}
         sourceColors={annotationSources}
         projectName={showcaseProjectContext?.projectName || ''}
+        autoFocusNoteId={autoFocusAnnotationId}
+        onAutoFocusComplete={() => setAutoFocusAnnotationId(null)}
         onTogglePause={handleToggleAnnotationPause}
         onRequestSave={handleSaveAnnotationNotes}
         onRequestLoad={handleRequestAnnotationFile}
@@ -3000,7 +3006,7 @@ export const App = () => {
                 <button
                   type="button"
                   onClick={handleToggleAnnotationMode}
-                  className={`order-first self-start sm:order-last sm:self-center inline-flex h-11 w-11 items-center justify-center rounded-full border text-blue-700 shadow-sm transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                  className={`order-first self-start sm:order-last sm:self-center inline-flex min-h-[44px] h-11 px-4 items-center justify-center rounded-full border text-blue-700 shadow-sm transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                     isAnnotationModeEnabled ? 'bg-blue-50 border-blue-200' : 'bg-white border-blue-100'
                   }`}
                   aria-pressed={isAnnotationModeEnabled}
