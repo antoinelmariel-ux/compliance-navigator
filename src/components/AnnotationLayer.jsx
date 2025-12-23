@@ -1,5 +1,33 @@
-import React, { useEffect, useMemo, useRef } from '../react.js';
+import React, { useEffect, useMemo, useRef, useState } from '../react.js';
 import { Close, Pause, Play, Save, Upload } from './icons.js';
+
+const clamp01 = (value) => {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return 0;
+  }
+
+  if (value < 0) {
+    return 0;
+  }
+
+  if (value > 1) {
+    return 1;
+  }
+
+  return value;
+};
+
+const escapeAttributeValue = (value) => {
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
+    return CSS.escape(value);
+  }
+
+  return value.replace(/"/g, '\\"');
+};
 
 const STATUS_BADGE = {
   active: 'bg-emerald-500 text-white',
@@ -9,6 +37,7 @@ const STATUS_BADGE = {
 export const AnnotationLayer = ({
   isActive = false,
   isPaused = false,
+  isEditing = false,
   notes = [],
   activeContextId = '',
   sourceColors = {},
@@ -21,6 +50,7 @@ export const AnnotationLayer = ({
   onNoteRemove,
   onAutoFocusComplete
 }) => {
+  const [, setLayoutVersion] = useState(0);
   const visibleNotes = useMemo(
     () => notes.filter(note => note && note.contextId === activeContextId),
     [activeContextId, notes]
@@ -58,13 +88,80 @@ export const AnnotationLayer = ({
     }
   }, [autoFocusNoteId, onAutoFocusComplete]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const handleLayoutRefresh = () => {
+      setLayoutVersion(previous => previous + 1);
+    };
+
+    window.addEventListener('resize', handleLayoutRefresh);
+    window.addEventListener('scroll', handleLayoutRefresh, true);
+
+    return () => {
+      window.removeEventListener('resize', handleLayoutRefresh);
+      window.removeEventListener('scroll', handleLayoutRefresh, true);
+    };
+  }, []);
+
+  const getAnnotationAnchor = (note) => {
+    if (typeof document === 'undefined' || !note?.sectionId) {
+      return null;
+    }
+
+    const escapedSectionId = escapeAttributeValue(note.sectionId);
+
+    if (escapedSectionId && isEditing) {
+      const editAnchor = document.querySelector(`[data-annotation-target-section="${escapedSectionId}"]`);
+      if (editAnchor) {
+        return editAnchor;
+      }
+    }
+
+    if (escapedSectionId) {
+      const displayAnchor = document.querySelector(`[data-showcase-section="${escapedSectionId}"]`);
+      if (displayAnchor) {
+        return displayAnchor;
+      }
+    }
+
+    return null;
+  };
+
+  const computeNotePosition = (note) => {
+    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth || 1 : 1;
+    const viewportHeight = typeof window !== 'undefined' ? window.innerHeight || 1 : 1;
+    const anchor = getAnnotationAnchor(note);
+
+    if (anchor && typeof anchor.getBoundingClientRect === 'function') {
+      const rect = anchor.getBoundingClientRect();
+      const relativeX = clamp01(note?.sectionX ?? note?.x ?? 0.5);
+      const relativeY = clamp01(note?.sectionY ?? note?.y ?? 0.5);
+
+      return {
+        left: rect.left + rect.width * relativeX,
+        top: rect.top + rect.height * relativeY
+      };
+    }
+
+    const fallbackX = clamp01(note?.x ?? 0.5);
+    const fallbackY = clamp01(note?.y ?? 0.5);
+
+    return {
+      left: fallbackX * viewportWidth,
+      top: fallbackY * viewportHeight
+    };
+  };
+
   if (!isActive) {
     return null;
   }
 
   return (
     <React.Fragment>
-      <div className="fixed top-0 inset-x-0 z-[140]" data-annotation-ui="true">
+      <div className="fixed top-0 inset-x-0 z-[180]" data-annotation-ui="true">
         <div className="max-w-7xl mx-auto px-4 sm:px-8">
           <div className="mt-2 rounded-b-xl bg-white border border-slate-200 text-slate-900 shadow-2xl px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2 text-sm text-slate-800">
@@ -110,20 +207,17 @@ export const AnnotationLayer = ({
         </div>
       </div>
 
-      <div className="fixed inset-0 z-[130] pointer-events-none">
+      <div className="annotation-sticky-layer" data-annotation-ui="true">
         {visibleNotes.map(note => {
-          const clampedX = Math.min(Math.max(note.x, 0), 1);
-          const clampedY = Math.min(Math.max(note.y, 0), 1);
-          const left = `${clampedX * 100}%`;
-          const top = `${clampedY * 100}%`;
+          const position = computeNotePosition(note);
           const label = note.sourceId && note.sourceId !== 'session' ? note.sourceId : 'Annotation';
           const color = note.color || sourceColors[label] || '#fbbf24';
 
           return (
             <div
               key={note.id}
-              className="absolute"
-              style={{ left, top, transform: 'translate(-50%, -50%)' }}
+              className="annotation-sticky"
+              style={{ left: `${position.left}px`, top: `${position.top}px` }}
               data-annotation-ui="true"
             >
               <div

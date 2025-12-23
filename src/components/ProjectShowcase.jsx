@@ -753,6 +753,26 @@ const SHOWCASE_FIELD_CONFIG = [
   { id: 'roadmapMilestones', fallbackLabel: 'Jalons du projet', fallbackType: 'milestone_list' }
 ];
 
+const FIELD_SECTION_MAP = {
+  projectName: 'hero',
+  projectSlogan: 'hero',
+  showcaseTheme: 'hero',
+  targetAudience: 'hero',
+  problemPainPoints: 'problem',
+  solutionDescription: 'solution',
+  solutionBenefits: 'solution',
+  solutionComparison: 'solution',
+  innovationProcess: 'innovation',
+  visionStatement: 'innovation',
+  BUDGET: 'innovation',
+  teamLead: 'team',
+  teamLeadTeam: 'team',
+  teamCoreMembers: 'team',
+  campaignKickoffDate: 'timeline',
+  launchDate: 'timeline',
+  roadmapMilestones: 'timeline'
+};
+
 const createEmptyMilestoneDragState = () => ({
   fieldId: null,
   sourceIndex: null,
@@ -1249,7 +1269,8 @@ export const ProjectShowcase = ({
   tourContext = null,
   showcaseThemes = initialShowcaseThemes,
   hasIncompleteAnswers = false,
-  onAnnotationScopeChange = null
+  onAnnotationScopeChange = null,
+  onEditingStateChange = null
 }) => {
   const rawProjectName = typeof projectName === 'string' ? projectName.trim() : '';
   const safeProjectName = rawProjectName.length > 0 ? rawProjectName : 'Information à compléter';
@@ -1434,6 +1455,18 @@ export const ProjectShowcase = ({
     setSectionDraft({ title: '', description: '', accent: '', items: [] });
     setSectionDraftItemsText('');
   }, []);
+
+  useEffect(() => {
+    if (typeof onEditingStateChange === 'function') {
+      onEditingStateChange(isEditing);
+    }
+
+    return () => {
+      if (typeof onEditingStateChange === 'function') {
+        onEditingStateChange(false);
+      }
+    };
+  }, [isEditing, onEditingStateChange]);
 
   const handleTemplateNavigation = useCallback((direction) => {
     setSelectedTemplateIndex(previous => {
@@ -2972,8 +3005,14 @@ export const ProjectShowcase = ({
           const isDropTargetAtEnd =
             milestoneDragState.fieldId === fieldId && milestoneDragState.targetIndex === milestoneDraftEntries.length;
 
+          const annotationSectionId = FIELD_SECTION_MAP[fieldId];
+
           return (
-            <div key={fieldId} className={`aurora-field${isLong || isMulti || isMilestoneList ? ' aurora-field--wide' : ''}`}>
+            <div
+              key={fieldId}
+              className={`aurora-field${isLong || isMulti || isMilestoneList ? ' aurora-field--wide' : ''}`}
+              data-annotation-target-section={annotationSectionId || undefined}
+            >
               <label htmlFor={`showcase-edit-${fieldId}`} className="aurora-field__label">
                 {label}
               </label>

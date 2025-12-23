@@ -27,7 +27,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.184';
+const APP_VERSION = 'v1.0.185';
 
 const ANNOTATION_COLORS = [
   '#2563eb',
@@ -537,6 +537,7 @@ export const App = () => {
   const [annotationSources, setAnnotationSources] = useState({ session: ANNOTATION_COLORS[0] });
   const [showcaseAnnotationScope, setShowcaseAnnotationScope] = useState('display-full');
   const [autoFocusAnnotationId, setAutoFocusAnnotationId] = useState(null);
+  const [isShowcaseEditing, setIsShowcaseEditing] = useState(false);
   const annotationNotesRef = useRef(annotationNotes);
   const annotationFileInputRef = useRef(null);
 
@@ -1679,8 +1680,34 @@ export const App = () => {
     return resolvedColor;
   }, []);
 
-  const handleAddAnnotationNote = useCallback((clientX, clientY) => {
-    if (screen !== 'showcase' || !showcaseProjectContext) {
+  const resolveAnnotationTarget = useCallback((clientX, clientY, targetElement = null) => {
+    if (typeof document === 'undefined') {
+      return { sectionId: null, sectionX: null, sectionY: null };
+    }
+
+    const activeTarget = targetElement instanceof Element
+      ? targetElement
+      : document.elementFromPoint(clientX, clientY);
+
+    const sectionElement = activeTarget?.closest('[data-showcase-section]');
+
+    if (!sectionElement) {
+      return { sectionId: null, sectionX: null, sectionY: null };
+    }
+
+    const rect = sectionElement.getBoundingClientRect();
+    const sectionWidth = rect?.width || 1;
+    const sectionHeight = rect?.height || 1;
+
+    return {
+      sectionId: sectionElement.getAttribute('data-showcase-section') || null,
+      sectionX: clamp01((clientX - rect.left) / sectionWidth),
+      sectionY: clamp01((clientY - rect.top) / sectionHeight)
+    };
+  }, []);
+
+  const handleAddAnnotationNote = useCallback((clientX, clientY, targetElement = null) => {
+    if (screen !== 'showcase' || !showcaseProjectContext || isAnnotationPaused) {
       return;
     }
 
@@ -1690,6 +1717,7 @@ export const App = () => {
     const y = clamp01(clientY / height);
     const sourceId = 'session';
     const color = registerAnnotationSource(sourceId);
+    const { sectionId, sectionX, sectionY } = resolveAnnotationTarget(clientX, clientY, targetElement);
 
     const newNoteId = createAnnotationId();
 
@@ -1699,6 +1727,9 @@ export const App = () => {
         id: newNoteId,
         x,
         y,
+        sectionId,
+        sectionX: sectionX ?? x,
+        sectionY: sectionY ?? y,
         text: '',
         color,
         contextId: activeAnnotationContextKey,
@@ -1708,7 +1739,14 @@ export const App = () => {
       }
     ]);
     setAutoFocusAnnotationId(newNoteId);
-  }, [activeAnnotationContextKey, registerAnnotationSource, screen, showcaseProjectContext]);
+  }, [
+    activeAnnotationContextKey,
+    isAnnotationPaused,
+    registerAnnotationSource,
+    resolveAnnotationTarget,
+    screen,
+    showcaseProjectContext
+  ]);
 
   const handleAnnotationTextChange = useCallback((noteId, text) => {
     setAnnotationNotes(prevNotes => prevNotes.map(note => (
@@ -1806,11 +1844,16 @@ export const App = () => {
 
         const importedNotes = rawNotes.map(rawNote => {
           const registeredColor = registerAnnotationSource(rawNote?.sourceId || sourceId, rawNote?.color || sourceColor);
+          const normalizedX = clamp01(rawNote?.x ?? 0);
+          const normalizedY = clamp01(rawNote?.y ?? 0);
 
           return {
             id: rawNote?.id || createAnnotationId(),
-            x: clamp01(rawNote?.x ?? 0),
-            y: clamp01(rawNote?.y ?? 0),
+            x: normalizedX,
+            y: normalizedY,
+            sectionId: typeof rawNote?.sectionId === 'string' ? rawNote.sectionId : null,
+            sectionX: clamp01(rawNote?.sectionX ?? normalizedX),
+            sectionY: clamp01(rawNote?.sectionY ?? normalizedY),
             text: typeof rawNote?.text === 'string' ? rawNote.text : '',
             color: registeredColor,
             contextId: rawNote?.contextId || activeAnnotationContextKey,
@@ -1849,7 +1892,7 @@ export const App = () => {
         return;
       }
 
-      handleAddAnnotationNote(event.clientX, event.clientY);
+      handleAddAnnotationNote(event.clientX, event.clientY, target);
     };
 
     window.addEventListener('click', handleDocumentClick, true);
@@ -2940,6 +2983,7 @@ export const App = () => {
       <AnnotationLayer
         isActive={isAnnotationModeEnabled && screen === 'showcase'}
         isPaused={isAnnotationPaused}
+        isEditing={isShowcaseEditing}
         notes={annotationNotes}
         activeContextId={activeAnnotationContextKey}
         sourceColors={annotationSources}
@@ -3232,6 +3276,7 @@ export const App = () => {
                 }
                 tourContext={tourContext}
                 onAnnotationScopeChange={setShowcaseAnnotationScope}
+                onEditingStateChange={setIsShowcaseEditing}
               />
             </div>
           ) : null
