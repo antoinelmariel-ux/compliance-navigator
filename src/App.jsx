@@ -27,7 +27,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.182';
+const APP_VERSION = 'v1.0.183';
 
 const ANNOTATION_COLORS = [
   '#2563eb',
@@ -3182,6 +3182,7 @@ export const App = () => {
             }
             isReturnToSynthesisRequested={returnToSynthesisAfterEdit}
             tourContext={tourContext}
+            onFinish={navigateToSynthesis}
           />
         ) : screen === 'mandatory-summary' ? (
           <MandatoryQuestionsSummary
