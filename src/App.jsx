@@ -27,7 +27,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.183';
+const APP_VERSION = 'v1.0.184';
 
 const ANNOTATION_COLORS = [
   '#2563eb',
@@ -1620,25 +1620,6 @@ export const App = () => {
       setCurrentQuestionIndex(activeQuestions.length - 1);
     }
   }, [activeQuestions.length, currentQuestionIndex, isHydrated]);
-
-  useEffect(() => {
-    if (!isHydrated) return;
-    if (screen !== 'synthesis') return;
-    if (unansweredMandatoryQuestions.length === 0) return;
-
-    const firstMissingId = unansweredMandatoryQuestions[0].id;
-    const targetIndex = activeQuestions.findIndex(question => question.id === firstMissingId);
-    if (targetIndex >= 0) {
-      setCurrentQuestionIndex(targetIndex);
-    }
-    setValidationError(null);
-    setScreen('mandatory-summary');
-  }, [
-    screen,
-    unansweredMandatoryQuestions,
-    activeQuestions,
-    isHydrated
-  ]);
 
   useEffect(() => {
     if (screen !== 'questionnaire' && screen !== 'synthesis') {
