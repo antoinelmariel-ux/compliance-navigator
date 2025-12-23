@@ -1325,7 +1325,7 @@ export const ProjectShowcase = ({
     const sanitizedSections = sanitizeCustomSections(answers?.customShowcaseSections);
     setCustomSections(sanitizedSections);
     setSectionOrder(normalizeSectionOrder(answers?.showcaseSectionOrder, sanitizedSections));
-  }, [answers, editableFields, isEditing, rawProjectName]);
+  }, [answers, editableFields, rawProjectName]);
 
   useEffect(() => {
     if (!isEditing) {

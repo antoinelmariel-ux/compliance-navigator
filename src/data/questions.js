@@ -624,7 +624,7 @@ export const initialQuestions = [
       ]
     },
     "rankingConfig": {
-      "title": "Agences médicales partenaires",
+      "title": "Prestataires pré-identifiés",
       "criteria": [
         { "id": "international", "label": "International" },
         { "id": "scientific", "label": "Contenu scientifique" },

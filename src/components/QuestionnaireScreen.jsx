@@ -97,7 +97,8 @@ export const QuestionnaireScreen = ({
   validationError,
   tourContext = null,
   onReturnToSynthesis,
-  isReturnToSynthesisRequested = false
+  isReturnToSynthesisRequested = false,
+  onFinish
 }) => {
   const currentQuestion = questions[currentIndex];
   const questionBank = allQuestions || questions;
@@ -1039,7 +1040,7 @@ export const QuestionnaireScreen = ({
               <button
                 type="button"
                 onClick={onReturnToSynthesis}
-                className="flex items-center justify-center px-6 py-3 rounded-lg font-medium bg-emerald-600 text-white hover:bg-emerald-700 transition-all hv-button w-full sm:w-auto text-sm sm:text-base"
+                className="flex items-center justify-center px-6 py-3 rounded-lg font-medium bg-yellow-500 text-white hover:bg-yellow-600 transition-all hv-button w-full sm:w-auto text-sm sm:text-base"
               >
                 <CheckCircle className="w-5 h-5 mr-2" />
                 Valider et revenir au rapport
@@ -1054,6 +1055,16 @@ export const QuestionnaireScreen = ({
               {currentIndex === questions.length - 1 ? 'Voir la synthèse' : 'Suivant'}
               <ChevronRight className="w-5 h-5 ml-2" />
             </button>
+
+            {currentIndex < questions.length - 1 && onFinish && (
+              <button
+                type="button"
+                onClick={onFinish}
+                className="flex items-center justify-center px-6 py-3 rounded-lg font-medium bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-all hv-button w-full sm:w-auto text-sm sm:text-base"
+              >
+                Fin
+              </button>
+            )}
           </div>
         </div>
       </div>

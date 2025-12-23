@@ -75,12 +75,30 @@ export const RichTextEditor = ({
       return;
     }
 
-    const url = window.prompt('Lien à insérer (https://...)', 'https://');
+    const selection = typeof window.getSelection === 'function' ? window.getSelection() : null;
+    const selectedText = selection?.toString() || '';
+    const displayText = window.prompt('Texte à afficher pour le lien', selectedText);
+
+    if (displayText === null) {
+      return;
+    }
+
+    const url = window.prompt('Lien HTML à insérer (https://...)', 'https://');
     if (!url) {
       return;
     }
 
-    applyCommand('createLink', url);
+    const trimmedUrl = url.trim();
+    if (!/^https?:\/\//i.test(trimmedUrl)) {
+      if (typeof window.alert === 'function') {
+        window.alert('Veuillez saisir une URL valide (https://...)');
+      }
+      return;
+    }
+
+    const normalizedDisplayText = displayText?.trim() || selectedText || trimmedUrl;
+    const linkHtml = `<a href="${trimmedUrl}" target="_blank" rel="noopener noreferrer">${normalizedDisplayText}</a>`;
+    applyCommand('insertHTML', linkHtml);
   }, [applyCommand]);
 
   const minHeight = useMemo(() => (compact ? 120 : 180), [compact]);
@@ -116,7 +134,7 @@ export const RichTextEditor = ({
       </div>
       <div className="relative">
         {showPlaceholder && (
-          <div className="pointer-events-none absolute inset-3 text-sm text-gray-400 select-none">
+          <div className="pointer-events-none absolute inset-y-3 left-4 right-4 text-sm text-gray-400 select-none">
             {placeholder}
           </div>
         )}

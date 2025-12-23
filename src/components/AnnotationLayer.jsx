@@ -64,9 +64,9 @@ export const AnnotationLayer = ({
 
   return (
     <React.Fragment>
-      <div className="fixed top-0 inset-x-0 z-[96]" data-annotation-ui="true">
+      <div className="fixed top-0 inset-x-0 z-[140]" data-annotation-ui="true">
         <div className="max-w-7xl mx-auto px-4 sm:px-8">
-          <div className="mt-2 rounded-b-xl bg-white/95 border border-slate-200 text-slate-900 shadow-2xl px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mt-2 rounded-b-xl bg-white border border-slate-200 text-slate-900 shadow-2xl px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2 text-sm text-slate-800">
               <span className="font-semibold">Mode annotation</span>
               <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold ${
@@ -110,7 +110,7 @@ export const AnnotationLayer = ({
         </div>
       </div>
 
-      <div className="fixed inset-0 z-[90] pointer-events-none">
+      <div className="fixed inset-0 z-[130] pointer-events-none">
         {visibleNotes.map(note => {
           const clampedX = Math.min(Math.max(note.x, 0), 1);
           const clampedY = Math.min(Math.max(note.y, 0), 1);
