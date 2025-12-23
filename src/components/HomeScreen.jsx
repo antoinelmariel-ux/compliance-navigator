@@ -16,6 +16,7 @@ import {
   Trash2,
   Sparkles
 } from './icons.js';
+import { ObjectiveBoard } from './ObjectiveBoard.jsx';
 import { normalizeProjectFilterConfig } from '../utils/projectFilters.js';
 
 const formatDate = (isoDate) => {
@@ -206,7 +207,8 @@ export const HomeScreen = ({
   onImportProject,
   onDuplicateProject,
   isAdminMode = false,
-  tourContext = null
+  tourContext = null,
+  moyenTags = []
 }) => {
   const normalizedFilters = useMemo(
     () => normalizeProjectFilterConfig(projectFilters),
@@ -692,6 +694,8 @@ export const HomeScreen = ({
             </div>
           </div>
         </header>
+
+        <ObjectiveBoard moyenTags={moyenTags} />
 
         <section aria-labelledby="projects-heading" className="space-y-6">
           <div className="flex items-center justify-between">

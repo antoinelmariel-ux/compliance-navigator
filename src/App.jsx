@@ -13,6 +13,7 @@ import { initialRiskLevelRules } from './data/riskLevelRules.js';
 import { initialRiskWeights } from './data/riskWeights.js';
 import { initialTeams } from './data/teams.js';
 import { initialShowcaseThemes } from './data/showcaseThemes.js';
+import { initialMoyenTags } from './data/moyenTags.js';
 import { loadPersistedState, persistState } from './utils/storage.js';
 import { shouldShowQuestion } from './utils/questions.js';
 import { analyzeAnswers } from './utils/rules.js';
@@ -524,6 +525,7 @@ export const App = () => {
   const [riskWeights, setRiskWeights] = useState(() => normalizeRiskWeighting(initialRiskWeights));
   const [teams, setTeams] = useState(initialTeams);
   const [showcaseThemes, setShowcaseThemes] = useState(initialShowcaseThemes);
+  const [moyenTags, setMoyenTags] = useState(initialMoyenTags);
   const [projectFilters, setProjectFiltersState] = useState(() => createDefaultProjectFiltersConfig());
   const [isHydrated, setIsHydrated] = useState(false);
   const [isBackOfficeUnlocked, setIsBackOfficeUnlocked] = useState(false);
@@ -800,6 +802,7 @@ export const App = () => {
     }
     if (Array.isArray(savedState.teams)) setTeams(savedState.teams);
     if (Array.isArray(savedState.showcaseThemes)) setShowcaseThemes(savedState.showcaseThemes);
+    if (Array.isArray(savedState.moyenTags)) setMoyenTags(savedState.moyenTags);
     if (savedState && typeof savedState.projectFilters === 'object') {
       setProjectFiltersState(normalizeProjectFilterConfig(savedState.projectFilters));
     }
@@ -1538,6 +1541,7 @@ export const App = () => {
         riskWeights,
         teams,
         showcaseThemes,
+        moyenTags,
         projects,
         activeProjectId,
         projectFilters: normalizeProjectFilterConfig(projectFilters)
@@ -1563,6 +1567,7 @@ export const App = () => {
     riskWeights,
     teams,
     showcaseThemes,
+    moyenTags,
     projects,
     activeProjectId,
     projectFilters,
@@ -3128,6 +3133,8 @@ export const App = () => {
             setTeams={setTeams}
             showcaseThemes={showcaseThemes}
             setShowcaseThemes={setShowcaseThemes}
+            moyenTags={moyenTags}
+            setMoyenTags={setMoyenTags}
             projectFilters={projectFilters}
             setProjectFilters={updateProjectFilters}
           />
@@ -3144,6 +3151,7 @@ export const App = () => {
             onDuplicateProject={handleDuplicateProject}
             isAdminMode={isAdminMode}
             tourContext={tourContext}
+            moyenTags={moyenTags}
           />
         ) : screen === 'questionnaire' ? (
           <QuestionnaireScreen
