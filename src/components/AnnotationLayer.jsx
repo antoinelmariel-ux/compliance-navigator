@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from '../react.js';
-import { Close, Pause, Play, Save, Upload } from './icons.js';
+import { Close, Edit, Pause, Play, Save, Upload } from './icons.js';
 
 const clamp01 = (value) => {
   if (typeof value !== 'number' || Number.isNaN(value)) {
@@ -161,7 +161,7 @@ export const AnnotationLayer = ({
 
   return (
     <React.Fragment>
-      <div className="fixed top-0 inset-x-0 z-[180]" data-annotation-ui="true">
+      <div className="fixed top-0 inset-x-0 z-[260]" data-annotation-ui="true">
         <div className="max-w-7xl mx-auto px-4 sm:px-8">
           <div className="mt-2 rounded-b-xl bg-white border border-slate-200 text-slate-900 shadow-2xl px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2 text-sm text-slate-800">
@@ -208,9 +208,9 @@ export const AnnotationLayer = ({
       </div>
 
       <div className="annotation-sticky-layer" data-annotation-ui="true">
-        {visibleNotes.map(note => {
+        {visibleNotes.map((note, index) => {
           const position = computeNotePosition(note);
-          const label = note.sourceId && note.sourceId !== 'session' ? note.sourceId : 'Annotation';
+          const label = note.sourceId && note.sourceId !== 'session' ? note.sourceId : `#${index + 1}`;
           const color = note.color || sourceColors[label] || '#fbbf24';
 
           return (
@@ -221,39 +221,37 @@ export const AnnotationLayer = ({
               data-annotation-ui="true"
             >
               <div
-                className="pointer-events-auto w-64 max-w-xs rounded-2xl shadow-2xl ring-1 ring-black/10 backdrop-blur overflow-hidden border border-black/5"
+                className="pointer-events-auto w-64 max-w-xs rounded-2xl shadow-[0_18px_40px_rgba(0,0,0,0.18)] border border-yellow-200 ring-1 ring-black/5"
                 style={{
-                  background: `linear-gradient(160deg, ${color}f0 0%, ${color}d0 45%, #fffbea 100%)`
+                  background: `linear-gradient(160deg, ${color || '#fef3c7'} 0%, #fff9d9 60%, #fff7cc 100%)`
                 }}
               >
-                <div className="flex items-center justify-between px-3 py-2 text-xs font-semibold text-slate-900 bg-white/70 backdrop-blur-sm border-b border-black/5">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex h-2.5 w-2.5 rounded-full bg-slate-900/70" aria-hidden="true" />
-                    <span className="truncate" title={label}>
-                      {label}
-                    </span>
-                  </div>
+                <div className="flex items-center justify-between px-3 py-2 text-sm font-semibold text-amber-900/80">
+                  <span className="tracking-tight">{label}</span>
                   {onNoteRemove ? (
                     <button
                       type="button"
                       onClick={() => onNoteRemove(note.id)}
-                      className="rounded-md p-1.5 text-slate-800 transition hover:bg-black/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700"
+                      className="rounded-md p-1.5 text-amber-900/80 transition hover:bg-white/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-800/60"
                       aria-label="Supprimer le sticky note"
                     >
                       <Close className="h-4 w-4" />
                     </button>
                   ) : null}
                 </div>
-                <div className="px-3 pb-3 pt-2">
+                <div className="px-3 pb-3 pt-1">
                   <textarea
                     value={note.text || ''}
                     onChange={(event) => onNoteChange && onNoteChange(note.id, event.target.value)}
                     ref={registerTextareaRef(note.id)}
-                    className="w-full resize-none rounded-xl border border-black/5 bg-white/90 px-3 py-2 text-sm text-slate-800 shadow-inner focus:outline-none focus:ring-2 focus:ring-slate-800/70"
-                    rows={3}
-                    placeholder="Ajoutez votre commentaire"
+                    className="w-full resize-none border-none bg-transparent px-1 py-2 text-[15px] leading-relaxed text-amber-900/90 placeholder:text-amber-700/50 focus:outline-none focus:ring-0"
+                    rows={4}
+                    placeholder="Ajoutez votre remarque ici..."
                     data-annotation-ui="true"
                   />
+                  <div className="flex justify-end pr-1 text-amber-900/50">
+                    <Edit className="h-4 w-4" aria-hidden="true" />
+                  </div>
                 </div>
               </div>
             </div>
