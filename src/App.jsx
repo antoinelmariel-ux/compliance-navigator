@@ -4,7 +4,8 @@ import { SynthesisReport } from './components/SynthesisReport.jsx';
 import { HomeScreen } from './components/HomeScreen.jsx';
 import { BackOffice } from './components/BackOffice.jsx';
 import { ProjectShowcase } from './components/ProjectShowcase.jsx';
-import { CheckCircle, Lock, Settings, Sparkles } from './components/icons.js';
+import { AnnotationLayer } from './components/AnnotationLayer.jsx';
+import { CheckCircle, Lock, MessageSquare, Settings, Sparkles } from './components/icons.js';
 import { MandatoryQuestionsSummary } from './components/MandatoryQuestionsSummary.jsx';
 import { initialQuestions } from './data/questions.js';
 import { initialRules } from './data/rules.js';
@@ -26,7 +27,19 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.179';
+const APP_VERSION = 'v1.0.180';
+
+const ANNOTATION_COLORS = [
+  '#2563eb',
+  '#ec4899',
+  '#10b981',
+  '#f59e0b',
+  '#8b5cf6',
+  '#0ea5e9',
+  '#14b8a6',
+  '#ef4444',
+  '#ea580c'
+];
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
@@ -97,6 +110,40 @@ const cloneDeep = (value) => {
   } catch (error) {
     return value;
   }
+};
+
+const clamp01 = (value) => {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return 0;
+  }
+
+  if (value < 0) {
+    return 0;
+  }
+
+  if (value > 1) {
+    return 1;
+  }
+
+  return value;
+};
+
+const createAnnotationId = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+
+  return `note-${Date.now()}-${Math.round(Math.random() * 100000)}`;
+};
+
+const buildAnnotationContextKey = ({ screen, projectId, scope }) => {
+  const base = screen === 'showcase' ? `showcase:${projectId || 'unknown'}` : screen;
+
+  if (screen === 'showcase' && scope) {
+    return `${base}:${scope}`;
+  }
+
+  return base || 'global';
 };
 
 const restoreShowcaseQuestions = (currentQuestions, referenceQuestions = initialQuestions) => {
@@ -484,6 +531,13 @@ export const App = () => {
   const [adminView, setAdminView] = useState('home');
   const persistTimeoutRef = useRef(null);
   const previousScreenRef = useRef(null);
+  const [isAnnotationModeEnabled, setIsAnnotationModeEnabled] = useState(false);
+  const [isAnnotationPaused, setIsAnnotationPaused] = useState(false);
+  const [annotationNotes, setAnnotationNotes] = useState([]);
+  const [annotationSources, setAnnotationSources] = useState({ session: ANNOTATION_COLORS[0] });
+  const [showcaseAnnotationScope, setShowcaseAnnotationScope] = useState('display-full');
+  const annotationNotesRef = useRef(annotationNotes);
+  const annotationFileInputRef = useRef(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -511,6 +565,10 @@ export const App = () => {
   useEffect(() => {
     projectsRef.current = projects;
   }, [projects]);
+
+  useEffect(() => {
+    annotationNotesRef.current = annotationNotes;
+  }, [annotationNotes]);
 
   useEffect(() => {
     isOnboardingActiveRef.current = isOnboardingActive;
@@ -1600,10 +1658,245 @@ export const App = () => {
     return extractProjectName(answers, questions);
   }, [activeProject, answers, questions]);
 
+  const activeShowcaseProjectId = showcaseProjectContext?.projectId || null;
+
+  const activeAnnotationContextKey = useMemo(
+    () => buildAnnotationContextKey({
+      screen,
+      projectId: activeShowcaseProjectId,
+      scope: showcaseAnnotationScope
+    }),
+    [activeShowcaseProjectId, screen, showcaseAnnotationScope]
+  );
+
+  const registerAnnotationSource = useCallback((sourceId, preferredColor) => {
+    if (!sourceId) {
+      return ANNOTATION_COLORS[0];
+    }
+
+    let resolvedColor = ANNOTATION_COLORS[0];
+
+    setAnnotationSources(prevSources => {
+      if (prevSources[sourceId]) {
+        resolvedColor = prevSources[sourceId];
+        return prevSources;
+      }
+
+      const usedColors = new Set(Object.values(prevSources));
+
+      if (preferredColor && !usedColors.has(preferredColor)) {
+        resolvedColor = preferredColor;
+      } else {
+        const availableColor = ANNOTATION_COLORS.find(color => !usedColors.has(color));
+        resolvedColor = availableColor || ANNOTATION_COLORS[0];
+      }
+
+      return { ...prevSources, [sourceId]: resolvedColor };
+    });
+
+    return resolvedColor;
+  }, []);
+
+  const handleAddAnnotationNote = useCallback((clientX, clientY) => {
+    if (screen !== 'showcase' || !showcaseProjectContext) {
+      return;
+    }
+
+    const width = typeof window !== 'undefined' ? window.innerWidth || 1 : 1;
+    const height = typeof window !== 'undefined' ? window.innerHeight || 1 : 1;
+    const x = clamp01(clientX / width);
+    const y = clamp01(clientY / height);
+    const sourceId = 'session';
+    const color = registerAnnotationSource(sourceId);
+
+    setAnnotationNotes(prevNotes => [
+      ...prevNotes,
+      {
+        id: createAnnotationId(),
+        x,
+        y,
+        text: '',
+        color,
+        contextId: activeAnnotationContextKey,
+        projectId: showcaseProjectContext.projectId || 'unknown',
+        projectName: showcaseProjectContext.projectName || '',
+        sourceId
+      }
+    ]);
+  }, [activeAnnotationContextKey, registerAnnotationSource, screen, showcaseProjectContext]);
+
+  const handleAnnotationTextChange = useCallback((noteId, text) => {
+    setAnnotationNotes(prevNotes => prevNotes.map(note => (
+      note?.id === noteId
+        ? { ...note, text }
+        : note
+    )));
+  }, []);
+
+  const handleRemoveAnnotationNote = useCallback((noteId) => {
+    setAnnotationNotes(prevNotes => prevNotes.filter(note => note?.id !== noteId));
+  }, []);
+
+  const handleToggleAnnotationMode = useCallback(() => {
+    setIsAnnotationModeEnabled(prev => {
+      const next = !prev;
+
+      if (!next) {
+        setIsAnnotationPaused(false);
+      }
+
+      return next;
+    });
+  }, []);
+
+  const handleToggleAnnotationPause = useCallback(() => {
+    setIsAnnotationPaused(prev => !prev);
+  }, []);
+
+  const downloadAnnotationFile = useCallback((notesToSave, projectName) => {
+    if (!Array.isArray(notesToSave) || notesToSave.length === 0 || typeof window === 'undefined') {
+      return;
+    }
+
+    const safeName = typeof projectName === 'string' && projectName.trim().length > 0
+      ? projectName.trim()
+      : 'projet';
+
+    const payload = JSON.stringify(notesToSave, null, 2);
+    const blob = new Blob([payload], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `Commentaire sur le projet ${safeName}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }, []);
+
+  const handleSaveAnnotationNotes = useCallback(() => {
+    if (!showcaseProjectContext) {
+      return;
+    }
+
+    const projectNotes = annotationNotes.filter(note => note?.projectId === showcaseProjectContext.projectId);
+
+    if (projectNotes.length === 0) {
+      return;
+    }
+
+    downloadAnnotationFile(projectNotes, showcaseProjectContext.projectName);
+  }, [annotationNotes, downloadAnnotationFile, showcaseProjectContext]);
+
+  const handleRequestAnnotationFile = useCallback(() => {
+    if (annotationFileInputRef.current) {
+      annotationFileInputRef.current.value = '';
+      annotationFileInputRef.current.click();
+    }
+  }, []);
+
+  const handleAnnotationFileChange = useCallback((event) => {
+    const [file] = event?.target?.files || [];
+    const fileInput = event?.target;
+
+    if (!file) {
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result || '[]');
+        const rawNotes = Array.isArray(parsed)
+          ? parsed
+          : Array.isArray(parsed?.notes)
+            ? parsed.notes
+            : [];
+
+        if (!Array.isArray(rawNotes) || rawNotes.length === 0) {
+          return;
+        }
+
+        const sourceId = file.name || `import-${Date.now()}`;
+        const sourceColor = registerAnnotationSource(sourceId);
+
+        const importedNotes = rawNotes.map(rawNote => {
+          const registeredColor = registerAnnotationSource(rawNote?.sourceId || sourceId, rawNote?.color || sourceColor);
+
+          return {
+            id: rawNote?.id || createAnnotationId(),
+            x: clamp01(rawNote?.x ?? 0),
+            y: clamp01(rawNote?.y ?? 0),
+            text: typeof rawNote?.text === 'string' ? rawNote.text : '',
+            color: registeredColor,
+            contextId: rawNote?.contextId || activeAnnotationContextKey,
+            projectId: rawNote?.projectId || showcaseProjectContext?.projectId || 'unknown',
+            projectName: rawNote?.projectName || showcaseProjectContext?.projectName || '',
+            sourceId: rawNote?.sourceId || sourceId
+          };
+        });
+
+        setAnnotationNotes(prevNotes => [...prevNotes, ...importedNotes]);
+      } catch (error) {
+        // Malformed file, ignore silently
+      } finally {
+        if (fileInput) {
+          fileInput.value = '';
+        }
+      }
+    };
+
+    reader.readAsText(file);
+  }, [activeAnnotationContextKey, registerAnnotationSource, showcaseProjectContext]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    if (!isAnnotationModeEnabled || isAnnotationPaused || screen !== 'showcase') {
+      return undefined;
+    }
+
+    const handleDocumentClick = (event) => {
+      const target = event?.target;
+
+      if (target instanceof Element && target.closest('[data-annotation-ui="true"]')) {
+        return;
+      }
+
+      handleAddAnnotationNote(event.clientX, event.clientY);
+    };
+
+    window.addEventListener('click', handleDocumentClick, true);
+
+    return () => {
+      window.removeEventListener('click', handleDocumentClick, true);
+    };
+  }, [handleAddAnnotationNote, isAnnotationModeEnabled, isAnnotationPaused, screen]);
+
+  useEffect(() => {
+    if (!showcaseProjectContext) {
+      return undefined;
+    }
+
+    const { projectName, projectId } = showcaseProjectContext;
+
+    return () => {
+      const projectNotes = (annotationNotesRef.current || []).filter(note => note?.projectId === projectId);
+
+      if (projectNotes.length > 0) {
+        downloadAnnotationFile(projectNotes, projectName);
+      }
+    };
+  }, [downloadAnnotationFile, showcaseProjectContext]);
+
   const isAdminMode = mode === 'admin';
   const isAdminHomeView = isAdminMode && adminView === 'home';
   const isAdminBackOfficeView = isAdminMode && adminView === 'back-office';
   const isActiveProjectEditable = isAdminMode || !activeProject || activeProject.status === 'draft';
+  const annotationOffsetClass = isAnnotationModeEnabled && screen === 'showcase'
+    ? 'pt-20 lg:pt-24'
+    : '';
 
   const handleAnswer = useCallback((questionId, answer) => {
     let answerChanged = false;
@@ -2658,7 +2951,30 @@ export const App = () => {
   }, [navigateToSynthesis]);
 
   return (
-    <div className="min-h-screen">
+    <div className={`min-h-screen ${annotationOffsetClass}`}>
+      <AnnotationLayer
+        isActive={isAnnotationModeEnabled && screen === 'showcase'}
+        isPaused={isAnnotationPaused}
+        notes={annotationNotes}
+        activeContextId={activeAnnotationContextKey}
+        sourceColors={annotationSources}
+        projectName={showcaseProjectContext?.projectName || ''}
+        onTogglePause={handleToggleAnnotationPause}
+        onRequestSave={handleSaveAnnotationNotes}
+        onRequestLoad={handleRequestAnnotationFile}
+        onNoteChange={handleAnnotationTextChange}
+        onNoteRemove={handleRemoveAnnotationNote}
+      />
+
+      <input
+        ref={annotationFileInputRef}
+        type="file"
+        accept="application/json"
+        className="sr-only"
+        onChange={handleAnnotationFileChange}
+        data-annotation-ui="true"
+      />
+
       <div id="tour-onboarding-anchor" className="sr-only" aria-hidden="true">
         Guide interactif
       </div>
@@ -2680,6 +2996,22 @@ export const App = () => {
               role="group"
               aria-label="Sélection du mode d'utilisation"
             >
+              {screen === 'showcase' && (
+                <button
+                  type="button"
+                  onClick={handleToggleAnnotationMode}
+                  className={`order-first self-start sm:order-last sm:self-center inline-flex h-11 w-11 items-center justify-center rounded-full border text-blue-700 shadow-sm transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                    isAnnotationModeEnabled ? 'bg-blue-50 border-blue-200' : 'bg-white border-blue-100'
+                  }`}
+                  aria-pressed={isAnnotationModeEnabled}
+                  aria-label={isAnnotationModeEnabled ? 'Désactiver le mode annotation' : 'Activer le mode annotation'}
+                  title={isAnnotationModeEnabled ? 'Désactiver le mode annotation' : 'Activer le mode annotation'}
+                  data-annotation-ui="true"
+                >
+                  <MessageSquare className="h-5 w-5" />
+                  <span className="sr-only">Annotation</span>
+                </button>
+              )}
               {mode === 'user' && screen === 'showcase' && showcaseProjectContext && (
                 <button
                   type="button"
@@ -2911,6 +3243,7 @@ export const App = () => {
                       : undefined
                 }
                 tourContext={tourContext}
+                onAnnotationScopeChange={setShowcaseAnnotationScope}
               />
             </div>
           ) : null

@@ -1248,7 +1248,8 @@ export const ProjectShowcase = ({
   onUpdateAnswers,
   tourContext = null,
   showcaseThemes = initialShowcaseThemes,
-  hasIncompleteAnswers = false
+  hasIncompleteAnswers = false,
+  onAnnotationScopeChange = null
 }) => {
   const rawProjectName = typeof projectName === 'string' ? projectName.trim() : '';
   const safeProjectName = rawProjectName.length > 0 ? rawProjectName : 'Information à compléter';
@@ -1354,6 +1355,24 @@ export const ProjectShowcase = ({
       return changed ? nextState : previous;
     });
   }, [sectionOrder]);
+
+  useEffect(() => {
+    if (typeof onAnnotationScopeChange !== 'function') {
+      return undefined;
+    }
+
+    const scope = isSectionModalOpen
+      ? `section-modal-${sectionModalStep}`
+      : isLightConfigOpen
+        ? 'light-config'
+        : `display-${displayMode}`;
+
+    onAnnotationScopeChange(scope);
+
+    return () => {
+      onAnnotationScopeChange('');
+    };
+  }, [displayMode, isLightConfigOpen, isSectionModalOpen, onAnnotationScopeChange, sectionModalStep]);
 
   const handleDisplayModeChange = useCallback((mode) => {
     if (mode === 'full' || mode === 'light') {
