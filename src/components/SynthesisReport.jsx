@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from '../react.js';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from '../react.js';
 import {
   FileText,
   Users,
@@ -12,6 +12,7 @@ import {
   Edit
 } from './icons.js';
 import { formatAnswer } from '../utils/questions.js';
+import { computeRankingRecommendations, normalizeRankingConfig } from '../utils/ranking.js';
 import { renderTextWithLinks } from '../utils/linkify.js';
 import { ProjectShowcase } from './ProjectShowcase.jsx';
 import { extractProjectName } from '../utils/projects.js';
@@ -37,6 +38,18 @@ const escapeHtml = (value) => {
 
 const formatNumber = (value, options = {}) => {
   return Number(value).toLocaleString('fr-FR', options);
+};
+
+const formatCriterionScore = (value) => {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return '—';
+  }
+
+  if (numeric >= 3) return '+++';
+  if (numeric >= 2) return '++';
+  if (numeric >= 1) return '+';
+  return '—';
 };
 
 const COMPLIANCE_COMMENTS_KEY = '__compliance_team_comments__';
@@ -676,6 +689,40 @@ export const SynthesisReport = ({
 
   const formattedRiskScore = formatRiskScore(analysis?.riskScore);
 
+  const rankingQuestions = useMemo(
+    () => (Array.isArray(questions) ? questions.filter(question => question?.type === 'ranking') : []),
+    [questions]
+  );
+
+  const rankingResults = useMemo(() => {
+    return rankingQuestions
+      .map(question => {
+        const config = normalizeRankingConfig(question.rankingConfig || {});
+        const answer = answers?.[question.id];
+        const recommendations = computeRankingRecommendations(answer, config, 3);
+        const formattedAnswer = formatAnswer(question, answer);
+        const prioritizedOrder = Array.isArray(answer?.prioritized)
+          ? answer.prioritized
+          : config.criteria.map(item => item.id);
+        const ignoredSet = new Set(Array.isArray(answer?.ignored) ? answer.ignored : []);
+        const orderedCriteria = prioritizedOrder
+          .map(id => config.criteria.find(criterion => criterion.id === id))
+          .filter(Boolean)
+          .filter(criterion => !ignoredSet.has(criterion.id));
+        const ignoredCriteria = config.criteria.filter(criterion => ignoredSet.has(criterion.id));
+
+        return {
+          question,
+          config,
+          recommendations,
+          formattedAnswer,
+          orderedCriteria,
+          ignoredCriteria
+        };
+      })
+      .filter(entry => entry.recommendations.length > 0 && entry.formattedAnswer);
+  }, [answers, rankingQuestions]);
+
   const timelineDetails = analysis?.timeline?.details || [];
   const vigilanceAlerts = (Array.isArray(analysis?.timeline?.vigilance)
     ? analysis.timeline.vigilance
@@ -1254,6 +1301,86 @@ export const SynthesisReport = ({
                 })}
               </div>
             </section>
+
+            {rankingResults.map(result => (
+              <section key={result.question.id} aria-labelledby={`ranking-${result.question.id}`} className="mt-8">
+                <h3
+                  id={`ranking-${result.question.id}`}
+                  className="text-2xl font-bold text-gray-800 mb-2 flex items-center gap-2"
+                >
+                  <Sparkles className="w-5 h-5 text-indigo-600" />
+                  {result.config.title}
+                </h3>
+                <p className="text-sm text-gray-600 mb-4">Priorités déclarées : {result.formattedAnswer}</p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {result.recommendations.map(recommendation => (
+                    <article
+                      key={recommendation.id}
+                      className="p-4 border border-gray-200 rounded-xl bg-white shadow-sm space-y-3 hv-surface"
+                      aria-label={`Recommandation ${recommendation.name}`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <h4 className="text-lg font-semibold text-gray-900">{recommendation.name}</h4>
+                          {recommendation.previousProject && (
+                            <p className="text-xs text-gray-600">Projet récent : {recommendation.previousProject}</p>
+                          )}
+                          {recommendation.opinion && (
+                            <p className="text-xs text-gray-600">Avis global : {recommendation.opinion}</p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <span className="text-xs font-semibold text-gray-500 uppercase">Score</span>
+                          <p className="text-xl font-bold text-indigo-700">{formatNumber(recommendation.score, { maximumFractionDigits: 1 })}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        {result.orderedCriteria.map(criterion => (
+                          <span
+                            key={`${recommendation.id}-${criterion.id}`}
+                            className="inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100"
+                          >
+                            {criterion.label} : <span className="text-gray-900">{formatCriterionScore(recommendation.scores?.[criterion.id])}</span>
+                          </span>
+                        ))}
+                        {result.ignoredCriteria.map(criterion => (
+                          <span
+                            key={`${recommendation.id}-${criterion.id}-ignored`}
+                            className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-500 border border-gray-200"
+                          >
+                            {criterion.label} : sans importance
+                          </span>
+                        ))}
+                      </div>
+
+                      <div className="flex flex-col gap-1 text-sm text-gray-700">
+                        {recommendation.contact && (
+                          <div className="flex items-center gap-2 text-blue-700">
+                            <Mail className="w-4 h-4" />
+                            {renderTextWithLinks(recommendation.contact)}
+                          </div>
+                        )}
+                        {recommendation.website && (
+                          <a
+                            href={recommendation.website}
+                            className="text-sm text-blue-600 underline"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Consulter le site
+                          </a>
+                        )}
+                        {recommendation.notes && (
+                          <p className="text-xs text-gray-600 mt-1">{renderTextWithLinks(recommendation.notes)}</p>
+                        )}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            ))}
 
             {vigilanceAlerts.length > 0 && (
               <section aria-labelledby="vigilance-heading" className="mt-8">

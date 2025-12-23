@@ -1,4 +1,5 @@
 import { normalizeConditionGroups } from './conditionGroups.js';
+import { formatRankingAnswer } from './ranking.js';
 
 const normalizeAnswerForComparison = (answer) => {
   if (Array.isArray(answer)) {
@@ -167,6 +168,13 @@ export const formatAnswer = (question, answer) => {
 
   if (questionType === 'multi_choice' && Array.isArray(answer)) {
     return answer.join(', ');
+  }
+
+  if (questionType === 'ranking') {
+    const criteria = Array.isArray(question?.rankingConfig?.criteria)
+      ? question.rankingConfig.criteria
+      : [];
+    return formatRankingAnswer(answer, criteria);
   }
 
   if (questionType === 'file' && answer && typeof answer === 'object') {

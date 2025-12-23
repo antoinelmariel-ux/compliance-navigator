@@ -14,6 +14,7 @@ import { formatAnswer } from '../utils/questions.js';
 import { normalizeConditionGroups } from '../utils/conditionGroups.js';
 import { renderTextWithLinks } from '../utils/linkify.js';
 import { RichTextEditor } from './RichTextEditor.jsx';
+import { normalizeRankingConfig } from '../utils/ranking.js';
 
 const OPERATOR_LABELS = {
   equals: 'est égal à',
@@ -109,6 +110,23 @@ export const QuestionnaireScreen = ({
   const questionType = currentQuestion.type || 'choice';
   const currentAnswer = answers[currentQuestion.id];
   const multiSelection = Array.isArray(currentAnswer) ? currentAnswer : [];
+  const rankingConfig = useMemo(
+    () => normalizeRankingConfig(currentQuestion.rankingConfig || {}),
+    [currentQuestion.rankingConfig]
+  );
+  const rankingAnswer = useMemo(() => {
+    const rawPrioritized = Array.isArray(currentAnswer?.prioritized) ? currentAnswer.prioritized : [];
+    const rawIgnored = Array.isArray(currentAnswer?.ignored) ? currentAnswer.ignored : [];
+
+    const validCriteria = rankingConfig.criteria.map(item => item.id);
+    const prioritized = rawPrioritized.filter(id => validCriteria.includes(id));
+    const ignored = rawIgnored.filter(id => validCriteria.includes(id));
+
+    return {
+      prioritized,
+      ignored
+    };
+  }, [currentAnswer, rankingConfig]);
   const [showGuidance, setShowGuidance] = useState(false);
   const [milestoneDrafts, setMilestoneDrafts] = useState(() => normalizeMilestoneDrafts(currentAnswer));
   const milestoneQuestionIdRef = useRef(questionType === 'milestone_list' ? currentQuestion.id : null);
@@ -251,6 +269,62 @@ export const QuestionnaireScreen = ({
     return hasObjective || hasDetails || guidanceTips.length > 0 || hasConditions;
   }, [guidance, guidanceTips, hasConditions]);
 
+  const rankingPrioritized = useMemo(() => {
+    if (questionType !== 'ranking') {
+      return [];
+    }
+
+    const defaultOrder = rankingConfig.criteria.map(item => item.id);
+    return rankingAnswer.prioritized.length > 0 ? rankingAnswer.prioritized : defaultOrder;
+  }, [questionType, rankingAnswer.prioritized, rankingConfig.criteria]);
+
+  const rankingIgnoredSet = useMemo(() => new Set(questionType === 'ranking' ? rankingAnswer.ignored : []), [questionType, rankingAnswer.ignored]);
+
+  const handleRankingMove = (criterionId, direction) => {
+    const currentOrder = rankingPrioritized;
+    const currentIndex = currentOrder.indexOf(criterionId);
+    if (currentIndex === -1) return;
+
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= currentOrder.length) return;
+
+    const nextOrder = [...currentOrder];
+    const [moved] = nextOrder.splice(currentIndex, 1);
+    nextOrder.splice(targetIndex, 0, moved);
+
+    onAnswer(currentQuestion.id, {
+      prioritized: nextOrder,
+      ignored: rankingAnswer.ignored
+    });
+  };
+
+  const handleRankingToggleIgnored = (criterionId) => {
+    const isIgnored = rankingIgnoredSet.has(criterionId);
+    const nextIgnored = isIgnored
+      ? rankingAnswer.ignored.filter(id => id !== criterionId)
+      : [...rankingAnswer.ignored, criterionId];
+
+    const nextPrioritized = isIgnored
+      ? (rankingAnswer.prioritized.length > 0
+        ? rankingAnswer.prioritized
+        : rankingConfig.criteria.map(item => item.id))
+      : rankingPrioritized.filter(id => id !== criterionId);
+
+    if (!isIgnored && nextPrioritized.length === 0) {
+      nextPrioritized.push(...rankingConfig.criteria.map(item => item.id).filter(id => id !== criterionId));
+    }
+
+    onAnswer(currentQuestion.id, {
+      prioritized: nextPrioritized,
+      ignored: nextIgnored
+    });
+  };
+
+  const handleRankingReset = () => {
+    const defaultOrder = rankingConfig.criteria.map(item => item.id);
+    onAnswer(currentQuestion.id, { prioritized: defaultOrder, ignored: [] });
+  };
+
   const renderQuestionInput = () => {
     switch (questionType) {
       case 'date':
@@ -355,6 +429,100 @@ export const QuestionnaireScreen = ({
             })}
           </div>
         );
+      case 'ranking': {
+        const orderedCriteria = rankingPrioritized
+          .map(id => rankingConfig.criteria.find(criterion => criterion.id === id))
+          .filter(Boolean);
+        const ignoredCriteria = rankingConfig.criteria.filter(criterion => rankingIgnoredSet.has(criterion.id));
+
+        return (
+          <div className="space-y-4 mb-8" data-tour-id="question-main-content">
+            <p className="text-sm text-gray-600">
+              Classez les critères du plus important au moins important et indiquez ceux qui sont sans importance pour vous.
+            </p>
+
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs text-gray-500">Utilisez les flèches pour ajuster l'ordre.</span>
+              <button
+                type="button"
+                onClick={handleRankingReset}
+                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50"
+              >
+                Réinitialiser l'ordre
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {orderedCriteria.map((criterion, index) => {
+                const isFirst = index === 0;
+                const isLast = index === orderedCriteria.length - 1;
+
+                return (
+                  <div
+                    key={criterion.id}
+                    className="flex items-center gap-3 p-3 rounded-xl border-2 border-gray-200 bg-white hover:border-blue-200 hv-focus-ring"
+                  >
+                    <div className="flex flex-col gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleRankingMove(criterion.id, 'up')}
+                        disabled={isFirst}
+                        className="px-2 py-1 text-xs font-semibold border rounded-lg disabled:opacity-40 hover:bg-blue-50"
+                        aria-label={`Monter ${criterion.label}`}
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRankingMove(criterion.id, 'down')}
+                        disabled={isLast}
+                        className="px-2 py-1 text-xs font-semibold border rounded-lg disabled:opacity-40 hover:bg-blue-50"
+                        aria-label={`Descendre ${criterion.label}`}
+                      >
+                        ↓
+                      </button>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-gray-800">{index + 1}. {criterion.label}</p>
+                      {criterion.description && <p className="text-xs text-gray-500">{criterion.description}</p>}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRankingToggleIgnored(criterion.id)}
+                      className={`text-xs font-medium px-3 py-2 rounded-lg border transition ${
+                        rankingIgnoredSet.has(criterion.id)
+                          ? 'border-gray-300 text-gray-600 bg-gray-50'
+                          : 'border-red-200 text-red-600 hover:bg-red-50'
+                      }`}
+                    >
+                      {rankingIgnoredSet.has(criterion.id) ? 'Reprendre en compte' : 'Sans importance'}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+
+            {ignoredCriteria.length > 0 && (
+              <div className="rounded-xl border border-gray-200 bg-gray-50 p-3">
+                <p className="text-sm font-semibold text-gray-700 mb-2">Critères sans importance</p>
+                <div className="flex flex-wrap gap-2">
+                  {ignoredCriteria.map(criterion => (
+                    <button
+                      key={criterion.id}
+                      type="button"
+                      onClick={() => handleRankingToggleIgnored(criterion.id)}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium border border-gray-300 rounded-full bg-white hover:border-blue-300"
+                    >
+                      {criterion.label}
+                      <span className="text-blue-600">(réintégrer)</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      }
       case 'milestone_list': {
         const handleMilestoneUpdate = (updater) => {
           setMilestoneDrafts(prev => {
