@@ -606,5 +606,76 @@ export const initialQuestions = [
     },
     "placeholder": "Prénom Nom - Poste de la personne\nPrénom Nom - Poste de la personne",
     "conditionGroups": []
+  },
+  {
+    "id": "agencyRanking",
+    "type": "ranking",
+    "question": "Classez vos critères pour sélectionner une agence médicale partenaire",
+    "options": [],
+    "required": false,
+    "conditions": [],
+    "conditionLogic": "all",
+    "guidance": {
+      "objective": "Identifier rapidement l'agence qui correspond le mieux à vos attentes.",
+      "details": "Ordonnez les critères par importance et mettez de côté ceux qui n'ont aucune incidence pour vous.",
+      "tips": [
+        "Pensez aux compétences clés attendues (scientifique, créativité, international...).",
+        "Marquez les critères non pertinents comme \"sans importance\" pour affiner la recommandation."
+      ]
+    },
+    "rankingConfig": {
+      "title": "Agences médicales partenaires",
+      "criteria": [
+        { "id": "international", "label": "International" },
+        { "id": "scientific", "label": "Contenu scientifique" },
+        { "id": "creativity", "label": "Créativité" },
+        { "id": "price", "label": "Prix" },
+        { "id": "opinion", "label": "Avis global" }
+      ],
+      "entries": [
+        {
+          "id": "a-a",
+          "name": "A+A",
+          "scores": { "international": 3, "scientific": 3, "creativity": 3, "price": 3, "opinion": 2 },
+          "contact": "antoine.ada@aa.com",
+          "website": "https://www.adhealth.com",
+          "previousProject": "",
+          "opinionText": "+++",
+          "notes": "Positionnement premium et solide réseau international."
+        },
+        {
+          "id": "adahealth",
+          "name": "ADAHealth",
+          "scores": { "international": 1, "scientific": 2, "creativity": 3, "price": 3, "opinion": 2 },
+          "contact": "robin.benard@adhealth.com",
+          "website": "https://www.adhealth.com",
+          "previousProject": "",
+          "opinionText": "++",
+          "notes": "Agence créative avec appétence digitale."
+        },
+        {
+          "id": "anna-purna",
+          "name": "Anna Purna",
+          "scores": { "international": 2, "scientific": 2, "creativity": 3, "price": 3, "opinion": 2 },
+          "contact": "l.esperanza@annapurna8000.com",
+          "website": "https://www.agence-annapurna.com",
+          "previousProject": "",
+          "opinionText": "++",
+          "notes": "Approche équilibrée entre rigueur médicale et créativité."
+        },
+        {
+          "id": "arsenal-cdm",
+          "name": "Arsenal CDM",
+          "scores": { "international": 1, "scientific": 1, "creativity": 1, "price": 1, "opinion": 1 },
+          "contact": "cherry@cdmparis.com",
+          "website": "https://www.cdmparis.com",
+          "previousProject": "FitCLOT / CLOTTAFACT",
+          "opinionText": "++",
+          "notes": "Historique sur des projets clotting, bonne connaissance du secteur."
+        }
+      ]
+    },
+    "placeholder": "",
+    "conditionGroups": []
   }
 ];

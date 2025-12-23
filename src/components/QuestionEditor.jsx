@@ -35,6 +35,32 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
     return '';
   };
 
+  const buildDefaultRankingConfig = (previousConfig = null) => {
+    if (previousConfig && typeof previousConfig === 'object') {
+      return {
+        title: previousConfig.title || 'Base de données',
+        criteria: Array.isArray(previousConfig.criteria) && previousConfig.criteria.length > 0
+          ? previousConfig.criteria
+          : [
+              { id: 'critere-1', label: 'Critère 1' },
+              { id: 'critere-2', label: 'Critère 2' },
+              { id: 'critere-3', label: 'Critère 3' }
+            ],
+        entries: Array.isArray(previousConfig.entries) ? previousConfig.entries : []
+      };
+    }
+
+    return {
+      title: 'Base de données',
+      criteria: [
+        { id: 'critere-1', label: 'Critère 1' },
+        { id: 'critere-2', label: 'Critère 2' },
+        { id: 'critere-3', label: 'Critère 3' }
+      ],
+      entries: []
+    };
+  };
+
   const sanitizeConditionGroups = (groups) => {
     return Array.isArray(groups)
       ? groups.map(group => ({
@@ -54,13 +80,16 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
   };
 
   const buildQuestionState = (source) => {
+    const rankingConfig = buildDefaultRankingConfig(source.rankingConfig);
+
     const base = {
       ...source,
       type: source.type || 'choice',
       options: source.options || [],
       guidance: ensureGuidance(source.guidance),
       placeholder: typeof source.placeholder === 'string' ? source.placeholder : '',
-      numberUnit: typeof source.numberUnit === 'string' ? source.numberUnit : ''
+      numberUnit: typeof source.numberUnit === 'string' ? source.numberUnit : '',
+      rankingConfig
     };
 
     const groups = sanitizeConditionGroups(normalizeConditionGroups(base));
@@ -142,6 +171,16 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
       return;
     }
 
+    if (newType === 'ranking') {
+      setEditedQuestion(prev => ({
+        ...prev,
+        type: newType,
+        rankingConfig: buildDefaultRankingConfig(prev.rankingConfig),
+        options: []
+      }));
+      return;
+    }
+
     setEditedQuestion(prev => ({
       ...prev,
       type: newType,
@@ -191,6 +230,142 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
   const handleDragEnd = () => {
     setDraggedOptionIndex(null);
     setDragOverIndex(null);
+  };
+
+  const updateRankingConfig = (updater) => {
+    setEditedQuestion(prev => {
+      const baseConfig = buildDefaultRankingConfig(prev.rankingConfig);
+      const nextConfig = typeof updater === 'function' ? updater(baseConfig) : updater;
+
+      return {
+        ...prev,
+        rankingConfig: buildDefaultRankingConfig(nextConfig)
+      };
+    });
+  };
+
+  const addRankingCriterion = () => {
+    updateRankingConfig(config => {
+      const newId = `critere-${config.criteria.length + 1}`;
+      return {
+        ...config,
+        criteria: [...config.criteria, { id: newId, label: `Critère ${config.criteria.length + 1}` }]
+      };
+    });
+  };
+
+  const updateRankingCriterion = (index, field, value) => {
+    updateRankingConfig(config => {
+      const updated = [...config.criteria];
+      const target = updated[index];
+      if (!target) return config;
+
+      const next = {
+        ...target,
+        [field]: value
+      };
+
+      if (field === 'label' && (!next.id || next.id.startsWith('critere-'))) {
+        next.id = value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9_-]/gi, '') || next.id;
+      }
+
+      updated[index] = next;
+
+      return {
+        ...config,
+        criteria: updated
+      };
+    });
+  };
+
+  const deleteRankingCriterion = (index) => {
+    updateRankingConfig(config => {
+      const updatedCriteria = config.criteria.filter((_, idx) => idx !== index);
+      const removed = config.criteria[index];
+      if (!removed) {
+        return { ...config, criteria: updatedCriteria };
+      }
+
+      const cleanedEntries = (config.entries || []).map(entry => {
+        const nextScores = { ...entry.scores };
+        delete nextScores[removed.id];
+        return { ...entry, scores: nextScores };
+      });
+
+      return {
+        ...config,
+        criteria: updatedCriteria,
+        entries: cleanedEntries
+      };
+    });
+  };
+
+  const addRankingEntry = () => {
+    updateRankingConfig(config => ({
+      ...config,
+      entries: [
+        ...config.entries,
+        {
+          id: `entree-${config.entries.length + 1}`,
+          name: `Option ${config.entries.length + 1}`,
+          contact: '',
+          website: '',
+          notes: '',
+          previousProject: '',
+          opinion: '',
+          scores: {}
+        }
+      ]
+    }));
+  };
+
+  const updateRankingEntry = (index, field, value) => {
+    updateRankingConfig(config => {
+      const entries = [...config.entries];
+      const target = entries[index];
+      if (!target) return config;
+
+      entries[index] = {
+        ...target,
+        [field]: value
+      };
+
+      return {
+        ...config,
+        entries
+      };
+    });
+  };
+
+  const updateRankingScore = (entryIndex, criterionId, value) => {
+    const parsedValue = Number(value);
+    const sanitized = Number.isFinite(parsedValue) ? Math.max(0, parsedValue) : 0;
+
+    updateRankingConfig(config => {
+      const entries = [...config.entries];
+      const target = entries[entryIndex];
+      if (!target) return config;
+
+      entries[entryIndex] = {
+        ...target,
+        scores: {
+          ...target.scores,
+          [criterionId]: sanitized
+        }
+      };
+
+      return {
+        ...config,
+        entries
+      };
+    });
+  };
+
+  const deleteRankingEntry = (index) => {
+    updateRankingConfig(config => ({
+      ...config,
+      entries: config.entries.filter((_, idx) => idx !== index)
+    }));
   };
 
   const updateConditionGroupsState = (updater) => {
@@ -407,6 +582,7 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                   <option value="choice">Liste de choix</option>
                   <option value="date">Date</option>
                   <option value="multi_choice">Choix multiples</option>
+                  <option value="ranking">Classement de critères</option>
                   <option value="number">Valeur numérique</option>
                   <option value="url">Lien URL</option>
                   <option value="file">Fichier</option>
@@ -558,6 +734,211 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
               </div>
             )}
           </div>
+
+          {questionType === 'ranking' && (
+            <div className="border-t border-gray-200 pt-6 mt-6 space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                  <Compass className="w-5 h-5 text-indigo-500" />
+                  Base de données de recommandation
+                </h3>
+                <button
+                  type="button"
+                  onClick={addRankingEntry}
+                  className="flex items-center px-3 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-all text-sm font-medium"
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Ajouter une entrée
+                </button>
+              </div>
+
+              <div className="grid gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Titre affiché dans le rapport</label>
+                  <input
+                    type="text"
+                    value={editedQuestion.rankingConfig?.title || ''}
+                    onChange={(e) => updateRankingConfig(config => ({ ...config, title: e.target.value }))}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    placeholder="Ex : Agences partenaires"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Ce libellé sera utilisé comme titre de la section dans le rapport Compliance.
+                  </p>
+                </div>
+
+                <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                      <Target className="w-5 h-5 text-indigo-500" />
+                      Critères à classer
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={addRankingCriterion}
+                      className="flex items-center px-3 py-1.5 bg-white border border-indigo-200 text-indigo-600 rounded-lg hover:bg-indigo-50 text-sm"
+                    >
+                      <Plus className="w-4 h-4 mr-1" /> Ajouter
+                    </button>
+                  </div>
+                  {editedQuestion.rankingConfig?.criteria?.length > 0 ? (
+                    <div className="space-y-2">
+                      {editedQuestion.rankingConfig.criteria.map((criterion, idx) => (
+                        <div key={criterion.id || idx} className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg border border-gray-200">
+                          <div className="flex-1">
+                            <label className="block text-xs font-semibold text-gray-600">Libellé</label>
+                            <input
+                              type="text"
+                              value={criterion.label || ''}
+                              onChange={(e) => updateRankingCriterion(idx, 'label', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                              placeholder={`Critère ${idx + 1}`}
+                            />
+                          </div>
+                          <div className="sm:w-48">
+                            <label className="block text-xs font-semibold text-gray-600">Identifiant</label>
+                            <input
+                              type="text"
+                              value={criterion.id || ''}
+                              onChange={(e) => updateRankingCriterion(idx, 'id', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                              placeholder="id-technique"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => deleteRankingCriterion(idx)}
+                            className="self-start p-2 text-red-600 hover:bg-red-50 rounded"
+                            aria-label={`Supprimer le critère ${criterion.label || idx + 1}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-600">Ajoutez au moins un critère pour activer le classement.</p>
+                  )}
+                </div>
+
+                <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Lightbulb className="w-5 h-5 text-amber-500" />
+                    <h4 className="text-lg font-semibold text-gray-800">Entrées de la base</h4>
+                  </div>
+
+                  {editedQuestion.rankingConfig?.entries?.length === 0 ? (
+                    <p className="text-sm text-gray-600">Aucune entrée pour le moment. Ajoutez vos agences ou options pour alimenter les recommandations.</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {editedQuestion.rankingConfig.entries.map((entry, entryIdx) => (
+                        <div key={entry.id || entryIdx} className="border border-gray-200 rounded-lg p-4 space-y-3">
+                          <div className="flex flex-col sm:flex-row sm:items-start gap-3">
+                            <div className="flex-1">
+                              <label className="block text-xs font-semibold text-gray-600">Nom de l'entrée</label>
+                              <input
+                                type="text"
+                                value={entry.name || ''}
+                                onChange={(e) => updateRankingEntry(entryIdx, 'name', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                placeholder="Nom de l'agence"
+                              />
+                            </div>
+                            <div className="sm:w-48">
+                              <label className="block text-xs font-semibold text-gray-600">Contact</label>
+                              <input
+                                type="text"
+                                value={entry.contact || ''}
+                                onChange={(e) => updateRankingEntry(entryIdx, 'contact', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                placeholder="email ou nom"
+                              />
+                            </div>
+                            <div className="sm:w-48">
+                              <label className="block text-xs font-semibold text-gray-600">Site web</label>
+                              <input
+                                type="text"
+                                value={entry.website || ''}
+                                onChange={(e) => updateRankingEntry(entryIdx, 'website', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                placeholder="https://..."
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => deleteRankingEntry(entryIdx)}
+                              className="self-start p-2 text-red-600 hover:bg-red-50 rounded"
+                              aria-label={`Supprimer l'entrée ${entry.name || entryIdx + 1}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <div>
+                              <label className="block text-xs font-semibold text-gray-600">Réalisations récentes</label>
+                              <input
+                                type="text"
+                                value={entry.previousProject || ''}
+                                onChange={(e) => updateRankingEntry(entryIdx, 'previousProject', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                placeholder="Projet livré, clients..."
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-semibold text-gray-600">Avis global</label>
+                              <input
+                                type="text"
+                                value={entry.opinion || ''}
+                                onChange={(e) => updateRankingEntry(entryIdx, 'opinion', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                placeholder="Notation ou synthèse"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-600 mb-2">Scores par critère</label>
+                            <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3">
+                              {(editedQuestion.rankingConfig?.criteria || []).map(criterion => {
+                                const inputId = `${entry.id || entryIdx}-${criterion.id}`;
+                                return (
+                                  <div key={inputId} className="flex flex-col gap-1">
+                                    <label htmlFor={inputId} className="text-xs text-gray-600">{criterion.label}</label>
+                                    <input
+                                      id={inputId}
+                                      type="number"
+                                      min="0"
+                                      max="5"
+                                      value={entry?.scores?.[criterion.id] ?? ''}
+                                      onChange={(e) => updateRankingScore(entryIdx, criterion.id, e.target.value)}
+                                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                                      placeholder="0 à 5"
+                                    />
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-600">Notes internes</label>
+                            <textarea
+                              value={entry.notes || ''}
+                              onChange={(e) => updateRankingEntry(entryIdx, 'notes', e.target.value)}
+                              rows="2"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                              placeholder="Points forts, spécificités, limites..."
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Guidage contextuel */}
           <div>
