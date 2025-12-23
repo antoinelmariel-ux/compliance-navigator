@@ -24,57 +24,59 @@ export const AnnotationLayer = ({
     [activeContextId, notes]
   );
 
+  if (!isActive) {
+    return null;
+  }
+
   return (
     <React.Fragment>
-      {isActive && (
-        <div className="fixed top-0 inset-x-0 z-50" data-annotation-ui="true">
-          <div className="max-w-7xl mx-auto px-4 sm:px-8">
-            <div className="mt-2 rounded-b-xl bg-slate-900 text-white shadow-lg px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-2 text-sm">
-                <span className="font-semibold">Mode annotation</span>
-                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold ${
-                  isPaused ? STATUS_BADGE.paused : STATUS_BADGE.active
-                }`}>
-                  <span className="w-2 h-2 rounded-full bg-white" aria-hidden="true" />
-                  {isPaused ? 'En pause' : 'Actif'}
-                </span>
-                {projectName ? (
-                  <span className="text-xs text-slate-200">Projet : {projectName}</span>
-                ) : null}
-              </div>
+      <div className="fixed top-0 inset-x-0 z-50" data-annotation-ui="true">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8">
+          <div className="mt-2 rounded-b-xl bg-slate-900 text-white shadow-lg px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="font-semibold">Mode annotation</span>
+              <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold ${
+                isPaused ? STATUS_BADGE.paused : STATUS_BADGE.active
+              }`}>
+                <span className="w-2 h-2 rounded-full bg-white" aria-hidden="true" />
+                {isPaused ? 'En pause' : 'Actif'}
+              </span>
+              {projectName ? (
+                <span className="text-xs text-slate-200">Projet : {projectName}</span>
+              ) : null}
+            </div>
 
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={onRequestSave}
-                  className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-sm font-semibold text-white hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
-                >
-                  <Save className="h-4 w-4" />
-                  Sauvegarder
-                </button>
-                <button
-                  type="button"
-                  onClick={onRequestLoad}
-                  className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-sm font-semibold text-white hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
-                >
-                  <Upload className="h-4 w-4" />
-                  Charger
-                </button>
-                <button
-                  type="button"
-                  onClick={onTogglePause}
-                  className="inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
-                >
-                  {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-                  {isPaused ? 'Relancer' : 'Mettre en pause'}
-                </button>
-              </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={onRequestSave}
+                className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-sm font-semibold text-white hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+              >
+                <Save className="h-4 w-4" />
+                Sauvegarder
+              </button>
+              <button
+                type="button"
+                onClick={onRequestLoad}
+                className="inline-flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-sm font-semibold text-white hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+              >
+                <Upload className="h-4 w-4" />
+                Charger
+              </button>
+              <button
+                type="button"
+                onClick={onTogglePause}
+                className="inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+              >
+                {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+                {isPaused ? 'Relancer' : 'Mettre en pause'}
+              </button>
             </div>
           </div>
         </div>
-      )}
+      </div>
 
-      <div className="pointer-events-none fixed inset-0 z-40">
+      <div className="fixed inset-0 z-40">
         {visibleNotes.map(note => {
           const clampedX = Math.min(Math.max(note.x, 0), 1);
           const clampedY = Math.min(Math.max(note.y, 0), 1);
