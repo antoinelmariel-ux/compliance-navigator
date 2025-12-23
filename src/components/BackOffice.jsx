@@ -34,7 +34,6 @@ import {
   updateProjectFilterField
 } from '../utils/projectFilters.js';
 import { initialShowcaseThemes } from '../data/showcaseThemes.js';
-import { initialMoyenTags } from '../data/moyenTags.js';
 
 const QUESTION_TYPE_META = {
   choice: {
@@ -429,8 +428,6 @@ export const BackOffice = ({
   setTeams,
   showcaseThemes,
   setShowcaseThemes,
-  moyenTags,
-  setMoyenTags,
   projectFilters,
   setProjectFilters
 }) => {
@@ -460,15 +457,6 @@ export const BackOffice = ({
     ? showcaseThemes
     : initialShowcaseThemes;
   const showcaseThemeCount = safeShowcaseThemes.length;
-  const safeMoyenTags = Array.isArray(moyenTags) ? moyenTags : initialMoyenTags;
-  const moyenTagsAreDefault = useMemo(() => {
-    if (!Array.isArray(safeMoyenTags) || safeMoyenTags.length !== initialMoyenTags.length) {
-      return false;
-    }
-
-    return safeMoyenTags.every((tag, index) => tag === initialMoyenTags[index]);
-  }, [safeMoyenTags]);
-  const [newMoyenTag, setNewMoyenTag] = useState('');
 
   const normalizeColorValue = useCallback((value, fallback = '#000000') => {
     if (typeof value !== 'string') {
@@ -1200,38 +1188,6 @@ export const BackOffice = ({
 
     setProjectFilters(resetProjectFiltersConfig());
   }, [setProjectFilters]);
-
-  const handleAddMoyenTag = useCallback(() => {
-    const value = typeof newMoyenTag === 'string' ? newMoyenTag.trim() : '';
-    if (!value || typeof setMoyenTags !== 'function') {
-      return;
-    }
-
-    setMoyenTags((previous = []) => {
-      if (previous.includes(value)) {
-        return previous;
-      }
-
-      return [...previous, value];
-    });
-    setNewMoyenTag('');
-  }, [newMoyenTag, setMoyenTags]);
-
-  const handleRemoveMoyenTag = useCallback((tag) => {
-    if (typeof setMoyenTags !== 'function') {
-      return;
-    }
-
-    setMoyenTags((previous = []) => previous.filter((entry) => entry !== tag));
-  }, [setMoyenTags]);
-
-  const handleResetMoyenTags = useCallback(() => {
-    if (typeof setMoyenTags !== 'function') {
-      return;
-    }
-
-    setMoyenTags(initialMoyenTags);
-  }, [setMoyenTags]);
 
   const toggleQuestionExpansion = useCallback((questionId) => {
     if (!questionId && questionId !== 0) {
@@ -2048,11 +2004,6 @@ export const BackOffice = ({
       panelId: 'backoffice-tabpanel-filters'
     },
     {
-      id: 'moyenTags',
-      label: `Tags moyens (${safeMoyenTags.length})`,
-      panelId: 'backoffice-tabpanel-moyen-tags'
-    },
-    {
       id: 'themes',
       label: `Thèmes vitrine (${showcaseThemeCount})`,
       panelId: 'backoffice-tabpanel-themes'
@@ -2687,100 +2638,6 @@ export const BackOffice = ({
                           </article>
                         );
                       })
-                    )}
-                  </div>
-                </div>
-              </article>
-            </section>
-          )}
-
-          {activeTab === 'moyenTags' && (
-            <section
-              id="backoffice-tabpanel-moyen-tags"
-              role="tabpanel"
-              aria-labelledby="backoffice-tab-moyenTags"
-              className="space-y-6"
-            >
-              <article className="space-y-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hv-surface">
-                <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="space-y-2">
-                    <h2 className="text-2xl font-bold text-gray-800">Tags des noeuds « Moyen »</h2>
-                    <p className="text-sm text-gray-600">
-                      Gérez la liste déroulante visible sur chaque noeud de la colonne Moyen pour qualifier le type d'action.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleResetMoyenTags}
-                    disabled={moyenTagsAreDefault}
-                    className={`inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors hv-button ${
-                      moyenTagsAreDefault
-                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-blue-600 text-white hover:bg-blue-700 hv-button-primary'
-                    }`}
-                  >
-                    Réinitialiser les tags
-                  </button>
-                </header>
-
-                <div className="space-y-4">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                    <div className="flex-1 space-y-2">
-                      <label className="text-sm font-medium text-gray-700" htmlFor="moyen-tag-new">
-                        Ajouter un tag
-                      </label>
-                      <input
-                        id="moyen-tag-new"
-                        type="text"
-                        value={newMoyenTag}
-                        onChange={(event) => setNewMoyenTag(event.target.value)}
-                        placeholder="Ex : Corruption active"
-                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                      />
-                      <p className="text-xs text-gray-500">
-                        Les valeurs sont proposées dans la liste déroulante des noeuds « Moyen » pour homogénéiser la cartographie.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleAddMoyenTag}
-                      disabled={!newMoyenTag.trim()}
-                      className={`inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors hv-button ${
-                        newMoyenTag.trim()
-                          ? 'bg-blue-600 text-white hover:bg-blue-700 hv-button-primary'
-                          : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      }`}
-                    >
-                      Ajouter
-                    </button>
-                  </div>
-
-                  <div className="space-y-3">
-                    {safeMoyenTags.length === 0 ? (
-                      <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
-                        Aucun tag défini. Ajoutez des valeurs pour proposer des sélections dans les noeuds « Moyen ».
-                      </div>
-                    ) : (
-                      <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                        {safeMoyenTags.map((tag) => (
-                          <li
-                            key={tag}
-                            className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800"
-                          >
-                            <span className="truncate" title={tag}>
-                              {tag}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveMoyenTag(tag)}
-                              className="ml-3 inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold text-red-600 hover:bg-red-50"
-                              aria-label={`Supprimer le tag ${tag}`}
-                            >
-                              Retirer
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
                     )}
                   </div>
                 </div>
