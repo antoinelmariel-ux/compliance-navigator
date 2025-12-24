@@ -32,6 +32,19 @@ const SECTION_TEMPLATES = [
     }
   },
   {
+    id: 'document-viewer',
+    name: 'Visionneuse documentaire',
+    description: 'Un titre, un sous-titre et une visionneuse intégrée pour un document SharePoint.',
+    placeholder: {
+      title: 'Document de référence',
+      subtitle: 'Accès rapide aux supports projet',
+      description: 'Ajoutez un lien SharePoint (PDF, image ou présentation) pour l’afficher directement.',
+      documentUrl: 'https://votre-tenant.sharepoint.com/sites/projet/Shared%20Documents/brief.pdf',
+      documentType: 'pdf',
+      accent: 'SharePoint'
+    }
+  },
+  {
     id: 'story',
     name: 'Bloc narratif',
     description: 'Un encart avec un titre et un texte riche pour raconter une étape clé.',
@@ -58,6 +71,29 @@ const buildDefaultLightSectionSelection = (sectionIds = SHOWCASE_SECTION_OPTIONS
     return acc;
   }, {});
 
+const DOCUMENT_VIEWER_TYPES = [
+  { id: 'pdf', label: 'PDF' },
+  { id: 'jpg', label: 'JPG' },
+  { id: 'png', label: 'PNG' },
+  { id: 'pptx', label: 'PPTX' }
+];
+
+const resolveDocumentEmbedSrc = (documentUrl, documentType) => {
+  if (!documentUrl) {
+    return '';
+  }
+
+  if (documentType !== 'pptx') {
+    return documentUrl;
+  }
+
+  if (documentUrl.includes('officeapps.live.com')) {
+    return documentUrl;
+  }
+
+  return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(documentUrl)}`;
+};
+
 const sanitizeCustomSections = (rawSections) => {
   if (!Array.isArray(rawSections)) {
     return [];
@@ -74,14 +110,17 @@ const sanitizeCustomSections = (rawSections) => {
         : `custom-section-${index}`;
 
       const title = typeof section.title === 'string' ? section.title.trim() : '';
+      const subtitle = typeof section.subtitle === 'string' ? section.subtitle.trim() : '';
       const description = typeof section.description === 'string' ? section.description.trim() : '';
       const accent = typeof section.accent === 'string' ? section.accent.trim() : '';
+      const documentUrl = typeof section.documentUrl === 'string' ? section.documentUrl.trim() : '';
+      const documentType = typeof section.documentType === 'string' ? section.documentType.trim() : '';
       const items = Array.isArray(section.items)
         ? section.items.map(item => (typeof item === 'string' ? item.trim() : '')).filter(Boolean)
         : [];
       const type = typeof section.type === 'string' ? section.type : SECTION_TEMPLATES[0].id;
 
-      if (!title && !description && items.length === 0) {
+      if (!title && !subtitle && !description && !documentUrl && items.length === 0) {
         return null;
       }
 
@@ -89,8 +128,11 @@ const sanitizeCustomSections = (rawSections) => {
         id,
         type,
         title,
+        subtitle,
         description,
         accent,
+        documentUrl,
+        documentType,
         items
       };
     })
@@ -1331,7 +1373,15 @@ export const ProjectShowcase = ({
   const [sectionModalStep, setSectionModalStep] = useState('templates');
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState(0);
   const [pendingInsertionIndex, setPendingInsertionIndex] = useState(null);
-  const [sectionDraft, setSectionDraft] = useState({ title: '', description: '', accent: '', items: [] });
+  const [sectionDraft, setSectionDraft] = useState({
+    title: '',
+    subtitle: '',
+    description: '',
+    accent: '',
+    documentUrl: '',
+    documentType: 'pdf',
+    items: []
+  });
   const [sectionDraftItemsText, setSectionDraftItemsText] = useState('');
 
   const resetMilestoneDragState = useCallback(() => {
@@ -1443,7 +1493,15 @@ export const ProjectShowcase = ({
   const handleOpenSectionModal = useCallback((insertionIndex = null) => {
     setPendingInsertionIndex(insertionIndex);
     setSectionModalStep('templates');
-    setSectionDraft({ title: '', description: '', accent: '', items: [] });
+    setSectionDraft({
+      title: '',
+      subtitle: '',
+      description: '',
+      accent: '',
+      documentUrl: '',
+      documentType: 'pdf',
+      items: []
+    });
     setSectionDraftItemsText('');
     setIsSectionModalOpen(true);
   }, []);
@@ -1452,7 +1510,15 @@ export const ProjectShowcase = ({
     setIsSectionModalOpen(false);
     setSectionModalStep('templates');
     setPendingInsertionIndex(null);
-    setSectionDraft({ title: '', description: '', accent: '', items: [] });
+    setSectionDraft({
+      title: '',
+      subtitle: '',
+      description: '',
+      accent: '',
+      documentUrl: '',
+      documentType: 'pdf',
+      items: []
+    });
     setSectionDraftItemsText('');
   }, []);
 
@@ -1480,8 +1546,11 @@ export const ProjectShowcase = ({
     const placeholder = template?.placeholder || {};
     setSectionDraft({
       title: placeholder.title || '',
+      subtitle: placeholder.subtitle || '',
       description: placeholder.description || '',
       accent: placeholder.accent || '',
+      documentUrl: placeholder.documentUrl || '',
+      documentType: placeholder.documentType || 'pdf',
       items: Array.isArray(placeholder.items) ? placeholder.items : []
     });
     setSectionDraftItemsText(Array.isArray(placeholder.items) ? placeholder.items.join('\n') : '');
@@ -1517,8 +1586,11 @@ export const ProjectShowcase = ({
       id: newSectionId,
       type: safeTemplateId,
       title: sectionDraft.title?.trim() || template?.name || 'Nouvelle section',
+      subtitle: sectionDraft.subtitle?.trim() || '',
       description: sectionDraft.description?.trim() || '',
       accent: sectionDraft.accent?.trim() || '',
+      documentUrl: sectionDraft.documentUrl?.trim() || '',
+      documentType: sectionDraft.documentType?.trim() || '',
       items: Array.isArray(sectionDraft.items) ? sectionDraft.items : []
     };
 
@@ -2378,11 +2450,50 @@ export const ProjectShowcase = ({
             <div>
               <p className="aurora-eyebrow">{section.accent || 'Section additionnelle'}</p>
               <h2 className="aurora-section__title">{section.title}</h2>
+              {section.subtitle && (
+                <p className="mt-1 text-sm text-gray-600">{renderTextWithLinks(section.subtitle)}</p>
+              )}
             </div>
             <div className="aurora-chip aurora-chip--ghost">Bloc personnalisé #{index + 1}</div>
           </div>
           {section.description && (
             <p className="aurora-body-text">{renderTextWithLinks(section.description)}</p>
+          )}
+          {section.documentUrl && (
+            <div className="mt-6 space-y-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="text-sm font-semibold text-gray-800">Visionneuse documentaire</p>
+                  <p className="text-xs text-gray-500">Source SharePoint • {section.documentType?.toUpperCase() || 'DOC'}</p>
+                </div>
+                <a
+                  href={section.documentUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-semibold text-blue-600 hover:text-blue-700"
+                >
+                  Ouvrir dans un nouvel onglet
+                </a>
+              </div>
+              {['jpg', 'png'].includes(section.documentType) ? (
+                <img
+                  src={section.documentUrl}
+                  alt={`Document ${section.title || 'section personnalisée'}`}
+                  className="max-h-96 w-full rounded-xl border border-gray-100 object-contain"
+                  loading="lazy"
+                />
+              ) : (
+                <iframe
+                  title={`Document ${section.title || 'section personnalisée'}`}
+                  src={resolveDocumentEmbedSrc(section.documentUrl, section.documentType)}
+                  className="h-80 w-full rounded-xl border border-gray-100"
+                  loading="lazy"
+                />
+              )}
+              <p className="text-xs text-gray-500">
+                Pour les présentations PPTX, utilisez un lien SharePoint accessible ou un lien d’intégration Office.
+              </p>
+            </div>
           )}
           {Array.isArray(section.items) && section.items.length > 0 && (
             <ul className="mt-4 space-y-3">
@@ -2559,6 +2670,17 @@ export const ProjectShowcase = ({
                 />
               </div>
               <div className="space-y-1">
+                <label htmlFor="section-subtitle" className="text-sm font-medium text-gray-800">Sous-titre</label>
+                <input
+                  id="section-subtitle"
+                  type="text"
+                  value={sectionDraft.subtitle}
+                  onChange={(event) => handleSectionDraftChange('subtitle', event.target.value)}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
+                  placeholder={selectedTemplate?.placeholder?.subtitle || 'Complément de contexte'}
+                />
+              </div>
+              <div className="space-y-1">
                 <label htmlFor="section-accent" className="text-sm font-medium text-gray-800">Accent (optionnel)</label>
                 <input
                   id="section-accent"
@@ -2580,6 +2702,41 @@ export const ProjectShowcase = ({
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
                 placeholder={selectedTemplate?.placeholder?.description || 'Expliquez le contenu principal de cette section'}
               />
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-1">
+                <label htmlFor="section-document-url" className="text-sm font-medium text-gray-800">
+                  Lien SharePoint du document
+                </label>
+                <input
+                  id="section-document-url"
+                  type="url"
+                  value={sectionDraft.documentUrl}
+                  onChange={(event) => handleSectionDraftChange('documentUrl', event.target.value)}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
+                  placeholder={selectedTemplate?.placeholder?.documentUrl || 'https://votre-tenant.sharepoint.com/...'}
+                />
+                <p className="text-xs text-gray-500">
+                  Utilisez un lien SharePoint accessible ou un lien d’intégration Office pour les PPTX.
+                </p>
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="section-document-type" className="text-sm font-medium text-gray-800">
+                  Type de document
+                </label>
+                <select
+                  id="section-document-type"
+                  value={sectionDraft.documentType}
+                  onChange={(event) => handleSectionDraftChange('documentType', event.target.value)}
+                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
+                >
+                  {DOCUMENT_VIEWER_TYPES.map(type => (
+                    <option key={type.id} value={type.id}>
+                      {type.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
             <div className="space-y-1">
               <label htmlFor="section-items" className="text-sm font-medium text-gray-800">Liste (une ligne par élément)</label>
