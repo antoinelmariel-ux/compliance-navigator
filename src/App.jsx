@@ -27,7 +27,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.186';
+const APP_VERSION = 'v1.0.187';
 
 const ANNOTATION_COLORS = [
   '#2563eb',
@@ -3198,6 +3198,7 @@ export const App = () => {
             onNext={handleNext}
             onBack={handleBack}
             allQuestions={questions}
+            onNavigateToQuestion={handleNavigateToQuestion}
             onSaveDraft={isOnboardingActive ? noop : handleSaveDraft}
             saveFeedback={saveFeedback}
             onDismissSaveFeedback={handleDismissSaveFeedback}
@@ -3299,5 +3300,3 @@ export const App = () => {
     </div>
   );
 };
-
-

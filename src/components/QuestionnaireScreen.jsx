@@ -91,6 +91,7 @@ export const QuestionnaireScreen = ({
   onNext,
   onBack,
   allQuestions,
+  onNavigateToQuestion,
   onSaveDraft,
   saveFeedback,
   onDismissSaveFeedback,
@@ -138,6 +139,32 @@ export const QuestionnaireScreen = ({
   const hasValidationError = validationError?.questionId === currentQuestion.id;
   const hasSaveFeedback = Boolean(saveFeedback?.message);
   const isSaveSuccess = saveFeedback?.status === 'success';
+  const relatedQuestionEntries = useMemo(() => {
+    if (!isReturnToSynthesisRequested) {
+      return [];
+    }
+
+    const currentQuestionId = currentQuestion.id;
+
+    return questions
+      .map((question, index) => ({ question, index }))
+      .filter(({ question }) => question?.id && question.id !== currentQuestionId)
+      .filter(({ question }) => normalizeConditionGroups(question).some(group =>
+        group.conditions.some(condition => condition.question === currentQuestionId)
+      ))
+      .filter(({ index }) => index > currentIndex);
+  }, [currentIndex, currentQuestion.id, isReturnToSynthesisRequested, questions]);
+  const hasLinkedQuestions = relatedQuestionEntries.length > 0;
+  const nextLinkedQuestion = relatedQuestionEntries[0]?.question || null;
+  const shouldShowNextButton = !isReturnToSynthesisRequested || hasLinkedQuestions;
+  const handleLinkedQuestionNext = () => {
+    if (nextLinkedQuestion && typeof onNavigateToQuestion === 'function') {
+      onNavigateToQuestion(nextLinkedQuestion.id);
+      return;
+    }
+
+    onNext();
+  };
 
   useEffect(() => {
     setShowGuidance(false);
@@ -1047,14 +1074,16 @@ export const QuestionnaireScreen = ({
               </button>
             )}
 
-            <button
-              type="button"
-              onClick={onNext}
-              className="flex items-center justify-center px-6 py-3 rounded-lg font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all hv-button hv-button-primary w-full sm:w-auto text-sm sm:text-base"
-            >
-              {currentIndex === questions.length - 1 ? 'Voir la synthèse' : 'Suivant'}
-              <ChevronRight className="w-5 h-5 ml-2" />
-            </button>
+            {shouldShowNextButton && (
+              <button
+                type="button"
+                onClick={isReturnToSynthesisRequested ? handleLinkedQuestionNext : onNext}
+                className="flex items-center justify-center px-6 py-3 rounded-lg font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all hv-button hv-button-primary w-full sm:w-auto text-sm sm:text-base"
+              >
+                {currentIndex === questions.length - 1 ? 'Voir la synthèse' : 'Suivant'}
+                <ChevronRight className="w-5 h-5 ml-2" />
+              </button>
+            )}
 
             {currentIndex < questions.length - 1 && onFinish && (
               <button
@@ -1071,4 +1100,3 @@ export const QuestionnaireScreen = ({
     </div>
   );
 };
-
