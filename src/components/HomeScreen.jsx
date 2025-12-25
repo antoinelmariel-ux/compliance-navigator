@@ -16,6 +16,7 @@ import {
   Trash2,
   Sparkles
 } from './icons.js';
+import { VirtualizedList } from './VirtualizedList.jsx';
 import { normalizeProjectFilterConfig } from '../utils/projectFilters.js';
 
 const formatDate = (isoDate) => {
@@ -523,6 +524,14 @@ export const HomeScreen = ({
       return direction === 'asc' ? diff : -diff;
     });
   }, [projects, normalizedFilters, filtersState]);
+  const projectRows = useMemo(() => {
+    const rows = [];
+    for (let index = 0; index < filteredProjects.length; index += 2) {
+      rows.push(filteredProjects.slice(index, index + 2));
+    }
+    return rows;
+  }, [filteredProjects]);
+  const shouldVirtualizeProjects = projectRows.length > 6;
 
   const hasProjects = projects.length > 0;
   const hasFilteredProjects = filteredProjects.length > 0;
@@ -603,6 +612,174 @@ export const HomeScreen = ({
     if (event?.target) {
       event.target.value = '';
     }
+  };
+
+  const renderProjectCard = (project) => {
+    const complexity = project.analysis?.complexity;
+    const risksCount = project.analysis?.risks?.length ?? 0;
+    const projectStatus = statusStyles[project.status] || statusStyles.submitted;
+    const progress = computeProgress(project);
+    const isDraft = project.status === 'draft';
+    const adminCanEditSubmitted = isAdminMode && !isDraft;
+    const leadName = getSafeString(project?.answers?.teamLead).trim();
+    const leadTeam = getSafeString(project?.answers?.teamLeadTeam).trim();
+    const leadDisplay = leadName.length > 0
+      ? `${leadName}${leadTeam.length > 0 ? ` (${leadTeam})` : ''}`
+      : leadTeam.length > 0
+        ? `(${leadTeam})`
+        : 'Lead du projet non renseigné';
+    const projectTypeRaw = project?.answers?.ProjectType;
+    const projectType = Array.isArray(projectTypeRaw)
+      ? projectTypeRaw
+          .map(item => (typeof item === 'string' ? item.trim() : ''))
+          .filter(item => item.length > 0)
+          .join(', ')
+      : getSafeString(projectTypeRaw).trim();
+    const projectTypeDisplay = projectType.length > 0
+      ? projectType
+      : 'Type de projet non renseigné';
+
+    return (
+      <article
+        key={project.id}
+        className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all hv-surface"
+        role="listitem"
+        aria-label={`Projet ${project.projectName || 'sans nom'}`}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2 flex-wrap">
+              <span>{project.projectName || 'Projet sans nom'}</span>
+              {project.isDemo && (
+                <span className="inline-flex items-center px-2 py-0.5 text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded-full">
+                  Projet démo
+                </span>
+              )}
+            </h3>
+            <p className="text-sm text-gray-500 mt-1">
+              Dernière mise à jour : {formatDate(project.lastUpdated || project.submittedAt)}
+            </p>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="flex flex-col items-end gap-2">
+              <span
+                className={`px-3 py-1 text-xs font-semibold rounded-full border hv-badge ${projectStatus.className}`.trim()}
+              >
+                {projectStatus.label}
+              </span>
+              {complexity && (
+                <span className={`px-3 py-1 text-xs font-semibold rounded-full border hv-badge ${complexityColors[complexity] || 'text-blue-600'}`}>
+                  {complexity}
+                </span>
+              )}
+            </div>
+            {typeof onDuplicateProject === 'function' && (
+              <button
+                type="button"
+                onClick={() => onDuplicateProject(project.id)}
+                className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors hv-button hv-focus-ring"
+                aria-label={`Dupliquer le projet ${project.projectName || 'sans nom'}`}
+                title="Dupliquer le projet"
+              >
+                <Copy className="w-4 h-4" aria-hidden="true" />
+              </button>
+            )}
+            {isDraft && typeof onDeleteProject === 'function' && (
+              <button
+                type="button"
+                onClick={() => handleRequestProjectDeletion(project)}
+                className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors hv-button hv-focus-ring"
+                aria-label={`Supprimer le projet ${project.projectName || 'sans nom'}`}
+                title="Supprimer le projet"
+              >
+                <Trash2 className="w-4 h-4" aria-hidden="true" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        <dl className="mt-4 grid grid-cols-1 gap-3 text-sm text-gray-600">
+          <div className="flex items-center gap-2">
+            <Users className="w-4 h-4" />
+            <span className="font-medium text-gray-700">{leadDisplay}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Target className="w-4 h-4" />
+            <span>{projectTypeDisplay}</span>
+          </div>
+          {progress !== null && (
+            <div className="flex items-center gap-2">
+              <Save className="w-4 h-4" />
+              <span>{progress}% du questionnaire complété</span>
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4" />
+            <span>{risksCount} risque{risksCount > 1 ? 's' : ''} identifié{risksCount > 1 ? 's' : ''}</span>
+          </div>
+        </dl>
+
+        <div className="mt-6 flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              if (isDraft) {
+                onOpenProject(project.id);
+                return;
+              }
+
+              if (adminCanEditSubmitted) {
+                onOpenProject(project.id, { view: 'questionnaire' });
+                return;
+              }
+
+              onOpenProject(project.id);
+            }}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all hv-button ${
+              isDraft || adminCanEditSubmitted
+                ? 'hv-button-draft text-white'
+                : 'bg-blue-600 text-white hover:bg-blue-700 hv-button-primary'
+            }`}
+          >
+            {isDraft ? (
+              <>
+                <Edit className="w-4 h-4" aria-hidden="true" />
+                <span>Continuer l'édition</span>
+              </>
+            ) : adminCanEditSubmitted ? (
+              <>
+                <Edit className="w-4 h-4" aria-hidden="true" />
+                <span>Modifier le projet</span>
+              </>
+            ) : (
+              <>
+                <Eye className="w-4 h-4" aria-hidden="true" />
+                <span>Consulter la synthèse</span>
+              </>
+            )}
+          </button>
+          {adminCanEditSubmitted && (
+            <button
+              type="button"
+              onClick={() => onOpenProject(project.id, { view: 'synthesis' })}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all hv-button bg-blue-600 text-white hover:bg-blue-700 hv-button-primary"
+            >
+              <Eye className="w-4 h-4" aria-hidden="true" />
+              <span>Consulter la synthèse</span>
+            </button>
+          )}
+          {onShowProjectShowcase && (
+            <button
+              type="button"
+              onClick={() => onShowProjectShowcase(project.id)}
+              className="inline-flex items-center px-4 py-2 bg-white border border-blue-200 text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition-all hv-button hv-focus-ring"
+            >
+              <Sparkles className="w-4 h-4 mr-2" /> Vitrine du projet
+            </button>
+          )}
+        </div>
+      </article>
+    );
   };
 
   return (
@@ -824,175 +1001,27 @@ export const HomeScreen = ({
               )}
 
               {hasFilteredProjects ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6" role="list">
-                  {filteredProjects.map(project => {
-                    const complexity = project.analysis?.complexity;
-                    const risksCount = project.analysis?.risks?.length ?? 0;
-                    const projectStatus = statusStyles[project.status] || statusStyles.submitted;
-                    const progress = computeProgress(project);
-                    const isDraft = project.status === 'draft';
-                    const adminCanEditSubmitted = isAdminMode && !isDraft;
-                    const leadName = getSafeString(project?.answers?.teamLead).trim();
-                    const leadTeam = getSafeString(project?.answers?.teamLeadTeam).trim();
-                    const leadDisplay = leadName.length > 0
-                      ? `${leadName}${leadTeam.length > 0 ? ` (${leadTeam})` : ''}`
-                      : leadTeam.length > 0
-                        ? `(${leadTeam})`
-                        : 'Lead du projet non renseigné';
-                    const projectTypeRaw = project?.answers?.ProjectType;
-                    const projectType = Array.isArray(projectTypeRaw)
-                      ? projectTypeRaw
-                          .map(item => (typeof item === 'string' ? item.trim() : ''))
-                          .filter(item => item.length > 0)
-                          .join(', ')
-                      : getSafeString(projectTypeRaw).trim();
-                    const projectTypeDisplay = projectType.length > 0
-                      ? projectType
-                      : 'Type de projet non renseigné';
-
-                    return (
-                      <article
-                        key={project.id}
-                        className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all hv-surface"
-                        role="listitem"
-                        aria-label={`Projet ${project.projectName || 'sans nom'}`}
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2 flex-wrap">
-                              <span>{project.projectName || 'Projet sans nom'}</span>
-                              {project.isDemo && (
-                                <span className="inline-flex items-center px-2 py-0.5 text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded-full">
-                                  Projet démo
-                                </span>
-                              )}
-                            </h3>
-                            <p className="text-sm text-gray-500 mt-1">
-                              Dernière mise à jour : {formatDate(project.lastUpdated || project.submittedAt)}
-                            </p>
-                          </div>
-                          <div className="flex items-start gap-3">
-                            <div className="flex flex-col items-end gap-2">
-                              <span
-                                className={`px-3 py-1 text-xs font-semibold rounded-full border hv-badge ${projectStatus.className}`.trim()}
-                              >
-                                {projectStatus.label}
-                              </span>
-                              {complexity && (
-                                <span className={`px-3 py-1 text-xs font-semibold rounded-full border hv-badge ${complexityColors[complexity] || 'text-blue-600'}`}>
-                                  {complexity}
-                                </span>
-                              )}
-                            </div>
-                            {typeof onDuplicateProject === 'function' && (
-                              <button
-                                type="button"
-                                onClick={() => onDuplicateProject(project.id)}
-                                className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors hv-button hv-focus-ring"
-                                aria-label={`Dupliquer le projet ${project.projectName || 'sans nom'}`}
-                                title="Dupliquer le projet"
-                              >
-                                <Copy className="w-4 h-4" aria-hidden="true" />
-                              </button>
-                            )}
-                            {isDraft && typeof onDeleteProject === 'function' && (
-                              <button
-                                type="button"
-                                onClick={() => handleRequestProjectDeletion(project)}
-                                className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors hv-button hv-focus-ring"
-                                aria-label={`Supprimer le projet ${project.projectName || 'sans nom'}`}
-                                title="Supprimer le projet"
-                              >
-                                <Trash2 className="w-4 h-4" aria-hidden="true" />
-                              </button>
-                            )}
-                          </div>
+                shouldVirtualizeProjects ? (
+                  <VirtualizedList
+                    items={projectRows}
+                    itemKey={(_row, index) => `project-row-${index}`}
+                    estimatedItemHeight={420}
+                    overscan={3}
+                    role="list"
+                    className="relative"
+                    renderItem={(row) => (
+                      <div className="pb-6">
+                        <div className="flex flex-col md:flex-row gap-6">
+                          {row.map(project => renderProjectCard(project))}
                         </div>
-
-                        <dl className="mt-4 grid grid-cols-1 gap-3 text-sm text-gray-600">
-                          <div className="flex items-center gap-2">
-                            <Users className="w-4 h-4" />
-                            <span className="font-medium text-gray-700">{leadDisplay}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Target className="w-4 h-4" />
-                            <span>{projectTypeDisplay}</span>
-                          </div>
-                          {progress !== null && (
-                            <div className="flex items-center gap-2">
-                              <Save className="w-4 h-4" />
-                              <span>{progress}% du questionnaire complété</span>
-                            </div>
-                          )}
-                          <div className="flex items-center gap-2">
-                            <AlertTriangle className="w-4 h-4" />
-                            <span>{risksCount} risque{risksCount > 1 ? 's' : ''} identifié{risksCount > 1 ? 's' : ''}</span>
-                          </div>
-                        </dl>
-
-                        <div className="mt-6 flex flex-wrap gap-3">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (isDraft) {
-                                onOpenProject(project.id);
-                                return;
-                              }
-
-                              if (adminCanEditSubmitted) {
-                                onOpenProject(project.id, { view: 'questionnaire' });
-                                return;
-                              }
-
-                              onOpenProject(project.id);
-                            }}
-                            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all hv-button ${
-                              isDraft || adminCanEditSubmitted
-                                ? 'hv-button-draft text-white'
-                                : 'bg-blue-600 text-white hover:bg-blue-700 hv-button-primary'
-                            }`}
-                          >
-                            {isDraft ? (
-                              <>
-                                <Edit className="w-4 h-4" aria-hidden="true" />
-                                <span>Continuer l'édition</span>
-                              </>
-                            ) : adminCanEditSubmitted ? (
-                              <>
-                                <Edit className="w-4 h-4" aria-hidden="true" />
-                                <span>Modifier le projet</span>
-                              </>
-                            ) : (
-                              <>
-                                <Eye className="w-4 h-4" aria-hidden="true" />
-                                <span>Consulter la synthèse</span>
-                              </>
-                            )}
-                          </button>
-                          {adminCanEditSubmitted && (
-                            <button
-                              type="button"
-                              onClick={() => onOpenProject(project.id, { view: 'synthesis' })}
-                              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all hv-button bg-blue-600 text-white hover:bg-blue-700 hv-button-primary"
-                            >
-                              <Eye className="w-4 h-4" aria-hidden="true" />
-                              <span>Consulter la synthèse</span>
-                            </button>
-                          )}
-                          {onShowProjectShowcase && (
-                            <button
-                              type="button"
-                              onClick={() => onShowProjectShowcase(project.id)}
-                              className="inline-flex items-center px-4 py-2 bg-white border border-blue-200 text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition-all hv-button hv-focus-ring"
-                            >
-                              <Sparkles className="w-4 h-4 mr-2" /> Vitrine du projet
-                            </button>
-                          )}
-                        </div>
-                      </article>
-                    );
-                  })}
-                </div>
+                      </div>
+                    )}
+                  />
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6" role="list">
+                    {filteredProjects.map(project => renderProjectCard(project))}
+                  </div>
+                )
               ) : (
                 <div
                   className="bg-white border border-dashed border-blue-200 rounded-3xl p-8 text-center text-gray-600 hv-surface"
