@@ -1,9 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from './react.js';
+import React, { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from './react.js';
 import { QuestionnaireScreen } from './components/QuestionnaireScreen.jsx';
 import { SynthesisReport } from './components/SynthesisReport.jsx';
 import { HomeScreen } from './components/HomeScreen.jsx';
-import { BackOffice } from './components/BackOffice.jsx';
-import { ProjectShowcase } from './components/ProjectShowcase.jsx';
 import { AnnotationLayer } from './components/AnnotationLayer.jsx';
 import { CheckCircle, Lock, MessageSquare, Settings, Sparkles } from './components/icons.js';
 import { MandatoryQuestionsSummary } from './components/MandatoryQuestionsSummary.jsx';
@@ -27,7 +25,31 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.189';
+const APP_VERSION = 'v1.0.190';
+
+const loadModule = (modulePath) => {
+  if (typeof window === 'undefined') {
+    throw new Error('ModuleLoader indisponible.');
+  }
+
+  if (!window.ModuleLoader || typeof window.ModuleLoader.import !== 'function') {
+    throw new Error('ModuleLoader indisponible.');
+  }
+
+  return window.ModuleLoader.import(modulePath);
+};
+
+const LazyBackOffice = lazy(() =>
+  Promise.resolve().then(() => ({
+    default: loadModule('./src/components/BackOffice.jsx').BackOffice
+  }))
+);
+
+const LazyProjectShowcase = lazy(() =>
+  Promise.resolve().then(() => ({
+    default: loadModule('./src/components/ProjectShowcase.jsx').ProjectShowcase
+  }))
+);
 
 const ANNOTATION_COLORS = [
   '#2563eb',
@@ -540,6 +562,24 @@ export const App = () => {
   const [isShowcaseEditing, setIsShowcaseEditing] = useState(false);
   const annotationNotesRef = useRef(annotationNotes);
   const annotationFileInputRef = useRef(null);
+  const loadedStylesRef = useRef(new Set());
+
+  const ensureStylesheetLoaded = useCallback((href) => {
+    if (typeof document === 'undefined' || !href) {
+      return;
+    }
+
+    if (loadedStylesRef.current.has(href)) {
+      return;
+    }
+
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = href;
+    link.dataset.dynamic = 'true';
+    document.head.appendChild(link);
+    loadedStylesRef.current.add(href);
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -567,6 +607,15 @@ export const App = () => {
   useEffect(() => {
     projectsRef.current = projects;
   }, [projects]);
+
+  useEffect(() => {
+    if (!showcaseProjectContext) {
+      return;
+    }
+
+    ensureStylesheetLoaded('./src/styles/project-showcase.css');
+    ensureStylesheetLoaded('./src/styles/project-showcase-theme-aurora.css');
+  }, [ensureStylesheetLoaded, showcaseProjectContext]);
 
   useEffect(() => {
     annotationNotesRef.current = annotationNotes;
@@ -3158,23 +3207,31 @@ export const App = () => {
 
       <main id="main-content" tabIndex="-1" className="focus:outline-none hv-background">
         {isAdminBackOfficeView ? (
-          <BackOffice
-            projects={projects}
-            questions={questions}
-            setQuestions={setQuestions}
-            rules={rules}
-            setRules={setRules}
-            riskLevelRules={riskLevelRules}
-            setRiskLevelRules={setRiskLevelRules}
-            riskWeights={riskWeights}
-            setRiskWeights={setRiskWeights}
-            teams={teams}
-            setTeams={setTeams}
-            showcaseThemes={showcaseThemes}
-            setShowcaseThemes={setShowcaseThemes}
-            projectFilters={projectFilters}
-            setProjectFilters={updateProjectFilters}
-          />
+          <Suspense
+            fallback={(
+              <div className="rounded-2xl border border-gray-200 bg-white p-6 text-sm text-gray-500 shadow-sm hv-surface">
+                Chargement du back-office…
+              </div>
+            )}
+          >
+            <LazyBackOffice
+              projects={projects}
+              questions={questions}
+              setQuestions={setQuestions}
+              rules={rules}
+              setRules={setRules}
+              riskLevelRules={riskLevelRules}
+              setRiskLevelRules={setRiskLevelRules}
+              riskWeights={riskWeights}
+              setRiskWeights={setRiskWeights}
+              teams={teams}
+              setTeams={setTeams}
+              showcaseThemes={showcaseThemes}
+              setShowcaseThemes={setShowcaseThemes}
+              projectFilters={projectFilters}
+              setProjectFilters={updateProjectFilters}
+            />
+          </Suspense>
         ) : screen === 'home' ? (
           <HomeScreen
             projects={projects}
@@ -3258,27 +3315,35 @@ export const App = () => {
                     : 'Ce projet a été soumis. La vitrine est consultable en lecture seule.'}
                 </div>
               )}
-              <ProjectShowcase
-                projectName={showcaseProjectContext.projectName}
-                onClose={handleCloseProjectShowcase}
-                analysis={showcaseProjectContext.analysis}
-                relevantTeams={showcaseProjectContext.relevantTeams}
-                questions={showcaseProjectContext.questions}
-                answers={showcaseProjectContext.answers}
-                timelineDetails={showcaseProjectContext.timelineDetails}
-                showcaseThemes={showcaseThemes}
-                hasIncompleteAnswers={Boolean(showcaseProjectContext.hasIncompleteAnswers)}
-                onUpdateAnswers={
-                  isOnboardingActive
-                    ? noop
-                    : showcaseProjectContext.status === 'draft' || isAdminMode
-                      ? handleUpdateProjectShowcaseAnswers
-                      : undefined
-                }
-                tourContext={tourContext}
-                onAnnotationScopeChange={setShowcaseAnnotationScope}
-                onEditingStateChange={setIsShowcaseEditing}
-              />
+              <Suspense
+                fallback={(
+                  <div className="rounded-2xl border border-gray-200 bg-white p-6 text-sm text-gray-500 shadow-sm hv-surface">
+                    Chargement de la vitrine projet…
+                  </div>
+                )}
+              >
+                <LazyProjectShowcase
+                  projectName={showcaseProjectContext.projectName}
+                  onClose={handleCloseProjectShowcase}
+                  analysis={showcaseProjectContext.analysis}
+                  relevantTeams={showcaseProjectContext.relevantTeams}
+                  questions={showcaseProjectContext.questions}
+                  answers={showcaseProjectContext.answers}
+                  timelineDetails={showcaseProjectContext.timelineDetails}
+                  showcaseThemes={showcaseThemes}
+                  hasIncompleteAnswers={Boolean(showcaseProjectContext.hasIncompleteAnswers)}
+                  onUpdateAnswers={
+                    isOnboardingActive
+                      ? noop
+                      : showcaseProjectContext.status === 'draft' || isAdminMode
+                        ? handleUpdateProjectShowcaseAnswers
+                        : undefined
+                  }
+                  tourContext={tourContext}
+                  onAnnotationScopeChange={setShowcaseAnnotationScope}
+                  onEditingStateChange={setIsShowcaseEditing}
+                />
+              </Suspense>
             </div>
           ) : null
         ) : null}

@@ -2481,6 +2481,7 @@ export const ProjectShowcase = ({
                   alt={`Document ${section.title || 'section personnalisée'}`}
                   className="max-h-96 w-full rounded-xl border border-gray-100 object-contain"
                   loading="lazy"
+                  decoding="async"
                 />
               ) : (
                 <iframe

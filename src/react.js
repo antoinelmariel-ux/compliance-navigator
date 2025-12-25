@@ -8,6 +8,15 @@ const ReactDOMGlobal = window.ReactDOM;
 
 export const React = ReactGlobal;
 export const ReactDOM = ReactDOMGlobal;
-export const { useState, useEffect, useMemo, useCallback, useRef } = ReactGlobal;
+export const {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+  useLayoutEffect,
+  lazy,
+  Suspense
+} = ReactGlobal;
 
 export default ReactGlobal;
