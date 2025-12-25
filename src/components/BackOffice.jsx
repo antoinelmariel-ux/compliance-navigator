@@ -76,6 +76,101 @@ const QUESTION_TYPE_META = {
 
 const PROTECTED_QUESTION_IDS = new Set(['ProjectType']);
 
+const useVirtualWindow = ({
+  itemCount,
+  estimateHeight = 320,
+  overscan = 4,
+  enabled = true
+}) => {
+  const listRef = useRef(null);
+  const [range, setRange] = useState(() => ({
+    startIndex: 0,
+    endIndex: itemCount,
+    offsetTop: 0,
+    totalHeight: itemCount * estimateHeight
+  }));
+
+  const updateRange = useCallback(() => {
+    if (!enabled) {
+      setRange({
+        startIndex: 0,
+        endIndex: itemCount,
+        offsetTop: 0,
+        totalHeight: itemCount * estimateHeight
+      });
+      return;
+    }
+
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const container = listRef.current;
+    if (!container) {
+      return;
+    }
+
+    const scrollTop = window.scrollY || document.documentElement.scrollTop || 0;
+    const rect = container.getBoundingClientRect();
+    const listTop = rect.top + scrollTop;
+    const viewportHeight = window.innerHeight || 800;
+    const relativeScroll = Math.max(0, scrollTop - listTop);
+    const startIndex = Math.max(0, Math.floor(relativeScroll / estimateHeight) - overscan);
+    const visibleCount = Math.ceil(viewportHeight / estimateHeight) + overscan * 2;
+    const endIndex = Math.min(itemCount, startIndex + visibleCount);
+    const offsetTop = startIndex * estimateHeight;
+    const totalHeight = itemCount * estimateHeight;
+
+    setRange((previous) => {
+      if (
+        previous.startIndex === startIndex
+        && previous.endIndex === endIndex
+        && previous.offsetTop === offsetTop
+        && previous.totalHeight === totalHeight
+      ) {
+        return previous;
+      }
+
+      return {
+        startIndex,
+        endIndex,
+        offsetTop,
+        totalHeight
+      };
+    });
+  }, [enabled, estimateHeight, itemCount, overscan]);
+
+  useEffect(() => {
+    if (!enabled) {
+      updateRange();
+      return undefined;
+    }
+
+    updateRange();
+
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    window.addEventListener('scroll', updateRange, { passive: true });
+    window.addEventListener('resize', updateRange);
+
+    return () => {
+      window.removeEventListener('scroll', updateRange);
+      window.removeEventListener('resize', updateRange);
+    };
+  }, [enabled, updateRange]);
+
+  useEffect(() => {
+    updateRange();
+  }, [itemCount, updateRange]);
+
+  return {
+    listRef,
+    ...range
+  };
+};
+
 const getQuestionTypeMeta = (type) => {
   const key = type || 'choice';
   return QUESTION_TYPE_META[key] || QUESTION_TYPE_META.choice;
@@ -910,6 +1005,17 @@ export const BackOffice = ({
   }, [questions, questionTitleFilter, questionTeamFilter, questionTeamAssignments]);
 
   const visibleQuestionIdSet = useMemo(() => new Set(visibleQuestionIds), [visibleQuestionIds]);
+  const filteredQuestions = useMemo(
+    () => questions.filter(question => visibleQuestionIdSet.has(question.id)),
+    [questions, visibleQuestionIdSet]
+  );
+  const shouldVirtualizeQuestions = filteredQuestions.length > 20;
+  const questionVirtualWindow = useVirtualWindow({
+    itemCount: filteredQuestions.length,
+    estimateHeight: 360,
+    overscan: 4,
+    enabled: shouldVirtualizeQuestions
+  });
 
   const visibleRuleIds = useMemo(() => {
     const ids = [];
@@ -954,6 +1060,17 @@ export const BackOffice = ({
   }, [rules, ruleTitleFilter, ruleTeamFilter]);
 
   const visibleRuleIdSet = useMemo(() => new Set(visibleRuleIds), [visibleRuleIds]);
+  const filteredRules = useMemo(
+    () => rules.filter(rule => visibleRuleIdSet.has(rule.id)),
+    [rules, visibleRuleIdSet]
+  );
+  const shouldVirtualizeRules = filteredRules.length > 20;
+  const ruleVirtualWindow = useVirtualWindow({
+    itemCount: filteredRules.length,
+    estimateHeight: 300,
+    overscan: 4,
+    enabled: shouldVirtualizeRules
+  });
 
   useEffect(() => {
     if (questionTeamFilter === 'all' || questionTeamFilter === 'none') {
@@ -2865,55 +2982,57 @@ export const BackOffice = ({
                 <div className="border border-dashed border-gray-300 rounded-xl p-6 text-center text-gray-500">
                   Aucune question configurée pour le moment.
                 </div>
-              ) : visibleQuestionIds.length === 0 ? (
+              ) : filteredQuestions.length === 0 ? (
                 <div className="border border-dashed border-gray-300 rounded-xl p-6 text-center text-gray-500">
                   Aucune question ne correspond aux filtres sélectionnés.
                 </div>
               ) : (
-                questions.map((question, index) => {
-                  if (!visibleQuestionIdSet.has(question.id)) {
-                    return null;
-                  }
+                (() => {
+                  const startIndex = shouldVirtualizeQuestions ? questionVirtualWindow.startIndex : 0;
+                  const endIndex = shouldVirtualizeQuestions ? questionVirtualWindow.endIndex : filteredQuestions.length;
+                  const visibleQuestions = filteredQuestions.slice(startIndex, endIndex);
+                  const listContent = visibleQuestions.map((question, localIndex) => {
+                    const index = startIndex + localIndex;
 
-                  const typeMeta = getQuestionTypeMeta(question.type);
-                  const conditionSummary = buildConditionSummary(question, questions);
-                  const guidance = question.guidance || {};
-                  const tips = formatGuidanceTips(guidance);
-                  const numberUnitLabel =
-                    question.type === 'number' && typeof question.numberUnit === 'string'
-                      ? question.numberUnit.trim()
-                      : '';
-                  const isShowcaseQuestion = Boolean(question && question.showcase);
-                  const isProtectedQuestion = question?.id === 'ProjectType';
-                  const deleteButtonDisabled = isShowcaseQuestion || isProtectedQuestion;
-                  const deleteButtonClasses = deleteButtonDisabled
-                    ? 'p-2 text-gray-300 bg-gray-100 cursor-not-allowed rounded hv-button'
-                    : 'p-2 text-red-600 hover:bg-red-50 rounded hv-button';
-                  const deleteButtonTitle = isShowcaseQuestion
-                    ? 'Cette question alimente la vitrine showcase et ne peut pas être supprimée.'
-                    : isProtectedQuestion
-                      ? 'Cette question est indispensable pour identifier le type de projet et ne peut pas être supprimée.'
-                      : `Supprimer la question ${question.id}`;
-                  const questionTeams = questionTeamAssignments.get(question.id) || [];
-                  const questionTeamLabels = questionTeams.map((teamId) => getTeamLabel(teamId, teams));
-                  const isExpanded = expandedQuestionIds.has(question.id);
-                  const detailsId = `question-details-${question.id}`;
-                  const toggleLabel = isExpanded
-                    ? `Masquer les détails de la question ${question.id}`
-                    : `Afficher les détails de la question ${question.id}`;
+                    const typeMeta = getQuestionTypeMeta(question.type);
+                    const conditionSummary = buildConditionSummary(question, questions);
+                    const guidance = question.guidance || {};
+                    const tips = formatGuidanceTips(guidance);
+                    const numberUnitLabel =
+                      question.type === 'number' && typeof question.numberUnit === 'string'
+                        ? question.numberUnit.trim()
+                        : '';
+                    const isShowcaseQuestion = Boolean(question && question.showcase);
+                    const isProtectedQuestion = question?.id === 'ProjectType';
+                    const deleteButtonDisabled = isShowcaseQuestion || isProtectedQuestion;
+                    const deleteButtonClasses = deleteButtonDisabled
+                      ? 'p-2 text-gray-300 bg-gray-100 cursor-not-allowed rounded hv-button'
+                      : 'p-2 text-red-600 hover:bg-red-50 rounded hv-button';
+                    const deleteButtonTitle = isShowcaseQuestion
+                      ? 'Cette question alimente la vitrine showcase et ne peut pas être supprimée.'
+                      : isProtectedQuestion
+                        ? 'Cette question est indispensable pour identifier le type de projet et ne peut pas être supprimée.'
+                        : `Supprimer la question ${question.id}`;
+                    const questionTeams = questionTeamAssignments.get(question.id) || [];
+                    const questionTeamLabels = questionTeams.map((teamId) => getTeamLabel(teamId, teams));
+                    const isExpanded = expandedQuestionIds.has(question.id);
+                    const detailsId = `question-details-${question.id}`;
+                    const toggleLabel = isExpanded
+                      ? `Masquer les détails de la question ${question.id}`
+                      : `Afficher les détails de la question ${question.id}`;
 
-                  return (
-                    <React.Fragment key={question.id}>
-                      <article
-                        className={`border border-gray-200 rounded-xl p-6 bg-white shadow-sm hv-surface transition-shadow ${
-                          dragOverIndex === index ? 'ring-2 ring-blue-400 ring-offset-2' : ''
-                        } ${
-                          draggedQuestionIndex === index ? 'opacity-75' : ''
-                        }`}
-                        aria-label={`Question ${question.id}`}
-                        onDragOver={(event) => handleDragOver(event, index)}
-                        onDrop={(event) => handleDrop(event, index)}
-                      >
+                    return (
+                      <React.Fragment key={question.id}>
+                        <article
+                          className={`border border-gray-200 rounded-xl p-6 bg-white shadow-sm hv-surface transition-shadow ${
+                            dragOverIndex === index ? 'ring-2 ring-blue-400 ring-offset-2' : ''
+                          } ${
+                            draggedQuestionIndex === index ? 'opacity-75' : ''
+                          }`}
+                          aria-label={`Question ${question.id}`}
+                          onDragOver={(event) => handleDragOver(event, index)}
+                          onDrop={(event) => handleDrop(event, index)}
+                        >
                         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                           <div className="flex items-start gap-3 flex-1">
                             <button
@@ -3102,7 +3221,7 @@ export const BackOffice = ({
                           </div>
                         )}
                       </article>
-                      {index < questions.length - 1 && (
+                      {index < filteredQuestions.length - 1 && (
                         <div className="flex justify-center my-3">
                           <button
                             type="button"
@@ -3115,9 +3234,26 @@ export const BackOffice = ({
                           </button>
                         </div>
                       )}
-                    </React.Fragment>
+                      </React.Fragment>
+                    );
+                  });
+
+                  if (!shouldVirtualizeQuestions) {
+                    return listContent;
+                  }
+
+                  return (
+                    <div ref={questionVirtualWindow.listRef} className="relative">
+                      <div style={{ height: `${questionVirtualWindow.totalHeight}px` }} />
+                      <div
+                        className="absolute inset-x-0 top-0"
+                        style={{ transform: `translateY(${questionVirtualWindow.offsetTop}px)` }}
+                      >
+                        {listContent}
+                      </div>
+                    </div>
                   );
-                })
+                })()
               )}
             </section>
           )}
@@ -3197,179 +3333,196 @@ export const BackOffice = ({
                 <div className="border border-dashed border-gray-300 rounded-xl p-6 text-center text-gray-500">
                   Aucune règle métier n'est configurée.
                 </div>
-              ) : visibleRuleIds.length === 0 ? (
+              ) : filteredRules.length === 0 ? (
                 <div className="border border-dashed border-gray-300 rounded-xl p-6 text-center text-gray-500">
                   Aucune règle ne correspond aux filtres sélectionnés.
                 </div>
               ) : (
-                rules.map((rule) => {
-                  if (!visibleRuleIdSet.has(rule.id)) {
-                    return null;
-                  }
+                (() => {
+                  const startIndex = shouldVirtualizeRules ? ruleVirtualWindow.startIndex : 0;
+                  const endIndex = shouldVirtualizeRules ? ruleVirtualWindow.endIndex : filteredRules.length;
+                  const visibleRules = filteredRules.slice(startIndex, endIndex);
+                  const listContent = visibleRules.map((rule) => {
+                    const conditionSummary = buildRuleConditionSummary(rule, questions);
+                    const risks = Array.isArray(rule.risks) ? rule.risks : [];
+                    const highestRiskPriority = getHighestRiskPriority(risks);
+                    const associatedTeamIds = Array.from(collectRuleTeamIds(rule));
+                    const associatedTeamLabels = associatedTeamIds.map((teamId) => getTeamLabel(teamId, teams));
+                    const isExpanded = expandedRuleIds.has(rule.id);
+                    const detailsId = `rule-details-${rule.id}`;
+                    const ruleDisplayName = typeof rule.name === 'string' && rule.name.trim() !== '' ? rule.name : rule.id;
+                    const toggleLabel = isExpanded
+                      ? `Masquer les détails de la règle ${ruleDisplayName}`
+                      : `Afficher les détails de la règle ${ruleDisplayName}`;
 
-                  const conditionSummary = buildRuleConditionSummary(rule, questions);
-                  const risks = Array.isArray(rule.risks) ? rule.risks : [];
-                  const highestRiskPriority = getHighestRiskPriority(risks);
-                  const associatedTeamIds = Array.from(collectRuleTeamIds(rule));
-                  const associatedTeamLabels = associatedTeamIds.map((teamId) => getTeamLabel(teamId, teams));
-                  const isExpanded = expandedRuleIds.has(rule.id);
-                  const detailsId = `rule-details-${rule.id}`;
-                  const ruleDisplayName = typeof rule.name === 'string' && rule.name.trim() !== '' ? rule.name : rule.id;
-                  const toggleLabel = isExpanded
-                    ? `Masquer les détails de la règle ${ruleDisplayName}`
-                    : `Afficher les détails de la règle ${ruleDisplayName}`;
-
-                  return (
-                    <article key={rule.id} className="border border-gray-200 rounded-xl p-6 bg-white shadow-sm hv-surface">
-                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                        <div className="flex items-start gap-3 flex-1">
-                          <button
-                            type="button"
-                            onClick={() => toggleRuleExpansion(rule.id)}
-                            className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full hv-button"
-                            aria-expanded={isExpanded}
-                            aria-controls={detailsId}
-                          >
-                            <ChevronRight className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
-                            <span className="sr-only">{toggleLabel}</span>
-                          </button>
-                          <div className="space-y-2 flex-1">
-                            <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500">
-                              <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-semibold">{rule.id}</span>
-                              <span className={`px-2 py-1 rounded-full font-semibold ${getPriorityBadgeClasses(highestRiskPriority)}`}>
-                                {highestRiskPriority
-                                  ? `Priorité principale : ${highestRiskPriority}`
-                                  : 'Priorité non renseignée'}
-                              </span>
-                            </div>
-                            <h3 className="text-lg font-semibold text-gray-800">{ruleDisplayName}</h3>
-                            {associatedTeamLabels.length > 0 && (
-                              <div className="flex flex-wrap gap-2 text-xs">
-                                {associatedTeamLabels.map((label) => (
-                                  <span
-                                    key={`${rule.id}-team-${label}`}
-                                    className="px-2 py-1 bg-blue-50 text-blue-700 rounded-full border border-blue-100"
-                                  >
-                                    {label}
-                                  </span>
-                                ))}
+                    return (
+                      <article key={rule.id} className="border border-gray-200 rounded-xl p-6 bg-white shadow-sm hv-surface">
+                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                          <div className="flex items-start gap-3 flex-1">
+                            <button
+                              type="button"
+                              onClick={() => toggleRuleExpansion(rule.id)}
+                              className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-full hv-button"
+                              aria-expanded={isExpanded}
+                              aria-controls={detailsId}
+                            >
+                              <ChevronRight className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                              <span className="sr-only">{toggleLabel}</span>
+                            </button>
+                            <div className="space-y-2 flex-1">
+                              <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500">
+                                <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-semibold">{rule.id}</span>
+                                <span className={`px-2 py-1 rounded-full font-semibold ${getPriorityBadgeClasses(highestRiskPriority)}`}>
+                                  {highestRiskPriority
+                                    ? `Priorité principale : ${highestRiskPriority}`
+                                    : 'Priorité non renseignée'}
+                                </span>
                               </div>
-                            )}
+                              <h3 className="text-lg font-semibold text-gray-800">{ruleDisplayName}</h3>
+                              {associatedTeamLabels.length > 0 && (
+                                <div className="flex flex-wrap gap-2 text-xs">
+                                  {associatedTeamLabels.map((label) => (
+                                    <span
+                                      key={`${rule.id}-team-${label}`}
+                                      className="px-2 py-1 bg-blue-50 text-blue-700 rounded-full border border-blue-100"
+                                    >
+                                      {label}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setEditingRule(rule)}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded hv-button"
+                              aria-label={`Afficher la règle ${ruleDisplayName}`}
+                            >
+                              <Eye className="w-5 h-5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => duplicateRule(rule.id)}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded hv-button"
+                              aria-label={`Dupliquer la règle ${ruleDisplayName}`}
+                              title={`Dupliquer la règle ${ruleDisplayName}`}
+                            >
+                              <Copy className="w-5 h-5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => deleteRule(rule.id)}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded hv-button"
+                              aria-label={`Supprimer la règle ${ruleDisplayName}`}
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
                           </div>
                         </div>
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setEditingRule(rule)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded hv-button"
-                            aria-label={`Afficher la règle ${ruleDisplayName}`}
-                          >
-                            <Eye className="w-5 h-5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => duplicateRule(rule.id)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded hv-button"
-                            aria-label={`Dupliquer la règle ${ruleDisplayName}`}
-                            title={`Dupliquer la règle ${ruleDisplayName}`}
-                          >
-                            <Copy className="w-5 h-5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => deleteRule(rule.id)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded hv-button"
-                            aria-label={`Supprimer la règle ${ruleDisplayName}`}
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </div>
 
-                      {isExpanded && (
-                        <div id={detailsId} className="mt-4 space-y-6 text-sm text-gray-700">
-                          {conditionSummary.length > 0 ? (
-                            <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
-                              <h4 className="text-sm font-semibold text-blue-700 mb-3">Conditions de déclenchement</h4>
-                              <ol className="space-y-3">
-                                {conditionSummary.map((group) => (
-                                  <li key={`${rule.id}-group-${group.index}`} className="space-y-2">
-                                    <div className="text-xs font-semibold text-blue-600 uppercase tracking-wide">
-                                      Groupe {group.index} – logique {group.logic === 'OU' ? 'OU' : 'ET'}
-                                    </div>
-                                    <ul className="space-y-1">
-                                      {group.items.map((item, idx) => (
-                                        <li key={`${rule.id}-item-${group.index}-${idx}`} className="flex items-start space-x-2">
-                                          <span className="text-blue-500 mt-1">•</span>
-                                          <span>{item.description}</span>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  </li>
-                                ))}
-                              </ol>
-                            </div>
-                          ) : (
-                            <p className="text-xs text-gray-500 italic">
-                              Cette règle est toujours active (aucune condition configurée).
-                            </p>
-                          )}
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <h4 className="font-semibold text-gray-800">Équipes impliquées</h4>
-                              {associatedTeamLabels.length > 0 ? (
-                                <ul className="flex flex-wrap gap-2">
-                                  {associatedTeamLabels.map((label) => (
-                                    <li key={`${rule.id}-details-team-${label}`} className="px-2 py-1 bg-blue-50 text-blue-700 rounded border border-blue-100">
-                                      {label}
+                        {isExpanded && (
+                          <div id={detailsId} className="mt-4 space-y-6 text-sm text-gray-700">
+                            {conditionSummary.length > 0 ? (
+                              <div className="bg-blue-50 border border-blue-100 rounded-lg p-4">
+                                <h4 className="text-sm font-semibold text-blue-700 mb-3">Conditions de déclenchement</h4>
+                                <ol className="space-y-3">
+                                  {conditionSummary.map((group) => (
+                                    <li key={`${rule.id}-group-${group.index}`} className="space-y-2">
+                                      <div className="text-xs font-semibold text-blue-600 uppercase tracking-wide">
+                                        Groupe {group.index} – logique {group.logic === 'OU' ? 'OU' : 'ET'}
+                                      </div>
+                                      <ul className="space-y-1">
+                                        {group.items.map((item, idx) => (
+                                          <li key={`${rule.id}-item-${group.index}-${idx}`} className="flex items-start space-x-2">
+                                            <span className="text-blue-500 mt-1">•</span>
+                                            <span>{item.description}</span>
+                                          </li>
+                                        ))}
+                                      </ul>
                                     </li>
                                   ))}
-                                </ul>
-                              ) : (
-                                <p className="text-xs text-gray-500 italic">Aucune équipe associée.</p>
-                              )}
-                            </div>
+                                </ol>
+                              </div>
+                            ) : (
+                              <p className="text-xs text-gray-500 italic">
+                                Cette règle est toujours active (aucune condition configurée).
+                              </p>
+                            )}
 
-                            <div className="space-y-2">
-                              <h4 className="font-semibold text-gray-800">Risques identifiés</h4>
-                              {risks.length > 0 ? (
-                                <ul className="space-y-1">
-                                  {risks.map((risk, index) => {
-                                    const riskDescription = risk && risk.description ? risk.description : 'Risque non renseigné';
-                                    const riskPriority = risk?.priority || 'A réaliser';
-                                    const riskTeamLabel = risk?.teamId ? getTeamLabel(risk.teamId, teams) : 'Équipe non renseignée';
-
-                                    return (
-                                      <li key={`${rule.id}-risk-${index}`} className="space-y-1">
-                                        <div className="flex items-start space-x-2">
-                                          <span className="text-red-500 mt-1">•</span>
-                                          <span>{riskDescription}</span>
-                                        </div>
-                                        <div className="text-xs text-gray-500 flex flex-wrap gap-2 pl-4">
-                                          <span className="inline-flex items-center gap-1">
-                                            <strong className="font-semibold text-gray-600">Équipe :</strong>
-                                            <span>{riskTeamLabel}</span>
-                                          </span>
-                                          <span className="inline-flex items-center gap-1">
-                                            <strong className="font-semibold text-gray-600">Priorité :</strong>
-                                            <span>{riskPriority}</span>
-                                          </span>
-                                        </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <h4 className="font-semibold text-gray-800">Équipes impliquées</h4>
+                                {associatedTeamLabels.length > 0 ? (
+                                  <ul className="flex flex-wrap gap-2">
+                                    {associatedTeamLabels.map((label) => (
+                                      <li key={`${rule.id}-details-team-${label}`} className="px-2 py-1 bg-blue-50 text-blue-700 rounded border border-blue-100">
+                                        {label}
                                       </li>
-                                    );
-                                  })}
-                                </ul>
-                              ) : (
-                                <p className="text-xs text-gray-500 italic">Aucun risque documenté.</p>
-                              )}
+                                    ))}
+                                  </ul>
+                                ) : (
+                                  <p className="text-xs text-gray-500 italic">Aucune équipe associée.</p>
+                                )}
+                              </div>
+
+                              <div className="space-y-2">
+                                <h4 className="font-semibold text-gray-800">Risques identifiés</h4>
+                                {risks.length > 0 ? (
+                                  <ul className="space-y-1">
+                                    {risks.map((risk, index) => {
+                                      const riskDescription = risk && risk.description ? risk.description : 'Risque non renseigné';
+                                      const riskPriority = risk?.priority || 'A réaliser';
+                                      const riskTeamLabel = risk?.teamId ? getTeamLabel(risk.teamId, teams) : 'Équipe non renseignée';
+
+                                      return (
+                                        <li key={`${rule.id}-risk-${index}`} className="space-y-1">
+                                          <div className="flex items-start space-x-2">
+                                            <span className="text-red-500 mt-1">•</span>
+                                            <span>{riskDescription}</span>
+                                          </div>
+                                          <div className="text-xs text-gray-500 flex flex-wrap gap-2 pl-4">
+                                            <span className="inline-flex items-center gap-1">
+                                              <strong className="font-semibold text-gray-600">Équipe :</strong>
+                                              <span>{riskTeamLabel}</span>
+                                            </span>
+                                            <span className="inline-flex items-center gap-1">
+                                              <strong className="font-semibold text-gray-600">Priorité :</strong>
+                                              <span>{riskPriority}</span>
+                                            </span>
+                                          </div>
+                                        </li>
+                                      );
+                                    })}
+                                  </ul>
+                                ) : (
+                                  <p className="text-xs text-gray-500 italic">Aucun risque documenté.</p>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      )}
-                    </article>
+                        )}
+                      </article>
+                    );
+                  });
+
+                  if (!shouldVirtualizeRules) {
+                    return listContent;
+                  }
+
+                  return (
+                    <div ref={ruleVirtualWindow.listRef} className="relative">
+                      <div style={{ height: `${ruleVirtualWindow.totalHeight}px` }} />
+                      <div
+                        className="absolute inset-x-0 top-0"
+                        style={{ transform: `translateY(${ruleVirtualWindow.offsetTop}px)` }}
+                      >
+                        {listContent}
+                      </div>
+                    </div>
                   );
-                })
+                })()
               )}
             </section>
           )}

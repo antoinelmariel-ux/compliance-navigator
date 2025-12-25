@@ -2,8 +2,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from './reac
 import { QuestionnaireScreen } from './components/QuestionnaireScreen.jsx';
 import { SynthesisReport } from './components/SynthesisReport.jsx';
 import { HomeScreen } from './components/HomeScreen.jsx';
-import { BackOffice } from './components/BackOffice.jsx';
-import { ProjectShowcase } from './components/ProjectShowcase.jsx';
 import { AnnotationLayer } from './components/AnnotationLayer.jsx';
 import { CheckCircle, Lock, MessageSquare, Settings, Sparkles } from './components/icons.js';
 import { MandatoryQuestionsSummary } from './components/MandatoryQuestionsSummary.jsx';
@@ -27,7 +25,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.188';
+const APP_VERSION = 'v1.0.190';
 
 const ANNOTATION_COLORS = [
   '#2563eb',
@@ -43,6 +41,23 @@ const ANNOTATION_COLORS = [
 
 const BACK_OFFICE_PASSWORD_HASH = '3c5b8c6aaa89db61910cdfe32f1bdb193d1923146dbd6a7b0634a32ab73ac1af';
 const BACK_OFFICE_PASSWORD_FALLBACK_DIGEST = '86ceec83';
+
+const loadDeferredModule = (modulePath) => {
+  if (typeof window === 'undefined' || !window.ModuleLoader) {
+    return null;
+  }
+
+  if (typeof window.ModuleLoader.import !== 'function') {
+    return null;
+  }
+
+  try {
+    return window.ModuleLoader.import(modulePath);
+  } catch (error) {
+    console.error(`Impossible de charger le module ${modulePath}.`, error);
+    return null;
+  }
+};
 
 const computeBackOfficePasswordDigest = async (value) => {
   if (typeof value !== 'string' || value.length === 0) {
@@ -538,8 +553,44 @@ export const App = () => {
   const [showcaseAnnotationScope, setShowcaseAnnotationScope] = useState('display-full');
   const [autoFocusAnnotationId, setAutoFocusAnnotationId] = useState(null);
   const [isShowcaseEditing, setIsShowcaseEditing] = useState(false);
+  const [DeferredBackOffice, setDeferredBackOffice] = useState(null);
+  const [DeferredProjectShowcase, setDeferredProjectShowcase] = useState(null);
   const annotationNotesRef = useRef(annotationNotes);
   const annotationFileInputRef = useRef(null);
+  const deferredBackOfficeRef = useRef(null);
+  const deferredProjectShowcaseRef = useRef(null);
+
+  const ensureBackOfficeModule = useCallback(() => {
+    if (deferredBackOfficeRef.current) {
+      return deferredBackOfficeRef.current;
+    }
+
+    const loaded = loadDeferredModule('./src/components/BackOffice.jsx');
+    const component = loaded?.BackOffice || null;
+    deferredBackOfficeRef.current = component;
+
+    if (component && DeferredBackOffice !== component) {
+      setDeferredBackOffice(() => component);
+    }
+
+    return component;
+  }, [DeferredBackOffice]);
+
+  const ensureProjectShowcaseModule = useCallback(() => {
+    if (deferredProjectShowcaseRef.current) {
+      return deferredProjectShowcaseRef.current;
+    }
+
+    const loaded = loadDeferredModule('./src/components/ProjectShowcase.jsx');
+    const component = loaded?.ProjectShowcase || null;
+    deferredProjectShowcaseRef.current = component;
+
+    if (component && DeferredProjectShowcase !== component) {
+      setDeferredProjectShowcase(() => component);
+    }
+
+    return component;
+  }, [DeferredProjectShowcase]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -1926,6 +1977,18 @@ export const App = () => {
     ? 'pt-20 lg:pt-24'
     : '';
 
+  useEffect(() => {
+    if (isAdminBackOfficeView) {
+      ensureBackOfficeModule();
+    }
+  }, [ensureBackOfficeModule, isAdminBackOfficeView]);
+
+  useEffect(() => {
+    if (showcaseProjectContext) {
+      ensureProjectShowcaseModule();
+    }
+  }, [ensureProjectShowcaseModule, showcaseProjectContext]);
+
   const handleAnswer = useCallback((questionId, answer) => {
     let answerChanged = false;
     let nextAnswersSnapshot = null;
@@ -2209,9 +2272,10 @@ export const App = () => {
       return;
     }
 
+    ensureBackOfficeModule();
     setMode('admin');
     setAdminView('back-office');
-  }, [requestAdminAccess, setMode]);
+  }, [ensureBackOfficeModule, requestAdminAccess, setMode]);
 
   const handleActivateAdminOnHome = useCallback(async () => {
     const hasAccess = await requestAdminAccess();
@@ -2539,6 +2603,8 @@ export const App = () => {
       timelineDetails: providedTimelineDetails
     } = context || {};
 
+    ensureProjectShowcaseModule();
+
     const project = projectId ? projects.find(item => item.id === projectId) : null;
     const answersSource = providedAnswers || project?.answers || {};
     const visibleQuestions = Array.isArray(providedQuestions) && providedQuestions.length > 0
@@ -2611,6 +2677,7 @@ export const App = () => {
     setScreen('showcase');
   }, [
     analyzeAnswers,
+    ensureProjectShowcaseModule,
     projects,
     questions,
     riskLevelRules,
@@ -3158,23 +3225,31 @@ export const App = () => {
 
       <main id="main-content" tabIndex="-1" className="focus:outline-none hv-background">
         {isAdminBackOfficeView ? (
-          <BackOffice
-            projects={projects}
-            questions={questions}
-            setQuestions={setQuestions}
-            rules={rules}
-            setRules={setRules}
-            riskLevelRules={riskLevelRules}
-            setRiskLevelRules={setRiskLevelRules}
-            riskWeights={riskWeights}
-            setRiskWeights={setRiskWeights}
-            teams={teams}
-            setTeams={setTeams}
-            showcaseThemes={showcaseThemes}
-            setShowcaseThemes={setShowcaseThemes}
-            projectFilters={projectFilters}
-            setProjectFilters={updateProjectFilters}
-          />
+          DeferredBackOffice ? (
+            <DeferredBackOffice
+              projects={projects}
+              questions={questions}
+              setQuestions={setQuestions}
+              rules={rules}
+              setRules={setRules}
+              riskLevelRules={riskLevelRules}
+              setRiskLevelRules={setRiskLevelRules}
+              riskWeights={riskWeights}
+              setRiskWeights={setRiskWeights}
+              teams={teams}
+              setTeams={setTeams}
+              showcaseThemes={showcaseThemes}
+              setShowcaseThemes={setShowcaseThemes}
+              projectFilters={projectFilters}
+              setProjectFilters={updateProjectFilters}
+            />
+          ) : (
+            <div className="max-w-4xl mx-auto px-4 sm:px-8">
+              <div className="bg-white border border-gray-200 rounded-2xl p-6 text-center text-sm text-gray-500 shadow-sm hv-surface">
+                Chargement du back-office…
+              </div>
+            </div>
+          )
         ) : screen === 'home' ? (
           <HomeScreen
             projects={projects}
@@ -3258,27 +3333,33 @@ export const App = () => {
                     : 'Ce projet a été soumis. La vitrine est consultable en lecture seule.'}
                 </div>
               )}
-              <ProjectShowcase
-                projectName={showcaseProjectContext.projectName}
-                onClose={handleCloseProjectShowcase}
-                analysis={showcaseProjectContext.analysis}
-                relevantTeams={showcaseProjectContext.relevantTeams}
-                questions={showcaseProjectContext.questions}
-                answers={showcaseProjectContext.answers}
-                timelineDetails={showcaseProjectContext.timelineDetails}
-                showcaseThemes={showcaseThemes}
-                hasIncompleteAnswers={Boolean(showcaseProjectContext.hasIncompleteAnswers)}
-                onUpdateAnswers={
-                  isOnboardingActive
-                    ? noop
-                    : showcaseProjectContext.status === 'draft' || isAdminMode
-                      ? handleUpdateProjectShowcaseAnswers
-                      : undefined
-                }
-                tourContext={tourContext}
-                onAnnotationScopeChange={setShowcaseAnnotationScope}
-                onEditingStateChange={setIsShowcaseEditing}
-              />
+              {DeferredProjectShowcase ? (
+                <DeferredProjectShowcase
+                  projectName={showcaseProjectContext.projectName}
+                  onClose={handleCloseProjectShowcase}
+                  analysis={showcaseProjectContext.analysis}
+                  relevantTeams={showcaseProjectContext.relevantTeams}
+                  questions={showcaseProjectContext.questions}
+                  answers={showcaseProjectContext.answers}
+                  timelineDetails={showcaseProjectContext.timelineDetails}
+                  showcaseThemes={showcaseThemes}
+                  hasIncompleteAnswers={Boolean(showcaseProjectContext.hasIncompleteAnswers)}
+                  onUpdateAnswers={
+                    isOnboardingActive
+                      ? noop
+                      : showcaseProjectContext.status === 'draft' || isAdminMode
+                        ? handleUpdateProjectShowcaseAnswers
+                        : undefined
+                  }
+                  tourContext={tourContext}
+                  onAnnotationScopeChange={setShowcaseAnnotationScope}
+                  onEditingStateChange={setIsShowcaseEditing}
+                />
+              ) : (
+                <div className="bg-white border border-gray-200 rounded-2xl p-6 text-center text-sm text-gray-500 shadow-sm hv-surface">
+                  Chargement de la vitrine…
+                </div>
+              )}
             </div>
           ) : null
         ) : null}

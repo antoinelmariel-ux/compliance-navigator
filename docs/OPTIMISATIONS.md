@@ -19,3 +19,7 @@ Cette itération vise à fluidifier le parcours principal en réduisant les reca
 - Ajouter des tests de performance (ex. profils React DevTools) sur des scénarios volumineux pour quantifier le gain.
 - Mettre en place un mémoïsage similaire dans la génération du rapport de synthèse si celui-ci devient complexe.
 - Introduire un découpage du bundle (code-splitting) lorsque l'application grandira ou sera servie via un serveur.
+- Charger de façon différée les écrans secondaires (back-office, showcase) et précharger uniquement les dépendances critiques de la page d'accueil.
+- Virtualiser les listes longues (ex. historique de projets, questions) pour limiter le coût de rendu et les recalculs de layout.
+- Optimiser les assets statiques (compression des images, `preload`/`font-display` pour les polices) afin de réduire le temps de chargement perçu.
+- Mettre en cache les données locales et externes (avec une stratégie d'expiration) pour éviter les recalculs à chaque navigation.
