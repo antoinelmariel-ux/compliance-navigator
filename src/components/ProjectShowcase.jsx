@@ -186,8 +186,11 @@ const areCustomSectionsEqual = (previous, next) => {
 
     return entry.id === candidate.id
       && entry.title === candidate.title
+      && entry.subtitle === candidate.subtitle
       && entry.description === candidate.description
       && entry.accent === candidate.accent
+      && entry.documentUrl === candidate.documentUrl
+      && entry.documentType === candidate.documentType
       && JSON.stringify(entry.items || []) === JSON.stringify(candidate.items || [])
       && entry.type === candidate.type;
   });
@@ -1490,6 +1493,49 @@ export const ProjectShowcase = ({
     return map;
   }, [sanitizedCustomSections]);
 
+  const customSectionFormMap = useMemo(() => {
+    const map = new Map();
+    customSections.forEach(section => {
+      if (section?.id) {
+        map.set(section.id, section);
+      }
+    });
+    return map;
+  }, [customSections]);
+
+  const sectionFieldsById = useMemo(() => {
+    return editableFields.reduce((acc, field) => {
+      const sectionId = FIELD_SECTION_MAP[field.id];
+      if (!sectionId) {
+        return acc;
+      }
+
+      if (!acc[sectionId]) {
+        acc[sectionId] = [];
+      }
+
+      acc[sectionId].push(field);
+      return acc;
+    }, {});
+  }, [editableFields]);
+
+  const editFormBlocks = useMemo(() => {
+    const blocks = [];
+
+    sectionOrder.forEach(sectionId => {
+      const customSection = customSectionFormMap.get(sectionId);
+      if (customSection) {
+        blocks.push({ type: 'custom', section: customSection });
+        return;
+      }
+
+      const sectionFields = sectionFieldsById[sectionId] || [];
+      sectionFields.forEach(field => blocks.push({ type: 'field', field }));
+    });
+
+    return blocks;
+  }, [customSectionFormMap, sectionFieldsById, sectionOrder]);
+
   const handleOpenSectionModal = useCallback((insertionIndex = null) => {
     setPendingInsertionIndex(insertionIndex);
     setSectionModalStep('templates');
@@ -1712,6 +1758,41 @@ export const ProjectShowcase = ({
         [fieldId]: nextValue
       };
     });
+  }, []);
+
+  const handleCustomSectionFieldChange = useCallback((sectionId, field, value) => {
+    setCustomSections(prev =>
+      prev.map(section => {
+        if (!section || section.id !== sectionId) {
+          return section;
+        }
+
+        return {
+          ...section,
+          [field]: value
+        };
+      })
+    );
+  }, []);
+
+  const handleCustomSectionItemsChange = useCallback((sectionId, value) => {
+    const items = value
+      .split(/\r?\n/)
+      .map(entry => entry.trim())
+      .filter(Boolean);
+
+    setCustomSections(prev =>
+      prev.map(section => {
+        if (!section || section.id !== sectionId) {
+          return section;
+        }
+
+        return {
+          ...section,
+          items
+        };
+      })
+    );
   }, []);
 
   const handleRemoveCustomSection = useCallback((sectionId) => {
@@ -2984,7 +3065,125 @@ export const ProjectShowcase = ({
         </ol>
       </div>
       <div className="aurora-edit-panel__grid">
-        {editableFields.map(field => {
+        {editFormBlocks.map((block) => {
+          if (block.type === 'custom') {
+            const section = block.section;
+            const itemsText = Array.isArray(section.items) ? section.items.join('\n') : '';
+            const sectionTitle = section.title || 'Section personnalisée';
+            const annotationSectionId = section.type || 'custom';
+
+            return (
+              <div
+                key={`custom-section-${section.id}`}
+                className="aurora-field aurora-field--wide"
+                data-annotation-target-section={annotationSectionId}
+              >
+                <div className="flex flex-col gap-1">
+                  <p className="aurora-field__label">{sectionTitle}</p>
+                  <p className="text-xs text-gray-500">Bloc personnalisé</p>
+                </div>
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  <div className="space-y-1">
+                    <label htmlFor={`custom-section-${section.id}-title`} className="text-sm font-medium text-gray-800">
+                      Titre
+                    </label>
+                    <input
+                      id={`custom-section-${section.id}-title`}
+                      type="text"
+                      value={section.title || ''}
+                      onChange={(event) => handleCustomSectionFieldChange(section.id, 'title', event.target.value)}
+                      className="aurora-form-control"
+                      placeholder="Titre du bloc"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label htmlFor={`custom-section-${section.id}-subtitle`} className="text-sm font-medium text-gray-800">
+                      Sous-titre
+                    </label>
+                    <input
+                      id={`custom-section-${section.id}-subtitle`}
+                      type="text"
+                      value={section.subtitle || ''}
+                      onChange={(event) => handleCustomSectionFieldChange(section.id, 'subtitle', event.target.value)}
+                      className="aurora-form-control"
+                      placeholder="Complément de contexte"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label htmlFor={`custom-section-${section.id}-accent`} className="text-sm font-medium text-gray-800">
+                      Accent (optionnel)
+                    </label>
+                    <input
+                      id={`custom-section-${section.id}-accent`}
+                      type="text"
+                      value={section.accent || ''}
+                      onChange={(event) => handleCustomSectionFieldChange(section.id, 'accent', event.target.value)}
+                      className="aurora-form-control"
+                      placeholder="Badge, statut ou enjeu"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label htmlFor={`custom-section-${section.id}-document-url`} className="text-sm font-medium text-gray-800">
+                      Lien SharePoint du document
+                    </label>
+                    <input
+                      id={`custom-section-${section.id}-document-url`}
+                      type="url"
+                      value={section.documentUrl || ''}
+                      onChange={(event) => handleCustomSectionFieldChange(section.id, 'documentUrl', event.target.value)}
+                      className="aurora-form-control"
+                      placeholder="https://votre-tenant.sharepoint.com/..."
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label htmlFor={`custom-section-${section.id}-document-type`} className="text-sm font-medium text-gray-800">
+                      Type de document
+                    </label>
+                    <select
+                      id={`custom-section-${section.id}-document-type`}
+                      value={section.documentType || 'pdf'}
+                      onChange={(event) => handleCustomSectionFieldChange(section.id, 'documentType', event.target.value)}
+                      className="aurora-form-control"
+                    >
+                      {DOCUMENT_VIEWER_TYPES.map(type => (
+                        <option key={type.id} value={type.id}>
+                          {type.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="mt-4 space-y-1">
+                  <label htmlFor={`custom-section-${section.id}-description`} className="text-sm font-medium text-gray-800">
+                    Description
+                  </label>
+                  <textarea
+                    id={`custom-section-${section.id}-description`}
+                    value={section.description || ''}
+                    onChange={(event) => handleCustomSectionFieldChange(section.id, 'description', event.target.value)}
+                    rows={4}
+                    className="aurora-form-control aurora-form-control--textarea"
+                    placeholder="Expliquez le contenu principal de cette section"
+                  />
+                </div>
+                <div className="mt-4 space-y-1">
+                  <label htmlFor={`custom-section-${section.id}-items`} className="text-sm font-medium text-gray-800">
+                    Liste (une ligne par élément)
+                  </label>
+                  <textarea
+                    id={`custom-section-${section.id}-items`}
+                    value={itemsText}
+                    onChange={(event) => handleCustomSectionItemsChange(section.id, event.target.value)}
+                    rows={4}
+                    className="aurora-form-control aurora-form-control--textarea"
+                    placeholder="Élément #1&#10;Élément #2"
+                  />
+                </div>
+              </div>
+            );
+          }
+
+          const field = block.field;
           const fieldId = field.id;
           const question = field.question;
           const type = question?.type || field.fallbackType || 'text';
