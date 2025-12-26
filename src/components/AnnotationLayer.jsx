@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from '../react.js';
-import { Close, Edit, Pause, Play, Save, Upload } from './icons.js';
+import { Close, Pause, Play, Save, Upload } from './icons.js';
 
 const clamp01 = (value) => {
   if (typeof value !== 'number' || Number.isNaN(value)) {
@@ -34,13 +34,32 @@ const STATUS_BADGE = {
   paused: 'bg-amber-500 text-white'
 };
 
+const NOTE_PALETTE_KEYS = ['base', 'palette-0', 'palette-1', 'palette-2', 'palette-3', 'palette-4'];
+
+const hashString = (value) => {
+  let hash = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash << 5) - hash + value.charCodeAt(index);
+    hash |= 0;
+  }
+  return hash;
+};
+
+const getFeedbackPaletteKey = (note, index) => {
+  if (note?.sourceId && note.sourceId !== 'session') {
+    const paletteIndex = Math.abs(hashString(note.sourceId)) % 5;
+    return `palette-${paletteIndex}`;
+  }
+
+  return NOTE_PALETTE_KEYS[index % NOTE_PALETTE_KEYS.length] || 'base';
+};
+
 export const AnnotationLayer = ({
   isActive = false,
   isPaused = false,
   isEditing = false,
   notes = [],
   activeContextId = '',
-  sourceColors = {},
   projectName = '',
   autoFocusNoteId = null,
   onTogglePause,
@@ -211,49 +230,38 @@ export const AnnotationLayer = ({
         {visibleNotes.map((note, index) => {
           const position = computeNotePosition(note);
           const label = note.sourceId && note.sourceId !== 'session' ? note.sourceId : `#${index + 1}`;
-          const color = note.color || sourceColors[label] || '#fbbf24';
+          const paletteKey = getFeedbackPaletteKey(note, index);
 
           return (
             <div
               key={note.id}
-              className="annotation-sticky"
+              className="annotation-sticky feedback-note"
               style={{ left: `${position.left}px`, top: `${position.top}px` }}
               data-annotation-ui="true"
+              data-feedback-source-color={paletteKey}
             >
-              <div
-                className="pointer-events-auto w-64 max-w-xs rounded-2xl shadow-[0_18px_40px_rgba(0,0,0,0.18)] border border-yellow-200 ring-1 ring-black/5"
-                style={{
-                  background: `linear-gradient(160deg, ${color || '#fef3c7'} 0%, #fff9d9 60%, #fff7cc 100%)`
-                }}
-              >
-                <div className="flex items-center justify-between px-3 py-2 text-sm font-semibold text-amber-900/80">
-                  <span className="tracking-tight">{label}</span>
-                  {onNoteRemove ? (
-                    <button
-                      type="button"
-                      onClick={() => onNoteRemove(note.id)}
-                      className="rounded-md p-1.5 text-amber-900/80 transition hover:bg-white/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-800/60"
-                      aria-label="Supprimer le sticky note"
-                    >
-                      <Close className="h-4 w-4" />
-                    </button>
-                  ) : null}
-                </div>
-                <div className="px-3 pb-3 pt-1">
-                  <textarea
-                    value={note.text || ''}
-                    onChange={(event) => onNoteChange && onNoteChange(note.id, event.target.value)}
-                    ref={registerTextareaRef(note.id)}
-                    className="w-full resize-none border-none bg-transparent px-1 py-2 text-[15px] leading-relaxed text-amber-900/90 placeholder:text-amber-700/50 focus:outline-none focus:ring-0"
-                    rows={4}
-                    placeholder="Ajoutez votre remarque ici..."
-                    data-annotation-ui="true"
-                  />
-                  <div className="flex justify-end pr-1 text-amber-900/50">
-                    <Edit className="h-4 w-4" aria-hidden="true" />
-                  </div>
-                </div>
+              <div className="feedback-note-header">
+                <span className="feedback-note-number">{label}</span>
+                {onNoteRemove ? (
+                  <button
+                    type="button"
+                    onClick={() => onNoteRemove(note.id)}
+                    className="feedback-note-delete"
+                    aria-label="Supprimer le sticky note"
+                  >
+                    <Close className="h-4 w-4" />
+                  </button>
+                ) : null}
               </div>
+              <textarea
+                value={note.text || ''}
+                onChange={(event) => onNoteChange && onNoteChange(note.id, event.target.value)}
+                ref={registerTextareaRef(note.id)}
+                className="feedback-note-text"
+                rows={4}
+                placeholder="Ajoutez votre remarque ici..."
+                data-annotation-ui="true"
+              />
             </div>
           );
         })}
