@@ -83,7 +83,7 @@ const resolveDocumentEmbedSrc = (documentUrl, documentType) => {
     return '';
   }
 
-  if (documentType !== 'pptx') {
+  if (['jpg', 'png'].includes(documentType)) {
     return documentUrl;
   }
 

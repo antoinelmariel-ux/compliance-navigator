@@ -134,7 +134,7 @@ export const RichTextEditor = ({
       </div>
       <div className="relative">
         {showPlaceholder && (
-          <div className="pointer-events-none absolute inset-y-3 left-4 right-4 text-sm text-gray-400 select-none">
+          <div className="pointer-events-none absolute inset-0 px-4 py-3 text-sm text-gray-400 select-none leading-relaxed">
             {placeholder}
           </div>
         )}
