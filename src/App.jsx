@@ -25,7 +25,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.191';
+const APP_VERSION = 'v1.0.192';
 
 const loadModule = (modulePath) => {
   if (typeof window === 'undefined') {
