@@ -78,6 +78,14 @@ const DOCUMENT_VIEWER_TYPES = [
   { id: 'pptx', label: 'PPTX' }
 ];
 
+const isSharePointUrl = (value) => {
+  if (typeof value !== 'string') {
+    return false;
+  }
+
+  return value.toLowerCase().includes('sharepoint');
+};
+
 const resolveDocumentEmbedSrc = (documentUrl, documentType) => {
   if (!documentUrl) {
     return '';
@@ -1376,6 +1384,8 @@ export const ProjectShowcase = ({
   const [sectionModalStep, setSectionModalStep] = useState('templates');
   const [selectedTemplateIndex, setSelectedTemplateIndex] = useState(0);
   const [pendingInsertionIndex, setPendingInsertionIndex] = useState(null);
+  const [isSharePointWarningOpen, setIsSharePointWarningOpen] = useState(false);
+  const [sharePointWarningUrl, setSharePointWarningUrl] = useState('');
   const [sectionDraft, setSectionDraft] = useState({
     title: '',
     subtitle: '',
@@ -1389,6 +1399,23 @@ export const ProjectShowcase = ({
 
   const resetMilestoneDragState = useCallback(() => {
     setMilestoneDragState(createEmptyMilestoneDragState());
+  }, []);
+
+  const handleSharePointWarning = useCallback((nextValue) => {
+    if (!isSharePointUrl(nextValue)) {
+      return;
+    }
+
+    if (nextValue === sharePointWarningUrl) {
+      return;
+    }
+
+    setSharePointWarningUrl(nextValue);
+    setIsSharePointWarningOpen(true);
+  }, [sharePointWarningUrl]);
+
+  const handleCloseSharePointWarning = useCallback(() => {
+    setIsSharePointWarningOpen(false);
   }, []);
 
   useEffect(() => {
@@ -2794,7 +2821,11 @@ export const ProjectShowcase = ({
                   id="section-document-url"
                   type="url"
                   value={sectionDraft.documentUrl}
-                  onChange={(event) => handleSectionDraftChange('documentUrl', event.target.value)}
+                  onChange={(event) => {
+                    const nextValue = event.target.value;
+                    handleSectionDraftChange('documentUrl', nextValue);
+                    handleSharePointWarning(nextValue);
+                  }}
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
                   placeholder={selectedTemplate?.placeholder?.documentUrl || 'https://votre-tenant.sharepoint.com/...'}
                 />
@@ -2860,6 +2891,44 @@ export const ProjectShowcase = ({
       </div>
     </div>
   ) : null;
+  const sharePointWarningModal = isSharePointWarningOpen ? (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="absolute inset-0" onClick={handleCloseSharePointWarning} aria-hidden="true" />
+      <div
+        className="relative z-10 w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Avertissement SharePoint"
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-wide text-amber-500">Avertissement</p>
+            <h3 className="mt-2 text-xl font-bold text-gray-900">Fichier SharePoint détecté</h3>
+          </div>
+          <button
+            type="button"
+            onClick={handleCloseSharePointWarning}
+            className="rounded-full border border-gray-200 px-3 py-1 text-sm text-gray-600 transition hover:border-gray-300 hover:text-gray-800"
+          >
+            Fermer
+          </button>
+        </div>
+        <p className="mt-4 text-sm text-gray-600">
+          Vérifiez que le fichier SharePoint est bien partagé aux collaborateurs du LFB avant de valider son ajout.
+        </p>
+        <div className="mt-6 flex justify-end">
+          <button
+            type="button"
+            onClick={handleCloseSharePointWarning}
+            className="rounded-full border border-amber-200 bg-amber-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-600"
+          >
+            J'ai vérifié
+          </button>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
   const modeSelectionPanel = (
     <div className="mb-6 rounded-2xl border border-gray-200 bg-white/80 shadow-sm backdrop-blur">
       <div
@@ -3130,7 +3199,11 @@ export const ProjectShowcase = ({
                       id={`custom-section-${section.id}-document-url`}
                       type="url"
                       value={section.documentUrl || ''}
-                      onChange={(event) => handleCustomSectionFieldChange(section.id, 'documentUrl', event.target.value)}
+                      onChange={(event) => {
+                        const nextValue = event.target.value;
+                        handleCustomSectionFieldChange(section.id, 'documentUrl', nextValue);
+                        handleSharePointWarning(nextValue);
+                      }}
                       className="aurora-form-control"
                       placeholder="https://votre-tenant.sharepoint.com/..."
                     />
@@ -3589,6 +3662,7 @@ export const ProjectShowcase = ({
       {editBar}
       {editPanel}
       {sectionModal}
+      {sharePointWarningModal}
       {previewContent}
     </>
   );
