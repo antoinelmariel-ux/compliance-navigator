@@ -20,6 +20,8 @@ const SHOWCASE_SECTION_OPTIONS = [
   { id: 'timeline', label: 'Feuille de route' }
 ];
 
+const MAX_CUSTOM_SECTION_COLUMNS = 4;
+
 const SECTION_TEMPLATES = [
   {
     id: 'highlight',
@@ -29,6 +31,21 @@ const SECTION_TEMPLATES = [
       title: 'Impact attendu',
       description: 'Un message synthétique pour convaincre immédiatement.',
       accent: 'Nouveau'
+    }
+  },
+  {
+    id: 'columns',
+    name: 'Bloc multi-colonnes',
+    description: 'Un contenu réparti sur plusieurs colonnes pour comparer ou structurer l’information.',
+    placeholder: {
+      title: 'Points clés par axe',
+      subtitle: 'Une synthèse rapide à plusieurs voix',
+      columns: [
+        'Colonne 1 : rappels stratégiques et contexte.',
+        'Colonne 2 : bénéfices à retenir pour les équipes.',
+        'Colonne 3 : prochaines étapes prioritaires.'
+      ],
+      columnCount: 3
     }
   },
   {
@@ -77,6 +94,28 @@ const DOCUMENT_VIEWER_TYPES = [
   { id: 'png', label: 'PNG' },
   { id: 'pptx', label: 'PPTX' }
 ];
+
+const resolveCustomSectionColumnCount = (value, columns = []) => {
+  const parsed = Number.parseInt(value, 10);
+  if (Number.isFinite(parsed) && parsed > 0) {
+    return Math.min(MAX_CUSTOM_SECTION_COLUMNS, parsed);
+  }
+  if (Array.isArray(columns) && columns.length > 0) {
+    return Math.min(MAX_CUSTOM_SECTION_COLUMNS, columns.length);
+  }
+  return 1;
+};
+
+const normalizeCustomSectionColumns = (columns, columnCount) => {
+  const normalized = Array.isArray(columns)
+    ? columns.map(column => (typeof column === 'string' ? column.trim() : ''))
+    : [];
+  const boundedColumns = normalized.slice(0, columnCount);
+  while (boundedColumns.length < columnCount) {
+    boundedColumns.push('');
+  }
+  return boundedColumns;
+};
 
 const isSharePointUrl = (value) => {
   if (typeof value !== 'string') {
@@ -127,8 +166,11 @@ const sanitizeCustomSections = (rawSections) => {
         ? section.items.map(item => (typeof item === 'string' ? item.trim() : '')).filter(Boolean)
         : [];
       const type = typeof section.type === 'string' ? section.type : SECTION_TEMPLATES[0].id;
+      const columnCount = resolveCustomSectionColumnCount(section.columnCount, section.columns);
+      const columns = normalizeCustomSectionColumns(section.columns, columnCount);
+      const hasColumnContent = columns.some(column => column.length > 0);
 
-      if (!title && !subtitle && !description && !documentUrl && items.length === 0) {
+      if (!title && !subtitle && !description && !documentUrl && items.length === 0 && !hasColumnContent) {
         return null;
       }
 
@@ -141,7 +183,9 @@ const sanitizeCustomSections = (rawSections) => {
         accent,
         documentUrl,
         documentType,
-        items
+        items,
+        columnCount,
+        columns
       };
     })
     .filter(Boolean);
@@ -200,6 +244,8 @@ const areCustomSectionsEqual = (previous, next) => {
       && entry.documentUrl === candidate.documentUrl
       && entry.documentType === candidate.documentType
       && JSON.stringify(entry.items || []) === JSON.stringify(candidate.items || [])
+      && entry.columnCount === candidate.columnCount
+      && JSON.stringify(entry.columns || []) === JSON.stringify(candidate.columns || [])
       && entry.type === candidate.type;
   });
 };
@@ -1393,7 +1439,9 @@ export const ProjectShowcase = ({
     accent: '',
     documentUrl: '',
     documentType: 'pdf',
-    items: []
+    items: [],
+    columnCount: 1,
+    columns: ['']
   });
   const [sectionDraftItemsText, setSectionDraftItemsText] = useState('');
 
@@ -1573,7 +1621,9 @@ export const ProjectShowcase = ({
       accent: '',
       documentUrl: '',
       documentType: 'pdf',
-      items: []
+      items: [],
+      columnCount: 1,
+      columns: ['']
     });
     setSectionDraftItemsText('');
     setIsSectionModalOpen(true);
@@ -1590,7 +1640,9 @@ export const ProjectShowcase = ({
       accent: '',
       documentUrl: '',
       documentType: 'pdf',
-      items: []
+      items: [],
+      columnCount: 1,
+      columns: ['']
     });
     setSectionDraftItemsText('');
   }, []);
@@ -1617,6 +1669,8 @@ export const ProjectShowcase = ({
   const handleConfirmTemplateChoice = useCallback(() => {
     const template = SECTION_TEMPLATES[selectedTemplateIndex];
     const placeholder = template?.placeholder || {};
+    const columnCount = resolveCustomSectionColumnCount(placeholder.columnCount, placeholder.columns);
+    const columns = normalizeCustomSectionColumns(placeholder.columns, columnCount);
     setSectionDraft({
       title: placeholder.title || '',
       subtitle: placeholder.subtitle || '',
@@ -1624,7 +1678,9 @@ export const ProjectShowcase = ({
       accent: placeholder.accent || '',
       documentUrl: placeholder.documentUrl || '',
       documentType: placeholder.documentType || 'pdf',
-      items: Array.isArray(placeholder.items) ? placeholder.items : []
+      items: Array.isArray(placeholder.items) ? placeholder.items : [],
+      columnCount,
+      columns
     });
     setSectionDraftItemsText(Array.isArray(placeholder.items) ? placeholder.items.join('\n') : '');
     setSectionModalStep('form');
@@ -1635,6 +1691,27 @@ export const ProjectShowcase = ({
       ...previous,
       [field]: value
     }));
+  }, []);
+
+  const handleSectionDraftColumnCountChange = useCallback((value) => {
+    const nextCount = resolveCustomSectionColumnCount(value);
+    setSectionDraft(previous => ({
+      ...previous,
+      columnCount: nextCount,
+      columns: normalizeCustomSectionColumns(previous.columns, nextCount)
+    }));
+  }, []);
+
+  const handleSectionDraftColumnChange = useCallback((index, value) => {
+    setSectionDraft(previous => {
+      const currentCount = resolveCustomSectionColumnCount(previous.columnCount, previous.columns);
+      const columns = normalizeCustomSectionColumns(previous.columns, currentCount);
+      columns[index] = value;
+      return {
+        ...previous,
+        columns
+      };
+    });
   }, []);
 
   const handleSectionDraftItemsChange = useCallback((value) => {
@@ -1664,7 +1741,12 @@ export const ProjectShowcase = ({
       accent: sectionDraft.accent?.trim() || '',
       documentUrl: sectionDraft.documentUrl?.trim() || '',
       documentType: sectionDraft.documentType?.trim() || '',
-      items: Array.isArray(sectionDraft.items) ? sectionDraft.items : []
+      items: Array.isArray(sectionDraft.items) ? sectionDraft.items : [],
+      columnCount: resolveCustomSectionColumnCount(sectionDraft.columnCount, sectionDraft.columns),
+      columns: normalizeCustomSectionColumns(
+        sectionDraft.columns,
+        resolveCustomSectionColumnCount(sectionDraft.columnCount, sectionDraft.columns)
+      )
     };
 
     setCustomSections(previous => [...sanitizeCustomSections(previous), newSection]);
@@ -1797,6 +1879,44 @@ export const ProjectShowcase = ({
         return {
           ...section,
           [field]: value
+        };
+      })
+    );
+  }, []);
+
+  const handleCustomSectionColumnCountChange = useCallback((sectionId, value) => {
+    const nextCount = resolveCustomSectionColumnCount(value);
+    setCustomSections(prev =>
+      prev.map(section => {
+        if (!section || section.id !== sectionId) {
+          return section;
+        }
+
+        const columns = normalizeCustomSectionColumns(section.columns, nextCount);
+
+        return {
+          ...section,
+          columnCount: nextCount,
+          columns
+        };
+      })
+    );
+  }, []);
+
+  const handleCustomSectionColumnChange = useCallback((sectionId, index, value) => {
+    setCustomSections(prev =>
+      prev.map(section => {
+        if (!section || section.id !== sectionId) {
+          return section;
+        }
+
+        const columnCount = resolveCustomSectionColumnCount(section.columnCount, section.columns);
+        const columns = normalizeCustomSectionColumns(section.columns, columnCount);
+        columns[index] = value;
+
+        return {
+          ...section,
+          columns
         };
       })
     );
@@ -2547,6 +2667,10 @@ export const ProjectShowcase = ({
       return null;
     }
 
+    const columnCount = resolveCustomSectionColumnCount(section.columnCount, section.columns);
+    const columns = normalizeCustomSectionColumns(section.columns, columnCount);
+    const activeColumns = columns.filter(column => column.trim().length > 0);
+
     return (
       <section
         key={section.id}
@@ -2566,6 +2690,21 @@ export const ProjectShowcase = ({
           </div>
           {section.description && (
             <p className="aurora-body-text">{renderTextWithLinks(section.description)}</p>
+          )}
+          {activeColumns.length > 0 && (
+            <div
+              className="mt-6 grid gap-4"
+              style={{ gridTemplateColumns: `repeat(${Math.min(columnCount, activeColumns.length)}, minmax(0, 1fr))` }}
+            >
+              {activeColumns.map((column, columnIndex) => (
+                <div
+                  key={`${section.id}-column-${columnIndex}`}
+                  className="rounded-2xl border border-gray-100 bg-white/70 p-4 text-sm text-gray-700 shadow-sm"
+                >
+                  <p className="whitespace-pre-line">{renderTextWithLinks(column)}</p>
+                </div>
+              ))}
+            </div>
           )}
           {section.documentUrl && (
             <div className="mt-6 space-y-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
@@ -2790,14 +2929,14 @@ export const ProjectShowcase = ({
                 />
               </div>
               <div className="space-y-1">
-                <label htmlFor="section-accent" className="text-sm font-medium text-gray-800">Accent (optionnel)</label>
+                <label htmlFor="section-accent" className="text-sm font-medium text-gray-800">Sous-titre d'accroche (optionnel)</label>
                 <input
                   id="section-accent"
                   type="text"
                   value={sectionDraft.accent}
                   onChange={(event) => handleSectionDraftChange('accent', event.target.value)}
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
-                  placeholder="Badge, statut ou enjeu"
+                  placeholder="Sous-titre court"
                 />
               </div>
             </div>
@@ -2811,6 +2950,44 @@ export const ProjectShowcase = ({
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
                 placeholder={selectedTemplate?.placeholder?.description || 'Expliquez le contenu principal de cette section'}
               />
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-1">
+                <label htmlFor="section-column-count" className="text-sm font-medium text-gray-800">Nombre de colonnes</label>
+                <select
+                  id="section-column-count"
+                  value={sectionDraft.columnCount}
+                  onChange={(event) => handleSectionDraftColumnCountChange(event.target.value)}
+                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
+                >
+                  {Array.from({ length: MAX_CUSTOM_SECTION_COLUMNS }, (_, index) => (
+                    <option key={`section-column-count-${index + 1}`} value={index + 1}>
+                      {index + 1} colonne{index + 1 > 1 ? 's' : ''}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500">Les colonnes se réorganisent selon la largeur disponible.</p>
+              </div>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              {sectionDraft.columns.map((column, columnIndex) => (
+                <div key={`section-draft-column-${columnIndex}`} className="space-y-1">
+                  <label
+                    htmlFor={`section-column-${columnIndex}`}
+                    className="text-sm font-medium text-gray-800"
+                  >
+                    Contenu colonne {columnIndex + 1}
+                  </label>
+                  <textarea
+                    id={`section-column-${columnIndex}`}
+                    value={column}
+                    onChange={(event) => handleSectionDraftColumnChange(columnIndex, event.target.value)}
+                    rows={3}
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
+                    placeholder={`Contenu de la colonne ${columnIndex + 1}`}
+                  />
+                </div>
+              ))}
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-1">
@@ -3180,7 +3357,7 @@ export const ProjectShowcase = ({
                   </div>
                   <div className="space-y-1">
                     <label htmlFor={`custom-section-${section.id}-accent`} className="text-sm font-medium text-gray-800">
-                      Accent (optionnel)
+                      Sous-titre d'accroche (optionnel)
                     </label>
                     <input
                       id={`custom-section-${section.id}-accent`}
@@ -3188,8 +3365,25 @@ export const ProjectShowcase = ({
                       value={section.accent || ''}
                       onChange={(event) => handleCustomSectionFieldChange(section.id, 'accent', event.target.value)}
                       className="aurora-form-control"
-                      placeholder="Badge, statut ou enjeu"
+                      placeholder="Sous-titre court"
                     />
+                  </div>
+                  <div className="space-y-1">
+                    <label htmlFor={`custom-section-${section.id}-column-count`} className="text-sm font-medium text-gray-800">
+                      Nombre de colonnes
+                    </label>
+                    <select
+                      id={`custom-section-${section.id}-column-count`}
+                      value={resolveCustomSectionColumnCount(section.columnCount, section.columns)}
+                      onChange={(event) => handleCustomSectionColumnCountChange(section.id, event.target.value)}
+                      className="aurora-form-control"
+                    >
+                      {Array.from({ length: MAX_CUSTOM_SECTION_COLUMNS }, (_, index) => (
+                        <option key={`custom-section-${section.id}-column-${index + 1}`} value={index + 1}>
+                          {index + 1} colonne{index + 1 > 1 ? 's' : ''}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div className="space-y-1">
                     <label htmlFor={`custom-section-${section.id}-document-url`} className="text-sm font-medium text-gray-800">
@@ -3238,6 +3432,27 @@ export const ProjectShowcase = ({
                     className="aurora-form-control aurora-form-control--textarea"
                     placeholder="Expliquez le contenu principal de cette section"
                   />
+                </div>
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  {normalizeCustomSectionColumns(section.columns, resolveCustomSectionColumnCount(section.columnCount, section.columns))
+                    .map((column, columnIndex) => (
+                      <div key={`${section.id}-column-${columnIndex}`} className="space-y-1">
+                        <label
+                          htmlFor={`custom-section-${section.id}-column-${columnIndex}`}
+                          className="text-sm font-medium text-gray-800"
+                        >
+                          Contenu colonne {columnIndex + 1}
+                        </label>
+                        <textarea
+                          id={`custom-section-${section.id}-column-${columnIndex}`}
+                          value={column}
+                          onChange={(event) => handleCustomSectionColumnChange(section.id, columnIndex, event.target.value)}
+                          rows={3}
+                          className="aurora-form-control aurora-form-control--textarea"
+                          placeholder={`Contenu de la colonne ${columnIndex + 1}`}
+                        />
+                      </div>
+                    ))}
                 </div>
                 <div className="mt-4 space-y-1">
                   <label htmlFor={`custom-section-${section.id}-items`} className="text-sm font-medium text-gray-800">
