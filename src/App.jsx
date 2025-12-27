@@ -3,7 +3,7 @@ import { QuestionnaireScreen } from './components/QuestionnaireScreen.jsx';
 import { SynthesisReport } from './components/SynthesisReport.jsx';
 import { HomeScreen } from './components/HomeScreen.jsx';
 import { AnnotationLayer } from './components/AnnotationLayer.jsx';
-import { CheckCircle, Lock, MessageSquare, Settings, Sparkles } from './components/icons.js';
+import { CheckCircle, Link, Lock, MessageSquare, Settings, Sparkles } from './components/icons.js';
 import { MandatoryQuestionsSummary } from './components/MandatoryQuestionsSummary.jsx';
 import { initialQuestions } from './data/questions.js';
 import { initialRules } from './data/rules.js';
@@ -25,7 +25,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.196';
+const APP_VERSION = 'v1.0.197';
 
 const loadModule = (modulePath) => {
   if (typeof window === 'undefined') {
@@ -560,9 +560,12 @@ export const App = () => {
   const [showcaseAnnotationScope, setShowcaseAnnotationScope] = useState('display-full');
   const [autoFocusAnnotationId, setAutoFocusAnnotationId] = useState(null);
   const [isShowcaseEditing, setIsShowcaseEditing] = useState(false);
+  const [isShowcaseShareOpen, setIsShowcaseShareOpen] = useState(false);
+  const [showcaseShareFeedback, setShowcaseShareFeedback] = useState('');
   const annotationNotesRef = useRef(annotationNotes);
   const annotationFileInputRef = useRef(null);
   const loadedStylesRef = useRef(new Set());
+  const pendingShowcaseProjectIdRef = useRef(null);
 
   const ensureStylesheetLoaded = useCallback((href) => {
     if (typeof document === 'undefined' || !href) {
@@ -603,6 +606,29 @@ export const App = () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [hasUnsavedChanges]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const { search, hash } = window.location;
+    const params = new URLSearchParams(search || '');
+    let projectId = params.get('projectId') || params.get('showcase');
+
+    if (!projectId && typeof hash === 'string' && hash.length > 1) {
+      const normalizedHash = hash.slice(1);
+      if (normalizedHash.startsWith('showcase=')) {
+        projectId = normalizedHash.replace(/^showcase=/, '');
+      } else if (normalizedHash.startsWith('showcase:')) {
+        projectId = normalizedHash.replace(/^showcase:/, '');
+      }
+    }
+
+    if (projectId) {
+      pendingShowcaseProjectIdRef.current = projectId;
+    }
+  }, []);
 
   useEffect(() => {
     projectsRef.current = projects;
@@ -2670,6 +2696,25 @@ export const App = () => {
     teams
   ]);
 
+  useEffect(() => {
+    if (!isHydrated) {
+      return;
+    }
+
+    const pendingProjectId = pendingShowcaseProjectIdRef.current;
+    if (!pendingProjectId) {
+      return;
+    }
+
+    const matchingProject = projects.find(project => project?.id === pendingProjectId);
+    if (!matchingProject) {
+      return;
+    }
+
+    pendingShowcaseProjectIdRef.current = null;
+    openProjectShowcase({ projectId: pendingProjectId });
+  }, [isHydrated, openProjectShowcase, projects]);
+
   const handleShowProjectShowcase = useCallback((projectId) => {
     if (!projectId) {
       return;
@@ -3027,6 +3072,82 @@ export const App = () => {
     navigateToSynthesis();
   }, [navigateToSynthesis]);
 
+  const showcaseProjectId = showcaseProjectContext?.projectId || '';
+  const showcaseShareUrl = useMemo(() => {
+    if (!showcaseProjectId || typeof window === 'undefined') {
+      return '';
+    }
+
+    const url = new URL(window.location.href);
+    url.searchParams.set('projectId', showcaseProjectId);
+    url.hash = 'showcase';
+    return url.toString();
+  }, [showcaseProjectId]);
+
+  const handleOpenShowcaseShare = useCallback(() => {
+    if (!showcaseProjectId) {
+      return;
+    }
+
+    setIsShowcaseShareOpen(true);
+    setShowcaseShareFeedback('');
+  }, [showcaseProjectId]);
+
+  const handleCloseShowcaseShare = useCallback(() => {
+    setIsShowcaseShareOpen(false);
+    setShowcaseShareFeedback('');
+  }, []);
+
+  const handleCopyShowcaseLink = useCallback(async () => {
+    if (!showcaseShareUrl) {
+      return;
+    }
+
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(showcaseShareUrl);
+        setShowcaseShareFeedback('Lien copié dans le presse-papiers.');
+        return;
+      }
+    } catch (error) {
+      // Fallback below.
+    }
+
+    if (typeof document !== 'undefined') {
+      const input = document.getElementById('showcase-share-link');
+      if (input && typeof input.select === 'function') {
+        input.select();
+        const copied = document.execCommand && document.execCommand('copy');
+        if (copied) {
+          setShowcaseShareFeedback('Lien copié dans le presse-papiers.');
+          return;
+        }
+      }
+    }
+
+    setShowcaseShareFeedback('Impossible de copier automatiquement le lien.');
+  }, [showcaseShareUrl]);
+
+  const handleDownloadShowcaseShortcut = useCallback(() => {
+    if (!showcaseShareUrl || typeof window === 'undefined') {
+      return;
+    }
+
+    const shortcutContent = `[InternetShortcut]\nURL=${showcaseShareUrl}\n`;
+    const blob = new Blob([shortcutContent], { type: 'text/plain' });
+    const fileName = `raccourci-showcase-${showcaseProjectId || 'projet'}.url`;
+    const downloadUrl = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+
+    anchor.href = downloadUrl;
+    anchor.download = fileName;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(downloadUrl);
+    setShowcaseShareFeedback('Raccourci téléchargé.');
+  }, [showcaseProjectId, showcaseShareUrl]);
+
   return (
     <div className={`min-h-screen ${annotationOffsetClass}`}>
       <AnnotationLayer
@@ -3077,20 +3198,35 @@ export const App = () => {
               aria-label="Sélection du mode d'utilisation"
             >
               {screen === 'showcase' && (
-                <button
-                  type="button"
-                  onClick={handleToggleAnnotationMode}
-                  className={`order-first self-start sm:order-last sm:self-center inline-flex min-h-[44px] h-11 px-4 items-center justify-center rounded-full border text-blue-700 shadow-sm transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-                    isAnnotationModeEnabled ? 'bg-blue-50 border-blue-200' : 'bg-white border-blue-100'
-                  }`}
-                  aria-pressed={isAnnotationModeEnabled}
-                  aria-label={isAnnotationModeEnabled ? 'Désactiver le mode annotation' : 'Activer le mode annotation'}
-                  title={isAnnotationModeEnabled ? 'Désactiver le mode annotation' : 'Activer le mode annotation'}
-                  data-annotation-ui="true"
-                >
-                  <MessageSquare className="h-5 w-5" />
-                  <span className="sr-only">Annotation</span>
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={handleToggleAnnotationMode}
+                    className={`order-first self-start sm:order-last sm:self-center inline-flex min-h-[44px] h-11 px-4 items-center justify-center rounded-full border text-blue-700 shadow-sm transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                      isAnnotationModeEnabled ? 'bg-blue-50 border-blue-200' : 'bg-white border-blue-100'
+                    }`}
+                    aria-pressed={isAnnotationModeEnabled}
+                    aria-label={isAnnotationModeEnabled ? 'Désactiver le mode annotation' : 'Activer le mode annotation'}
+                    title={isAnnotationModeEnabled ? 'Désactiver le mode annotation' : 'Activer le mode annotation'}
+                    data-annotation-ui="true"
+                  >
+                    <MessageSquare className="h-5 w-5" />
+                    <span className="sr-only">Annotation</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleOpenShowcaseShare}
+                    className={`order-first self-start sm:order-last sm:self-center inline-flex min-h-[44px] h-11 px-4 items-center justify-center rounded-full border text-blue-700 shadow-sm transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                      showcaseProjectId ? 'bg-white border-blue-100' : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
+                    }`}
+                    aria-label="Partager la vitrine du projet"
+                    title={showcaseProjectId ? 'Partager la vitrine du projet' : 'Aucun projet vitrine disponible'}
+                    disabled={!showcaseProjectId}
+                  >
+                    <Link className="h-5 w-5" />
+                    <span className="sr-only">Partager</span>
+                  </button>
+                </>
               )}
               {mode === 'user' && screen === 'showcase' && showcaseProjectContext && (
                 <button
@@ -3204,6 +3340,66 @@ export const App = () => {
           </div>
         </div>
       </nav>
+
+      {isShowcaseShareOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 bg-black bg-opacity-50"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="showcase-share-title"
+        >
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 sm:p-8 space-y-4 hv-surface hv-modal-panel">
+            <div className="text-center">
+              <h2 id="showcase-share-title" className="text-xl font-semibold text-gray-800">
+                Partager la vitrine du projet
+              </h2>
+              <p className="mt-2 text-sm text-gray-600">
+                Copiez le lien ou téléchargez un raccourci pour ouvrir directement cette vitrine.
+              </p>
+            </div>
+            <div className="space-y-3">
+              <label htmlFor="showcase-share-link" className="text-sm font-medium text-gray-700">
+                Lien à partager
+              </label>
+              <input
+                id="showcase-share-link"
+                type="text"
+                value={showcaseShareUrl}
+                readOnly
+                className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800"
+              />
+              {showcaseShareFeedback && (
+                <p className="text-sm text-blue-600">{showcaseShareFeedback}</p>
+              )}
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+              <button
+                type="button"
+                onClick={handleCopyShowcaseLink}
+                className="px-5 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 hv-button hv-button-primary"
+              >
+                Copier le lien
+              </button>
+              <button
+                type="button"
+                onClick={handleDownloadShowcaseShortcut}
+                className="px-5 py-2 bg-white text-blue-700 font-medium rounded-lg border border-blue-200 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 hv-button"
+              >
+                Télécharger le raccourci
+              </button>
+            </div>
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={handleCloseShowcaseShare}
+                className="text-sm text-gray-500 hover:text-gray-700"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main id="main-content" tabIndex="-1" className="focus:outline-none hv-background">
         {isAdminBackOfficeView ? (
