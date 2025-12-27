@@ -156,6 +156,13 @@ export const Send = createIcon(
   </React.Fragment>
 );
 
+export const Link = createIcon(
+  <React.Fragment>
+    <path d="M10 13a5 5 0 007.07 0l2.12-2.12a5 5 0 00-7.07-7.07L11 4.93" />
+    <path d="M14 11a5 5 0 00-7.07 0L4.8 13.07a5 5 0 107.07 7.07L13 19.07" />
+  </React.Fragment>
+);
+
 export const Sparkles = createIcon(
   <React.Fragment>
     <path d="M5 3v4" />
