@@ -24,3 +24,8 @@ La table de correspondance `QUESTION_TYPE_META` ne déclare pas le type `milesto
 Les réponses `milestone_list` sont persistées comme tableaux d'objets `{ date, description }`. Le constructeur de conditions du back-office capture pourtant des valeurs textuelles pour ces questions, puis l'évaluation (`shouldShowQuestion`) vérifie l'appartenance avec `Array.prototype.includes`, impossible à satisfaire avec des objets et des chaînes mélangés.【F:src/components/QuestionEditor.jsx†L767-L858】【F:src/components/QuestionnaireScreen.jsx†L71-L156】【F:src/utils/questions.js†L30-L109】
 
 **Impact possible :** toute logique conditionnelle ou règle qui dépend de jalons ne se déclenchera jamais, empêchant l'affichage progressif de questions ou l'application de règles métiers fondées sur les délais planifiés.
+
+## 6. Découverte interrompue des projets soumis séquentiels
+La recherche des fichiers `projetX.json` s'arrête après cinq fichiers consécutifs manquants (`SEQUENTIAL_MAX_CONSECUTIVE_MISSES = 5`).【F:src/utils/externalProjectsLoader.js†L8-L10】【F:src/utils/externalProjectsLoader.js†L436-L459】Si un dossier contient des trous (ex. `projet1.json`, `projet7.json`), les fichiers suivants ne seront jamais examinés.
+
+**Impact possible :** certains projets soumis ne seront jamais chargés ni affichés, même s'ils sont présents dans le répertoire.
