@@ -8,9 +8,7 @@
     ? existingSnapshot.files.filter(item => typeof item === 'string')
     : [];
 
-  const KNOWN_JSON_FILES = [
-    'Vies-Reliees.json'
-  ];
+  const KNOWN_JSON_FILES = [];
 
   const mergedFiles = Array.from(
     new Set(
