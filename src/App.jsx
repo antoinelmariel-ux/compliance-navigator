@@ -25,7 +25,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.198';
+const APP_VERSION = 'v1.0.199';
 
 const loadModule = (modulePath) => {
   if (typeof window === 'undefined') {
@@ -49,6 +49,16 @@ const LazyProjectShowcase = lazy(() =>
   Promise.resolve().then(() => ({
     default: loadModule('./src/components/ProjectShowcase.jsx').ProjectShowcase
   }))
+);
+
+const LoadingFallback = ({ label, hint }) => (
+  <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hv-surface">
+    <div className="flex items-center gap-3 text-sm text-gray-600">
+      <span className="loading-spinner" aria-hidden="true" />
+      <span>{label}</span>
+    </div>
+    {hint && <p className="mt-2 text-xs text-gray-400">{hint}</p>}
+  </div>
 );
 
 const ANNOTATION_COLORS = [
@@ -3405,9 +3415,10 @@ export const App = () => {
         {isAdminBackOfficeView ? (
           <Suspense
             fallback={(
-              <div className="rounded-2xl border border-gray-200 bg-white p-6 text-sm text-gray-500 shadow-sm hv-surface">
-                Chargement du back-office…
-              </div>
+              <LoadingFallback
+                label="Chargement du back-office…"
+                hint="Préparation des données administratives en cours."
+              />
             )}
           >
             <LazyBackOffice
@@ -3513,9 +3524,10 @@ export const App = () => {
               )}
               <Suspense
                 fallback={(
-                  <div className="rounded-2xl border border-gray-200 bg-white p-6 text-sm text-gray-500 shadow-sm hv-surface">
-                    Chargement de la vitrine projet…
-                  </div>
+                  <LoadingFallback
+                    label="Chargement de la vitrine projet…"
+                    hint="Nous construisons la synthèse visuelle du projet."
+                  />
                 )}
               >
                 <LazyProjectShowcase
