@@ -34,6 +34,14 @@ import {
   resetProjectFiltersConfig,
   updateProjectFilterField
 } from '../utils/projectFilters.js';
+import {
+  normalizeInspirationFiltersConfig,
+  normalizeInspirationFormConfig,
+  resetInspirationFiltersConfig,
+  resetInspirationFormConfig,
+  updateInspirationFilterField,
+  updateInspirationFormField
+} from '../utils/inspirationConfig.js';
 import { initialShowcaseThemes } from '../data/showcaseThemes.js';
 
 const QUESTION_TYPE_META = {
@@ -430,7 +438,11 @@ export const BackOffice = ({
   showcaseThemes,
   setShowcaseThemes,
   projectFilters,
-  setProjectFilters
+  setProjectFilters,
+  inspirationFilters,
+  setInspirationFilters,
+  inspirationFormFields,
+  setInspirationFormFields
 }) => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [editingRule, setEditingRule] = useState(null);
@@ -1027,6 +1039,37 @@ export const BackOffice = ({
     ? normalizedProjectFilters.fields
     : [];
 
+  const normalizedInspirationFilters = useMemo(
+    () => normalizeInspirationFiltersConfig(inspirationFilters),
+    [inspirationFilters]
+  );
+  const normalizedInspirationFormFields = useMemo(
+    () => normalizeInspirationFormConfig(inspirationFormFields),
+    [inspirationFormFields]
+  );
+  const defaultInspirationFiltersConfig = useMemo(
+    () => normalizeInspirationFiltersConfig(resetInspirationFiltersConfig()),
+    []
+  );
+  const defaultInspirationFormConfig = useMemo(
+    () => normalizeInspirationFormConfig(resetInspirationFormConfig()),
+    []
+  );
+  const inspirationFiltersAreDefault = useMemo(
+    () => JSON.stringify(normalizedInspirationFilters) === JSON.stringify(defaultInspirationFiltersConfig),
+    [normalizedInspirationFilters, defaultInspirationFiltersConfig]
+  );
+  const inspirationFormAreDefault = useMemo(
+    () => JSON.stringify(normalizedInspirationFormFields) === JSON.stringify(defaultInspirationFormConfig),
+    [normalizedInspirationFormFields, defaultInspirationFormConfig]
+  );
+  const inspirationFilterFields = Array.isArray(normalizedInspirationFilters.fields)
+    ? normalizedInspirationFilters.fields
+    : [];
+  const inspirationFormFieldEntries = Array.isArray(normalizedInspirationFormFields.fields)
+    ? normalizedInspirationFormFields.fields
+    : [];
+
   const availableFilterQuestionOptions = useMemo(() => {
     const usedQuestionIds = new Set();
     if (Array.isArray(normalizedProjectFilters.fields)) {
@@ -1219,6 +1262,93 @@ export const BackOffice = ({
 
     setProjectFilters(resetProjectFiltersConfig());
   }, [setProjectFilters]);
+
+  const formatOptionList = (options) => (Array.isArray(options) ? options.join(', ') : '');
+
+  const parseOptionList = (value) => {
+    if (typeof value !== 'string') {
+      return [];
+    }
+
+    return value
+      .split(',')
+      .map((option) => option.trim())
+      .filter((option) => option.length > 0);
+  };
+
+  const handleInspirationFilterToggle = useCallback((fieldId, enabled) => {
+    if (typeof setInspirationFilters !== 'function') {
+      return;
+    }
+
+    setInspirationFilters((prev) => updateInspirationFilterField(prev, fieldId, { enabled }));
+  }, [setInspirationFilters]);
+
+  const handleInspirationFilterLabelChange = useCallback((fieldId, label) => {
+    if (typeof setInspirationFilters !== 'function') {
+      return;
+    }
+
+    setInspirationFilters((prev) => updateInspirationFilterField(prev, fieldId, { label }));
+  }, [setInspirationFilters]);
+
+  const handleInspirationFilterOptionsChange = useCallback((fieldId, rawValue) => {
+    if (typeof setInspirationFilters !== 'function') {
+      return;
+    }
+
+    const options = parseOptionList(rawValue);
+    setInspirationFilters((prev) => updateInspirationFilterField(prev, fieldId, { options }));
+  }, [setInspirationFilters]);
+
+  const handleResetInspirationFilters = useCallback(() => {
+    if (typeof setInspirationFilters !== 'function') {
+      return;
+    }
+
+    setInspirationFilters(resetInspirationFiltersConfig());
+  }, [setInspirationFilters]);
+
+  const handleInspirationFormFieldToggle = useCallback((fieldId, enabled) => {
+    if (typeof setInspirationFormFields !== 'function') {
+      return;
+    }
+
+    setInspirationFormFields((prev) => updateInspirationFormField(prev, fieldId, { enabled }));
+  }, [setInspirationFormFields]);
+
+  const handleInspirationFormFieldLabelChange = useCallback((fieldId, label) => {
+    if (typeof setInspirationFormFields !== 'function') {
+      return;
+    }
+
+    setInspirationFormFields((prev) => updateInspirationFormField(prev, fieldId, { label }));
+  }, [setInspirationFormFields]);
+
+  const handleInspirationFormFieldOptionsChange = useCallback((fieldId, rawValue) => {
+    if (typeof setInspirationFormFields !== 'function') {
+      return;
+    }
+
+    const options = parseOptionList(rawValue);
+    setInspirationFormFields((prev) => updateInspirationFormField(prev, fieldId, { options }));
+  }, [setInspirationFormFields]);
+
+  const handleInspirationFormFieldRequiredChange = useCallback((fieldId, required) => {
+    if (typeof setInspirationFormFields !== 'function') {
+      return;
+    }
+
+    setInspirationFormFields((prev) => updateInspirationFormField(prev, fieldId, { required }));
+  }, [setInspirationFormFields]);
+
+  const handleResetInspirationFormFields = useCallback(() => {
+    if (typeof setInspirationFormFields !== 'function') {
+      return;
+    }
+
+    setInspirationFormFields(resetInspirationFormConfig());
+  }, [setInspirationFormFields]);
 
   const toggleQuestionExpansion = useCallback((questionId) => {
     if (!questionId && questionId !== 0) {
@@ -2023,6 +2153,9 @@ export const BackOffice = ({
     downloadDataModule('teams.js', 'initialTeams', teams);
   };
 
+  const inspirationFilterCount = inspirationFilterFields.length;
+  const inspirationFormCount = inspirationFormFieldEntries.length;
+
   const tabDefinitions = [
     {
       id: 'dashboard',
@@ -2033,6 +2166,11 @@ export const BackOffice = ({
       id: 'filters',
       label: `Filtres d'accueil (${filterFields.length})`,
       panelId: 'backoffice-tabpanel-filters'
+    },
+    {
+      id: 'inspiration',
+      label: `Inspiration (${inspirationFilterCount + inspirationFormCount})`,
+      panelId: 'backoffice-tabpanel-inspiration'
     },
     {
       id: 'themes',
@@ -2671,6 +2809,193 @@ export const BackOffice = ({
                       })
                     )}
                   </div>
+                </div>
+              </article>
+            </section>
+          )}
+
+          {activeTab === 'inspiration' && (
+            <section
+              id="backoffice-tabpanel-inspiration"
+              role="tabpanel"
+              aria-labelledby="backoffice-tab-inspiration"
+              className="space-y-6"
+            >
+              <article className="space-y-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hv-surface">
+                <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="space-y-2">
+                    <h2 className="text-2xl font-bold text-gray-800">Filtres Inspiration</h2>
+                    <p className="text-sm text-gray-600">
+                      Ajustez les filtres disponibles pour trier les projets inspirants.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleResetInspirationFilters}
+                    className={`inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors hv-button ${
+                      inspirationFiltersAreDefault
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700 hv-button-primary'
+                    }`}
+                    disabled={inspirationFiltersAreDefault}
+                  >
+                    Réinitialiser
+                  </button>
+                </header>
+
+                <div className="space-y-4">
+                  {inspirationFilterFields.length === 0 ? (
+                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-5 text-sm text-gray-600">
+                      Aucun filtre n'est configuré pour le moment.
+                    </div>
+                  ) : (
+                    inspirationFilterFields.map((field) => (
+                      <article key={field.id} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm hv-surface">
+                        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                          <div className="space-y-2">
+                            <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide">
+                              <span className="rounded-full bg-blue-100 px-2 py-1 text-blue-700">
+                                {field.type === 'select' ? 'Liste' : 'Texte'}
+                              </span>
+                              <span
+                                className={`rounded-full px-2 py-1 ${
+                                  field.enabled ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'
+                                }`}
+                              >
+                                {field.enabled ? 'Activé' : 'Désactivé'}
+                              </span>
+                            </div>
+                            <label className="flex flex-col gap-2 text-sm text-gray-700">
+                              <span className="font-semibold text-gray-700">Libellé</span>
+                              <input
+                                type="text"
+                                value={field.label}
+                                onChange={(event) => handleInspirationFilterLabelChange(field.id, event.target.value)}
+                                className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                              />
+                            </label>
+                            {field.type === 'select' && (
+                              <label className="flex flex-col gap-2 text-sm text-gray-700">
+                                <span className="font-semibold text-gray-700">Options (séparées par des virgules)</span>
+                                <input
+                                  type="text"
+                                  value={formatOptionList(field.options)}
+                                  onChange={(event) => handleInspirationFilterOptionsChange(field.id, event.target.value)}
+                                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                />
+                              </label>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleInspirationFilterToggle(field.id, !field.enabled)}
+                            className={`inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors hv-button ${
+                              field.enabled
+                                ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                : 'bg-blue-600 text-white hover:bg-blue-700 hv-button-primary'
+                            }`}
+                          >
+                            {field.enabled ? 'Désactiver' : 'Activer'}
+                          </button>
+                        </div>
+                      </article>
+                    ))
+                  )}
+                </div>
+              </article>
+
+              <article className="space-y-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hv-surface">
+                <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="space-y-2">
+                    <h2 className="text-2xl font-bold text-gray-800">Champs du formulaire</h2>
+                    <p className="text-sm text-gray-600">
+                      Définissez les champs visibles dans le questionnaire de création d'un projet inspirant.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleResetInspirationFormFields}
+                    className={`inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors hv-button ${
+                      inspirationFormAreDefault
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700 hv-button-primary'
+                    }`}
+                    disabled={inspirationFormAreDefault}
+                  >
+                    Réinitialiser
+                  </button>
+                </header>
+
+                <div className="space-y-4">
+                  {inspirationFormFieldEntries.length === 0 ? (
+                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-5 text-sm text-gray-600">
+                      Aucun champ n'est configuré.
+                    </div>
+                  ) : (
+                    inspirationFormFieldEntries.map((field) => (
+                      <article key={field.id} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm hv-surface">
+                        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                          <div className="space-y-2">
+                            <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide">
+                              <span className="rounded-full bg-blue-100 px-2 py-1 text-blue-700">
+                                {field.type}
+                              </span>
+                              <span
+                                className={`rounded-full px-2 py-1 ${
+                                  field.enabled ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'
+                                }`}
+                              >
+                                {field.enabled ? 'Activé' : 'Désactivé'}
+                              </span>
+                              {field.required && (
+                                <span className="rounded-full bg-purple-100 px-2 py-1 text-purple-700">Requis</span>
+                              )}
+                            </div>
+                            <label className="flex flex-col gap-2 text-sm text-gray-700">
+                              <span className="font-semibold text-gray-700">Libellé</span>
+                              <input
+                                type="text"
+                                value={field.label}
+                                onChange={(event) => handleInspirationFormFieldLabelChange(field.id, event.target.value)}
+                                className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                              />
+                            </label>
+                            {field.type === 'select' && (
+                              <label className="flex flex-col gap-2 text-sm text-gray-700">
+                                <span className="font-semibold text-gray-700">Options (séparées par des virgules)</span>
+                                <input
+                                  type="text"
+                                  value={formatOptionList(field.options)}
+                                  onChange={(event) => handleInspirationFormFieldOptionsChange(field.id, event.target.value)}
+                                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                />
+                              </label>
+                            )}
+                            <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                              <input
+                                type="checkbox"
+                                checked={Boolean(field.required)}
+                                onChange={(event) => handleInspirationFormFieldRequiredChange(field.id, event.target.checked)}
+                                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              />
+                              Champ requis
+                            </label>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleInspirationFormFieldToggle(field.id, !field.enabled)}
+                            className={`inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors hv-button ${
+                              field.enabled
+                                ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                : 'bg-blue-600 text-white hover:bg-blue-700 hv-button-primary'
+                            }`}
+                          >
+                            {field.enabled ? 'Désactiver' : 'Activer'}
+                          </button>
+                        </div>
+                      </article>
+                    ))
+                  )}
                 </div>
               </article>
             </section>

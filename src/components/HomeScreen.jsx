@@ -18,6 +18,7 @@ import {
 } from './icons.js';
 import { VirtualizedList } from './VirtualizedList.jsx';
 import { normalizeProjectFilterConfig } from '../utils/projectFilters.js';
+import { normalizeInspirationFiltersConfig } from '../utils/inspirationConfig.js';
 
 const formatDate = (isoDate) => {
   if (!isoDate) {
@@ -40,6 +41,7 @@ const formatDate = (isoDate) => {
 const getSafeString = (value) => (typeof value === 'string' ? value : '');
 
 const DEFAULT_SELECT_FILTER_VALUE = 'all';
+const DEFAULT_TEXT_FILTER_VALUE = '';
 
 const PROJECT_FILTER_VALUE_EXTRACTORS = {
   projectName: (project) => {
@@ -200,6 +202,12 @@ export const HomeScreen = ({
   projects = [],
   projectFilters,
   teamLeadOptions = [],
+  inspirationProjects = [],
+  inspirationFilters,
+  homeView = 'platform',
+  onHomeViewChange,
+  onStartInspirationProject,
+  onOpenInspirationProject,
   onStartNewProject,
   onOpenProject,
   onDeleteProject,
@@ -214,6 +222,13 @@ export const HomeScreen = ({
     [projectFilters]
   );
   const [filtersState, setFiltersState] = useState(() => buildInitialFiltersState(normalizedFilters));
+  const normalizedInspirationFilters = useMemo(
+    () => normalizeInspirationFiltersConfig(inspirationFilters),
+    [inspirationFilters]
+  );
+  const [inspirationFiltersState, setInspirationFiltersState] = useState(() =>
+    buildInitialFiltersState(normalizedInspirationFilters)
+  );
   const fileInputRef = useRef(null);
   const [deleteDialogState, setDeleteDialogState] = useState(() => ({
     isOpen: false,
@@ -430,6 +445,54 @@ export const HomeScreen = ({
     });
   }, [normalizedFilters]);
 
+  useEffect(() => {
+    setInspirationFiltersState(prevState => {
+      const initialState = buildInitialFiltersState(normalizedInspirationFilters);
+      const nextState = { ...prevState };
+      let changed = false;
+
+      normalizedInspirationFilters.fields.forEach((field) => {
+        if (!field) {
+          return;
+        }
+
+        if (field.type === 'select') {
+          if (!(field.id in prevState)) {
+            nextState[field.id] = DEFAULT_SELECT_FILTER_VALUE;
+            changed = true;
+          }
+          if (!field.enabled && nextState[field.id] !== DEFAULT_SELECT_FILTER_VALUE) {
+            nextState[field.id] = DEFAULT_SELECT_FILTER_VALUE;
+            changed = true;
+          }
+        } else {
+          if (!(field.id in prevState)) {
+            nextState[field.id] = DEFAULT_TEXT_FILTER_VALUE;
+            changed = true;
+          }
+          if (!field.enabled && nextState[field.id] !== DEFAULT_TEXT_FILTER_VALUE) {
+            nextState[field.id] = DEFAULT_TEXT_FILTER_VALUE;
+            changed = true;
+          }
+        }
+      });
+
+      Object.keys(nextState).forEach((key) => {
+        const stillExists = normalizedInspirationFilters.fields.some((field) => field && field.id === key);
+        if (!stillExists) {
+          delete nextState[key];
+          changed = true;
+        }
+      });
+
+      if (!changed) {
+        return prevState;
+      }
+
+      return nextState;
+    });
+  }, [normalizedInspirationFilters]);
+
   const selectFilterOptions = useMemo(() => {
     const fields = Array.isArray(normalizedFilters.fields) ? normalizedFilters.fields : [];
     const map = new Map();
@@ -471,6 +534,39 @@ export const HomeScreen = ({
 
     return map;
   }, [normalizedFilters.fields, projects, teamLeadOptions]);
+
+  const inspirationFilterOptions = useMemo(() => {
+    const fields = Array.isArray(normalizedInspirationFilters.fields) ? normalizedInspirationFilters.fields : [];
+    const map = new Map();
+
+    fields.forEach((field) => {
+      if (!field || field.type !== 'select') {
+        return;
+      }
+
+      const options = new Set();
+
+      if (Array.isArray(field.options)) {
+        field.options.forEach((option) => {
+          const label = getSafeString(option).trim();
+          if (label.length > 0) {
+            options.add(label);
+          }
+        });
+      }
+
+      inspirationProjects.forEach((project) => {
+        const value = getSafeString(project?.[field.id]).trim();
+        if (value.length > 0) {
+          options.add(value);
+        }
+      });
+
+      map.set(field.id, Array.from(options).sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' })));
+    });
+
+    return map;
+  }, [normalizedInspirationFilters.fields, inspirationProjects]);
 
   const filteredProjects = useMemo(() => {
     if (!Array.isArray(projects)) {
@@ -524,6 +620,48 @@ export const HomeScreen = ({
       return direction === 'asc' ? diff : -diff;
     });
   }, [projects, normalizedFilters, filtersState]);
+
+  const filteredInspirationProjects = useMemo(() => {
+    if (!Array.isArray(inspirationProjects)) {
+      return [];
+    }
+
+    const activeFields = Array.isArray(normalizedInspirationFilters.fields)
+      ? normalizedInspirationFilters.fields
+      : [];
+
+    return inspirationProjects.filter((project) => {
+      for (let index = 0; index < activeFields.length; index += 1) {
+        const field = activeFields[index];
+        if (!field || !field.enabled) {
+          continue;
+        }
+
+        const value = inspirationFiltersState[field.id];
+        const projectValue = getSafeString(project?.[field.id]);
+
+        if (field.type === 'select') {
+          if (value && value !== DEFAULT_SELECT_FILTER_VALUE) {
+            if (projectValue !== value) {
+              return false;
+            }
+          }
+          continue;
+        }
+
+        const query = typeof value === 'string' ? value.trim().toLowerCase() : '';
+        if (query.length === 0) {
+          continue;
+        }
+
+        if (projectValue.toLowerCase().indexOf(query) === -1) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [inspirationProjects, normalizedInspirationFilters.fields, inspirationFiltersState]);
   const projectRows = useMemo(() => {
     const rows = [];
     for (let index = 0; index < filteredProjects.length; index += 2) {
@@ -535,6 +673,8 @@ export const HomeScreen = ({
 
   const hasProjects = projects.length > 0;
   const hasFilteredProjects = filteredProjects.length > 0;
+  const hasInspirationProjects = inspirationProjects.length > 0;
+  const hasFilteredInspirationProjects = filteredInspirationProjects.length > 0;
   const pendingDeletionProjectName = useMemo(() => {
     if (!deleteDialogState.project) {
       return '';
@@ -582,6 +722,30 @@ export const HomeScreen = ({
     return false;
   }, [normalizedFilters, filtersState]);
 
+  const hasActiveInspirationFilters = useMemo(() => {
+    const fields = Array.isArray(normalizedInspirationFilters.fields)
+      ? normalizedInspirationFilters.fields
+      : [];
+
+    for (let index = 0; index < fields.length; index += 1) {
+      const field = fields[index];
+      if (!field || !field.enabled) {
+        continue;
+      }
+
+      const value = inspirationFiltersState[field.id];
+      if (field.type === 'select') {
+        if (value && value !== DEFAULT_SELECT_FILTER_VALUE) {
+          return true;
+        }
+      } else if (typeof value === 'string' && value.trim().length > 0) {
+        return true;
+      }
+    }
+
+    return false;
+  }, [normalizedInspirationFilters.fields, inspirationFiltersState]);
+
   const displayedProjectsCount = filteredProjects.length;
   const totalProjectsCount = projects.length;
   const sortFilterConfig = Array.isArray(normalizedFilters.fields)
@@ -592,9 +756,17 @@ export const HomeScreen = ({
     : [];
   const shouldShowFiltersCard = hasProjects && (enabledFilterFields.length > 0 || (sortFilterConfig && sortFilterConfig.enabled));
   const currentSortOrder = filtersState.sortOrder || sortFilterConfig?.defaultValue || 'desc';
+  const inspirationFilterFields = Array.isArray(normalizedInspirationFilters.fields)
+    ? normalizedInspirationFilters.fields.filter((field) => field && field.enabled)
+    : [];
+  const shouldShowInspirationFiltersCard = hasInspirationProjects && inspirationFilterFields.length > 0;
 
   const handleResetFilters = () => {
     setFiltersState(buildInitialFiltersState(normalizedFilters));
+  };
+
+  const handleResetInspirationFilters = () => {
+    setInspirationFiltersState(buildInitialFiltersState(normalizedInspirationFilters));
   };
 
   const handleTriggerImport = () => {
@@ -782,6 +954,46 @@ export const HomeScreen = ({
     );
   };
 
+  const renderInspirationCard = (project) => (
+    <article
+      key={project.id}
+      className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all hv-surface"
+      role="listitem"
+      aria-label={`Projet inspirant ${project.title || 'sans titre'}`}
+    >
+      <div className="space-y-3">
+        <div>
+          <h3 className="text-xl font-semibold text-gray-900">{project.title || 'Projet sans titre'}</h3>
+          <p className="text-sm text-gray-500">{project.labName || 'Laboratoire non renseigné'}</p>
+        </div>
+        <dl className="grid grid-cols-1 gap-2 text-sm text-gray-600">
+          <div className="flex items-center gap-2">
+            <Compass className="w-4 h-4" />
+            <span>{project.country || 'Pays non renseigné'}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Target className="w-4 h-4" />
+            <span>{project.target || 'Cible non renseignée'}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4" />
+            <span>{project.therapeuticArea || 'Aire thérapeutique non renseignée'}</span>
+          </div>
+        </dl>
+      </div>
+      <div className="mt-5 flex flex-wrap gap-3">
+        <button
+          type="button"
+          onClick={() => onOpenInspirationProject?.(project.id)}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all hv-button bg-blue-600 text-white hover:bg-blue-700 hv-button-primary"
+        >
+          <Eye className="w-4 h-4" aria-hidden="true" />
+          <span>Fiche complète</span>
+        </button>
+      </div>
+    </article>
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 px-4 py-8 sm:px-8 hv-background">
       <div className="max-w-6xl mx-auto space-y-12">
@@ -871,22 +1083,65 @@ export const HomeScreen = ({
         </header>
 
         <section aria-labelledby="projects-heading" className="space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h2 id="projects-heading" className="text-2xl font-bold text-gray-900">
-                Vos projets enregistrés
+                {homeView === 'inspiration' ? 'Projets inspirants' : 'Vos projets enregistrés'}
               </h2>
               <p className="text-sm text-gray-600">
-                Accédez aux brouillons et aux synthèses finalisées pour les reprendre à tout moment.
+                {homeView === 'inspiration'
+                  ? 'Découvrez les initiatives d’autres laboratoires et gérez vos projets inspirants.'
+                  : 'Accédez aux brouillons et aux synthèses finalisées pour les reprendre à tout moment.'}
               </p>
             </div>
-            <span className="inline-flex items-center text-sm font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded-full px-3 py-1">
-              <CheckCircle className="w-4 h-4 mr-2" /> {displayedProjectsCount} projet{displayedProjectsCount > 1 ? 's' : ''}
-              {hasActiveFilters ? ` sur ${totalProjectsCount}` : ''}
-            </span>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div
+                className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 p-1"
+                role="group"
+                aria-label="Sélection du bloc projet"
+              >
+                <button
+                  type="button"
+                  onClick={() => onHomeViewChange?.('platform')}
+                  className={`rounded-full px-4 py-2 text-xs font-semibold transition-colors ${
+                    homeView !== 'inspiration'
+                      ? 'bg-blue-600 text-white'
+                      : 'text-blue-700 hover:bg-blue-100'
+                  }`}
+                >
+                  Plateforme
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onHomeViewChange?.('inspiration')}
+                  className={`rounded-full px-4 py-2 text-xs font-semibold transition-colors ${
+                    homeView === 'inspiration'
+                      ? 'bg-blue-600 text-white'
+                      : 'text-blue-700 hover:bg-blue-100'
+                  }`}
+                >
+                  Inspiration
+                </button>
+              </div>
+              {homeView === 'inspiration' ? (
+                <button
+                  type="button"
+                  onClick={onStartInspirationProject}
+                  className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                >
+                  <Plus className="w-4 h-4" aria-hidden="true" />
+                  Ajouter un projet inspirant
+                </button>
+              ) : (
+                <span className="inline-flex items-center text-sm font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded-full px-3 py-1">
+                  <CheckCircle className="w-4 h-4 mr-2" /> {displayedProjectsCount} projet{displayedProjectsCount > 1 ? 's' : ''}
+                  {hasActiveFilters ? ` sur ${totalProjectsCount}` : ''}
+                </span>
+              )}
+            </div>
           </div>
 
-          {!hasProjects && (
+          {homeView !== 'inspiration' && !hasProjects && (
             <div className="bg-white border border-dashed border-blue-200 rounded-3xl p-8 text-center text-gray-600 hv-surface" role="status" aria-live="polite">
               <p className="text-lg font-medium text-gray-800">Aucun projet enregistré pour le moment.</p>
               <p className="mt-2">Lancez-vous dès maintenant pour préparer votre première synthèse compliance.</p>
@@ -900,7 +1155,7 @@ export const HomeScreen = ({
             </div>
           )}
 
-          {hasProjects && (
+          {homeView !== 'inspiration' && hasProjects && (
             <>
               {shouldShowFiltersCard && (
                 <div
@@ -1034,6 +1289,125 @@ export const HomeScreen = ({
                     <button
                       type="button"
                       onClick={handleResetFilters}
+                      className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-all hv-button hv-button-primary"
+                    >
+                      Réinitialiser les filtres
+                    </button>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+
+          {homeView === 'inspiration' && !hasInspirationProjects && (
+            <div className="bg-white border border-dashed border-blue-200 rounded-3xl p-8 text-center text-gray-600 hv-surface" role="status" aria-live="polite">
+              <p className="text-lg font-medium text-gray-800">Aucun projet inspirant enregistré.</p>
+              <p className="mt-2">Ajoutez des exemples pour nourrir vos réflexions.</p>
+              <button
+                type="button"
+                onClick={onStartInspirationProject}
+                className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-all hv-button hv-button-primary"
+              >
+                <Plus className="w-4 h-4 mr-2" /> Créer un projet inspirant
+              </button>
+            </div>
+          )}
+
+          {homeView === 'inspiration' && hasInspirationProjects && (
+            <>
+              {shouldShowInspirationFiltersCard && (
+                <div
+                  className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hv-surface space-y-4"
+                  role="region"
+                  aria-label="Filtres des projets inspirants"
+                >
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-700">
+                      Filtres Inspiration
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={handleResetInspirationFilters}
+                      className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors hv-button ${
+                        hasActiveInspirationFilters
+                          ? 'bg-blue-600 text-white hover:bg-blue-700 hv-button-primary'
+                          : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      }`}
+                      disabled={!hasActiveInspirationFilters}
+                    >
+                      Réinitialiser
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
+                    {inspirationFilterFields.map((field) => {
+                      const fieldId = `inspiration-filter-${field.id}`;
+
+                      if (field.type === 'select') {
+                        const value = inspirationFiltersState[field.id] || DEFAULT_SELECT_FILTER_VALUE;
+                        const options = inspirationFilterOptions.get(field.id) || [];
+                        return (
+                          <div key={field.id} className="flex flex-col gap-2 text-sm text-gray-700">
+                            <label htmlFor={fieldId} className="font-semibold text-gray-700">
+                              {field.label}
+                            </label>
+                            <select
+                              id={fieldId}
+                              value={value}
+                              onChange={(event) =>
+                                setInspirationFiltersState(prev => ({ ...prev, [field.id]: event.target.value }))
+                              }
+                              className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                            >
+                              <option value={DEFAULT_SELECT_FILTER_VALUE}>Toutes les valeurs</option>
+                              {options.map(option => (
+                                <option key={option} value={option}>
+                                  {option}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        );
+                      }
+
+                      const value = typeof inspirationFiltersState[field.id] === 'string'
+                        ? inspirationFiltersState[field.id]
+                        : '';
+                      return (
+                        <label key={field.id} htmlFor={fieldId} className="flex flex-col gap-2 text-sm text-gray-700">
+                          <span className="font-semibold text-gray-700">{field.label}</span>
+                          <input
+                            id={fieldId}
+                            type="text"
+                            value={value}
+                            onChange={(event) =>
+                              setInspirationFiltersState(prev => ({ ...prev, [field.id]: event.target.value }))
+                            }
+                            className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                            placeholder="Rechercher..."
+                          />
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {hasFilteredInspirationProjects ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6" role="list">
+                  {filteredInspirationProjects.map(project => renderInspirationCard(project))}
+                </div>
+              ) : (
+                <div
+                  className="bg-white border border-dashed border-blue-200 rounded-3xl p-8 text-center text-gray-600 hv-surface"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <p className="text-lg font-medium text-gray-800">Aucun projet ne correspond à vos filtres.</p>
+                  <p className="mt-2">Ajustez vos critères ou réinitialisez les filtres.</p>
+                  {hasActiveInspirationFilters && (
+                    <button
+                      type="button"
+                      onClick={handleResetInspirationFilters}
                       className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-all hv-button hv-button-primary"
                     >
                       Réinitialiser les filtres

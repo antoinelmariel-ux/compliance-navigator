@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspens
 import { QuestionnaireScreen } from './components/QuestionnaireScreen.jsx';
 import { SynthesisReport } from './components/SynthesisReport.jsx';
 import { HomeScreen } from './components/HomeScreen.jsx';
+import { InspirationForm } from './components/InspirationForm.jsx';
+import { InspirationDetail } from './components/InspirationDetail.jsx';
 import { AnnotationLayer } from './components/AnnotationLayer.jsx';
 import { CheckCircle, Link, Lock, MessageSquare, Settings, Sparkles } from './components/icons.js';
 import { MandatoryQuestionsSummary } from './components/MandatoryQuestionsSummary.jsx';
@@ -11,6 +13,7 @@ import { initialRiskLevelRules } from './data/riskLevelRules.js';
 import { initialRiskWeights } from './data/riskWeights.js';
 import { initialTeams } from './data/teams.js';
 import { initialShowcaseThemes } from './data/showcaseThemes.js';
+import { initialInspirationProjects } from './data/inspirationProjects.js';
 import { loadPersistedState, persistState } from './utils/storage.js';
 import { shouldShowQuestion } from './utils/questions.js';
 import { analyzeAnswers } from './utils/rules.js';
@@ -24,6 +27,12 @@ import {
   createDefaultProjectFiltersConfig,
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
+import {
+  createDefaultInspirationFiltersConfig,
+  createDefaultInspirationFormConfig,
+  normalizeInspirationFiltersConfig,
+  normalizeInspirationFormConfig
+} from './utils/inspirationConfig.js';
 
 const APP_VERSION = 'v1.0.206';
 
@@ -166,6 +175,14 @@ const createAnnotationId = () => {
   }
 
   return `note-${Date.now()}-${Math.round(Math.random() * 100000)}`;
+};
+
+const createInspirationId = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+
+  return `inspiration-${Date.now()}-${Math.round(Math.random() * 100000)}`;
 };
 
 const buildAnnotationContextKey = ({ screen, projectId, scope }) => {
@@ -501,6 +518,15 @@ const buildInitialProjectsState = () => {
   })];
 };
 
+const buildInitialInspirationProjectsState = () => {
+  const savedState = loadPersistedState();
+  if (savedState && Array.isArray(savedState.inspirationProjects)) {
+    return cloneDeep(savedState.inspirationProjects);
+  }
+
+  return cloneDeep(initialInspirationProjects);
+};
+
 const isOnboardingProject = (project) => {
   if (!project || typeof project !== 'object') {
     return false;
@@ -536,6 +562,8 @@ export const App = () => {
   const [analysis, setAnalysis] = useState(null);
   const [projects, setProjects] = useState(buildInitialProjectsState);
   const projectsRef = useRef(projects);
+  const [inspirationProjects, setInspirationProjects] = useState(buildInitialInspirationProjectsState);
+  const [activeInspirationId, setActiveInspirationId] = useState(null);
   const [activeProjectId, setActiveProjectId] = useState(null);
   const [validationError, setValidationError] = useState(null);
   const [saveFeedback, setSaveFeedback] = useState(null);
@@ -557,6 +585,9 @@ export const App = () => {
   const [teams, setTeams] = useState(initialTeams);
   const [showcaseThemes, setShowcaseThemes] = useState(initialShowcaseThemes);
   const [projectFilters, setProjectFiltersState] = useState(() => createDefaultProjectFiltersConfig());
+  const [inspirationFilters, setInspirationFilters] = useState(() => createDefaultInspirationFiltersConfig());
+  const [inspirationFormFields, setInspirationFormFields] = useState(() => createDefaultInspirationFormConfig());
+  const [homeView, setHomeView] = useState('platform');
   const [isHydrated, setIsHydrated] = useState(false);
   const [isBackOfficeUnlocked, setIsBackOfficeUnlocked] = useState(false);
   const [backOfficeAuthError, setBackOfficeAuthError] = useState(null);
@@ -692,11 +723,27 @@ export const App = () => {
     }
   }, [mode]);
 
-  const updateProjectFilters = useCallback((updater) => {
-    setProjectFiltersState(prevConfig => {
-      const currentConfig = normalizeProjectFilterConfig(prevConfig);
+const updateProjectFilters = useCallback((updater) => {
+  setProjectFiltersState(prevConfig => {
+    const currentConfig = normalizeProjectFilterConfig(prevConfig);
+    const nextConfig = typeof updater === 'function' ? updater(currentConfig) : updater;
+    return normalizeProjectFilterConfig(nextConfig);
+  });
+}, []);
+
+  const updateInspirationFilters = useCallback((updater) => {
+    setInspirationFilters(prevConfig => {
+      const currentConfig = normalizeInspirationFiltersConfig(prevConfig);
       const nextConfig = typeof updater === 'function' ? updater(currentConfig) : updater;
-      return normalizeProjectFilterConfig(nextConfig);
+      return normalizeInspirationFiltersConfig(nextConfig);
+    });
+  }, []);
+
+  const updateInspirationFormFields = useCallback((updater) => {
+    setInspirationFormFields(prevConfig => {
+      const currentConfig = normalizeInspirationFormConfig(prevConfig);
+      const nextConfig = typeof updater === 'function' ? updater(currentConfig) : updater;
+      return normalizeInspirationFormConfig(nextConfig);
     });
   }, []);
 
@@ -876,6 +923,8 @@ export const App = () => {
       }
     }
     if (typeof savedState.activeProjectId === 'string') setActiveProjectId(savedState.activeProjectId);
+    if (typeof savedState.activeInspirationId === 'string') setActiveInspirationId(savedState.activeInspirationId);
+    if (typeof savedState.homeView === 'string') setHomeView(savedState.homeView);
     if (Array.isArray(savedState.questions)) {
       setQuestions(restoreShowcaseQuestions(savedState.questions));
     }
@@ -888,6 +937,15 @@ export const App = () => {
     if (Array.isArray(savedState.showcaseThemes)) setShowcaseThemes(savedState.showcaseThemes);
     if (savedState && typeof savedState.projectFilters === 'object') {
       setProjectFiltersState(normalizeProjectFilterConfig(savedState.projectFilters));
+    }
+    if (Array.isArray(savedState.inspirationProjects)) {
+      setInspirationProjects(cloneDeep(savedState.inspirationProjects));
+    }
+    if (savedState && typeof savedState.inspirationFilters === 'object') {
+      setInspirationFilters(normalizeInspirationFiltersConfig(savedState.inspirationFilters));
+    }
+    if (savedState && typeof savedState.inspirationFormFields === 'object') {
+      setInspirationFormFields(normalizeInspirationFormConfig(savedState.inspirationFormFields));
     }
 
     setIsHydrated(true);
@@ -1626,7 +1684,12 @@ export const App = () => {
         showcaseThemes,
         projects,
         activeProjectId,
-        projectFilters: normalizeProjectFilterConfig(projectFilters)
+        projectFilters: normalizeProjectFilterConfig(projectFilters),
+        inspirationProjects,
+        inspirationFilters: normalizeInspirationFiltersConfig(inspirationFilters),
+        inspirationFormFields: normalizeInspirationFormConfig(inspirationFormFields),
+        homeView,
+        activeInspirationId
       });
       persistTimeoutRef.current = null;
     }, 200);
@@ -1652,6 +1715,11 @@ export const App = () => {
     projects,
     activeProjectId,
     projectFilters,
+    inspirationProjects,
+    inspirationFilters,
+    inspirationFormFields,
+    homeView,
+    activeInspirationId,
     isHydrated,
     isOnboardingActive
   ]);
@@ -1716,6 +1784,10 @@ export const App = () => {
   const activeProject = useMemo(
     () => projects.find(project => project.id === activeProjectId) || null,
     [projects, activeProjectId]
+  );
+  const activeInspirationProject = useMemo(
+    () => inspirationProjects.find(project => project.id === activeInspirationId) || null,
+    [inspirationProjects, activeInspirationId]
   );
 
   const activeProjectName = useMemo(() => {
@@ -2318,6 +2390,42 @@ export const App = () => {
     resetProjectState();
     setScreen('questionnaire');
   }, [resetProjectState]);
+
+  const handleStartInspirationProject = useCallback(() => {
+    setScreen('inspiration-form');
+  }, []);
+
+  const handleSaveInspirationProject = useCallback((payload) => {
+    const project = {
+      id: createInspirationId(),
+      ...payload
+    };
+    setInspirationProjects((prev) => [project, ...(Array.isArray(prev) ? prev : [])]);
+    setHomeView('inspiration');
+    setScreen('home');
+  }, []);
+
+  const handleOpenInspirationProject = useCallback((projectId) => {
+    if (!projectId) {
+      return;
+    }
+    setActiveInspirationId(projectId);
+    setScreen('inspiration-detail');
+  }, []);
+
+  const handleUpdateInspirationProject = useCallback((projectId, updates) => {
+    if (!projectId || !updates) {
+      return;
+    }
+
+    setInspirationProjects((prev) => (Array.isArray(prev) ? prev : []).map((project) => {
+      if (!project || project.id !== projectId) {
+        return project;
+      }
+
+      return { ...project, ...updates };
+    }));
+  }, []);
 
   const handleImportProject = useCallback((file) => {
     if (!file) {
@@ -3444,6 +3552,10 @@ export const App = () => {
               setShowcaseThemes={setShowcaseThemes}
               projectFilters={projectFilters}
               setProjectFilters={updateProjectFilters}
+              inspirationFilters={inspirationFilters}
+              setInspirationFilters={updateInspirationFilters}
+              inspirationFormFields={inspirationFormFields}
+              setInspirationFormFields={updateInspirationFormFields}
             />
           </Suspense>
         ) : screen === 'home' ? (
@@ -3451,6 +3563,12 @@ export const App = () => {
             projects={projects}
             projectFilters={projectFilters}
             teamLeadOptions={teamLeadTeamOptions}
+            inspirationProjects={inspirationProjects}
+            inspirationFilters={inspirationFilters}
+            homeView={homeView}
+            onHomeViewChange={setHomeView}
+            onStartInspirationProject={handleStartInspirationProject}
+            onOpenInspirationProject={handleOpenInspirationProject}
             onStartNewProject={handleCreateNewProject}
             onOpenProject={handleOpenProject}
             onDeleteProject={handleDeleteProject}
@@ -3459,6 +3577,26 @@ export const App = () => {
             onDuplicateProject={handleDuplicateProject}
             isAdminMode={isAdminMode}
             tourContext={tourContext}
+          />
+        ) : screen === 'inspiration-form' ? (
+          <InspirationForm
+            formConfig={inspirationFormFields}
+            existingProjects={inspirationProjects}
+            onSubmit={handleSaveInspirationProject}
+            onCancel={() => {
+              setScreen('home');
+              setHomeView('inspiration');
+            }}
+          />
+        ) : screen === 'inspiration-detail' ? (
+          <InspirationDetail
+            project={activeInspirationProject}
+            formConfig={inspirationFormFields}
+            onBack={() => {
+              setScreen('home');
+              setHomeView('inspiration');
+            }}
+            onUpdate={handleUpdateInspirationProject}
           />
         ) : screen === 'questionnaire' ? (
           <QuestionnaireScreen
