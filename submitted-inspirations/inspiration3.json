@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "generatedAt": "2025-02-14T09:35:00.000Z",
+  "inspiration": {
+    "id": "inspiration-clinician-compass",
+    "title": "Clinician Compass",
+    "labName": "Sanguis Pharma",
+    "target": "Professionnel de santé",
+    "typology": "Éducation médicale",
+    "therapeuticArea": "Neurologie",
+    "country": "Suisse",
+    "description": "Série de webinaires et modules e-learning destinés aux neurologues pour optimiser l'usage des immunoglobulines polyvalentes. Le programme couvre les indications validées, la pharmacovigilance et les bonnes pratiques d'administration en hôpital de jour.",
+    "link": "https://example.com/clinician-compass",
+    "documents": [
+      {
+        "name": "Programme scientifique 2025",
+        "url": "https://example.com/docs/clinician-compass-programme.pdf"
+      }
+    ],
+    "review": "Approche rigoureuse et conforme, centrée sur la mise à jour scientifique et la coordination entre établissements.",
+    "visibility": "shared",
+    "createdAt": "2025-01-28T09:00:00.000Z",
+    "updatedAt": "2025-02-08T17:10:00.000Z"
+  }
+}
