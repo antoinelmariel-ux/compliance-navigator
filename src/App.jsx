@@ -34,7 +34,7 @@ import {
   normalizeInspirationFormConfig
 } from './utils/inspirationConfig.js';
 
-const APP_VERSION = 'v1.0.207';
+const APP_VERSION = 'v1.0.208';
 
 const loadModule = (modulePath) => {
   if (typeof window === 'undefined') {
@@ -591,6 +591,10 @@ export const App = () => {
   const [isHydrated, setIsHydrated] = useState(false);
   const [isBackOfficeUnlocked, setIsBackOfficeUnlocked] = useState(false);
   const [backOfficeAuthError, setBackOfficeAuthError] = useState(null);
+  const [isBackOfficePromptOpen, setIsBackOfficePromptOpen] = useState(false);
+  const [backOfficePromptValue, setBackOfficePromptValue] = useState('');
+  const [backOfficePromptError, setBackOfficePromptError] = useState('');
+  const backOfficePromptResolverRef = useRef(null);
   const [adminView, setAdminView] = useState('home');
   const persistTimeoutRef = useRef(null);
   const previousScreenRef = useRef(null);
@@ -2317,6 +2321,46 @@ const updateProjectFilters = useCallback((updater) => {
     setReturnToSynthesisAfterEdit(false);
   }, [setHasUnsavedChanges]);
 
+  const openBackOfficePrompt = useCallback(() => new Promise((resolve) => {
+    backOfficePromptResolverRef.current = resolve;
+    setBackOfficePromptValue('');
+    setBackOfficePromptError('');
+    setIsBackOfficePromptOpen(true);
+  }), []);
+
+  const closeBackOfficePrompt = useCallback((result = false) => {
+    setIsBackOfficePromptOpen(false);
+    setBackOfficePromptValue('');
+    setBackOfficePromptError('');
+    const resolver = backOfficePromptResolverRef.current;
+    backOfficePromptResolverRef.current = null;
+    if (typeof resolver === 'function') {
+      resolver(result);
+    }
+  }, []);
+
+  const handleBackOfficePromptSubmit = useCallback(async (event) => {
+    event.preventDefault();
+    const trimmed = backOfficePromptValue.trim();
+    if (!trimmed) {
+      setBackOfficePromptError('Veuillez saisir un mot de passe.');
+      return;
+    }
+
+    const isValid = await verifyBackOfficePassword(trimmed);
+
+    if (isValid) {
+      setIsBackOfficeUnlocked(true);
+      setBackOfficeAuthError(null);
+      closeBackOfficePrompt(true);
+      return;
+    }
+
+    setIsBackOfficeUnlocked(false);
+    setBackOfficeAuthError('Mot de passe incorrect. Veuillez réessayer.');
+    setBackOfficePromptError('Mot de passe incorrect. Veuillez réessayer.');
+  }, [backOfficePromptValue, closeBackOfficePrompt]);
+
   const requestAdminAccess = useCallback(async () => {
     if (isAdminMode) {
       setIsBackOfficeUnlocked(true);
@@ -2329,32 +2373,12 @@ const updateProjectFilters = useCallback((updater) => {
       return true;
     }
 
-    if (typeof window === 'undefined' || typeof window.prompt !== 'function') {
-      setBackOfficeAuthError('La saisie du mot de passe est indisponible dans cet environnement.');
-      return false;
-    }
-
-    const userInput = window.prompt('Veuillez saisir le mot de passe du back-office :');
-
-    if (userInput === null) {
-      setBackOfficeAuthError(null);
-      return false;
-    }
-
-    const isValid = await verifyBackOfficePassword(userInput);
-
-    if (isValid) {
-      setIsBackOfficeUnlocked(true);
-      setBackOfficeAuthError(null);
-      return true;
-    }
-
-    setIsBackOfficeUnlocked(false);
-    setBackOfficeAuthError('Mot de passe incorrect. Veuillez réessayer.');
-    return false;
+    setBackOfficeAuthError(null);
+    return openBackOfficePrompt();
   }, [
     isAdminMode,
     isBackOfficeUnlocked,
+    openBackOfficePrompt,
     setBackOfficeAuthError,
     setIsBackOfficeUnlocked
   ]);
@@ -3516,6 +3540,63 @@ const updateProjectFilters = useCallback((updater) => {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {isBackOfficePromptOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="backoffice-auth-title"
+        >
+          <div className="absolute inset-0 bg-gray-900/50" onClick={() => closeBackOfficePrompt(false)} aria-hidden="true" />
+          <form
+            onSubmit={handleBackOfficePromptSubmit}
+            className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl hv-surface"
+          >
+            <div className="text-center">
+              <h2 id="backoffice-auth-title" className="text-xl font-semibold text-gray-800">
+                Accès back-office
+              </h2>
+              <p className="mt-2 text-sm text-gray-600">
+                Saisissez le mot de passe administrateur pour continuer.
+              </p>
+            </div>
+            <div className="mt-5 space-y-3">
+              <label htmlFor="backoffice-password" className="text-sm font-medium text-gray-700">
+                Mot de passe
+              </label>
+              <input
+                id="backoffice-password"
+                type="password"
+                value={backOfficePromptValue}
+                onChange={(event) => setBackOfficePromptValue(event.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                placeholder="Mot de passe"
+              />
+              {backOfficePromptError && (
+                <p className="text-sm text-red-600" role="alert">
+                  {backOfficePromptError}
+                </p>
+              )}
+            </div>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+              <button
+                type="button"
+                onClick={() => closeBackOfficePrompt(false)}
+                className="px-5 py-2 bg-white text-gray-700 font-medium rounded-lg border border-gray-200 hover:bg-gray-50"
+              >
+                Annuler
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700"
+              >
+                Déverrouiller
+              </button>
+            </div>
+          </form>
         </div>
       )}
 

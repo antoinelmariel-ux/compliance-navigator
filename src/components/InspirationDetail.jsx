@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from '../react.js';
 import { Edit, Save, Close, Link as LinkIcon } from './icons.js';
 import { normalizeInspirationFormConfig } from '../utils/inspirationConfig.js';
+import { RichTextEditor } from './RichTextEditor.jsx';
+import { renderRichText } from '../utils/richText.js';
 
 const formatValue = (value) => {
   if (typeof value === 'string' && value.trim().length > 0) {
@@ -328,14 +330,22 @@ export const InspirationDetail = ({
           {renderField(
             'description',
             editingFields.description ? (
-              <textarea
-                rows={4}
-                value={draft.description || ''}
-                onChange={(event) => handleFieldChange('description', event.target.value)}
-                className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-              />
+              <div className="mt-2">
+                <RichTextEditor
+                  id="inspiration-description"
+                  value={draft.description || ''}
+                  onChange={(value) => handleFieldChange('description', value)}
+                  ariaLabel="Description du projet (édition riche)"
+                  placeholder="Saisissez une description détaillée..."
+                  compact
+                />
+              </div>
             ) : (
-              <p className="mt-2 text-sm text-gray-700 whitespace-pre-line">{formatValue(project.description)}</p>
+              <p className="mt-2 text-sm text-gray-700">
+                {project.description?.trim()
+                  ? renderRichText(project.description)
+                  : formatValue(project.description)}
+              </p>
             )
           )}
 
@@ -434,14 +444,20 @@ export const InspirationDetail = ({
           {renderField(
             'review',
             editingFields.review ? (
-              <textarea
-                rows={4}
-                value={draft.review || ''}
-                onChange={(event) => handleFieldChange('review', event.target.value)}
-                className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-              />
+              <div className="mt-2">
+                <RichTextEditor
+                  id="inspiration-review"
+                  value={draft.review || ''}
+                  onChange={(value) => handleFieldChange('review', value)}
+                  ariaLabel="Avis sur le projet (édition riche)"
+                  placeholder="Ajoutez un avis détaillé..."
+                  compact
+                />
+              </div>
             ) : (
-              <p className="mt-2 text-sm text-gray-700 whitespace-pre-line">{formatValue(project.review)}</p>
+              <p className="mt-2 text-sm text-gray-700">
+                {project.review?.trim() ? renderRichText(project.review) : formatValue(project.review)}
+              </p>
             )
           )}
         </div>
