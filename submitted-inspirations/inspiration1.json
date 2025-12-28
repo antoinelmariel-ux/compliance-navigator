@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "generatedAt": "2025-02-14T09:30:00.000Z",
+  "inspiration": {
+    "id": "inspiration-plasma-link",
+    "title": "PlasmaLink Patients",
+    "labName": "BioHema Laboratoires",
+    "target": "Patient",
+    "typology": "Digital",
+    "therapeuticArea": "Immunologie",
+    "country": "France",
+    "description": "Programme digital d'accompagnement des patients traités par immunoglobulines issues du plasma. Le dispositif combine un carnet de suivi thérapeutique, des rappels de perfusion, et un espace sécurisé pour poser des questions à l'infirmier référent.",
+    "link": "https://example.com/plasmalink-patients",
+    "documents": [
+      {
+        "name": "Fiche programme PlasmaLink",
+        "url": "https://example.com/docs/plasmalink-patients.pdf"
+      }
+    ],
+    "review": "Bonne articulation entre service patient et respect de la réglementation sur les données de santé, avec des contenus éducatifs validés par le médical.",
+    "visibility": "shared",
+    "createdAt": "2025-02-01T08:00:00.000Z",
+    "updatedAt": "2025-02-10T15:20:00.000Z"
+  }
+}

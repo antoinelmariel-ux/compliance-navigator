@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "generatedAt": "2025-02-14T09:32:00.000Z",
+  "inspiration": {
+    "id": "inspiration-donor-trace",
+    "title": "DonorTrace Lab Stories",
+    "labName": "HemaVita Therapeutics",
+    "target": "Donneur",
+    "typology": "Événementiel",
+    "therapeuticArea": "Hématologie",
+    "country": "Belgique",
+    "description": "Roadshow régional dans les maisons du don pour mettre en lumière la chaîne de transformation du plasma en médicaments dérivés du sang. L'expérience propose des ateliers interactifs, des témoignages de patients et une exposition mobile sur la traçabilité des lots.",
+    "link": "https://example.com/donortrace",
+    "documents": [
+      {
+        "name": "Kit média DonorTrace",
+        "url": "https://example.com/docs/donortrace-presskit.pdf"
+      },
+      {
+        "name": "Guide d'animation terrain",
+        "url": "https://example.com/docs/donortrace-guide.pdf"
+      }
+    ],
+    "review": "Campagne crédible pour renforcer la fidélisation des donneurs, avec un message pédagogique sur la sécurité et l'utilisation thérapeutique du plasma.",
+    "visibility": "shared",
+    "createdAt": "2025-01-22T10:15:00.000Z",
+    "updatedAt": "2025-02-05T12:45:00.000Z"
+  }
+}
