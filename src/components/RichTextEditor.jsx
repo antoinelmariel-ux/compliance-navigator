@@ -185,7 +185,10 @@ export const RichTextEditor = ({
       </div>
       <div className="relative">
         {showPlaceholder && (
-          <div className="pointer-events-none absolute inset-0 px-4 py-3 text-sm text-gray-400 select-none leading-relaxed">
+          <div
+            className="pointer-events-none absolute inset-0 px-4 py-3 text-sm text-gray-400 select-none leading-relaxed"
+            style={{ pointerEvents: 'none', userSelect: 'none' }}
+          >
             {placeholder}
           </div>
         )}
