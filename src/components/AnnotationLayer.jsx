@@ -34,24 +34,14 @@ const STATUS_BADGE = {
   paused: 'bg-amber-500 text-white'
 };
 
-const NOTE_PALETTE_KEYS = ['base', 'palette-0', 'palette-1', 'palette-2', 'palette-3', 'palette-4'];
+const SOURCE_PALETTE_KEYS = ['palette-0', 'palette-1', 'palette-2', 'palette-3', 'palette-4'];
 
-const hashString = (value) => {
-  let hash = 0;
-  for (let index = 0; index < value.length; index += 1) {
-    hash = (hash << 5) - hash + value.charCodeAt(index);
-    hash |= 0;
-  }
-  return hash;
-};
-
-const getFeedbackPaletteKey = (note, index) => {
+const getFeedbackPaletteKey = (note, sourcePalette) => {
   if (note?.sourceId && note.sourceId !== 'session') {
-    const paletteIndex = Math.abs(hashString(note.sourceId)) % 5;
-    return `palette-${paletteIndex}`;
+    return sourcePalette.get(note.sourceId) || 'palette-0';
   }
 
-  return NOTE_PALETTE_KEYS[index % NOTE_PALETTE_KEYS.length] || 'base';
+  return 'base';
 };
 
 export const AnnotationLayer = ({
@@ -65,6 +55,7 @@ export const AnnotationLayer = ({
   onTogglePause,
   onRequestSave,
   onRequestLoad,
+  onExit,
   onNoteChange,
   onNoteRemove,
   onAutoFocusComplete
@@ -74,6 +65,22 @@ export const AnnotationLayer = ({
     () => notes.filter(note => note && note.contextId === activeContextId),
     [activeContextId, notes]
   );
+  const sourcePalette = useMemo(() => {
+    const palette = new Map();
+    let paletteIndex = 0;
+
+    visibleNotes.forEach((note) => {
+      if (!note?.sourceId || note.sourceId === 'session' || palette.has(note.sourceId)) {
+        return;
+      }
+
+      const key = SOURCE_PALETTE_KEYS[paletteIndex % SOURCE_PALETTE_KEYS.length] || 'palette-0';
+      palette.set(note.sourceId, key);
+      paletteIndex += 1;
+    });
+
+    return palette;
+  }, [visibleNotes]);
 
   const textareaRefs = useRef(new Map());
 
@@ -180,7 +187,7 @@ export const AnnotationLayer = ({
 
   return (
     <React.Fragment>
-      <div className="fixed top-0 inset-x-0 z-[260]" data-annotation-ui="true">
+      <div className="fixed top-0 inset-x-0 z-[9999]" data-annotation-ui="true">
         <div className="max-w-7xl mx-auto px-4 sm:px-8">
           <div className="mt-2 rounded-b-xl bg-white border border-slate-200 text-slate-900 shadow-2xl px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2 text-sm text-slate-800">
@@ -197,6 +204,15 @@ export const AnnotationLayer = ({
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={onExit}
+                className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white p-2 text-slate-600 hover:text-slate-900 hover:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                aria-label="Quitter le mode annotation"
+                title="Quitter le mode annotation"
+              >
+                <Close className="h-4 w-4" />
+              </button>
               <button
                 type="button"
                 onClick={onRequestSave}
@@ -230,7 +246,7 @@ export const AnnotationLayer = ({
         {visibleNotes.map((note, index) => {
           const position = computeNotePosition(note);
           const label = note.sourceId && note.sourceId !== 'session' ? note.sourceId : `#${index + 1}`;
-          const paletteKey = getFeedbackPaletteKey(note, index);
+          const paletteKey = getFeedbackPaletteKey(note, sourcePalette);
 
           return (
             <div

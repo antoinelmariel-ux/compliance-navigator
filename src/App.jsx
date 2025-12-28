@@ -25,7 +25,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.202';
+const APP_VERSION = 'v1.0.203';
 
 const loadModule = (modulePath) => {
   if (typeof window === 'undefined') {
@@ -1928,7 +1928,6 @@ export const App = () => {
         const sourceColor = registerAnnotationSource(sourceId);
 
         const importedNotes = rawNotes.map(rawNote => {
-          const registeredColor = registerAnnotationSource(rawNote?.sourceId || sourceId, rawNote?.color || sourceColor);
           const normalizedX = clamp01(rawNote?.x ?? 0);
           const normalizedY = clamp01(rawNote?.y ?? 0);
 
@@ -1940,11 +1939,11 @@ export const App = () => {
             sectionX: clamp01(rawNote?.sectionX ?? normalizedX),
             sectionY: clamp01(rawNote?.sectionY ?? normalizedY),
             text: typeof rawNote?.text === 'string' ? rawNote.text : '',
-            color: registeredColor,
+            color: sourceColor,
             contextId: rawNote?.contextId || activeAnnotationContextKey,
             projectId: rawNote?.projectId || showcaseProjectContext?.projectId || 'unknown',
             projectName: rawNote?.projectName || showcaseProjectContext?.projectName || '',
-            sourceId: rawNote?.sourceId || sourceId
+            sourceId
           };
         });
 
@@ -3173,6 +3172,7 @@ export const App = () => {
         onTogglePause={handleToggleAnnotationPause}
         onRequestSave={handleSaveAnnotationNotes}
         onRequestLoad={handleRequestAnnotationFile}
+        onExit={handleToggleAnnotationMode}
         onNoteChange={handleAnnotationTextChange}
         onNoteRemove={handleRemoveAnnotationNote}
       />
