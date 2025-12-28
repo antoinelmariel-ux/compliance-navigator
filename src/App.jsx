@@ -23,6 +23,7 @@ import { exportProjectToFile } from './utils/projectExport.js';
 import { normalizeRiskWeighting } from './utils/risk.js';
 import { normalizeProjectEntry, normalizeProjectsCollection } from './utils/projectNormalization.js';
 import { loadSubmittedProjectsFromDirectory } from './utils/externalProjectsLoader.js';
+import { loadSubmittedInspirationsFromDirectory } from './utils/externalInspirationsLoader.js';
 import {
   createDefaultProjectFiltersConfig,
   normalizeProjectFilterConfig
@@ -33,8 +34,9 @@ import {
   normalizeInspirationFiltersConfig,
   normalizeInspirationFormConfig
 } from './utils/inspirationConfig.js';
+import { exportInspirationToFile } from './utils/inspirationExport.js';
 
-const APP_VERSION = 'v1.0.219';
+const APP_VERSION = 'v1.0.220';
 
 const loadModule = (modulePath) => {
   if (typeof window === 'undefined') {
@@ -860,6 +862,57 @@ const updateProjectFilters = useCallback((updater) => {
     });
   }, [questions, riskLevelRules, riskWeights, rules]);
 
+  const synchronizeExternalInspirations = useCallback(async () => {
+    const externalInspirations = await loadSubmittedInspirationsFromDirectory();
+    const externalSources = new Set(externalInspirations.map(entry => entry.sourceId));
+
+    setInspirationProjects(prevProjects => {
+      const baseProjects = Array.isArray(prevProjects) ? prevProjects : [];
+      const preserved = baseProjects.filter(project => (
+        !project?.externalSourceId || externalSources.has(project.externalSourceId)
+      ));
+
+      const bySource = new Map();
+      preserved.forEach(project => {
+        if (project?.externalSourceId) {
+          bySource.set(project.externalSourceId, project);
+        }
+      });
+
+      let changed = preserved.length !== baseProjects.length;
+      const nextProjects = preserved.slice();
+
+      externalInspirations.forEach(entry => {
+        const { project, sourceId, checksum } = entry;
+        if (!project || !sourceId) {
+          return;
+        }
+
+        const existing = bySource.get(sourceId);
+        if (!existing) {
+          nextProjects.push(project);
+          changed = true;
+          return;
+        }
+
+        const existingChecksum = existing.externalSourceChecksum;
+        if (existingChecksum && existingChecksum === checksum) {
+          return;
+        }
+
+        const index = nextProjects.findIndex(item => item?.externalSourceId === sourceId);
+        if (index !== -1) {
+          nextProjects[index] = project;
+        } else {
+          nextProjects.push(project);
+        }
+        changed = true;
+      });
+
+      return changed ? nextProjects : baseProjects;
+    });
+  }, []);
+
   useEffect(() => {
     const loadExternal = async () => {
       try {
@@ -873,6 +926,20 @@ const updateProjectFilters = useCallback((updater) => {
 
     loadExternal();
   }, [synchronizeExternalProjects]);
+
+  useEffect(() => {
+    const loadExternalInspirations = async () => {
+      try {
+        await synchronizeExternalInspirations();
+      } catch (error) {
+        if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+          console.warn('Impossible de synchroniser les inspirations externes :', error);
+        }
+      }
+    };
+
+    loadExternalInspirations();
+  }, [synchronizeExternalInspirations]);
 
   useEffect(() => {
     const savedState = loadPersistedState();
@@ -2452,6 +2519,14 @@ const updateProjectFilters = useCallback((updater) => {
     }));
   }, []);
 
+  const handleExportInspirationProject = useCallback((project) => {
+    if (!project) {
+      return;
+    }
+
+    exportInspirationToFile(project);
+  }, []);
+
   const handleImportProject = useCallback((file) => {
     if (!file) {
       return;
@@ -3690,6 +3765,7 @@ const updateProjectFilters = useCallback((updater) => {
               setHomeView('inspiration');
             }}
             onUpdate={handleUpdateInspirationProject}
+            onExport={handleExportInspirationProject}
           />
         ) : screen === 'questionnaire' ? (
           <QuestionnaireScreen

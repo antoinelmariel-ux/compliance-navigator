@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from '../react.js';
-import { Edit, Save, Close, Link as LinkIcon } from './icons.js';
+import { Edit, Save, Close, Download, Link as LinkIcon } from './icons.js';
 import { normalizeInspirationFormConfig } from '../utils/inspirationConfig.js';
 import { RichTextEditor } from './RichTextEditor.jsx';
 import { renderRichText } from '../utils/richText.js';
@@ -40,7 +40,8 @@ export const InspirationDetail = ({
   project,
   formConfig,
   onBack,
-  onUpdate
+  onUpdate,
+  onExport
 }) => {
   const normalizedConfig = useMemo(
     () => normalizeInspirationFormConfig(formConfig),
@@ -342,14 +343,24 @@ export const InspirationDetail = ({
                 {project.labName} · {project.country}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={onBack}
-              className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50"
-            >
-              <Close className="h-4 w-4" aria-hidden="true" />
-              Retour
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => onExport?.(project)}
+                className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100"
+              >
+                <Download className="h-4 w-4" aria-hidden="true" />
+                Exporter en JSON
+              </button>
+              <button
+                type="button"
+                onClick={onBack}
+                className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50"
+              >
+                <Close className="h-4 w-4" aria-hidden="true" />
+                Retour
+              </button>
+            </div>
           </div>
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
