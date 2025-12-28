@@ -66,9 +66,35 @@ export const RichTextEditor = ({
     [onChange]
   );
 
+  const syncEditorHtml = useCallback((sanitized) => {
+    if (!editorRef.current) {
+      return;
+    }
+
+    if (editorRef.current.innerHTML === sanitized) {
+      return;
+    }
+
+    editorRef.current.innerHTML = sanitized || '';
+
+    if (typeof document !== 'undefined' && document.activeElement === editorRef.current) {
+      const selection = typeof window !== 'undefined' && typeof window.getSelection === 'function'
+        ? window.getSelection()
+        : null;
+      if (selection) {
+        const range = document.createRange();
+        range.selectNodeContents(editorRef.current);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+    }
+  }, []);
+
   const handleInput = useCallback(() => {
-    emitChange(editorRef.current?.innerHTML || '');
-  }, [emitChange]);
+    const sanitized = emitChange(editorRef.current?.innerHTML || '');
+    syncEditorHtml(sanitized);
+  }, [emitChange, syncEditorHtml]);
 
   const handleBlur = useCallback(() => {
     const sanitized = emitChange(editorRef.current?.innerHTML || '');
