@@ -17,7 +17,14 @@ export const RichTextEditor = ({
   ariaLabel
 }) => {
   const editorRef = useRef(null);
+  const linkTextInputRef = useRef(null);
+  const selectionRangeRef = useRef(null);
+  const selectedTextRef = useRef('');
   const [htmlValue, setHtmlValue] = useState(() => normalizeValue(value));
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+  const [linkText, setLinkText] = useState('');
+  const [linkUrl, setLinkUrl] = useState('https://');
+  const [linkError, setLinkError] = useState('');
 
   useEffect(() => {
     setHtmlValue(normalizeValue(value));
@@ -28,6 +35,12 @@ export const RichTextEditor = ({
       editorRef.current.innerHTML = htmlValue || '';
     }
   }, [htmlValue]);
+
+  useEffect(() => {
+    if (isLinkModalOpen && linkTextInputRef.current) {
+      linkTextInputRef.current.focus();
+    }
+  }, [isLinkModalOpen]);
 
   const emitChange = useCallback(
     (nextValue) => {
@@ -77,29 +90,44 @@ export const RichTextEditor = ({
 
     const selection = typeof window.getSelection === 'function' ? window.getSelection() : null;
     const selectedText = selection?.toString() || '';
-    const displayText = window.prompt('Texte à afficher pour le lien', selectedText);
-
-    if (displayText === null) {
-      return;
-    }
-
-    const url = window.prompt('Lien HTML à insérer (https://...)', 'https://');
-    if (!url) {
-      return;
-    }
-
-    const trimmedUrl = url.trim();
-    if (!/^https?:\/\//i.test(trimmedUrl)) {
-      if (typeof window.alert === 'function') {
-        window.alert('Veuillez saisir une URL valide (https://...)');
-      }
-      return;
-    }
-
-    const normalizedDisplayText = displayText?.trim() || selectedText || trimmedUrl;
-    const linkHtml = `<a href="${trimmedUrl}" target="_blank" rel="noopener noreferrer">${normalizedDisplayText}</a>`;
-    applyCommand('insertHTML', linkHtml);
+    selectionRangeRef.current =
+      selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+    selectedTextRef.current = selectedText;
+    setLinkText(selectedText);
+    setLinkUrl('https://');
+    setLinkError('');
+    setIsLinkModalOpen(true);
   }, [applyCommand]);
+
+  const handleCloseLinkModal = useCallback(() => {
+    setIsLinkModalOpen(false);
+    setLinkError('');
+  }, []);
+
+  const handleConfirmLink = useCallback((event) => {
+    event?.preventDefault?.();
+
+    const trimmedUrl = linkUrl.trim();
+    if (!/^https?:\/\//i.test(trimmedUrl)) {
+      setLinkError('Veuillez saisir une URL valide (https://...)');
+      return;
+    }
+
+    const normalizedDisplayText = linkText.trim() || selectedTextRef.current || trimmedUrl;
+    const linkHtml = `<a href="${trimmedUrl}" target="_blank" rel="noopener noreferrer">${normalizedDisplayText}</a>`;
+
+    if (typeof window !== 'undefined' && selectionRangeRef.current && typeof window.getSelection === 'function') {
+      const selection = window.getSelection();
+      if (selection) {
+        selection.removeAllRanges();
+        selection.addRange(selectionRangeRef.current);
+      }
+    }
+
+    applyCommand('insertHTML', linkHtml);
+    setIsLinkModalOpen(false);
+    setLinkError('');
+  }, [applyCommand, linkText, linkUrl]);
 
   const minHeight = useMemo(() => (compact ? 120 : 180), [compact]);
   const showPlaceholder = !htmlValue;
@@ -152,6 +180,70 @@ export const RichTextEditor = ({
           aria-label={ariaLabel || placeholder}
         />
       </div>
+      {isLinkModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
+          <div className="absolute inset-0 bg-gray-900/50" onClick={handleCloseLinkModal} aria-hidden="true" />
+          <form
+            className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl"
+            onSubmit={handleConfirmLink}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={`${id}-link-modal-title`}
+          >
+            <h3 id={`${id}-link-modal-title`} className="text-lg font-semibold text-gray-900">
+              Insérer un lien
+            </h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Renseignez le texte à afficher et l’URL complète (https://).
+            </p>
+            <div className="mt-4 space-y-4">
+              <div>
+                <label htmlFor={`${id}-link-text`} className="block text-sm font-medium text-gray-700">
+                  Texte du lien
+                </label>
+                <input
+                  id={`${id}-link-text`}
+                  ref={linkTextInputRef}
+                  type="text"
+                  value={linkText}
+                  onChange={(event) => setLinkText(event.target.value)}
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Ex : Découvrir le document"
+                />
+              </div>
+              <div>
+                <label htmlFor={`${id}-link-url`} className="block text-sm font-medium text-gray-700">
+                  URL
+                </label>
+                <input
+                  id={`${id}-link-url`}
+                  type="url"
+                  value={linkUrl}
+                  onChange={(event) => setLinkUrl(event.target.value)}
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="https://exemple.com"
+                />
+                {linkError && <p className="mt-2 text-sm text-red-600">{linkError}</p>}
+              </div>
+            </div>
+            <div className="mt-6 flex flex-wrap justify-end gap-3">
+              <button
+                type="button"
+                onClick={handleCloseLinkModal}
+                className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Annuler
+              </button>
+              <button
+                type="submit"
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              >
+                Insérer le lien
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 };
