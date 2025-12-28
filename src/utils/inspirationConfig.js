@@ -3,7 +3,7 @@ const DEFAULT_INSPIRATION_FILTERS = {
     {
       id: 'labName',
       label: 'Nom du labo',
-      type: 'text',
+      type: 'select',
       enabled: true
     },
     {

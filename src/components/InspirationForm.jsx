@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from '../react.js';
 import { Plus, Save, Close } from './icons.js';
 import { normalizeInspirationFormConfig } from '../utils/inspirationConfig.js';
+import { RichTextEditor } from './RichTextEditor.jsx';
 
 const buildInitialFormState = () => ({
   title: '',
@@ -231,12 +232,17 @@ export const InspirationForm = ({
             .map((field) => (
               <label key={field.id} className="flex flex-col gap-2 text-sm font-medium text-gray-700">
                 <span>{renderFieldLabel(field)}</span>
-                <textarea
-                  rows={5}
+                <RichTextEditor
+                  id={`inspiration-${field.id}`}
                   value={formState[field.id] || ''}
-                  onChange={(event) => updateField(field.id, event.target.value)}
-                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                  placeholder="Saisir une description détaillée..."
+                  onChange={(value) => updateField(field.id, value)}
+                  ariaLabel={`${field.label} (édition riche)`}
+                  placeholder={
+                    field.id === 'review'
+                      ? 'Ajoutez votre avis détaillé sur ce projet inspirant...'
+                      : 'Saisir une description détaillée...'
+                  }
+                  compact
                 />
                 {errors[field.id] && <span className="text-xs text-red-600">{errors[field.id]}</span>}
               </label>
