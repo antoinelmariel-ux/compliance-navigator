@@ -404,6 +404,7 @@ const INSPIRATION_FILTER_TYPE_LABELS = {
 
 const INSPIRATION_FILTER_COMPATIBLE_FIELD_TYPES = new Set([
   'select',
+  'multi_select',
   'text',
   'long_text',
   'number',
@@ -415,6 +416,7 @@ const INSPIRATION_FORM_FIELD_TYPE_LABELS = {
   text: 'Texte (1 ligne)',
   long_text: 'Texte long',
   select: 'Liste déroulante',
+  multi_select: 'Sélection multiple',
   url: 'URL',
   documents: 'Documents'
 };
@@ -423,6 +425,7 @@ const INSPIRATION_FORM_FIELD_TYPE_OPTIONS = [
   { value: 'text', label: 'Texte (1 ligne)' },
   { value: 'long_text', label: 'Texte long' },
   { value: 'select', label: 'Liste déroulante' },
+  { value: 'multi_select', label: 'Sélection multiple' },
   { value: 'url', label: 'URL' },
   { value: 'documents', label: 'Documents' }
 ];
@@ -1359,7 +1362,7 @@ export const BackOffice = ({
         return normalized;
       }
 
-      const type = formField.type === 'select' ? 'select' : 'text';
+      const type = formField.type === 'select' || formField.type === 'multi_select' ? 'select' : 'text';
       const newField = {
         id: formField.id,
         label: formField.label || formField.id,
@@ -1609,7 +1612,7 @@ export const BackOffice = ({
     setInspirationFormFields((prev) => {
       const normalized = normalizeInspirationFormConfig(prev);
       const currentField = normalized.fields.find((field) => field.id === fieldId);
-      const nextOptions = normalizedType === 'select'
+      const nextOptions = normalizedType === 'select' || normalizedType === 'multi_select'
         ? (Array.isArray(currentField?.options) && currentField.options.length > 0
           ? currentField.options
           : ['Option 1', 'Option 2'])
@@ -1689,7 +1692,7 @@ export const BackOffice = ({
       nextField.placeholder = placeholder;
     }
 
-    if (normalizedType === 'select') {
+    if (normalizedType === 'select' || normalizedType === 'multi_select') {
       const parsedOptions = parseOptionList(newInspirationFormField.options);
       nextField.options = parsedOptions.length > 0 ? parsedOptions : ['Option 1', 'Option 2'];
     }
@@ -3477,7 +3480,7 @@ export const BackOffice = ({
                               ))}
                             </select>
                           </div>
-                          {newInspirationFormField.type === 'select' ? (
+                          {newInspirationFormField.type === 'select' || newInspirationFormField.type === 'multi_select' ? (
                             <div className="md:col-span-2 space-y-3">
                               <div>
                                 <label
@@ -3500,27 +3503,29 @@ export const BackOffice = ({
                                   placeholder="Ex : Patient, Professionnels, Grand public"
                                 />
                               </div>
-                              <div>
-                                <label
-                                  htmlFor="new-inspiration-field-select-placeholder"
-                                  className="text-xs font-semibold uppercase tracking-wide text-blue-800"
-                                >
-                                  Libellé de sélection par défaut
-                                </label>
-                                <input
-                                  id="new-inspiration-field-select-placeholder"
-                                  type="text"
-                                  value={newInspirationFormField.placeholder}
-                                  onChange={(event) =>
-                                    setNewInspirationFormField((prev) => ({
-                                      ...prev,
-                                      placeholder: event.target.value
-                                    }))
-                                  }
-                                  className="mt-1 w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                                  placeholder="Ex : Sélectionner..."
-                                />
-                              </div>
+                              {newInspirationFormField.type === 'select' && (
+                                <div>
+                                  <label
+                                    htmlFor="new-inspiration-field-select-placeholder"
+                                    className="text-xs font-semibold uppercase tracking-wide text-blue-800"
+                                  >
+                                    Libellé de sélection par défaut
+                                  </label>
+                                  <input
+                                    id="new-inspiration-field-select-placeholder"
+                                    type="text"
+                                    value={newInspirationFormField.placeholder}
+                                    onChange={(event) =>
+                                      setNewInspirationFormField((prev) => ({
+                                        ...prev,
+                                        placeholder: event.target.value
+                                      }))
+                                    }
+                                    className="mt-1 w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                    placeholder="Ex : Sélectionner..."
+                                  />
+                                </div>
+                              )}
                             </div>
                           ) : INSPIRATION_FORM_FIELD_PLACEHOLDER_TYPES.has(newInspirationFormField.type) ? (
                             <div className="md:col-span-2">
@@ -3670,7 +3675,7 @@ export const BackOffice = ({
                                 )}
                               </label>
                             )}
-                            {field.type === 'select' && (
+                            {field.type === 'select' || field.type === 'multi_select' ? (
                               <label className="flex flex-col gap-2 text-sm text-gray-700">
                                 <span className="font-semibold text-gray-700">Options (séparées par des virgules)</span>
                                 <input
@@ -3680,7 +3685,7 @@ export const BackOffice = ({
                                   className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                                 />
                               </label>
-                            )}
+                            ) : null}
                             <label className="inline-flex items-center gap-2 text-sm text-gray-700">
                               <input
                                 type="checkbox"

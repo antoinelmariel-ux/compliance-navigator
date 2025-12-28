@@ -40,6 +40,21 @@ const formatDate = (isoDate) => {
 
 const getSafeString = (value) => (typeof value === 'string' ? value : '');
 
+const normalizeInspirationFieldValues = (value) => {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => (typeof item === 'string' ? item.trim() : ''))
+      .filter(Boolean);
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? [trimmed] : [];
+  }
+
+  return [];
+};
+
 const DEFAULT_SELECT_FILTER_VALUE = 'all';
 const DEFAULT_TEXT_FILTER_VALUE = '';
 
@@ -556,10 +571,12 @@ export const HomeScreen = ({
       }
 
       inspirationProjects.forEach((project) => {
-        const value = getSafeString(project?.[field.id]).trim();
-        if (value.length > 0) {
-          options.add(value);
-        }
+        const values = normalizeInspirationFieldValues(project?.[field.id]);
+        values.forEach((value) => {
+          if (value.length > 0) {
+            options.add(value);
+          }
+        });
       });
 
       map.set(field.id, Array.from(options).sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' })));
@@ -638,11 +655,11 @@ export const HomeScreen = ({
         }
 
         const value = inspirationFiltersState[field.id];
-        const projectValue = getSafeString(project?.[field.id]);
+        const projectValues = normalizeInspirationFieldValues(project?.[field.id]);
 
         if (field.type === 'select') {
           if (value && value !== DEFAULT_SELECT_FILTER_VALUE) {
-            if (projectValue !== value) {
+            if (!projectValues.includes(value)) {
               return false;
             }
           }
@@ -654,7 +671,8 @@ export const HomeScreen = ({
           continue;
         }
 
-        if (projectValue.toLowerCase().indexOf(query) === -1) {
+        const haystack = projectValues.join(' ').toLowerCase();
+        if (haystack.indexOf(query) === -1) {
           return false;
         }
       }

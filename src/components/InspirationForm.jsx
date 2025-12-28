@@ -17,6 +17,11 @@ const buildInitialFormState = (config) => {
       return;
     }
 
+    if (field.type === 'multi_select') {
+      initialState[field.id] = [];
+      return;
+    }
+
     initialState[field.id] = '';
   });
 
@@ -31,6 +36,13 @@ const normalizeDocuments = (documents) =>
           url: typeof doc?.url === 'string' ? doc.url.trim() : ''
         }))
         .filter((doc) => doc.name.length > 0 || doc.url.length > 0)
+    : [];
+
+const normalizeMultiSelect = (value) =>
+  Array.isArray(value)
+    ? value
+        .map((item) => (typeof item === 'string' ? item.trim() : ''))
+        .filter(Boolean)
     : [];
 
 const renderFieldLabel = (field) => {
@@ -72,6 +84,9 @@ export const InspirationForm = ({
 
       normalizedConfig.fields.forEach((field) => {
         if (field.type !== 'documents') {
+          if (field.type === 'multi_select' && !Array.isArray(merged[field.id])) {
+            merged[field.id] = baseState[field.id];
+          }
           return;
         }
 
@@ -132,6 +147,14 @@ export const InspirationForm = ({
         return;
       }
 
+      if (field.type === 'multi_select') {
+        const normalizedSelections = normalizeMultiSelect(value);
+        if (normalizedSelections.length === 0) {
+          nextErrors[field.id] = 'Veuillez sélectionner au moins une option.';
+        }
+        return;
+      }
+
       if (value == null || (typeof value === 'string' && value.trim().length === 0)) {
         nextErrors[field.id] = 'Ce champ est requis.';
       }
@@ -155,6 +178,11 @@ export const InspirationForm = ({
 
       if (field.type === 'documents') {
         acc[field.id] = normalizeDocuments(formState[field.id]);
+        return acc;
+      }
+
+      if (field.type === 'multi_select') {
+        acc[field.id] = normalizeMultiSelect(formState[field.id]);
         return acc;
       }
 
@@ -222,6 +250,32 @@ export const InspirationForm = ({
                         className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                       >
                         <option value="">{emptyOptionLabel}</option>
+                        {(field.options || []).map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                      {errors[field.id] && <span className="text-xs text-red-600">{errors[field.id]}</span>}
+                    </label>
+                  );
+                }
+
+                if (field.type === 'multi_select') {
+                  const selectedValues = Array.isArray(formState[field.id]) ? formState[field.id] : [];
+                  return (
+                    <label key={field.id} className="flex flex-col gap-2 text-sm font-medium text-gray-700">
+                      <span>{renderFieldLabel(field)}</span>
+                      <select
+                        multiple
+                        value={selectedValues}
+                        onChange={(event) =>
+                          updateField(
+                            field.id,
+                            Array.from(event.target.selectedOptions).map((option) => option.value)
+                          )}
+                        className="min-h-[120px] rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                      >
                         {(field.options || []).map((option) => (
                           <option key={option} value={option}>
                             {option}

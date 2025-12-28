@@ -235,7 +235,7 @@ const normalizeFormField = (field) => {
     normalized.placeholder = field.placeholder;
   }
 
-  if (type === 'select') {
+  if (type === 'select' || type === 'multi_select') {
     normalized.options = sanitizeOptionsList(field.options);
   }
 

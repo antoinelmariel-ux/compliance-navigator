@@ -5,6 +5,14 @@ import { RichTextEditor } from './RichTextEditor.jsx';
 import { renderRichText } from '../utils/richText.js';
 
 const formatValue = (value) => {
+  if (Array.isArray(value)) {
+    const formatted = value
+      .map((item) => (typeof item === 'string' ? item.trim() : ''))
+      .filter(Boolean)
+      .join(', ');
+    return formatted.length > 0 ? formatted : 'Non renseigné';
+  }
+
   if (typeof value === 'string' && value.trim().length > 0) {
     return value;
   }
@@ -19,6 +27,13 @@ const normalizeDocuments = (documents) =>
           url: typeof doc?.url === 'string' ? doc.url.trim() : ''
         }))
         .filter((doc) => doc.name.length > 0 || doc.url.length > 0)
+    : [];
+
+const normalizeMultiSelect = (value) =>
+  Array.isArray(value)
+    ? value
+        .map((item) => (typeof item === 'string' ? item.trim() : ''))
+        .filter(Boolean)
     : [];
 
 export const InspirationDetail = ({
@@ -53,15 +68,21 @@ export const InspirationDetail = ({
     setDraft((prev) => ({ ...prev, [fieldId]: value }));
   };
 
-  const handleSaveField = (fieldId) => {
+  const handleSaveField = (field) => {
     if (typeof onUpdate !== 'function') {
-      toggleFieldEditing(fieldId, false);
+      toggleFieldEditing(field.id, false);
       return;
     }
 
+    const fieldId = field.id;
+    const fieldType = field.type;
     const nextValue = draft[fieldId];
     const updates = {
-      [fieldId]: fieldId === 'documents' ? normalizeDocuments(nextValue) : nextValue,
+      [fieldId]: fieldType === 'documents'
+        ? normalizeDocuments(nextValue)
+        : fieldType === 'multi_select'
+          ? normalizeMultiSelect(nextValue)
+          : nextValue,
       updatedAt: new Date().toISOString()
     };
     onUpdate(project.id, updates);
@@ -82,7 +103,7 @@ export const InspirationDetail = ({
             <>
               <button
                 type="button"
-                onClick={() => handleSaveField(field.id)}
+                onClick={() => handleSaveField(field)}
                 className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700"
               >
                 <Save className="h-4 w-4" aria-hidden="true" />
@@ -135,6 +156,28 @@ export const InspirationDetail = ({
           className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
         >
           <option value="">{emptyOptionLabel}</option>
+          {(field.options || []).map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      );
+    }
+
+    if (field.type === 'multi_select') {
+      const selections = normalizeMultiSelect(value);
+      return (
+        <select
+          multiple
+          value={selections}
+          onChange={(event) =>
+            handleFieldChange(
+              field.id,
+              Array.from(event.target.selectedOptions).map((option) => option.value)
+            )}
+          className="mt-2 w-full min-h-[140px] rounded-lg border border-gray-300 px-3 py-2 text-sm"
+        >
           {(field.options || []).map((option) => (
             <option key={option} value={option}>
               {option}
@@ -254,6 +297,15 @@ export const InspirationDetail = ({
             <p>Non renseigné</p>
           )}
         </div>
+      );
+    }
+
+    if (field.type === 'multi_select') {
+      const selections = normalizeMultiSelect(value);
+      return (
+        <p className="mt-2 text-sm text-gray-700">
+          {selections.length > 0 ? selections.join(', ') : 'Non renseigné'}
+        </p>
       );
     }
 
