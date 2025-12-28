@@ -2857,6 +2857,82 @@ export const ProjectShowcase = ({
 
   const selectedTemplate = SECTION_TEMPLATES[selectedTemplateIndex] || SECTION_TEMPLATES[0];
   const selectedTemplateConfig = resolveTemplateConfig(selectedTemplate?.id);
+  const templateAccentClasses = {
+    highlight: 'from-blue-500/80 via-cyan-400/70 to-emerald-300/70',
+    columns: 'from-indigo-500/80 via-purple-400/70 to-fuchsia-300/70',
+    'document-viewer': 'from-emerald-500/80 via-teal-400/70 to-sky-300/70',
+    story: 'from-amber-400/80 via-orange-300/70 to-rose-300/70',
+    checklist: 'from-lime-500/80 via-emerald-400/70 to-teal-300/70'
+  };
+  const selectedTemplateAccent =
+    templateAccentClasses[selectedTemplate?.id] || templateAccentClasses.highlight;
+
+  const renderTemplateThumbnail = (templateId) => {
+    switch (templateId) {
+      case 'columns':
+        return (
+          <div className="mt-4 grid grid-cols-3 gap-3 rounded-xl bg-white p-4 shadow-inner">
+            <div className="col-span-3 h-3 rounded-full bg-gradient-to-r from-indigo-500/80 to-fuchsia-400/70" />
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={`columns-preview-${index}`} className="space-y-2 rounded-lg bg-gray-50 p-2">
+                <div className="h-2 w-2/3 rounded-full bg-gray-200" />
+                <div className="h-2 w-full rounded-full bg-gray-100" />
+                <div className="h-2 w-5/6 rounded-full bg-gray-100" />
+              </div>
+            ))}
+          </div>
+        );
+      case 'document-viewer':
+        return (
+          <div className="mt-4 space-y-3 rounded-xl bg-white p-4 shadow-inner">
+            <div className="flex items-center justify-between gap-3">
+              <div className="h-3 w-28 rounded-full bg-gray-200" />
+              <div className="h-3 w-16 rounded-full bg-emerald-100" />
+            </div>
+            <div className="h-2 w-40 rounded-full bg-gray-100" />
+            <div className="h-28 rounded-xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-emerald-100" />
+          </div>
+        );
+      case 'story':
+        return (
+          <div className="mt-4 space-y-3 rounded-xl bg-white p-4 shadow-inner">
+            <div className="h-3 w-32 rounded-full bg-amber-300/80" />
+            <div className="space-y-2">
+              <div className="h-2 rounded-full bg-gray-100" />
+              <div className="h-2 w-11/12 rounded-full bg-gray-100" />
+              <div className="h-2 w-10/12 rounded-full bg-gray-100" />
+              <div className="h-2 w-9/12 rounded-full bg-gray-100" />
+            </div>
+          </div>
+        );
+      case 'checklist':
+        return (
+          <div className="mt-4 space-y-3 rounded-xl bg-white p-4 shadow-inner">
+            <div className="h-3 w-28 rounded-full bg-lime-300/80" />
+            <div className="space-y-2">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div key={`checklist-preview-${index}`} className="flex items-center gap-2">
+                  <div className="h-3 w-3 rounded-full bg-emerald-400/80" />
+                  <div className="h-2 w-full rounded-full bg-gray-100" />
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      case 'highlight':
+      default:
+        return (
+          <div className="mt-4 space-y-3 rounded-xl bg-white p-4 shadow-inner">
+            <div className="flex items-center justify-between gap-3">
+              <div className="h-3 w-24 rounded-full bg-blue-200" />
+              <div className="h-6 w-12 rounded-full bg-blue-100" />
+            </div>
+            <div className="h-12 rounded-xl bg-gradient-to-r from-blue-500/80 to-cyan-400/70" />
+            <div className="h-2 w-3/4 rounded-full bg-gray-200" />
+          </div>
+        );
+    }
+  };
 
   const previewContent = shouldShowPreview ? (
     <div className="aurora-sections" data-tour-id="showcase-preview">
@@ -2912,19 +2988,9 @@ export const ProjectShowcase = ({
                     <h4 className="text-lg font-semibold text-gray-900">{selectedTemplate?.name}</h4>
                     <p className="text-sm text-gray-600">{selectedTemplate?.description}</p>
                   </div>
-                  <div className="h-12 w-24 rounded-lg bg-gradient-to-r from-blue-500/80 via-cyan-400/70 to-emerald-300/70 shadow-inner" />
+                  <div className={`h-12 w-24 rounded-lg bg-gradient-to-r ${selectedTemplateAccent} shadow-inner`} />
                 </div>
-                <div className="mt-4 grid grid-cols-5 gap-2 rounded-xl bg-white p-4 shadow-inner">
-                  <div className="col-span-5 h-3 rounded-full bg-gradient-to-r from-blue-500 to-cyan-400" />
-                  <div className="col-span-3 h-2 rounded-full bg-gray-200" />
-                  <div className="col-span-2 h-2 rounded-full bg-gray-100" />
-                  <div className="col-span-2 h-20 rounded-xl bg-gradient-to-br from-gray-50 to-gray-100" />
-                  <div className="col-span-3 space-y-2">
-                    <div className="h-2 rounded-full bg-gray-200" />
-                    <div className="h-2 rounded-full bg-gray-100" />
-                    <div className="h-2 rounded-full bg-gray-100" />
-                  </div>
-                </div>
+                {renderTemplateThumbnail(selectedTemplate?.id)}
               </div>
               <button
                 type="button"
