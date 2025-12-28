@@ -1,20 +1,27 @@
-import React, { useMemo, useState } from '../react.js';
+import React, { useEffect, useMemo, useState } from '../react.js';
 import { Plus, Save, Close } from './icons.js';
 import { normalizeInspirationFormConfig } from '../utils/inspirationConfig.js';
 import { RichTextEditor } from './RichTextEditor.jsx';
 
-const buildInitialFormState = () => ({
-  title: '',
-  labName: '',
-  target: '',
-  typology: '',
-  therapeuticArea: '',
-  country: '',
-  description: '',
-  link: '',
-  documents: [{ name: '', url: '' }],
-  review: ''
-});
+const buildInitialFormState = (config) => {
+  const fields = Array.isArray(config?.fields) ? config.fields : [];
+  const initialState = {};
+
+  fields.forEach((field) => {
+    if (!field) {
+      return;
+    }
+
+    if (field.type === 'documents') {
+      initialState[field.id] = [{ name: '', url: '' }];
+      return;
+    }
+
+    initialState[field.id] = '';
+  });
+
+  return initialState;
+};
 
 const normalizeDocuments = (documents) =>
   Array.isArray(documents)
@@ -44,7 +51,7 @@ export const InspirationForm = ({
     () => normalizeInspirationFormConfig(formConfig),
     [formConfig]
   );
-  const [formState, setFormState] = useState(buildInitialFormState);
+  const [formState, setFormState] = useState(() => buildInitialFormState(normalizedConfig));
   const [errors, setErrors] = useState({});
 
   const labSuggestions = useMemo(() => {
@@ -58,31 +65,53 @@ export const InspirationForm = ({
     return Array.from(suggestions).sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }));
   }, [existingProjects]);
 
+  useEffect(() => {
+    setFormState((prev) => {
+      const baseState = buildInitialFormState(normalizedConfig);
+      const merged = { ...baseState, ...prev };
+
+      normalizedConfig.fields.forEach((field) => {
+        if (field.type !== 'documents') {
+          return;
+        }
+
+        if (!Array.isArray(merged[field.id]) || merged[field.id].length === 0) {
+          merged[field.id] = baseState[field.id];
+        }
+      });
+
+      return merged;
+    });
+  }, [normalizedConfig]);
+
   const updateField = (fieldId, value) => {
     setFormState((prev) => ({ ...prev, [fieldId]: value }));
   };
 
-  const handleDocumentChange = (index, key, value) => {
+  const handleDocumentChange = (fieldId, index, key, value) => {
     setFormState((prev) => {
-      const nextDocuments = Array.isArray(prev.documents) ? prev.documents.slice() : [];
+      const nextDocuments = Array.isArray(prev[fieldId]) ? prev[fieldId].slice() : [];
       const target = nextDocuments[index] || { name: '', url: '' };
       nextDocuments[index] = { ...target, [key]: value };
-      return { ...prev, documents: nextDocuments };
+      return { ...prev, [fieldId]: nextDocuments };
     });
   };
 
-  const handleAddDocument = () => {
+  const handleAddDocument = (fieldId) => {
     setFormState((prev) => ({
       ...prev,
-      documents: [...(prev.documents || []), { name: '', url: '' }]
+      [fieldId]: [...(prev[fieldId] || []), { name: '', url: '' }]
     }));
   };
 
-  const handleRemoveDocument = (index) => {
+  const handleRemoveDocument = (fieldId, index) => {
     setFormState((prev) => {
-      const nextDocuments = Array.isArray(prev.documents) ? prev.documents.slice() : [];
+      const nextDocuments = Array.isArray(prev[fieldId]) ? prev[fieldId].slice() : [];
       nextDocuments.splice(index, 1);
-      return { ...prev, documents: nextDocuments.length > 0 ? nextDocuments : [{ name: '', url: '' }] };
+      return {
+        ...prev,
+        [fieldId]: nextDocuments.length > 0 ? nextDocuments : [{ name: '', url: '' }]
+      };
     });
   };
 
@@ -103,7 +132,7 @@ export const InspirationForm = ({
         return;
       }
 
-      if (typeof value === 'string' && value.trim().length === 0) {
+      if (value == null || (typeof value === 'string' && value.trim().length === 0)) {
         nextErrors[field.id] = 'Ce champ est requis.';
       }
     });
@@ -119,21 +148,29 @@ export const InspirationForm = ({
     }
 
     const now = new Date().toISOString();
-    const payload = {
-      title: formState.title.trim(),
-      labName: formState.labName.trim(),
-      target: formState.target,
-      typology: formState.typology,
-      therapeuticArea: formState.therapeuticArea,
-      country: formState.country,
-      description: formState.description.trim(),
-      link: formState.link.trim(),
-      documents: normalizeDocuments(formState.documents),
-      review: formState.review.trim(),
-      visibility: 'personal',
-      createdAt: now,
-      updatedAt: now
-    };
+    const payload = normalizedConfig.fields.reduce((acc, field) => {
+      if (!field.enabled) {
+        return acc;
+      }
+
+      if (field.type === 'documents') {
+        acc[field.id] = normalizeDocuments(formState[field.id]);
+        return acc;
+      }
+
+      const value = formState[field.id];
+      if (typeof value === 'string') {
+        acc[field.id] = value.trim();
+        return acc;
+      }
+
+      acc[field.id] = value ?? '';
+      return acc;
+    }, {});
+
+    payload.visibility = 'personal';
+    payload.createdAt = now;
+    payload.updatedAt = now;
 
     if (typeof onSubmit === 'function') {
       onSubmit(payload);
@@ -172,6 +209,10 @@ export const InspirationForm = ({
               .filter((field) => field.enabled && field.type !== 'long_text' && field.type !== 'documents')
               .map((field) => {
                 if (field.type === 'select') {
+                  const emptyOptionLabel = typeof field.placeholder === 'string' && field.placeholder.trim() !== ''
+                    ? field.placeholder.trim()
+                    : 'Sélectionner...';
+
                   return (
                     <label key={field.id} className="flex flex-col gap-2 text-sm font-medium text-gray-700">
                       <span>{renderFieldLabel(field)}</span>
@@ -180,7 +221,7 @@ export const InspirationForm = ({
                         onChange={(event) => updateField(field.id, event.target.value)}
                         className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                       >
-                        <option value="">Sélectionner...</option>
+                        <option value="">{emptyOptionLabel}</option>
                         {(field.options || []).map((option) => (
                           <option key={option} value={option}>
                             {option}
@@ -193,6 +234,10 @@ export const InspirationForm = ({
                 }
 
                 if (field.id === 'labName') {
+                  const placeholder = typeof field.placeholder === 'string' && field.placeholder.trim() !== ''
+                    ? field.placeholder.trim()
+                    : 'Nom du laboratoire';
+
                   return (
                     <label key={field.id} className="flex flex-col gap-2 text-sm font-medium text-gray-700">
                       <span>{renderFieldLabel(field)}</span>
@@ -202,7 +247,7 @@ export const InspirationForm = ({
                         value={formState.labName}
                         onChange={(event) => updateField('labName', event.target.value)}
                         className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                        placeholder="Nom du laboratoire"
+                        placeholder={placeholder}
                       />
                       {errors[field.id] && <span className="text-xs text-red-600">{errors[field.id]}</span>}
                     </label>
@@ -210,6 +255,11 @@ export const InspirationForm = ({
                 }
 
                 const inputType = field.type === 'url' ? 'url' : 'text';
+                const inputPlaceholder = typeof field.placeholder === 'string' && field.placeholder.trim() !== ''
+                  ? field.placeholder.trim()
+                  : field.type === 'url'
+                    ? 'https://...'
+                    : '';
 
                 return (
                   <label key={field.id} className="flex flex-col gap-2 text-sm font-medium text-gray-700">
@@ -219,7 +269,7 @@ export const InspirationForm = ({
                       value={formState[field.id] || ''}
                       onChange={(event) => updateField(field.id, event.target.value)}
                       className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                      placeholder={field.type === 'url' ? 'https://...' : ''}
+                      placeholder={inputPlaceholder}
                     />
                     {errors[field.id] && <span className="text-xs text-red-600">{errors[field.id]}</span>}
                   </label>
@@ -238,9 +288,11 @@ export const InspirationForm = ({
                   onChange={(value) => updateField(field.id, value)}
                   ariaLabel={`${field.label} (édition riche)`}
                   placeholder={
-                    field.id === 'review'
-                      ? 'Ajoutez votre avis détaillé sur ce projet inspirant...'
-                      : 'Saisir une description détaillée...'
+                    typeof field.placeholder === 'string' && field.placeholder.trim() !== ''
+                      ? field.placeholder.trim()
+                      : field.id === 'review'
+                        ? 'Ajoutez votre avis détaillé sur ce projet inspirant...'
+                        : 'Saisir une description détaillée...'
                   }
                   compact
                 />
@@ -261,7 +313,7 @@ export const InspirationForm = ({
                   </div>
                   <button
                     type="button"
-                    onClick={handleAddDocument}
+                    onClick={() => handleAddDocument(field.id)}
                     className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100"
                   >
                     <Plus className="h-4 w-4" aria-hidden="true" />
@@ -269,7 +321,7 @@ export const InspirationForm = ({
                   </button>
                 </div>
                 <div className="space-y-3">
-                  {(formState.documents || []).map((doc, index) => (
+                  {(formState[field.id] || []).map((doc, index) => (
                     <div
                       key={`doc-${index}`}
                       className="grid grid-cols-1 gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3 md:grid-cols-[1fr_1fr_auto]"
@@ -277,20 +329,20 @@ export const InspirationForm = ({
                       <input
                         type="text"
                         value={doc.name}
-                        onChange={(event) => handleDocumentChange(index, 'name', event.target.value)}
+                        onChange={(event) => handleDocumentChange(field.id, index, 'name', event.target.value)}
                         className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
                         placeholder="Nom du document"
                       />
                       <input
                         type="url"
                         value={doc.url}
-                        onChange={(event) => handleDocumentChange(index, 'url', event.target.value)}
+                        onChange={(event) => handleDocumentChange(field.id, index, 'url', event.target.value)}
                         className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
                         placeholder="https://..."
                       />
                       <button
                         type="button"
-                        onClick={() => handleRemoveDocument(index)}
+                        onClick={() => handleRemoveDocument(field.id, index)}
                         className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100"
                       >
                         Retirer

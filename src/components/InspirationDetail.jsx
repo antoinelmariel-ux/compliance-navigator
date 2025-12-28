@@ -43,14 +43,7 @@ export const InspirationDetail = ({
     return null;
   }
 
-  const fieldConfigMap = normalizedConfig.fields.reduce((acc, field) => {
-    acc[field.id] = field;
-    return acc;
-  }, {});
-  const fieldLabelMap = normalizedConfig.fields.reduce((acc, field) => {
-    acc[field.id] = field.label;
-    return acc;
-  }, {});
+  const enabledFields = normalizedConfig.fields.filter((field) => field.enabled);
 
   const toggleFieldEditing = (fieldId, isEditing) => {
     setEditingFields((prev) => ({ ...prev, [fieldId]: isEditing }));
@@ -75,21 +68,21 @@ export const InspirationDetail = ({
     toggleFieldEditing(fieldId, false);
   };
 
-  const renderField = (fieldId, content) => (
+  const renderField = (field, content) => (
     <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-            {fieldLabelMap[fieldId] || fieldId}
+            {field.label || field.id}
           </p>
           {content}
         </div>
         <div className="flex flex-wrap gap-2">
-          {editingFields[fieldId] ? (
+          {editingFields[field.id] ? (
             <>
               <button
                 type="button"
-                onClick={() => handleSaveField(fieldId)}
+                onClick={() => handleSaveField(field.id)}
                 className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700"
               >
                 <Save className="h-4 w-4" aria-hidden="true" />
@@ -99,7 +92,7 @@ export const InspirationDetail = ({
                 type="button"
                 onClick={() => {
                   setDraft(project);
-                  toggleFieldEditing(fieldId, false);
+                  toggleFieldEditing(field.id, false);
                 }}
                 className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-50"
               >
@@ -110,7 +103,7 @@ export const InspirationDetail = ({
           ) : (
             <button
               type="button"
-              onClick={() => toggleFieldEditing(fieldId, true)}
+              onClick={() => toggleFieldEditing(field.id, true)}
               className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100"
             >
               <Edit className="h-4 w-4" aria-hidden="true" />
@@ -121,6 +114,167 @@ export const InspirationDetail = ({
       </div>
     </div>
   );
+
+  const resolvePlaceholder = (field, fallback) => {
+    if (typeof field.placeholder === 'string' && field.placeholder.trim() !== '') {
+      return field.placeholder.trim();
+    }
+
+    return fallback;
+  };
+
+  const renderEditableField = (field) => {
+    const value = draft?.[field.id] ?? '';
+
+    if (field.type === 'select') {
+      const emptyOptionLabel = resolvePlaceholder(field, 'Sélectionner...');
+      return (
+        <select
+          value={value}
+          onChange={(event) => handleFieldChange(field.id, event.target.value)}
+          className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+        >
+          <option value="">{emptyOptionLabel}</option>
+          {(field.options || []).map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      );
+    }
+
+    if (field.type === 'long_text') {
+      const fallback = field.id === 'review'
+        ? 'Ajoutez un avis détaillé...'
+        : 'Saisissez une description détaillée...';
+      return (
+        <div className="mt-2">
+          <RichTextEditor
+            id={`inspiration-${field.id}`}
+            value={value}
+            onChange={(nextValue) => handleFieldChange(field.id, nextValue)}
+            ariaLabel={`${field.label} (édition riche)`}
+            placeholder={resolvePlaceholder(field, fallback)}
+            compact
+          />
+        </div>
+      );
+    }
+
+    if (field.type === 'documents') {
+      return (
+        <div className="mt-2 space-y-3">
+          {normalizeDocuments(value).map((doc, index) => (
+            <div key={`doc-${index}`} className="grid grid-cols-1 gap-2 md:grid-cols-2">
+              <input
+                type="text"
+                value={doc.name}
+                onChange={(event) => {
+                  const nextDocs = normalizeDocuments(value);
+                  nextDocs[index] = { ...doc, name: event.target.value };
+                  handleFieldChange(field.id, nextDocs);
+                }}
+                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+              <input
+                type="url"
+                value={doc.url}
+                onChange={(event) => {
+                  const nextDocs = normalizeDocuments(value);
+                  nextDocs[index] = { ...doc, url: event.target.value };
+                  handleFieldChange(field.id, nextDocs);
+                }}
+                className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              />
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() =>
+              handleFieldChange(field.id, [
+                ...normalizeDocuments(value),
+                { name: '', url: '' }
+              ])
+            }
+            className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100"
+          >
+            Ajouter un document
+          </button>
+        </div>
+      );
+    }
+
+    const inputType = field.type === 'url' ? 'url' : 'text';
+    const placeholder = resolvePlaceholder(field, field.type === 'url' ? 'https://...' : '');
+
+    return (
+      <input
+        type={inputType}
+        value={value}
+        onChange={(event) => handleFieldChange(field.id, event.target.value)}
+        className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+        placeholder={placeholder}
+      />
+    );
+  };
+
+  const renderDisplayField = (field) => {
+    const value = project?.[field.id];
+
+    if (field.type === 'long_text') {
+      return (
+        <p className="mt-2 text-sm text-gray-700">
+          {value?.trim() ? renderRichText(value) : formatValue(value)}
+        </p>
+      );
+    }
+
+    if (field.type === 'documents') {
+      const docs = normalizeDocuments(value);
+      return (
+        <div className="mt-2 space-y-2 text-sm text-gray-700">
+          {docs.length > 0 ? (
+            docs.map((doc, index) => (
+              <div key={`doc-view-${index}`} className="flex flex-col">
+                <span className="font-medium">{doc.name || 'Document'}</span>
+                {doc.url && (
+                  <a
+                    href={doc.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    {doc.url}
+                  </a>
+                )}
+              </div>
+            ))
+          ) : (
+            <p>Non renseigné</p>
+          )}
+        </div>
+      );
+    }
+
+    if (field.type === 'url') {
+      return value ? (
+        <a
+          href={value}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-2 inline-flex items-center gap-2 text-sm text-blue-600 hover:underline"
+        >
+          <LinkIcon className="h-4 w-4" aria-hidden="true" />
+          {value}
+        </a>
+      ) : (
+        <p className="mt-2 text-sm text-gray-700">Non renseigné</p>
+      );
+    }
+
+    return <p className="mt-2 text-sm text-gray-700">{formatValue(value)}</p>;
+  };
 
   const visibilityLabel = project.visibility === 'shared' ? 'Partagé' : 'Personnel';
 
@@ -183,283 +337,14 @@ export const InspirationDetail = ({
         </header>
 
         <div className="grid grid-cols-1 gap-4">
-          {renderField(
-            'title',
-            editingFields.title ? (
-              <input
-                type="text"
-                value={draft.title || ''}
-                onChange={(event) => handleFieldChange('title', event.target.value)}
-                className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-              />
-            ) : (
-              <p className="mt-2 text-sm text-gray-700">{formatValue(project.title)}</p>
-            )
-          )}
-
-          {renderField(
-            'labName',
-            editingFields.labName ? (
-              <input
-                type="text"
-                value={draft.labName || ''}
-                onChange={(event) => handleFieldChange('labName', event.target.value)}
-                className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-              />
-            ) : (
-              <p className="mt-2 text-sm text-gray-700">{formatValue(project.labName)}</p>
-            )
-          )}
-
-          {renderField(
-            'target',
-            editingFields.target ? (
-              fieldConfigMap.target?.type === 'select' ? (
-                <select
-                  value={draft.target || ''}
-                  onChange={(event) => handleFieldChange('target', event.target.value)}
-                  className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                >
-                  <option value="">Sélectionner...</option>
-                  {(fieldConfigMap.target?.options || []).map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  type="text"
-                  value={draft.target || ''}
-                  onChange={(event) => handleFieldChange('target', event.target.value)}
-                  className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                />
-              )
-            ) : (
-              <p className="mt-2 text-sm text-gray-700">{formatValue(project.target)}</p>
-            )
-          )}
-
-          {renderField(
-            'typology',
-            editingFields.typology ? (
-              fieldConfigMap.typology?.type === 'select' ? (
-                <select
-                  value={draft.typology || ''}
-                  onChange={(event) => handleFieldChange('typology', event.target.value)}
-                  className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                >
-                  <option value="">Sélectionner...</option>
-                  {(fieldConfigMap.typology?.options || []).map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  type="text"
-                  value={draft.typology || ''}
-                  onChange={(event) => handleFieldChange('typology', event.target.value)}
-                  className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                />
-              )
-            ) : (
-              <p className="mt-2 text-sm text-gray-700">{formatValue(project.typology)}</p>
-            )
-          )}
-
-          {renderField(
-            'therapeuticArea',
-            editingFields.therapeuticArea ? (
-              fieldConfigMap.therapeuticArea?.type === 'select' ? (
-                <select
-                  value={draft.therapeuticArea || ''}
-                  onChange={(event) => handleFieldChange('therapeuticArea', event.target.value)}
-                  className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                >
-                  <option value="">Sélectionner...</option>
-                  {(fieldConfigMap.therapeuticArea?.options || []).map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  type="text"
-                  value={draft.therapeuticArea || ''}
-                  onChange={(event) => handleFieldChange('therapeuticArea', event.target.value)}
-                  className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                />
-              )
-            ) : (
-              <p className="mt-2 text-sm text-gray-700">{formatValue(project.therapeuticArea)}</p>
-            )
-          )}
-
-          {renderField(
-            'country',
-            editingFields.country ? (
-              fieldConfigMap.country?.type === 'select' ? (
-                <select
-                  value={draft.country || ''}
-                  onChange={(event) => handleFieldChange('country', event.target.value)}
-                  className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                >
-                  <option value="">Sélectionner...</option>
-                  {(fieldConfigMap.country?.options || []).map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  type="text"
-                  value={draft.country || ''}
-                  onChange={(event) => handleFieldChange('country', event.target.value)}
-                  className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                />
-              )
-            ) : (
-              <p className="mt-2 text-sm text-gray-700">{formatValue(project.country)}</p>
-            )
-          )}
-
-          {renderField(
-            'description',
-            editingFields.description ? (
-              <div className="mt-2">
-                <RichTextEditor
-                  id="inspiration-description"
-                  value={draft.description || ''}
-                  onChange={(value) => handleFieldChange('description', value)}
-                  ariaLabel="Description du projet (édition riche)"
-                  placeholder="Saisissez une description détaillée..."
-                  compact
-                />
-              </div>
-            ) : (
-              <p className="mt-2 text-sm text-gray-700">
-                {project.description?.trim()
-                  ? renderRichText(project.description)
-                  : formatValue(project.description)}
-              </p>
-            )
-          )}
-
-          {renderField(
-            'link',
-            editingFields.link ? (
-              <input
-                type="url"
-                value={draft.link || ''}
-                onChange={(event) => handleFieldChange('link', event.target.value)}
-                className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-              />
-            ) : (
-              project.link ? (
-                <a
-                  href={project.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-2 inline-flex items-center gap-2 text-sm text-blue-600 hover:underline"
-                >
-                  <LinkIcon className="h-4 w-4" aria-hidden="true" />
-                  {project.link}
-                </a>
-              ) : (
-                <p className="mt-2 text-sm text-gray-700">Non renseigné</p>
-              )
-            )
-          )}
-
-          {renderField(
-            'documents',
-            editingFields.documents ? (
-              <div className="mt-2 space-y-3">
-                {normalizeDocuments(draft.documents).map((doc, index) => (
-                  <div key={`doc-${index}`} className="grid grid-cols-1 gap-2 md:grid-cols-2">
-                    <input
-                      type="text"
-                      value={doc.name}
-                      onChange={(event) => {
-                        const nextDocs = normalizeDocuments(draft.documents);
-                        nextDocs[index] = { ...doc, name: event.target.value };
-                        handleFieldChange('documents', nextDocs);
-                      }}
-                      className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                    />
-                    <input
-                      type="url"
-                      value={doc.url}
-                      onChange={(event) => {
-                        const nextDocs = normalizeDocuments(draft.documents);
-                        nextDocs[index] = { ...doc, url: event.target.value };
-                        handleFieldChange('documents', nextDocs);
-                      }}
-                      className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                    />
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={() =>
-                    handleFieldChange('documents', [
-                      ...normalizeDocuments(draft.documents),
-                      { name: '', url: '' }
-                    ])
-                  }
-                  className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100"
-                >
-                  Ajouter un document
-                </button>
-              </div>
-            ) : (
-              <div className="mt-2 space-y-2 text-sm text-gray-700">
-                {normalizeDocuments(project.documents).length > 0 ? (
-                  normalizeDocuments(project.documents).map((doc, index) => (
-                    <div key={`doc-view-${index}`} className="flex flex-col">
-                      <span className="font-medium">{doc.name || 'Document'}</span>
-                      {doc.url && (
-                        <a
-                          href={doc.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline"
-                        >
-                          {doc.url}
-                        </a>
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  <p>Non renseigné</p>
-                )}
-              </div>
-            )
-          )}
-
-          {renderField(
-            'review',
-            editingFields.review ? (
-              <div className="mt-2">
-                <RichTextEditor
-                  id="inspiration-review"
-                  value={draft.review || ''}
-                  onChange={(value) => handleFieldChange('review', value)}
-                  ariaLabel="Avis sur le projet (édition riche)"
-                  placeholder="Ajoutez un avis détaillé..."
-                  compact
-                />
-              </div>
-            ) : (
-              <p className="mt-2 text-sm text-gray-700">
-                {project.review?.trim() ? renderRichText(project.review) : formatValue(project.review)}
-              </p>
-            )
-          )}
+          {enabledFields.map((field) => (
+            <React.Fragment key={field.id}>
+              {renderField(
+                field,
+                editingFields[field.id] ? renderEditableField(field) : renderDisplayField(field)
+              )}
+            </React.Fragment>
+          ))}
         </div>
       </div>
     </div>

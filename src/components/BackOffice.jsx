@@ -411,6 +411,29 @@ const INSPIRATION_FILTER_COMPATIBLE_FIELD_TYPES = new Set([
   'date'
 ]);
 
+const INSPIRATION_FORM_FIELD_TYPE_LABELS = {
+  text: 'Texte (1 ligne)',
+  long_text: 'Texte long',
+  select: 'Liste déroulante',
+  url: 'URL',
+  documents: 'Documents'
+};
+
+const INSPIRATION_FORM_FIELD_TYPE_OPTIONS = [
+  { value: 'text', label: 'Texte (1 ligne)' },
+  { value: 'long_text', label: 'Texte long' },
+  { value: 'select', label: 'Liste déroulante' },
+  { value: 'url', label: 'URL' },
+  { value: 'documents', label: 'Documents' }
+];
+
+const INSPIRATION_FORM_FIELD_PLACEHOLDER_TYPES = new Set([
+  'text',
+  'long_text',
+  'select',
+  'url'
+]);
+
 const PROJECT_FILTER_FIELD_DESCRIPTIONS = {
   projectName:
     'Permet de rechercher un projet par le titre saisi lors de la qualification.',
@@ -436,6 +459,16 @@ const SHOWCASE_THEME_PALETTE_FIELDS = [
   { key: 'textSecondary', label: 'Texte secondaire', description: 'Couleur du texte secondaire et des éléments discrets.' },
   { key: 'highlight', label: 'Mise en avant', description: 'Couleur des petits accents (étiquettes, survols, repères visuels).' }
 ];
+
+const createEmptyInspirationFormField = () => ({
+  id: '',
+  label: '',
+  type: 'text',
+  placeholder: '',
+  options: '',
+  required: false,
+  enabled: true
+});
 
 export const BackOffice = ({
   projects,
@@ -472,6 +505,7 @@ export const BackOffice = ({
   const [expandedRuleIds, setExpandedRuleIds] = useState(() => new Set());
   const [selectedFilterQuestionId, setSelectedFilterQuestionId] = useState('');
   const [selectedInspirationFilterQuestionId, setSelectedInspirationFilterQuestionId] = useState('');
+  const [newInspirationFormField, setNewInspirationFormField] = useState(() => createEmptyInspirationFormField());
   const undoStackRef = useRef([]);
   const [canUndo, setCanUndo] = useState(false);
   const [undoMessage, setUndoMessage] = useState('');
@@ -1109,6 +1143,10 @@ export const BackOffice = ({
   const inspirationFormFieldEntries = Array.isArray(normalizedInspirationFormFields.fields)
     ? normalizedInspirationFormFields.fields
     : [];
+  const inspirationFieldIds = useMemo(
+    () => new Set(inspirationFormFieldEntries.map((field) => field.id)),
+    [inspirationFormFieldEntries]
+  );
 
   const availableFilterQuestionOptions = useMemo(() => {
     const usedQuestionIds = new Set();
@@ -1478,6 +1516,38 @@ export const BackOffice = ({
       .filter((option) => option.length > 0);
   };
 
+  const sanitizeInspirationFieldId = (value) => {
+    if (typeof value !== 'string') {
+      return '';
+    }
+
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return '';
+    }
+
+    return trimmed
+      .replace(/\s+/g, '_')
+      .replace(/[^a-zA-Z0-9_-]/g, '');
+  };
+
+  const suggestedNewInspirationFieldId = useMemo(() => {
+    const directId = sanitizeInspirationFieldId(newInspirationFormField.id);
+    if (directId) {
+      return directId;
+    }
+
+    return sanitizeInspirationFieldId(newInspirationFormField.label);
+  }, [newInspirationFormField.id, newInspirationFormField.label]);
+
+  const isNewInspirationFieldIdDuplicate =
+    suggestedNewInspirationFieldId.length > 0 && inspirationFieldIds.has(suggestedNewInspirationFieldId);
+
+  const canAddInspirationFormField =
+    suggestedNewInspirationFieldId.length > 0
+    && newInspirationFormField.label.trim().length > 0
+    && !isNewInspirationFieldIdDuplicate;
+
   const handleInspirationFilterToggle = useCallback((fieldId, enabled) => {
     if (typeof setInspirationFilters !== 'function') {
       return;
@@ -1527,6 +1597,39 @@ export const BackOffice = ({
     setInspirationFormFields((prev) => updateInspirationFormField(prev, fieldId, { label }));
   }, [setInspirationFormFields]);
 
+  const handleInspirationFormFieldTypeChange = useCallback((fieldId, nextType) => {
+    if (typeof setInspirationFormFields !== 'function') {
+      return;
+    }
+
+    const normalizedType = INSPIRATION_FORM_FIELD_TYPE_OPTIONS.some((option) => option.value === nextType)
+      ? nextType
+      : 'text';
+
+    setInspirationFormFields((prev) => {
+      const normalized = normalizeInspirationFormConfig(prev);
+      const currentField = normalized.fields.find((field) => field.id === fieldId);
+      const nextOptions = normalizedType === 'select'
+        ? (Array.isArray(currentField?.options) && currentField.options.length > 0
+          ? currentField.options
+          : ['Option 1', 'Option 2'])
+        : undefined;
+
+      return updateInspirationFormField(prev, fieldId, {
+        type: normalizedType,
+        options: nextOptions
+      });
+    });
+  }, [setInspirationFormFields]);
+
+  const handleInspirationFormFieldPlaceholderChange = useCallback((fieldId, placeholder) => {
+    if (typeof setInspirationFormFields !== 'function') {
+      return;
+    }
+
+    setInspirationFormFields((prev) => updateInspirationFormField(prev, fieldId, { placeholder }));
+  }, [setInspirationFormFields]);
+
   const handleInspirationFormFieldOptionsChange = useCallback((fieldId, rawValue) => {
     if (typeof setInspirationFormFields !== 'function') {
       return;
@@ -1553,6 +1656,59 @@ export const BackOffice = ({
       });
     }
   }, [setInspirationFormFields]);
+
+  const handleAddInspirationFormField = useCallback(() => {
+    if (typeof setInspirationFormFields !== 'function') {
+      return;
+    }
+
+    const label = newInspirationFormField.label.trim();
+    if (!label) {
+      return;
+    }
+
+    const fieldId = suggestedNewInspirationFieldId;
+    if (!fieldId || inspirationFieldIds.has(fieldId)) {
+      return;
+    }
+
+    const normalizedType = INSPIRATION_FORM_FIELD_TYPE_OPTIONS.some((option) => option.value === newInspirationFormField.type)
+      ? newInspirationFormField.type
+      : 'text';
+
+    const nextField = {
+      id: fieldId,
+      label,
+      type: normalizedType,
+      enabled: Boolean(newInspirationFormField.enabled),
+      required: Boolean(newInspirationFormField.required)
+    };
+
+    const placeholder = newInspirationFormField.placeholder.trim();
+    if (INSPIRATION_FORM_FIELD_PLACEHOLDER_TYPES.has(normalizedType) && placeholder.length > 0) {
+      nextField.placeholder = placeholder;
+    }
+
+    if (normalizedType === 'select') {
+      const parsedOptions = parseOptionList(newInspirationFormField.options);
+      nextField.options = parsedOptions.length > 0 ? parsedOptions : ['Option 1', 'Option 2'];
+    }
+
+    setInspirationFormFields((prev) => {
+      const normalized = normalizeInspirationFormConfig(prev);
+      return {
+        ...normalized,
+        fields: [...normalized.fields, nextField]
+      };
+    });
+
+    setNewInspirationFormField(createEmptyInspirationFormField());
+  }, [
+    inspirationFieldIds,
+    newInspirationFormField,
+    setInspirationFormFields,
+    suggestedNewInspirationFieldId
+  ]);
 
   const handleInspirationFormFieldRequiredChange = useCallback((fieldId, required) => {
     if (typeof setInspirationFormFields !== 'function') {
@@ -3241,6 +3397,206 @@ export const BackOffice = ({
                 </header>
 
                 <div className="space-y-4">
+                  <div className="rounded-xl border border-dashed border-blue-200 bg-blue-50/70 p-5">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                      <div className="flex-1 space-y-4">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                          <div>
+                            <label
+                              htmlFor="new-inspiration-field-label"
+                              className="text-xs font-semibold uppercase tracking-wide text-blue-800"
+                            >
+                              Libellé du champ
+                            </label>
+                            <input
+                              id="new-inspiration-field-label"
+                              type="text"
+                              value={newInspirationFormField.label}
+                              onChange={(event) =>
+                                setNewInspirationFormField((prev) => ({
+                                  ...prev,
+                                  label: event.target.value
+                                }))
+                              }
+                              className="mt-1 w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                              placeholder="Ex : Contexte du projet"
+                            />
+                          </div>
+                          <div>
+                            <label
+                              htmlFor="new-inspiration-field-id"
+                              className="text-xs font-semibold uppercase tracking-wide text-blue-800"
+                            >
+                              Identifiant technique
+                            </label>
+                            <input
+                              id="new-inspiration-field-id"
+                              type="text"
+                              value={newInspirationFormField.id}
+                              onChange={(event) =>
+                                setNewInspirationFormField((prev) => ({
+                                  ...prev,
+                                  id: event.target.value
+                                }))
+                              }
+                              className="mt-1 w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                              placeholder="ex : contexteProjet"
+                            />
+                            <p className="mt-1 text-xs text-blue-700">
+                              {isNewInspirationFieldIdDuplicate
+                                ? 'Cet identifiant est déjà utilisé.'
+                                : suggestedNewInspirationFieldId
+                                  ? `Identifiant utilisé : ${suggestedNewInspirationFieldId}`
+                                  : 'Laissez vide pour générer automatiquement à partir du libellé.'}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                          <div>
+                            <label
+                              htmlFor="new-inspiration-field-type"
+                              className="text-xs font-semibold uppercase tracking-wide text-blue-800"
+                            >
+                              Type de champ
+                            </label>
+                            <select
+                              id="new-inspiration-field-type"
+                              value={newInspirationFormField.type}
+                              onChange={(event) =>
+                                setNewInspirationFormField((prev) => ({
+                                  ...prev,
+                                  type: event.target.value
+                                }))
+                              }
+                              className="mt-1 w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                            >
+                              {INSPIRATION_FORM_FIELD_TYPE_OPTIONS.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          {newInspirationFormField.type === 'select' ? (
+                            <div className="md:col-span-2 space-y-3">
+                              <div>
+                                <label
+                                  htmlFor="new-inspiration-field-options"
+                                  className="text-xs font-semibold uppercase tracking-wide text-blue-800"
+                                >
+                                  Options (séparées par des virgules)
+                                </label>
+                                <input
+                                  id="new-inspiration-field-options"
+                                  type="text"
+                                  value={newInspirationFormField.options}
+                                  onChange={(event) =>
+                                    setNewInspirationFormField((prev) => ({
+                                      ...prev,
+                                      options: event.target.value
+                                    }))
+                                  }
+                                  className="mt-1 w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                  placeholder="Ex : Patient, Professionnels, Grand public"
+                                />
+                              </div>
+                              <div>
+                                <label
+                                  htmlFor="new-inspiration-field-select-placeholder"
+                                  className="text-xs font-semibold uppercase tracking-wide text-blue-800"
+                                >
+                                  Libellé de sélection par défaut
+                                </label>
+                                <input
+                                  id="new-inspiration-field-select-placeholder"
+                                  type="text"
+                                  value={newInspirationFormField.placeholder}
+                                  onChange={(event) =>
+                                    setNewInspirationFormField((prev) => ({
+                                      ...prev,
+                                      placeholder: event.target.value
+                                    }))
+                                  }
+                                  className="mt-1 w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                  placeholder="Ex : Sélectionner..."
+                                />
+                              </div>
+                            </div>
+                          ) : INSPIRATION_FORM_FIELD_PLACEHOLDER_TYPES.has(newInspirationFormField.type) ? (
+                            <div className="md:col-span-2">
+                              <label
+                                htmlFor="new-inspiration-field-placeholder"
+                                className="text-xs font-semibold uppercase tracking-wide text-blue-800"
+                              >
+                                Placeholder / texte indicatif
+                              </label>
+                              <input
+                                id="new-inspiration-field-placeholder"
+                                type="text"
+                                value={newInspirationFormField.placeholder}
+                                onChange={(event) =>
+                                  setNewInspirationFormField((prev) => ({
+                                    ...prev,
+                                    placeholder: event.target.value
+                                  }))
+                                }
+                                className="mt-1 w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                placeholder="Texte affiché dans le champ"
+                              />
+                            </div>
+                          ) : (
+                            <div className="md:col-span-2 flex items-center text-xs text-blue-700">
+                              Ce type de champ ne nécessite pas de placeholder.
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-4 text-sm text-blue-900">
+                          <label className="inline-flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={newInspirationFormField.required}
+                              onChange={(event) =>
+                                setNewInspirationFormField((prev) => ({
+                                  ...prev,
+                                  required: event.target.checked
+                                }))
+                              }
+                              className="h-4 w-4 rounded border-blue-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            Champ requis
+                          </label>
+                          <label className="inline-flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={newInspirationFormField.enabled}
+                              onChange={(event) =>
+                                setNewInspirationFormField((prev) => ({
+                                  ...prev,
+                                  enabled: event.target.checked
+                                }))
+                              }
+                              className="h-4 w-4 rounded border-blue-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            Champ actif
+                          </label>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleAddInspirationFormField}
+                        disabled={!canAddInspirationFormField}
+                        className={`inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors hv-button ${
+                          canAddInspirationFormField
+                            ? 'bg-blue-600 text-white hover:bg-blue-700 hv-button-primary'
+                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        }`}
+                      >
+                        <Plus className="w-4 h-4" />
+                        Ajouter le champ
+                      </button>
+                    </div>
+                  </div>
+
                   {inspirationFormFieldEntries.length === 0 ? (
                     <div className="rounded-xl border border-gray-200 bg-gray-50 p-5 text-sm text-gray-600">
                       Aucun champ n'est configuré.
@@ -3252,7 +3608,7 @@ export const BackOffice = ({
                           <div className="space-y-2">
                             <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide">
                               <span className="rounded-full bg-blue-100 px-2 py-1 text-blue-700">
-                                {field.type}
+                                {INSPIRATION_FORM_FIELD_TYPE_LABELS[field.type] || field.type}
                               </span>
                               <span
                                 className={`rounded-full px-2 py-1 ${
@@ -3265,15 +3621,55 @@ export const BackOffice = ({
                                 <span className="rounded-full bg-purple-100 px-2 py-1 text-purple-700">Requis</span>
                               )}
                             </div>
-                            <label className="flex flex-col gap-2 text-sm text-gray-700">
-                              <span className="font-semibold text-gray-700">Libellé</span>
-                              <input
-                                type="text"
-                                value={field.label}
-                                onChange={(event) => handleInspirationFormFieldLabelChange(field.id, event.target.value)}
-                                className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                              />
-                            </label>
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                              <label className="flex flex-col gap-2 text-sm text-gray-700">
+                                <span className="font-semibold text-gray-700">Libellé</span>
+                                <input
+                                  type="text"
+                                  value={field.label}
+                                  onChange={(event) => handleInspirationFormFieldLabelChange(field.id, event.target.value)}
+                                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                />
+                              </label>
+                              <label className="flex flex-col gap-2 text-sm text-gray-700">
+                                <span className="font-semibold text-gray-700">Type de champ</span>
+                                <select
+                                  value={field.type}
+                                  onChange={(event) => handleInspirationFormFieldTypeChange(field.id, event.target.value)}
+                                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                >
+                                  {INSPIRATION_FORM_FIELD_TYPE_OPTIONS.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                      {option.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                            </div>
+                            {INSPIRATION_FORM_FIELD_PLACEHOLDER_TYPES.has(field.type) && (
+                              <label className="flex flex-col gap-2 text-sm text-gray-700">
+                                <span className="font-semibold text-gray-700">
+                                  {field.type === 'select' ? 'Libellé de sélection' : 'Placeholder'}
+                                </span>
+                                {field.type === 'long_text' ? (
+                                  <textarea
+                                    rows={2}
+                                    value={field.placeholder || ''}
+                                    onChange={(event) => handleInspirationFormFieldPlaceholderChange(field.id, event.target.value)}
+                                    className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                    placeholder="Texte indicatif affiché dans le champ"
+                                  />
+                                ) : (
+                                  <input
+                                    type="text"
+                                    value={field.placeholder || ''}
+                                    onChange={(event) => handleInspirationFormFieldPlaceholderChange(field.id, event.target.value)}
+                                    className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                    placeholder="Texte indicatif affiché dans le champ"
+                                  />
+                                )}
+                              </label>
+                            )}
                             {field.type === 'select' && (
                               <label className="flex flex-col gap-2 text-sm text-gray-700">
                                 <span className="font-semibold text-gray-700">Options (séparées par des virgules)</span>
