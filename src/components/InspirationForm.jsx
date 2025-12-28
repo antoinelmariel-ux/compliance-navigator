@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from '../react.js';
+import React, { useEffect, useMemo, useRef, useState } from '../react.js';
 import { Plus, Save, Close } from './icons.js';
 import { normalizeInspirationFormConfig } from '../utils/inspirationConfig.js';
 import { RichTextEditor } from './RichTextEditor.jsx';
@@ -63,6 +63,7 @@ export const InspirationForm = ({
     () => normalizeInspirationFormConfig(formConfig),
     [formConfig]
   );
+  const formTopRef = useRef(null);
   const [formState, setFormState] = useState(() => buildInitialFormState(normalizedConfig));
   const [errors, setErrors] = useState({});
 
@@ -98,6 +99,36 @@ export const InspirationForm = ({
       return merged;
     });
   }, [normalizedConfig]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const focusTarget = formTopRef.current;
+    const scrollToTop = () => {
+      if (!focusTarget) {
+        return;
+      }
+
+      if (typeof focusTarget.scrollIntoView === 'function') {
+        focusTarget.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+      } else if (typeof window.scrollTo === 'function') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      if (typeof focusTarget.focus === 'function') {
+        focusTarget.focus({ preventScroll: true });
+      }
+    };
+
+    if (typeof window.requestAnimationFrame === 'function') {
+      window.requestAnimationFrame(scrollToTop);
+      return;
+    }
+
+    scrollToTop();
+  }, []);
 
   const updateField = (fieldId, value) => {
     setFormState((prev) => ({ ...prev, [fieldId]: value }));
@@ -206,7 +237,11 @@ export const InspirationForm = ({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 px-4 py-8 sm:px-8">
+    <div
+      ref={formTopRef}
+      tabIndex={-1}
+      className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 px-4 py-8 sm:px-8 focus:outline-none"
+    >
       <div className="max-w-4xl mx-auto">
         <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>

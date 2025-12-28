@@ -34,7 +34,7 @@ import {
   normalizeInspirationFormConfig
 } from './utils/inspirationConfig.js';
 
-const APP_VERSION = 'v1.0.217';
+const APP_VERSION = 'v1.0.218';
 
 const loadModule = (modulePath) => {
   if (typeof window === 'undefined') {
@@ -596,6 +596,7 @@ export const App = () => {
   const [backOfficePromptError, setBackOfficePromptError] = useState('');
   const backOfficePromptResolverRef = useRef(null);
   const [adminView, setAdminView] = useState('home');
+  const showcaseShareInputRef = useRef(null);
   const persistTimeoutRef = useRef(null);
   const previousScreenRef = useRef(null);
   const [isAnnotationModeEnabled, setIsAnnotationModeEnabled] = useState(false);
@@ -3239,6 +3240,16 @@ const updateProjectFilters = useCallback((updater) => {
     setShowcaseShareFeedback('');
   }, []);
 
+  useEffect(() => {
+    if (!isShowcaseShareOpen) {
+      return;
+    }
+
+    if (showcaseShareInputRef.current && typeof showcaseShareInputRef.current.focus === 'function') {
+      showcaseShareInputRef.current.focus();
+    }
+  }, [isShowcaseShareOpen]);
+
   const handleCopyShowcaseLink = useCallback(async () => {
     if (!showcaseShareUrl) {
       return;
@@ -3507,6 +3518,7 @@ const updateProjectFilters = useCallback((updater) => {
                 id="showcase-share-link"
                 type="text"
                 value={showcaseShareUrl}
+                ref={showcaseShareInputRef}
                 readOnly
                 className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800"
               />
