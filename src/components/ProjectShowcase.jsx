@@ -82,6 +82,49 @@ const SECTION_TEMPLATES = [
   }
 ];
 
+const SECTION_TEMPLATE_CONFIG = {
+  highlight: {
+    showSubtitle: false,
+    showAccent: true,
+    showDescription: true,
+    showColumns: false,
+    showDocument: false,
+    showItems: false
+  },
+  columns: {
+    showSubtitle: true,
+    showAccent: false,
+    showDescription: false,
+    showColumns: true,
+    showDocument: false,
+    showItems: false
+  },
+  'document-viewer': {
+    showSubtitle: true,
+    showAccent: true,
+    showDescription: true,
+    showColumns: false,
+    showDocument: true,
+    showItems: false
+  },
+  story: {
+    showSubtitle: false,
+    showAccent: false,
+    showDescription: true,
+    showColumns: false,
+    showDocument: false,
+    showItems: false
+  },
+  checklist: {
+    showSubtitle: false,
+    showAccent: false,
+    showDescription: true,
+    showColumns: false,
+    showDocument: false,
+    showItems: true
+  }
+};
+
 const buildDefaultLightSectionSelection = (sectionIds = SHOWCASE_SECTION_OPTIONS.map(section => section.id)) =>
   sectionIds.reduce((acc, sectionId) => {
     acc[sectionId] = true;
@@ -140,6 +183,9 @@ const resolveDocumentEmbedSrc = (documentUrl, documentType) => {
 
   return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(documentUrl)}`;
 };
+
+const resolveTemplateConfig = (templateId) =>
+  SECTION_TEMPLATE_CONFIG[templateId] || SECTION_TEMPLATE_CONFIG.highlight;
 
 const sanitizeCustomSections = (rawSections) => {
   if (!Array.isArray(rawSections)) {
@@ -2667,6 +2713,7 @@ export const ProjectShowcase = ({
       return null;
     }
 
+    const templateConfig = resolveTemplateConfig(section.type);
     const columnCount = resolveCustomSectionColumnCount(section.columnCount, section.columns);
     const columns = normalizeCustomSectionColumns(section.columns, columnCount);
     const activeColumns = columns.filter(column => column.trim().length > 0);
@@ -2680,18 +2727,20 @@ export const ProjectShowcase = ({
         <div className="aurora-section__inner aurora-section__inner--narrow">
           <div className="aurora-section__header aurora-section__header--split">
             <div>
-              <p className="aurora-eyebrow">{section.accent || 'Section additionnelle'}</p>
+              {templateConfig.showAccent && (
+                <p className="aurora-eyebrow">{section.accent || 'Section additionnelle'}</p>
+              )}
               <h2 className="aurora-section__title">{section.title}</h2>
-              {section.subtitle && (
+              {templateConfig.showSubtitle && section.subtitle && (
                 <p className="mt-1 text-sm text-gray-600">{renderTextWithLinks(section.subtitle)}</p>
               )}
             </div>
             <div className="aurora-chip aurora-chip--ghost">Bloc personnalisé #{index + 1}</div>
           </div>
-          {section.description && (
+          {templateConfig.showDescription && section.description && (
             <p className="aurora-body-text">{renderTextWithLinks(section.description)}</p>
           )}
-          {activeColumns.length > 0 && (
+          {templateConfig.showColumns && activeColumns.length > 0 && (
             <div
               className="mt-6 grid gap-4"
               style={{ gridTemplateColumns: `repeat(${Math.min(columnCount, activeColumns.length)}, minmax(0, 1fr))` }}
@@ -2706,7 +2755,7 @@ export const ProjectShowcase = ({
               ))}
             </div>
           )}
-          {section.documentUrl && (
+          {templateConfig.showDocument && section.documentUrl && (
             <div className="mt-6 space-y-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
@@ -2743,7 +2792,7 @@ export const ProjectShowcase = ({
               </p>
             </div>
           )}
-          {Array.isArray(section.items) && section.items.length > 0 && (
+          {templateConfig.showItems && Array.isArray(section.items) && section.items.length > 0 && (
             <ul className="mt-4 space-y-3">
               {section.items.map((item, itemIndex) => (
                 <li key={`${section.id}-item-${itemIndex}`} className="flex items-start gap-3">
@@ -2807,6 +2856,7 @@ export const ProjectShowcase = ({
   }, [customSectionMap, sectionOrder]);
 
   const selectedTemplate = SECTION_TEMPLATES[selectedTemplateIndex] || SECTION_TEMPLATES[0];
+  const selectedTemplateConfig = resolveTemplateConfig(selectedTemplate?.id);
 
   const previewContent = shouldShowPreview ? (
     <div className="aurora-sections" data-tour-id="showcase-preview">
@@ -2917,128 +2967,142 @@ export const ProjectShowcase = ({
                   required
                 />
               </div>
-              <div className="space-y-1">
-                <label htmlFor="section-subtitle" className="text-sm font-medium text-gray-800">Sous-titre</label>
-                <input
-                  id="section-subtitle"
-                  type="text"
-                  value={sectionDraft.subtitle}
-                  onChange={(event) => handleSectionDraftChange('subtitle', event.target.value)}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
-                  placeholder={selectedTemplate?.placeholder?.subtitle || 'Complément de contexte'}
-                />
-              </div>
-              <div className="space-y-1">
-                <label htmlFor="section-accent" className="text-sm font-medium text-gray-800">Sous-titre d'accroche (optionnel)</label>
-                <input
-                  id="section-accent"
-                  type="text"
-                  value={sectionDraft.accent}
-                  onChange={(event) => handleSectionDraftChange('accent', event.target.value)}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
-                  placeholder="Sous-titre court"
-                />
-              </div>
-            </div>
-            <div className="space-y-1">
-              <label htmlFor="section-description" className="text-sm font-medium text-gray-800">Description</label>
-              <textarea
-                id="section-description"
-                value={sectionDraft.description}
-                onChange={(event) => handleSectionDraftChange('description', event.target.value)}
-                rows={4}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
-                placeholder={selectedTemplate?.placeholder?.description || 'Expliquez le contenu principal de cette section'}
-              />
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-1">
-                <label htmlFor="section-column-count" className="text-sm font-medium text-gray-800">Nombre de colonnes</label>
-                <select
-                  id="section-column-count"
-                  value={sectionDraft.columnCount}
-                  onChange={(event) => handleSectionDraftColumnCountChange(event.target.value)}
-                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
-                >
-                  {Array.from({ length: MAX_CUSTOM_SECTION_COLUMNS }, (_, index) => (
-                    <option key={`section-column-count-${index + 1}`} value={index + 1}>
-                      {index + 1} colonne{index + 1 > 1 ? 's' : ''}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-500">Les colonnes se réorganisent selon la largeur disponible.</p>
-              </div>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              {sectionDraft.columns.map((column, columnIndex) => (
-                <div key={`section-draft-column-${columnIndex}`} className="space-y-1">
-                  <label
-                    htmlFor={`section-column-${columnIndex}`}
-                    className="text-sm font-medium text-gray-800"
-                  >
-                    Contenu colonne {columnIndex + 1}
-                  </label>
-                  <textarea
-                    id={`section-column-${columnIndex}`}
-                    value={column}
-                    onChange={(event) => handleSectionDraftColumnChange(columnIndex, event.target.value)}
-                    rows={3}
+              {selectedTemplateConfig.showSubtitle && (
+                <div className="space-y-1">
+                  <label htmlFor="section-subtitle" className="text-sm font-medium text-gray-800">Sous-titre</label>
+                  <input
+                    id="section-subtitle"
+                    type="text"
+                    value={sectionDraft.subtitle}
+                    onChange={(event) => handleSectionDraftChange('subtitle', event.target.value)}
                     className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
-                    placeholder={`Contenu de la colonne ${columnIndex + 1}`}
+                    placeholder={selectedTemplate?.placeholder?.subtitle || 'Complément de contexte'}
                   />
                 </div>
-              ))}
+              )}
+              {selectedTemplateConfig.showAccent && (
+                <div className="space-y-1">
+                  <label htmlFor="section-accent" className="text-sm font-medium text-gray-800">Sous-titre d'accroche (optionnel)</label>
+                  <input
+                    id="section-accent"
+                    type="text"
+                    value={sectionDraft.accent}
+                    onChange={(event) => handleSectionDraftChange('accent', event.target.value)}
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
+                    placeholder="Sous-titre court"
+                  />
+                </div>
+              )}
             </div>
-            <div className="grid gap-4 md:grid-cols-2">
+            {selectedTemplateConfig.showDescription && (
               <div className="space-y-1">
-                <label htmlFor="section-document-url" className="text-sm font-medium text-gray-800">
-                  Lien SharePoint du document
-                </label>
-                <input
-                  id="section-document-url"
-                  type="url"
-                  value={sectionDraft.documentUrl}
-                  onChange={(event) => {
-                    const nextValue = event.target.value;
-                    handleSectionDraftChange('documentUrl', nextValue);
-                    handleSharePointWarning(nextValue);
-                  }}
+                <label htmlFor="section-description" className="text-sm font-medium text-gray-800">Description</label>
+                <textarea
+                  id="section-description"
+                  value={sectionDraft.description}
+                  onChange={(event) => handleSectionDraftChange('description', event.target.value)}
+                  rows={4}
                   className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
-                  placeholder={selectedTemplate?.placeholder?.documentUrl || 'https://votre-tenant.sharepoint.com/...'}
+                  placeholder={selectedTemplate?.placeholder?.description || 'Expliquez le contenu principal de cette section'}
                 />
-                <p className="text-xs text-gray-500">
-                  Utilisez un lien SharePoint accessible ou un lien d’intégration Office pour les PPTX.
-                </p>
               </div>
-              <div className="space-y-1">
-                <label htmlFor="section-document-type" className="text-sm font-medium text-gray-800">
-                  Type de document
-                </label>
-                <select
-                  id="section-document-type"
-                  value={sectionDraft.documentType}
-                  onChange={(event) => handleSectionDraftChange('documentType', event.target.value)}
-                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
-                >
-                  {DOCUMENT_VIEWER_TYPES.map(type => (
-                    <option key={type.id} value={type.id}>
-                      {type.label}
-                    </option>
+            )}
+            {selectedTemplateConfig.showColumns && (
+              <>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-1">
+                    <label htmlFor="section-column-count" className="text-sm font-medium text-gray-800">Nombre de colonnes</label>
+                    <select
+                      id="section-column-count"
+                      value={sectionDraft.columnCount}
+                      onChange={(event) => handleSectionDraftColumnCountChange(event.target.value)}
+                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
+                    >
+                      {Array.from({ length: MAX_CUSTOM_SECTION_COLUMNS }, (_, index) => (
+                        <option key={`section-column-count-${index + 1}`} value={index + 1}>
+                          {index + 1} colonne{index + 1 > 1 ? 's' : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-500">Les colonnes se réorganisent selon la largeur disponible.</p>
+                  </div>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {sectionDraft.columns.map((column, columnIndex) => (
+                    <div key={`section-draft-column-${columnIndex}`} className="space-y-1">
+                      <label
+                        htmlFor={`section-column-${columnIndex}`}
+                        className="text-sm font-medium text-gray-800"
+                      >
+                        Contenu colonne {columnIndex + 1}
+                      </label>
+                      <textarea
+                        id={`section-column-${columnIndex}`}
+                        value={column}
+                        onChange={(event) => handleSectionDraftColumnChange(columnIndex, event.target.value)}
+                        rows={3}
+                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
+                        placeholder={`Contenu de la colonne ${columnIndex + 1}`}
+                      />
+                    </div>
                   ))}
-                </select>
+                </div>
+              </>
+            )}
+            {selectedTemplateConfig.showDocument && (
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-1">
+                  <label htmlFor="section-document-url" className="text-sm font-medium text-gray-800">
+                    Lien SharePoint du document
+                  </label>
+                  <input
+                    id="section-document-url"
+                    type="url"
+                    value={sectionDraft.documentUrl}
+                    onChange={(event) => {
+                      const nextValue = event.target.value;
+                      handleSectionDraftChange('documentUrl', nextValue);
+                      handleSharePointWarning(nextValue);
+                    }}
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
+                    placeholder={selectedTemplate?.placeholder?.documentUrl || 'https://votre-tenant.sharepoint.com/...'}
+                  />
+                  <p className="text-xs text-gray-500">
+                    Utilisez un lien SharePoint accessible ou un lien d’intégration Office pour les PPTX.
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <label htmlFor="section-document-type" className="text-sm font-medium text-gray-800">
+                    Type de document
+                  </label>
+                  <select
+                    id="section-document-type"
+                    value={sectionDraft.documentType}
+                    onChange={(event) => handleSectionDraftChange('documentType', event.target.value)}
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
+                  >
+                    {DOCUMENT_VIEWER_TYPES.map(type => (
+                      <option key={type.id} value={type.id}>
+                        {type.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-            </div>
-            <div className="space-y-1">
-              <label htmlFor="section-items" className="text-sm font-medium text-gray-800">Liste (une ligne par élément)</label>
-              <textarea
-                id="section-items"
-                value={sectionDraftItemsText}
-                onChange={(event) => handleSectionDraftItemsChange(event.target.value)}
-                rows={4}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
-                placeholder={(selectedTemplate?.placeholder?.items || ['Élément #1', 'Élément #2']).join('\n')}
-              />
-            </div>
+            )}
+            {selectedTemplateConfig.showItems && (
+              <div className="space-y-1">
+                <label htmlFor="section-items" className="text-sm font-medium text-gray-800">Liste (une ligne par élément)</label>
+                <textarea
+                  id="section-items"
+                  value={sectionDraftItemsText}
+                  onChange={(event) => handleSectionDraftItemsChange(event.target.value)}
+                  rows={4}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
+                  placeholder={(selectedTemplate?.placeholder?.items || ['Élément #1', 'Élément #2']).join('\n')}
+                />
+              </div>
+            )}
             <div className="flex flex-wrap justify-between gap-2">
               <button
                 type="button"
@@ -3314,6 +3378,7 @@ export const ProjectShowcase = ({
         {editFormBlocks.map((block) => {
           if (block.type === 'custom') {
             const section = block.section;
+            const templateConfig = resolveTemplateConfig(section.type);
             const itemsText = Array.isArray(section.items) ? section.items.join('\n') : '';
             const sectionTitle = section.title || 'Section personnalisée';
             const annotationSectionId = section.type || 'custom';
@@ -3342,6 +3407,8 @@ export const ProjectShowcase = ({
                       placeholder="Titre du bloc"
                     />
                   </div>
+                </div>
+                {templateConfig.showSubtitle && (
                   <div className="space-y-1">
                     <label htmlFor={`custom-section-${section.id}-subtitle`} className="text-sm font-medium text-gray-800">
                       Sous-titre
@@ -3355,6 +3422,8 @@ export const ProjectShowcase = ({
                       placeholder="Complément de contexte"
                     />
                   </div>
+                )}
+                {templateConfig.showAccent && (
                   <div className="space-y-1">
                     <label htmlFor={`custom-section-${section.id}-accent`} className="text-sm font-medium text-gray-800">
                       Sous-titre d'accroche (optionnel)
@@ -3368,6 +3437,8 @@ export const ProjectShowcase = ({
                       placeholder="Sous-titre court"
                     />
                   </div>
+                )}
+                {templateConfig.showColumns && (
                   <div className="space-y-1">
                     <label htmlFor={`custom-section-${section.id}-column-count`} className="text-sm font-medium text-gray-800">
                       Nombre de colonnes
@@ -3385,88 +3456,98 @@ export const ProjectShowcase = ({
                       ))}
                     </select>
                   </div>
-                  <div className="space-y-1">
-                    <label htmlFor={`custom-section-${section.id}-document-url`} className="text-sm font-medium text-gray-800">
-                      Lien SharePoint du document
+                )}
+                {templateConfig.showDocument && (
+                  <>
+                    <div className="space-y-1">
+                      <label htmlFor={`custom-section-${section.id}-document-url`} className="text-sm font-medium text-gray-800">
+                        Lien SharePoint du document
+                      </label>
+                      <input
+                        id={`custom-section-${section.id}-document-url`}
+                        type="url"
+                        value={section.documentUrl || ''}
+                        onChange={(event) => {
+                          const nextValue = event.target.value;
+                          handleCustomSectionFieldChange(section.id, 'documentUrl', nextValue);
+                          handleSharePointWarning(nextValue);
+                        }}
+                        className="aurora-form-control"
+                        placeholder="https://votre-tenant.sharepoint.com/..."
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label htmlFor={`custom-section-${section.id}-document-type`} className="text-sm font-medium text-gray-800">
+                        Type de document
+                      </label>
+                      <select
+                        id={`custom-section-${section.id}-document-type`}
+                        value={section.documentType || 'pdf'}
+                        onChange={(event) => handleCustomSectionFieldChange(section.id, 'documentType', event.target.value)}
+                        className="aurora-form-control"
+                      >
+                        {DOCUMENT_VIEWER_TYPES.map(type => (
+                          <option key={type.id} value={type.id}>
+                            {type.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                )}
+                {templateConfig.showDescription && (
+                  <div className="mt-4 space-y-1">
+                    <label htmlFor={`custom-section-${section.id}-description`} className="text-sm font-medium text-gray-800">
+                      Description
                     </label>
-                    <input
-                      id={`custom-section-${section.id}-document-url`}
-                      type="url"
-                      value={section.documentUrl || ''}
-                      onChange={(event) => {
-                        const nextValue = event.target.value;
-                        handleCustomSectionFieldChange(section.id, 'documentUrl', nextValue);
-                        handleSharePointWarning(nextValue);
-                      }}
-                      className="aurora-form-control"
-                      placeholder="https://votre-tenant.sharepoint.com/..."
+                    <textarea
+                      id={`custom-section-${section.id}-description`}
+                      value={section.description || ''}
+                      onChange={(event) => handleCustomSectionFieldChange(section.id, 'description', event.target.value)}
+                      rows={4}
+                      className="aurora-form-control aurora-form-control--textarea"
+                      placeholder="Expliquez le contenu principal de cette section"
                     />
                   </div>
-                  <div className="space-y-1">
-                    <label htmlFor={`custom-section-${section.id}-document-type`} className="text-sm font-medium text-gray-800">
-                      Type de document
-                    </label>
-                    <select
-                      id={`custom-section-${section.id}-document-type`}
-                      value={section.documentType || 'pdf'}
-                      onChange={(event) => handleCustomSectionFieldChange(section.id, 'documentType', event.target.value)}
-                      className="aurora-form-control"
-                    >
-                      {DOCUMENT_VIEWER_TYPES.map(type => (
-                        <option key={type.id} value={type.id}>
-                          {type.label}
-                        </option>
+                )}
+                {templateConfig.showColumns && (
+                  <div className="mt-4 grid gap-4 md:grid-cols-2">
+                    {normalizeCustomSectionColumns(section.columns, resolveCustomSectionColumnCount(section.columnCount, section.columns))
+                      .map((column, columnIndex) => (
+                        <div key={`${section.id}-column-${columnIndex}`} className="space-y-1">
+                          <label
+                            htmlFor={`custom-section-${section.id}-column-${columnIndex}`}
+                            className="text-sm font-medium text-gray-800"
+                          >
+                            Contenu colonne {columnIndex + 1}
+                          </label>
+                          <textarea
+                            id={`custom-section-${section.id}-column-${columnIndex}`}
+                            value={column}
+                            onChange={(event) => handleCustomSectionColumnChange(section.id, columnIndex, event.target.value)}
+                            rows={3}
+                            className="aurora-form-control aurora-form-control--textarea"
+                            placeholder={`Contenu de la colonne ${columnIndex + 1}`}
+                          />
+                        </div>
                       ))}
-                    </select>
                   </div>
-                </div>
-                <div className="mt-4 space-y-1">
-                  <label htmlFor={`custom-section-${section.id}-description`} className="text-sm font-medium text-gray-800">
-                    Description
-                  </label>
-                  <textarea
-                    id={`custom-section-${section.id}-description`}
-                    value={section.description || ''}
-                    onChange={(event) => handleCustomSectionFieldChange(section.id, 'description', event.target.value)}
-                    rows={4}
-                    className="aurora-form-control aurora-form-control--textarea"
-                    placeholder="Expliquez le contenu principal de cette section"
-                  />
-                </div>
-                <div className="mt-4 grid gap-4 md:grid-cols-2">
-                  {normalizeCustomSectionColumns(section.columns, resolveCustomSectionColumnCount(section.columnCount, section.columns))
-                    .map((column, columnIndex) => (
-                      <div key={`${section.id}-column-${columnIndex}`} className="space-y-1">
-                        <label
-                          htmlFor={`custom-section-${section.id}-column-${columnIndex}`}
-                          className="text-sm font-medium text-gray-800"
-                        >
-                          Contenu colonne {columnIndex + 1}
-                        </label>
-                        <textarea
-                          id={`custom-section-${section.id}-column-${columnIndex}`}
-                          value={column}
-                          onChange={(event) => handleCustomSectionColumnChange(section.id, columnIndex, event.target.value)}
-                          rows={3}
-                          className="aurora-form-control aurora-form-control--textarea"
-                          placeholder={`Contenu de la colonne ${columnIndex + 1}`}
-                        />
-                      </div>
-                    ))}
-                </div>
-                <div className="mt-4 space-y-1">
-                  <label htmlFor={`custom-section-${section.id}-items`} className="text-sm font-medium text-gray-800">
-                    Liste (une ligne par élément)
-                  </label>
-                  <textarea
-                    id={`custom-section-${section.id}-items`}
-                    value={itemsText}
-                    onChange={(event) => handleCustomSectionItemsChange(section.id, event.target.value)}
-                    rows={4}
-                    className="aurora-form-control aurora-form-control--textarea"
-                    placeholder="Élément #1&#10;Élément #2"
-                  />
-                </div>
+                )}
+                {templateConfig.showItems && (
+                  <div className="mt-4 space-y-1">
+                    <label htmlFor={`custom-section-${section.id}-items`} className="text-sm font-medium text-gray-800">
+                      Liste (une ligne par élément)
+                    </label>
+                    <textarea
+                      id={`custom-section-${section.id}-items`}
+                      value={itemsText}
+                      onChange={(event) => handleCustomSectionItemsChange(section.id, event.target.value)}
+                      rows={4}
+                      className="aurora-form-control aurora-form-control--textarea"
+                      placeholder="Élément #1&#10;Élément #2"
+                    />
+                  </div>
+                )}
               </div>
             );
           }
