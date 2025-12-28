@@ -484,7 +484,7 @@ const buildEmailHtml = ({
           <div style="background-color:#ffffff; border-radius:20px; padding:32px; box-shadow:0 10px 30px rgba(15, 23, 42, 0.08); border:1px solid #e5e7eb;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
               <div>
-                <h1 style="font-size:24px; color:#111827; margin:0 0 6px;">Rapport de Compliance</h1>
+                <h1 style="font-size:24px; color:#111827; margin:0 0 6px;">Synthèse</h1>
                 <p style="margin:0; color:#4b5563; font-size:14px;">${escapeHtml(title)}</p>
               </div>
               <div style="padding:10px 16px; background-color:#eff6ff; color:#1d4ed8; border-radius:9999px; font-weight:600; font-size:14px;">
@@ -1023,7 +1023,7 @@ export const SynthesisReport = ({
         >
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-6">
             <div className="flex flex-col gap-2">
-              <h1 className="text-3xl font-bold text-gray-800 sm:text-4xl">Rapport de Compliance</h1>
+              <h1 className="text-3xl font-bold text-gray-800 sm:text-4xl">Synthèse</h1>
               {projectStatusLabel && (
                 <span
                   className={`inline-flex items-center self-start rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${projectStatusClasses}`}
@@ -1557,4 +1557,3 @@ export const SynthesisReport = ({
     </div>
   );
 };
-

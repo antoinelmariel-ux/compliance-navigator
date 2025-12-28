@@ -34,7 +34,7 @@ import {
   normalizeInspirationFormConfig
 } from './utils/inspirationConfig.js';
 
-const APP_VERSION = 'v1.0.213';
+const APP_VERSION = 'v1.0.214';
 
 const loadModule = (modulePath) => {
   if (typeof window === 'undefined') {
@@ -1513,8 +1513,8 @@ const updateProjectFilters = useCallback((updater) => {
       {
         id: 'compliance-showcase-button',
         target: '[data-tour-id="synthesis-showcase"]',
-        title: 'Ouvrir la vitrine projet',
-        content: 'Accédez à la vitrine marketing générée automatiquement pour présenter votre initiative.'
+        title: 'Ouvrir la vitrine du projet',
+        content: 'Accédez à la vitrine du projet générée automatiquement pour présenter votre initiative.'
       },
       {
         id: 'showcase-top',
@@ -1562,7 +1562,7 @@ const updateProjectFilters = useCallback((updater) => {
       {
         id: 'showcase-back-to-report',
         target: '[data-tour-id="showcase-back-to-report"]',
-        title: 'Retourner au rapport compliance',
+        title: 'Retourner à la synthèse',
         content: 'Revenez au rapport de synthèse pour poursuivre votre préparation et éventuellement enregistrer la dernière version de votre projet.'
       },
       {
@@ -2531,8 +2531,8 @@ const updateProjectFilters = useCallback((updater) => {
         setSaveFeedback({
           status: 'success',
           message: hasPendingMandatory
-            ? 'Projet importé. Le rapport compliance est disponible. Complétez les questions obligatoires avant de soumettre.'
-            : 'Projet importé. Le rapport compliance est disponible.'
+            ? 'Projet importé. La synthèse est disponible. Complétez les questions obligatoires avant de soumettre.'
+            : 'Projet importé. La synthèse est disponible.'
         });
         setHasUnsavedChanges(false);
       } catch (error) {
@@ -3375,11 +3375,11 @@ const updateProjectFilters = useCallback((updater) => {
                   type="button"
                   onClick={handleReturnToComplianceReport}
                   className="w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button bg-blue-600 text-white hv-button-primary"
-                  aria-label="Revenir au rapport compliance du projet"
-                  title="Revenir au rapport compliance du projet"
+                  aria-label="Revenir à la synthèse du projet"
+                  title="Revenir à la synthèse du projet"
                   data-tour-id="showcase-back-to-report"
                 >
-                  Rapport compliance
+                  Synthèse
                 </button>
               )}
               {mode === 'user' && (
@@ -3466,10 +3466,10 @@ const updateProjectFilters = useCallback((updater) => {
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                   aria-pressed={isAdminBackOfficeView}
-                  aria-label="Accéder au back-office"
-                  title="Accéder au back-office"
+                  aria-label="Accéder au Back-office"
+                  title="Accéder au Back-office"
                 >
-                  <span>Accéder au back-office</span>
+                  <span>Accéder au Back-office</span>
                   <Settings className="text-lg sm:text-xl" aria-hidden="true" />
                 </button>
               )}
@@ -3751,7 +3751,7 @@ const updateProjectFilters = useCallback((updater) => {
               <Suspense
                 fallback={(
                   <LoadingFallback
-                    label="Chargement de la vitrine projet…"
+                    label="Chargement de la vitrine du projet…"
                     hint="Nous construisons la synthèse visuelle du projet."
                   />
                 )}

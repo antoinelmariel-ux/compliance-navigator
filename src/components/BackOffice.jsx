@@ -2841,14 +2841,14 @@ export const BackOffice = ({
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-6 sm:px-6 lg:px-8 hv-background">
       <div className="max-w-7xl mx-auto space-y-6">
-        <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 hv-surface" role="region" aria-label="Back-office compliance">
+        <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8 hv-surface" role="region" aria-label="Back-office">
           <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between mb-8">
             <div className="flex items-center space-x-3">
               <span className="inline-flex items-center justify-center w-12 h-12 bg-blue-600 text-white rounded-xl">
                 <Settings className="w-6 h-6" />
               </span>
               <div>
-                <h1 className="text-2xl font-bold text-gray-800 sm:text-3xl">Back-Office Compliance</h1>
+                <h1 className="text-2xl font-bold text-gray-800 sm:text-3xl">Back-office</h1>
                 <p className="text-sm text-gray-500">Configurez vos référentiels et automatisations</p>
               </div>
             </div>
@@ -3871,9 +3871,9 @@ export const BackOffice = ({
               </div>
 
               <div className="rounded-lg border border-blue-100 bg-blue-50/60 px-4 py-3 text-sm text-blue-900">
-                <p className="font-medium">Questions vitrine projet</p>
+                <p className="font-medium">Questions vitrine du projet</p>
                 <p className="mt-1 text-blue-800">
-                  Les questions marquées «&nbsp;Vitrine projet&nbsp;» alimentent automatiquement la vitrine marketing.
+                  Les questions marquées «&nbsp;Vitrine du projet&nbsp;» alimentent automatiquement la vitrine du projet.
                   Elles sont obligatoires pour compléter le showcase et ne peuvent pas être supprimées.
                 </p>
               </div>
@@ -3965,7 +3965,7 @@ export const BackOffice = ({
                         ? 'p-2 text-gray-300 bg-gray-100 cursor-not-allowed rounded hv-button'
                         : 'p-2 text-red-600 hover:bg-red-50 rounded hv-button';
                       const deleteButtonTitle = isShowcaseQuestion
-                        ? 'Cette question alimente la vitrine showcase et ne peut pas être supprimée.'
+                        ? 'Cette question alimente la vitrine du projet et ne peut pas être supprimée.'
                         : isProtectedQuestion
                           ? 'Cette question est indispensable pour identifier le type de projet et ne peut pas être supprimée.'
                           : `Supprimer la question ${question.id}`;
@@ -4011,7 +4011,7 @@ export const BackOffice = ({
                                     </span>
                                     {isShowcaseQuestion && (
                                       <span className="text-xs text-blue-800 bg-blue-100 px-2 py-1 rounded-full font-medium">
-                                        Vitrine projet
+                                        Vitrine du projet
                                       </span>
                                     )}
                                     {question.required && (
@@ -4212,7 +4212,7 @@ export const BackOffice = ({
                       ? 'p-2 text-gray-300 bg-gray-100 cursor-not-allowed rounded hv-button'
                       : 'p-2 text-red-600 hover:bg-red-50 rounded hv-button';
                     const deleteButtonTitle = isShowcaseQuestion
-                      ? 'Cette question alimente la vitrine showcase et ne peut pas être supprimée.'
+                      ? 'Cette question alimente la vitrine du projet et ne peut pas être supprimée.'
                       : isProtectedQuestion
                         ? 'Cette question est indispensable pour identifier le type de projet et ne peut pas être supprimée.'
                         : `Supprimer la question ${question.id}`;
@@ -4258,7 +4258,7 @@ export const BackOffice = ({
                                   </span>
                                   {isShowcaseQuestion && (
                                     <span className="text-xs text-blue-800 bg-blue-100 px-2 py-1 rounded-full font-medium">
-                                      Vitrine projet
+                                      Vitrine du projet
                                     </span>
                                   )}
                                   {question.required && (

@@ -9,7 +9,7 @@ export const initialQuestions = [
     "conditionLogic": "all",
     "guidance": {
       "objective": "Nommer clairement l'initiative pour qu'elle soit mémorisée dès les premières secondes.",
-      "details": "Le nom affiché dans la vitrine marketing sert de repère pour toutes les équipes qui contribuent au pitch.",
+      "details": "Le nom affiché dans la vitrine du projet sert de repère pour toutes les équipes qui contribuent au pitch.",
       "tips": [
         "Renseignez le nom officiel ou celui que vous souhaitez tester auprès des parties prenantes.",
         "Si un nom de code interne existe, ajoutez-le entre parenthèses pour faciliter le suivi."
@@ -19,7 +19,7 @@ export const initialQuestions = [
       "sections": [
         "hero"
       ],
-      "usage": "Titre principal affiché dans la vitrine marketing."
+      "usage": "Titre principal affiché dans la vitrine du projet."
     }
   },
   {
@@ -145,7 +145,7 @@ export const initialQuestions = [
     "conditions": [],
     "conditionLogic": "all",
     "guidance": {
-      "objective": "Sélectionner la palette de couleurs qui servira de base à la vitrine marketing.",
+      "objective": "Sélectionner la palette de couleurs qui servira de base à la vitrine du projet.",
       "details": "Chaque thème peut être ajusté dans le back-office grâce aux color-pickers (fond, dégradés, accents). Choisissez celui qui correspond le mieux à votre projet.",
       "tips": [
         "Universel : reprend l'identité visuelle actuelle de la vitrine.",
