@@ -199,6 +199,8 @@ export const RichTextEditor = ({
           onInput={handleInput}
           onBlur={handleBlur}
           onPaste={handlePaste}
+          onKeyUp={handleInput}
+          tabIndex={0}
           role="textbox"
           aria-label={ariaLabel || placeholder}
         />
