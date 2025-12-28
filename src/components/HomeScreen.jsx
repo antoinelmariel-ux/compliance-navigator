@@ -1109,7 +1109,7 @@ export const HomeScreen = ({
                       : 'text-blue-700 hover:bg-blue-100'
                   }`}
                 >
-                  Plateforme
+                  Projets LFB
                 </button>
                 <button
                   type="button"
@@ -1344,6 +1344,7 @@ export const HomeScreen = ({
 
                       if (field.type === 'select') {
                         const value = inspirationFiltersState[field.id] || DEFAULT_SELECT_FILTER_VALUE;
+                        const optionLabel = field.emptyOptionLabel || 'Toutes les valeurs';
                         const options = inspirationFilterOptions.get(field.id) || [];
                         return (
                           <div key={field.id} className="flex flex-col gap-2 text-sm text-gray-700">
@@ -1358,7 +1359,7 @@ export const HomeScreen = ({
                               }
                               className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                             >
-                              <option value={DEFAULT_SELECT_FILTER_VALUE}>Toutes les valeurs</option>
+                              <option value={DEFAULT_SELECT_FILTER_VALUE}>{optionLabel}</option>
                               {options.map(option => (
                                 <option key={option} value={option}>
                                   {option}

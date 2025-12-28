@@ -397,6 +397,20 @@ const FILTER_COMPATIBLE_QUESTION_TYPES = new Set([
   'date'
 ]);
 
+const INSPIRATION_FILTER_TYPE_LABELS = {
+  text: 'Champ texte',
+  select: 'Liste déroulante'
+};
+
+const INSPIRATION_FILTER_COMPATIBLE_FIELD_TYPES = new Set([
+  'select',
+  'text',
+  'long_text',
+  'number',
+  'url',
+  'date'
+]);
+
 const PROJECT_FILTER_FIELD_DESCRIPTIONS = {
   projectName:
     'Permet de rechercher un projet par le titre saisi lors de la qualification.',
@@ -457,6 +471,7 @@ export const BackOffice = ({
   const [expandedQuestionIds, setExpandedQuestionIds] = useState(() => new Set());
   const [expandedRuleIds, setExpandedRuleIds] = useState(() => new Set());
   const [selectedFilterQuestionId, setSelectedFilterQuestionId] = useState('');
+  const [selectedInspirationFilterQuestionId, setSelectedInspirationFilterQuestionId] = useState('');
   const undoStackRef = useRef([]);
   const [canUndo, setCanUndo] = useState(false);
   const [undoMessage, setUndoMessage] = useState('');
@@ -665,11 +680,36 @@ export const BackOffice = ({
         setReorderAnnouncement('Suppression de filtre annulée.');
         break;
       }
+      case 'inspirationFilter': {
+        if (typeof setInspirationFilters === 'function') {
+          setInspirationFilters((prevFilters) => {
+            const normalized = normalizeInspirationFiltersConfig(prevFilters);
+            const fields = Array.isArray(normalized.fields) ? normalized.fields.slice() : [];
+            const insertIndex = Math.max(0, Math.min(entry.index ?? fields.length, fields.length));
+            fields.splice(insertIndex, 0, entry.item);
+            return {
+              ...normalized,
+              fields
+            };
+          });
+        }
+        setUndoMessage(`Le filtre « ${entry.item?.label || entry.item?.id || 'filtre'} » a été restauré.`);
+        setReorderAnnouncement('Suppression de filtre annulée.');
+        break;
+      }
       default:
         setUndoMessage('Dernière action annulée.');
         break;
     }
-  }, [setQuestions, setRules, setRiskLevelRules, setTeams, setProjectFilters, setReorderAnnouncement]);
+  }, [
+    setQuestions,
+    setRules,
+    setRiskLevelRules,
+    setTeams,
+    setProjectFilters,
+    setInspirationFilters,
+    setReorderAnnouncement
+  ]);
 
   const confirmDeletion = useCallback((message) => {
     if (typeof window === 'undefined') {
@@ -1112,6 +1152,53 @@ export const BackOffice = ({
 
   const canAddProjectFilter = Boolean(selectedFilterOption && !selectedFilterOption.disabled);
 
+  const availableInspirationFilterQuestionOptions = useMemo(() => {
+    const usedQuestionIds = new Set();
+
+    if (Array.isArray(normalizedInspirationFilters.fields)) {
+      normalizedInspirationFilters.fields.forEach((field) => {
+        if (!field) {
+          return;
+        }
+
+        const sourceId = typeof field.sourceQuestionId === 'string' && field.sourceQuestionId.trim().length > 0
+          ? field.sourceQuestionId.trim()
+          : field.id;
+
+        if (sourceId) {
+          usedQuestionIds.add(sourceId);
+        }
+      });
+    }
+
+    const options = Array.isArray(inspirationFormFieldEntries)
+      ? inspirationFormFieldEntries
+          .filter((field) => field && INSPIRATION_FILTER_COMPATIBLE_FIELD_TYPES.has(field.type))
+          .map((field) => ({
+            value: field.id,
+            label: field.label || field.id,
+            disabled: usedQuestionIds.has(field.id),
+            type: field.type
+          }))
+      : [];
+
+    return options.sort((a, b) => a.label.localeCompare(b.label, 'fr', { sensitivity: 'base' }));
+  }, [inspirationFormFieldEntries, normalizedInspirationFilters.fields]);
+
+  const selectedInspirationFilterOption = useMemo(() => {
+    if (!selectedInspirationFilterQuestionId) {
+      return null;
+    }
+
+    return availableInspirationFilterQuestionOptions.find(
+      (option) => option.value === selectedInspirationFilterQuestionId
+    ) || null;
+  }, [availableInspirationFilterQuestionOptions, selectedInspirationFilterQuestionId]);
+
+  const canAddInspirationFilter = Boolean(
+    selectedInspirationFilterOption && !selectedInspirationFilterOption.disabled
+  );
+
   const handleProjectFilterToggle = useCallback((fieldId, enabled) => {
     if (typeof setProjectFilters !== 'function') {
       return;
@@ -1193,6 +1280,78 @@ export const BackOffice = ({
     setSelectedFilterQuestionId('');
   }, [questions, selectedFilterQuestionId, setProjectFilters]);
 
+  const handleAddInspirationFilter = useCallback(() => {
+    if (typeof setInspirationFilters !== 'function') {
+      return;
+    }
+
+    const fieldId = typeof selectedInspirationFilterQuestionId === 'string'
+      ? selectedInspirationFilterQuestionId.trim()
+      : '';
+
+    if (fieldId.length === 0) {
+      return;
+    }
+
+    const formField = Array.isArray(inspirationFormFieldEntries)
+      ? inspirationFormFieldEntries.find((field) => field && field.id === fieldId)
+      : null;
+
+    if (!formField || !INSPIRATION_FILTER_COMPATIBLE_FIELD_TYPES.has(formField.type)) {
+      return;
+    }
+
+    setInspirationFilters((prev) => {
+      const normalized = normalizeInspirationFiltersConfig(prev);
+      const existing = Array.isArray(normalized.fields)
+        ? normalized.fields.some((field) => {
+            if (!field) {
+              return false;
+            }
+
+            const sourceId = typeof field.sourceQuestionId === 'string' && field.sourceQuestionId.trim().length > 0
+              ? field.sourceQuestionId.trim()
+              : field.id;
+
+            return sourceId === fieldId;
+          })
+        : false;
+
+      if (existing) {
+        return normalized;
+      }
+
+      const type = formField.type === 'select' ? 'select' : 'text';
+      const newField = {
+        id: formField.id,
+        label: formField.label || formField.id,
+        type,
+        enabled: true,
+        sourceQuestionId: formField.id
+      };
+
+      if (type === 'select') {
+        newField.emptyOptionLabel = 'Toutes les valeurs';
+        if (Array.isArray(formField.options)) {
+          newField.options = formField.options;
+        }
+      }
+
+      const fields = Array.isArray(normalized.fields) ? [...normalized.fields, newField] : [newField];
+
+      return {
+        ...normalized,
+        fields
+      };
+    });
+
+    setSelectedInspirationFilterQuestionId('');
+  }, [
+    inspirationFormFieldEntries,
+    selectedInspirationFilterQuestionId,
+    setInspirationFilters
+  ]);
+
   const handleRemoveProjectFilter = useCallback((field) => {
     if (!field || typeof setProjectFilters !== 'function') {
       return;
@@ -1239,6 +1398,49 @@ export const BackOffice = ({
       };
     });
   }, [confirmDeletion, normalizedProjectFilters, pushUndoEntry, setProjectFilters]);
+
+  const handleRemoveInspirationFilter = useCallback((field) => {
+    if (!field || typeof setInspirationFilters !== 'function') {
+      return;
+    }
+
+    const label = field.label || field.id || 'filtre';
+    const confirmationMessage = `Voulez-vous vraiment supprimer le filtre « ${label} » ?`;
+    const shouldDelete = confirmDeletion(confirmationMessage);
+
+    if (!shouldDelete) {
+      return;
+    }
+
+    const currentFields = Array.isArray(normalizedInspirationFilters.fields)
+      ? normalizedInspirationFilters.fields
+      : [];
+
+    const index = currentFields.findIndex((item) => item && item.id === field.id);
+    if (index === -1) {
+      return;
+    }
+
+    const removedField = currentFields[index];
+    pushUndoEntry({
+      type: 'inspirationFilter',
+      item: removedField,
+      index,
+      message: `Le filtre « ${removedField.label || removedField.id || 'filtre'} » a été supprimé. Appuyez sur Ctrl+Z pour annuler.`
+    });
+
+    setInspirationFilters((prev) => {
+      const normalized = normalizeInspirationFiltersConfig(prev);
+      const fields = Array.isArray(normalized.fields)
+        ? normalized.fields.filter((item) => item && item.id !== field.id)
+        : [];
+
+      return {
+        ...normalized,
+        fields
+      };
+    });
+  }, [confirmDeletion, normalizedInspirationFilters, pushUndoEntry, setInspirationFilters]);
 
   const handleProjectFilterDefaultSortChange = useCallback((value) => {
     if (typeof setProjectFilters !== 'function') {
@@ -1315,7 +1517,7 @@ export const BackOffice = ({
     }
 
     setInspirationFormFields((prev) => updateInspirationFormField(prev, fieldId, { enabled }));
-  }, [setInspirationFormFields]);
+  }, [setInspirationFilters, setInspirationFormFields]);
 
   const handleInspirationFormFieldLabelChange = useCallback((fieldId, label) => {
     if (typeof setInspirationFormFields !== 'function') {
@@ -1332,6 +1534,24 @@ export const BackOffice = ({
 
     const options = parseOptionList(rawValue);
     setInspirationFormFields((prev) => updateInspirationFormField(prev, fieldId, { options }));
+    if (typeof setInspirationFilters === 'function') {
+      setInspirationFilters((prev) => {
+        const normalized = normalizeInspirationFiltersConfig(prev);
+        let nextConfig = normalized;
+
+        normalized.fields.forEach((field) => {
+          const sourceId = typeof field.sourceQuestionId === 'string' && field.sourceQuestionId.trim().length > 0
+            ? field.sourceQuestionId.trim()
+            : field.id;
+
+          if (sourceId === fieldId && field.type === 'select') {
+            nextConfig = updateInspirationFilterField(nextConfig, field.id, { options });
+          }
+        });
+
+        return nextConfig;
+      });
+    }
   }, [setInspirationFormFields]);
 
   const handleInspirationFormFieldRequiredChange = useCallback((fieldId, required) => {
@@ -2843,64 +3063,158 @@ export const BackOffice = ({
                   </button>
                 </header>
 
-                <div className="space-y-4">
-                  {inspirationFilterFields.length === 0 ? (
-                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-5 text-sm text-gray-600">
-                      Aucun filtre n'est configuré pour le moment.
+                <div className="flex flex-col gap-4">
+                  <div className="rounded-xl border border-dashed border-blue-200 bg-blue-50/70 p-4 md:flex md:items-end md:justify-between md:gap-4">
+                    <div className="flex-1 space-y-2">
+                      <label htmlFor="new-inspiration-filter-question" className="text-sm font-medium text-blue-900">
+                        Ajouter un filtre basé sur un champ du questionnaire
+                      </label>
+                      <select
+                        id="new-inspiration-filter-question"
+                        value={selectedInspirationFilterQuestionId}
+                        onChange={(event) => setSelectedInspirationFilterQuestionId(event.target.value)}
+                        className="w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                      >
+                        <option value="">Sélectionnez un champ…</option>
+                        {availableInspirationFilterQuestionOptions.map((option) => (
+                          <option key={option.value} value={option.value} disabled={option.disabled}>
+                            {option.label}{option.disabled ? ' (déjà utilisé)' : ''}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-xs text-blue-700">
+                        Les champs texte et les listes du formulaire peuvent être transformés en filtres Inspiration.
+                      </p>
                     </div>
-                  ) : (
-                    inspirationFilterFields.map((field) => (
-                      <article key={field.id} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm hv-surface">
-                        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                          <div className="space-y-2">
-                            <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide">
-                              <span className="rounded-full bg-blue-100 px-2 py-1 text-blue-700">
-                                {field.type === 'select' ? 'Liste' : 'Texte'}
-                              </span>
-                              <span
-                                className={`rounded-full px-2 py-1 ${
-                                  field.enabled ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'
-                                }`}
-                              >
-                                {field.enabled ? 'Activé' : 'Désactivé'}
-                              </span>
+                    <button
+                      type="button"
+                      onClick={handleAddInspirationFilter}
+                      disabled={!canAddInspirationFilter}
+                      className={`mt-4 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors hv-button md:mt-0 ${
+                        canAddInspirationFilter
+                          ? 'bg-blue-600 text-white hover:bg-blue-700 hv-button-primary'
+                          : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      }`}
+                    >
+                      <Plus className="w-4 h-4" /> Ajouter le filtre
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    {inspirationFilterFields.length === 0 ? (
+                      <div className="rounded-xl border border-gray-200 bg-gray-50 p-5 text-sm text-gray-600">
+                        Aucun filtre n'est configuré pour le moment. Utilisez le menu ci-dessus pour en ajouter.
+                      </div>
+                    ) : (
+                      inspirationFilterFields.map((field) => {
+                        const typeLabel = INSPIRATION_FILTER_TYPE_LABELS[field.type] || 'Paramètre';
+                        const labelInputId = `inspiration-filter-label-${field.id}`;
+                        const sourceQuestionId = field.sourceQuestionId || field.id;
+                        const sourceQuestion = inspirationFormFieldEntries.find(
+                          (item) => item && item.id === sourceQuestionId
+                        );
+                        const sourceLabel = sourceQuestion?.label;
+
+                        return (
+                          <article key={field.id} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm hv-surface">
+                            <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                              <div className="space-y-2">
+                                <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide">
+                                  <span className="rounded-full bg-blue-100 px-2 py-1 text-blue-700">
+                                    {typeLabel}
+                                  </span>
+                                  <span
+                                    className={`rounded-full px-2 py-1 ${
+                                      field.enabled ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-600'
+                                    }`}
+                                  >
+                                    {field.enabled ? 'Activé' : 'Désactivé'}
+                                  </span>
+                                </div>
+                                <h3 className="text-lg font-semibold text-gray-800">{field.label}</h3>
+                                {sourceQuestionId && (
+                                  <p className="text-xs text-gray-500">
+                                    Source : <span className="font-medium">{sourceQuestionId}</span>
+                                    {sourceLabel ? ` – ${sourceLabel}` : ''}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <label className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
+                                  <input
+                                    type="checkbox"
+                                    checked={field.enabled}
+                                    onChange={(event) => handleInspirationFilterToggle(field.id, event.target.checked)}
+                                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                  />
+                                  <span>Activer</span>
+                                </label>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveInspirationFilter(field)}
+                                  className="inline-flex items-center gap-1 rounded-lg border border-red-100 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100 hv-button"
+                                >
+                                  <Trash2 className="w-4 h-4" /> Supprimer
+                                </button>
+                              </div>
                             </div>
-                            <label className="flex flex-col gap-2 text-sm text-gray-700">
-                              <span className="font-semibold text-gray-700">Libellé</span>
-                              <input
-                                type="text"
-                                value={field.label}
-                                onChange={(event) => handleInspirationFilterLabelChange(field.id, event.target.value)}
-                                className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                              />
-                            </label>
-                            {field.type === 'select' && (
-                              <label className="flex flex-col gap-2 text-sm text-gray-700">
-                                <span className="font-semibold text-gray-700">Options (séparées par des virgules)</span>
+
+                            <div className="mt-4 grid gap-4 md:grid-cols-2">
+                              <div className="flex flex-col gap-2">
+                                <label htmlFor={labelInputId} className="text-sm font-medium text-gray-700">
+                                  Libellé affiché
+                                </label>
                                 <input
+                                  id={labelInputId}
                                   type="text"
-                                  value={formatOptionList(field.options)}
-                                  onChange={(event) => handleInspirationFilterOptionsChange(field.id, event.target.value)}
-                                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                  value={field.label}
+                                  onChange={(event) => handleInspirationFilterLabelChange(field.id, event.target.value)}
+                                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                                 />
-                              </label>
-                            )}
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => handleInspirationFilterToggle(field.id, !field.enabled)}
-                            className={`inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors hv-button ${
-                              field.enabled
-                                ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                : 'bg-blue-600 text-white hover:bg-blue-700 hv-button-primary'
-                            }`}
-                          >
-                            {field.enabled ? 'Désactiver' : 'Activer'}
-                          </button>
-                        </div>
-                      </article>
-                    ))
-                  )}
+                                <p className="text-xs text-gray-500">
+                                  Ce titre s'affiche sur la page d'accueil pour les projets inspiration.
+                                </p>
+                              </div>
+
+                              {field.type === 'select' ? (
+                                <div className="flex flex-col gap-2">
+                                  <label
+                                    htmlFor={`inspiration-filter-empty-option-${field.id}`}
+                                    className="text-sm font-medium text-gray-700"
+                                  >
+                                    Libellé de l'option « toutes »
+                                  </label>
+                                  <input
+                                    id={`inspiration-filter-empty-option-${field.id}`}
+                                    type="text"
+                                    value={field.emptyOptionLabel || 'Toutes les valeurs'}
+                                    onChange={(event) =>
+                                      setInspirationFilters((prev) =>
+                                        updateInspirationFilterField(prev, field.id, {
+                                          emptyOptionLabel: event.target.value
+                                        })
+                                      )
+                                    }
+                                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                  />
+                                  <p className="text-xs text-gray-500">
+                                    Texte affiché pour représenter l'ensemble des valeurs disponibles.
+                                  </p>
+                                </div>
+                              ) : (
+                                <div className="flex flex-col gap-2 text-sm text-gray-600">
+                                  <span className="font-medium text-gray-700">Comportement</span>
+                                  <p className="text-xs text-gray-500">
+                                    Recherche plein texte sur les champs du projet inspirant.
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </article>
+                        );
+                      })
+                    )}
+                  </div>
                 </div>
               </article>
 
