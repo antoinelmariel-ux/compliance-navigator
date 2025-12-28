@@ -499,6 +499,8 @@ export const BackOffice = ({
   const [editingQuestion, setEditingQuestion] = useState(null);
   const [draggedQuestionIndex, setDraggedQuestionIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
+  const [draggedInspirationFieldIndex, setDraggedInspirationFieldIndex] = useState(null);
+  const [dragOverInspirationFieldIndex, setDragOverInspirationFieldIndex] = useState(null);
   const [reorderAnnouncement, setReorderAnnouncement] = useState('');
   const [questionTitleFilter, setQuestionTitleFilter] = useState('');
   const [questionTeamFilter, setQuestionTeamFilter] = useState('all');
@@ -2249,6 +2251,96 @@ export const BackOffice = ({
     }
   };
 
+  const moveInspirationFormField = (fromIndex, toIndex) => {
+    if (fromIndex === toIndex || typeof setInspirationFormFields !== 'function') {
+      return;
+    }
+
+    setInspirationFormFields((prevFields) => {
+      const normalized = normalizeInspirationFormConfig(prevFields);
+      const fields = Array.isArray(normalized.fields) ? normalized.fields.slice() : [];
+
+      if (
+        fromIndex < 0 ||
+        fromIndex >= fields.length ||
+        toIndex < 0 ||
+        toIndex >= fields.length
+      ) {
+        return prevFields;
+      }
+
+      const [movedField] = fields.splice(fromIndex, 1);
+      fields.splice(toIndex, 0, movedField);
+
+      if (movedField) {
+        const label = movedField.label || movedField.id || 'Champ';
+        setReorderAnnouncement(`Le champ « ${label} » est maintenant en position ${toIndex + 1} sur ${fields.length}.`);
+      }
+
+      return { ...normalized, fields };
+    });
+  };
+
+  const handleInspirationFieldDragStart = (event, index) => {
+    if (event?.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', String(index));
+    }
+    setDraggedInspirationFieldIndex(index);
+    setDragOverInspirationFieldIndex(index);
+  };
+
+  const handleInspirationFieldDragOver = (event, index) => {
+    event.preventDefault();
+    if (dragOverInspirationFieldIndex !== index) {
+      setDragOverInspirationFieldIndex(index);
+    }
+  };
+
+  const handleInspirationFieldDrop = (event, index) => {
+    event.preventDefault();
+
+    let fromIndex = draggedInspirationFieldIndex;
+    if (fromIndex === null) {
+      const transferIndex = Number.parseInt(event?.dataTransfer?.getData('text/plain'), 10);
+      if (Number.isFinite(transferIndex)) {
+        fromIndex = transferIndex;
+      }
+    }
+
+    if (fromIndex !== null) {
+      moveInspirationFormField(fromIndex, index);
+    }
+
+    setDraggedInspirationFieldIndex(null);
+    setDragOverInspirationFieldIndex(null);
+  };
+
+  const handleInspirationFieldDragEnd = () => {
+    setDraggedInspirationFieldIndex(null);
+    setDragOverInspirationFieldIndex(null);
+  };
+
+  const handleInspirationFieldKeyboardReorder = (event, index) => {
+    if (inspirationFormFieldEntries.length <= 1) {
+      return;
+    }
+
+    if (event.key === 'ArrowUp' && index > 0) {
+      event.preventDefault();
+      moveInspirationFormField(index, index - 1);
+    } else if (event.key === 'ArrowDown' && index < inspirationFormFieldEntries.length - 1) {
+      event.preventDefault();
+      moveInspirationFormField(index, index + 1);
+    } else if (event.key === 'Home') {
+      event.preventDefault();
+      moveInspirationFormField(index, 0);
+    } else if (event.key === 'End') {
+      event.preventDefault();
+      moveInspirationFormField(index, inspirationFormFieldEntries.length - 1);
+    }
+  };
+
   const getNextId = (items, prefix) => {
     const ids = new Set(items.map((item) => item.id));
     const maxNumericSuffix = items
@@ -2530,6 +2622,17 @@ export const BackOffice = ({
     downloadDataModule('rules.js', 'initialRules', rules);
     downloadDataModule('riskLevelRules.js', 'initialRiskLevelRules', safeRiskLevelRules);
     downloadDataModule('teams.js', 'initialTeams', teams);
+    downloadDataModule(
+      'inspirationFilters.js',
+      'initialInspirationFilters',
+      normalizeInspirationFiltersConfig(inspirationFilters)
+    );
+    downloadDataModule(
+      'inspirationFormFields.js',
+      'initialInspirationFormFields',
+      normalizeInspirationFormConfig(inspirationFormFields)
+    );
+    downloadDataModule('showcaseThemes.js', 'initialShowcaseThemes', safeShowcaseThemes);
   };
 
   const inspirationFilterCount = inspirationFilterFields.length;
@@ -2869,7 +2972,7 @@ export const BackOffice = ({
                 className="inline-flex items-center justify-center px-4 py-2 bg-white border border-blue-200 text-blue-700 rounded-lg shadow-sm hover:bg-blue-50 hv-button hv-focus-ring text-sm sm:text-base"
               >
                 <Download className="w-5 h-5 mr-2" />
-                Télécharger les fichiers (questions, règles, équipes)
+                Télécharger les fichiers (questions, règles, équipes, inspiration, vitrine)
               </button>
             </div>
           </header>
@@ -3200,6 +3303,7 @@ export const BackOffice = ({
               aria-labelledby="backoffice-tab-inspiration"
               className="space-y-6"
             >
+              <div className="sr-only" aria-live="polite">{reorderAnnouncement}</div>
               <article className="space-y-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hv-surface">
                 <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="space-y-2">
@@ -3607,8 +3711,20 @@ export const BackOffice = ({
                       Aucun champ n'est configuré.
                     </div>
                   ) : (
-                    inspirationFormFieldEntries.map((field) => (
-                      <article key={field.id} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm hv-surface">
+                    inspirationFormFieldEntries.map((field, index) => {
+                      const positionId = `inspiration-form-position-${field.id}`;
+
+                      return (
+                        <article
+                          key={field.id}
+                          className={`rounded-xl border border-gray-200 bg-white p-5 shadow-sm hv-surface ${
+                            dragOverInspirationFieldIndex === index ? 'ring-2 ring-blue-400 ring-offset-2' : ''
+                          } ${
+                            draggedInspirationFieldIndex === index ? 'opacity-75' : ''
+                          }`}
+                          onDragOver={(event) => handleInspirationFieldDragOver(event, index)}
+                          onDrop={(event) => handleInspirationFieldDrop(event, index)}
+                        >
                         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                           <div className="space-y-2">
                             <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide">
@@ -3625,6 +3741,9 @@ export const BackOffice = ({
                               {field.required && (
                                 <span className="rounded-full bg-purple-100 px-2 py-1 text-purple-700">Requis</span>
                               )}
+                            </div>
+                            <div className="text-xs text-gray-500" id={positionId}>
+                              Position {index + 1} sur {inspirationFormFieldEntries.length}
                             </div>
                             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                               <label className="flex flex-col gap-2 text-sm text-gray-700">
@@ -3696,20 +3815,37 @@ export const BackOffice = ({
                               Champ requis
                             </label>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => handleInspirationFormFieldToggle(field.id, !field.enabled)}
-                            className={`inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors hv-button ${
-                              field.enabled
-                                ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                : 'bg-blue-600 text-white hover:bg-blue-700 hv-button-primary'
-                            }`}
-                          >
-                            {field.enabled ? 'Désactiver' : 'Activer'}
-                          </button>
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              className="p-2 text-gray-500 hover:text-blue-600 rounded hv-button cursor-move"
+                              aria-label={`Réorganiser le champ ${field.label || field.id}. Position ${index + 1} sur ${inspirationFormFieldEntries.length}. Utilisez les flèches haut et bas.`}
+                              aria-describedby={positionId}
+                              draggable
+                              onDragStart={(event) => handleInspirationFieldDragStart(event, index)}
+                              onDragOver={(event) => handleInspirationFieldDragOver(event, index)}
+                              onDrop={(event) => handleInspirationFieldDrop(event, index)}
+                              onDragEnd={handleInspirationFieldDragEnd}
+                              onKeyDown={(event) => handleInspirationFieldKeyboardReorder(event, index)}
+                            >
+                              <GripVertical className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleInspirationFormFieldToggle(field.id, !field.enabled)}
+                              className={`inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition-colors hv-button ${
+                                field.enabled
+                                  ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                  : 'bg-blue-600 text-white hover:bg-blue-700 hv-button-primary'
+                              }`}
+                            >
+                              {field.enabled ? 'Désactiver' : 'Activer'}
+                            </button>
+                          </div>
                         </div>
                       </article>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </article>
