@@ -3,6 +3,7 @@ import { sanitizeRichText } from '../utils/richText.js';
 
 const BUTTON_BASE_CLASSES =
   'inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1';
+const LIST_BUTTON_CLASSES = `${BUTTON_BASE_CLASSES} bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100`;
 
 const commandIsAvailable = () => typeof document !== 'undefined' && typeof document.execCommand === 'function';
 
@@ -196,8 +197,19 @@ export const RichTextEditor = ({
           <span className="underline">U</span>
           <span className="sr-only">Souligner</span>
         </button>
-        <button type="button" className={BUTTON_BASE_CLASSES} onClick={() => applyCommand('insertUnorderedList')}>
-          <span aria-hidden="true">• • •</span>
+        <button type="button" className={LIST_BUTTON_CLASSES} onClick={() => applyCommand('insertUnorderedList')}>
+          <svg
+            className="h-4 w-4 text-blue-700"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <circle cx="5" cy="6.5" r="1.5" fill="currentColor" />
+            <rect x="9" y="5.5" width="11" height="2" rx="1" fill="currentColor" />
+            <circle cx="5" cy="12" r="1.5" fill="currentColor" />
+            <rect x="9" y="11" width="11" height="2" rx="1" fill="currentColor" />
+            <circle cx="5" cy="17.5" r="1.5" fill="currentColor" />
+            <rect x="9" y="16.5" width="11" height="2" rx="1" fill="currentColor" />
+          </svg>
           <span className="sr-only">Liste à puces</span>
         </button>
         <button type="button" className={BUTTON_BASE_CLASSES} onClick={handleAddLink}>

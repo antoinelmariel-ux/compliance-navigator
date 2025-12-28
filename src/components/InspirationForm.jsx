@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from '../react.js';
+import React, { useEffect, useMemo, useRef, useState } from '../react.js';
 import { Plus, Save, Close } from './icons.js';
 import { normalizeInspirationFormConfig } from '../utils/inspirationConfig.js';
 import { RichTextEditor } from './RichTextEditor.jsx';
@@ -59,6 +59,7 @@ export const InspirationForm = ({
   onSubmit,
   onCancel
 }) => {
+  const formTopRef = useRef(null);
   const normalizedConfig = useMemo(
     () => normalizeInspirationFormConfig(formConfig),
     [formConfig]
@@ -98,6 +99,20 @@ export const InspirationForm = ({
       return merged;
     });
   }, [normalizedConfig]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const focusTop = () => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      formTopRef.current?.focus({ preventScroll: true });
+    };
+
+    const frameId = window.requestAnimationFrame(focusTop);
+    return () => window.cancelAnimationFrame(frameId);
+  }, []);
 
   const updateField = (fieldId, value) => {
     setFormState((prev) => ({ ...prev, [fieldId]: value }));
@@ -206,7 +221,11 @@ export const InspirationForm = ({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 px-4 py-8 sm:px-8">
+    <div
+      ref={formTopRef}
+      tabIndex={-1}
+      className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 px-4 py-8 sm:px-8 focus:outline-none"
+    >
       <div className="max-w-4xl mx-auto">
         <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
