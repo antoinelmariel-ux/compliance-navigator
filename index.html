@@ -37,7 +37,17 @@
     </style>
   </head>
   <body class="bg-gray-100">
-    <div id="root"></div>
+    <div id="root">
+      <div class="min-h-screen flex items-center justify-center bg-gray-100">
+        <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hv-surface">
+          <div class="flex items-center gap-3 text-sm text-gray-600">
+            <span class="loading-spinner" aria-hidden="true"></span>
+            <span>Chargement de l’accueil…</span>
+          </div>
+          <p class="mt-2 text-xs text-gray-400">Préparation de votre espace.</p>
+        </div>
+      </div>
+    </div>
 
     <script src="./src/vendor/react.production.min.js"></script>
     <script src="./src/vendor/react-dom.production.min.js"></script>
