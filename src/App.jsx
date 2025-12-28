@@ -34,7 +34,7 @@ import {
   normalizeInspirationFormConfig
 } from './utils/inspirationConfig.js';
 
-const APP_VERSION = 'v1.0.217';
+const APP_VERSION = 'v1.0.218';
 
 const loadModule = (modulePath) => {
   if (typeof window === 'undefined') {
@@ -2855,6 +2855,22 @@ const updateProjectFilters = useCallback((updater) => {
     pendingShowcaseProjectIdRef.current = null;
     openProjectShowcase({ projectId: pendingProjectId });
   }, [isHydrated, openProjectShowcase, projects]);
+
+  useEffect(() => {
+    if (!isShowcaseShareOpen || typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const focusShareLink = () => {
+      const input = document.getElementById('showcase-share-link');
+      if (input && typeof input.focus === 'function') {
+        input.focus();
+      }
+    };
+
+    const frameId = window.requestAnimationFrame(focusShareLink);
+    return () => window.cancelAnimationFrame(frameId);
+  }, [isShowcaseShareOpen]);
 
   const handleShowProjectShowcase = useCallback((projectId) => {
     if (!projectId) {
