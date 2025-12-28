@@ -198,7 +198,7 @@ const statusStyles = {
   }
 };
 
-const computeProgress = (project) => {
+const computeRemainingQuestions = (project) => {
   if (!project || typeof project.totalQuestions !== 'number' || project.totalQuestions <= 0) {
     return null;
   }
@@ -209,8 +209,9 @@ const computeProgress = (project) => {
       : Math.max((project.lastQuestionIndex ?? 0) + 1, 0);
 
   const answeredCount = Math.min(answeredCountRaw, project.totalQuestions);
+  const remainingCount = Math.max(project.totalQuestions - answeredCount, 0);
 
-  return Math.round((answeredCount / project.totalQuestions) * 100);
+  return remainingCount;
 };
 
 export const HomeScreen = ({
@@ -808,7 +809,7 @@ export const HomeScreen = ({
     const complexity = project.analysis?.complexity;
     const risksCount = project.analysis?.risks?.length ?? 0;
     const projectStatus = statusStyles[project.status] || statusStyles.submitted;
-    const progress = computeProgress(project);
+    const remainingQuestions = computeRemainingQuestions(project);
     const isDraft = project.status === 'draft';
     const adminCanEditSubmitted = isAdminMode && !isDraft;
     const leadName = getSafeString(project?.answers?.teamLead).trim();
@@ -897,10 +898,14 @@ export const HomeScreen = ({
             <Target className="w-4 h-4" />
             <span>{projectTypeDisplay}</span>
           </div>
-          {progress !== null && (
+          {remainingQuestions !== null && (
             <div className="flex items-center gap-2">
               <Save className="w-4 h-4" />
-              <span>{progress}% du questionnaire complété</span>
+              <span>
+                {remainingQuestions === 0
+                  ? 'Aucune question restante'
+                  : `${remainingQuestions} question${remainingQuestions > 1 ? 's' : ''} restante${remainingQuestions > 1 ? 's' : ''}`}
+              </span>
             </div>
           )}
           <div className="flex items-center gap-2">

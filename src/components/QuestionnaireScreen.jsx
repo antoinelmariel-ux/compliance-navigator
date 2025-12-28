@@ -109,6 +109,10 @@ export const QuestionnaireScreen = ({
   }
 
   const progress = ((currentIndex + 1) / questions.length) * 100;
+  const remainingQuestions = Math.max(questions.length - (currentIndex + 1), 0);
+  const remainingLabel = remainingQuestions === 0
+    ? 'Aucune question restante'
+    : `${remainingQuestions} question${remainingQuestions > 1 ? 's' : ''} restante${remainingQuestions > 1 ? 's' : ''}`;
   const questionType = currentQuestion.type || 'choice';
   const currentAnswer = answers[currentQuestion.id];
   const multiSelection = Array.isArray(currentAnswer) ? currentAnswer : [];
@@ -795,7 +799,7 @@ export const QuestionnaireScreen = ({
                 Question {currentIndex + 1} sur {questions.length}
               </span>
               <span className="text-sm font-medium text-blue-600 sm:text-right" aria-live="polite">
-                {Math.round(progress)}% complété
+                {remainingLabel}
               </span>
             </div>
             <div
@@ -804,6 +808,7 @@ export const QuestionnaireScreen = ({
               aria-valuenow={Math.round(progress)}
               aria-valuemin={0}
               aria-valuemax={100}
+              aria-valuetext={remainingLabel}
               aria-labelledby={progressLabelId}
             >
               <span
