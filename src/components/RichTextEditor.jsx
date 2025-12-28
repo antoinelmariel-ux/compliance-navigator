@@ -84,9 +84,9 @@ export const RichTextEditor = ({
         return;
       }
 
-      event.preventDefault();
       const text = event.clipboardData.getData('text/plain');
       if (commandIsAvailable()) {
+        event.preventDefault();
         document.execCommand('insertText', false, text);
         handleInput();
       }
@@ -194,12 +194,13 @@ export const RichTextEditor = ({
           ref={editorRef}
           className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[120px] prose prose-sm max-w-none hv-focus-ring"
           style={{ minHeight }}
-          contentEditable
+          contentEditable={true}
           suppressContentEditableWarning
           onInput={handleInput}
           onBlur={handleBlur}
           onPaste={handlePaste}
           onKeyUp={handleInput}
+          onCompositionEnd={handleInput}
           tabIndex={0}
           role="textbox"
           aria-label={ariaLabel || placeholder}
