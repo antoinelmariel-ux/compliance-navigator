@@ -25,7 +25,7 @@ import {
   normalizeProjectFilterConfig
 } from './utils/projectFilters.js';
 
-const APP_VERSION = 'v1.0.201';
+const APP_VERSION = 'v1.0.202';
 
 const loadModule = (modulePath) => {
   if (typeof window === 'undefined') {
@@ -3412,7 +3412,14 @@ export const App = () => {
       )}
 
       <main id="main-content" tabIndex="-1" className="focus:outline-none hv-background">
-        {isAdminBackOfficeView ? (
+        {!isHydrated ? (
+          <div className="flex min-h-[60vh] items-center justify-center">
+            <LoadingFallback
+              label="Chargement de l’accueil…"
+              hint="Préparation de votre espace."
+            />
+          </div>
+        ) : isAdminBackOfficeView ? (
           <Suspense
             fallback={(
               <LoadingFallback
