@@ -157,6 +157,7 @@ export const QuestionnaireScreen = ({
   const hasLinkedQuestions = relatedQuestionEntries.length > 0;
   const nextLinkedQuestion = relatedQuestionEntries[0]?.question || null;
   const shouldShowNextButton = !isReturnToSynthesisRequested || hasLinkedQuestions;
+  const shouldShowFinishButton = !isReturnToSynthesisRequested || hasLinkedQuestions;
   const handleLinkedQuestionNext = () => {
     if (nextLinkedQuestion && typeof onNavigateToQuestion === 'function') {
       onNavigateToQuestion(nextLinkedQuestion.id);
@@ -1085,7 +1086,7 @@ export const QuestionnaireScreen = ({
               </button>
             )}
 
-            {currentIndex < questions.length - 1 && onFinish && (
+            {currentIndex < questions.length - 1 && onFinish && shouldShowFinishButton && (
               <button
                 type="button"
                 onClick={onFinish}
