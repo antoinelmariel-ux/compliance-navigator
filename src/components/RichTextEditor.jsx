@@ -31,10 +31,24 @@ export const RichTextEditor = ({
   }, [value]);
 
   useEffect(() => {
-    if (editorRef.current && editorRef.current.innerHTML !== htmlValue) {
-      editorRef.current.innerHTML = htmlValue || '';
+    const normalized = normalizeValue(value);
+    setHtmlValue(normalized);
+
+    if (!editorRef.current) {
+      return;
     }
-  }, [htmlValue]);
+
+    const isFocused =
+      typeof document !== 'undefined' && document.activeElement === editorRef.current;
+
+    if (isFocused) {
+      return;
+    }
+
+    if (editorRef.current.innerHTML !== normalized) {
+      editorRef.current.innerHTML = normalized || '';
+    }
+  }, [value]);
 
   useEffect(() => {
     if (isLinkModalOpen && linkTextInputRef.current) {
@@ -47,12 +61,21 @@ export const RichTextEditor = ({
       const sanitized = sanitizeRichText(nextValue || '');
       setHtmlValue(sanitized);
       onChange?.(sanitized);
+      return sanitized;
     },
     [onChange]
   );
 
   const handleInput = useCallback(() => {
     emitChange(editorRef.current?.innerHTML || '');
+  }, [emitChange]);
+
+  const handleBlur = useCallback(() => {
+    const sanitized = emitChange(editorRef.current?.innerHTML || '');
+
+    if (editorRef.current && editorRef.current.innerHTML !== sanitized) {
+      editorRef.current.innerHTML = sanitized || '';
+    }
   }, [emitChange]);
 
   const handlePaste = useCallback(
@@ -174,7 +197,7 @@ export const RichTextEditor = ({
           contentEditable
           suppressContentEditableWarning
           onInput={handleInput}
-          onBlur={handleInput}
+          onBlur={handleBlur}
           onPaste={handlePaste}
           role="textbox"
           aria-label={ariaLabel || placeholder}
