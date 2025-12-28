@@ -34,7 +34,7 @@ import {
   normalizeInspirationFormConfig
 } from './utils/inspirationConfig.js';
 
-const APP_VERSION = 'v1.0.216';
+const APP_VERSION = 'v1.0.217';
 
 const loadModule = (modulePath) => {
   if (typeof window === 'undefined') {

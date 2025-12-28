@@ -221,7 +221,7 @@ export const RichTextEditor = ({
         <div
           id={id}
           ref={editorRef}
-          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[120px] prose prose-sm max-w-none hv-focus-ring"
+          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[120px] prose prose-sm max-w-none hv-focus-ring hv-richtext"
           style={{ minHeight }}
           contentEditable={true}
           suppressContentEditableWarning

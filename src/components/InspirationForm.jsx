@@ -232,6 +232,17 @@ export const InspirationForm = ({
           onSubmit={handleSubmit}
           className="space-y-6 rounded-3xl border border-gray-200 bg-white p-6 shadow-lg"
         >
+          <p className="text-xs italic text-gray-400">
+            Le LFB traite les données recueillies pour gérer les projets à soumettre aux équipes compliance.{' '}
+            <a
+              href="./mentions-legales.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline hover:text-gray-500"
+            >
+              En savoir plus sur vos données et vos droits
+            </a>
+          </p>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             {normalizedConfig.fields
               .filter((field) => field.enabled && field.type !== 'long_text' && field.type !== 'documents')
