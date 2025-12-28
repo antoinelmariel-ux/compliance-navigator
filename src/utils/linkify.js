@@ -15,7 +15,7 @@ const renderWithDomSanitizer = (text) => {
     return null;
   }
 
-  return <span dangerouslySetInnerHTML={{ __html: sanitized }} />;
+  return <span className="hv-richtext" dangerouslySetInnerHTML={{ __html: sanitized }} />;
 };
 
 const renderWithoutDomParser = (text) => {

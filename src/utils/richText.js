@@ -165,5 +165,5 @@ export const renderRichText = (value) => {
     return '';
   }
 
-  return <span dangerouslySetInnerHTML={{ __html: sanitizedHtml }} />;
+  return <span className="hv-richtext" dangerouslySetInnerHTML={{ __html: sanitizedHtml }} />;
 };
