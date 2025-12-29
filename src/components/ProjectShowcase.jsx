@@ -830,6 +830,35 @@ const buildThemeVariables = (theme) => {
   const accentSecondary = normalizeColorValue(palette.accentSecondary, '#06b6d4');
   const borderBase = normalizeColorValue(palette.border, '#94a3b8');
   const highlightBase = normalizeColorValue(palette.highlight, accentSecondary);
+  const inkStrong = normalizeColorValue(palette.inkStrong, '#0f172a');
+  const inkSoft = normalizeColorValue(palette.inkSoft, '#1e293b');
+  const inkMuted = normalizeColorValue(palette.inkMuted, '#475569');
+  const inkSubtle = normalizeColorValue(palette.inkSubtle, '#94a3b8');
+  const surfaceLight = normalizeColorValue(palette.surfaceLight, '#f8fafc');
+  const surfaceLightAlt = normalizeColorValue(palette.surfaceLightAlt, '#e2e8f0');
+  const titleGradientStart = normalizeColorValue(palette.titleGradientStart, accentPrimary);
+  const titleGradientMid = normalizeColorValue(palette.titleGradientMid, highlightBase);
+  const titleGradientEnd = normalizeColorValue(palette.titleGradientEnd, accentSecondary);
+  const ctaStart = normalizeColorValue(palette.ctaStart, accentPrimary);
+  const ctaEnd = normalizeColorValue(palette.ctaEnd, accentSecondary);
+  const heroStart = normalizeColorValue(palette.heroBackgroundStart, '#000000');
+  const heroMid = normalizeColorValue(palette.heroBackgroundMid, '#090d15');
+  const heroEnd = normalizeColorValue(palette.heroBackgroundEnd, '#0b1f2c');
+  const panelSoftStart = normalizeColorValue(palette.panelSoftStart, '#101728');
+  const panelSoftEnd = normalizeColorValue(palette.panelSoftEnd, '#1b2230');
+  const panelStrongStart = normalizeColorValue(palette.panelStrongStart, '#0b2f41');
+  const panelStrongEnd = normalizeColorValue(palette.panelStrongEnd, '#0e5560');
+  const statusOkStart = normalizeColorValue(palette.statusOkStart, '#d1fae5');
+  const statusOkEnd = normalizeColorValue(palette.statusOkEnd, '#a7f3d0');
+  const statusWarnStart = normalizeColorValue(palette.statusWarnStart, '#ecfdf5');
+  const statusWarnEnd = normalizeColorValue(palette.statusWarnEnd, '#d1fae5');
+  const statusAlertStart = normalizeColorValue(palette.statusAlertStart, '#fee2e2');
+  const statusAlertEnd = normalizeColorValue(palette.statusAlertEnd, '#fecaca');
+  const statusAlertStrongStart = normalizeColorValue(palette.statusAlertStrongStart, '#f05959');
+  const statusAlertStrongEnd = normalizeColorValue(palette.statusAlertStrongEnd, '#be1717');
+  const statusOkText = normalizeColorValue(palette.statusOkText, '#064e3b');
+  const statusWarnText = normalizeColorValue(palette.statusWarnText, '#064e3b');
+  const statusAlertText = normalizeColorValue(palette.statusAlertText, '#7f1d1d');
 
   return {
     '--showcase-bg-start': normalizeColorValue(palette.backgroundStart, '#020309'),
@@ -847,7 +876,48 @@ const buildThemeVariables = (theme) => {
     '--showcase-highlight-strong': toRgba(highlightBase, 0.85, 'rgba(148, 197, 255, 0.85)'),
     '--showcase-highlight-soft': toRgba(highlightBase, 0.7, 'rgba(148, 197, 255, 0.7)'),
     '--showcase-shadow-soft': toRgba(accentSecondary, 0.32, 'rgba(14, 165, 233, 0.32)'),
-    '--showcase-shadow-strong': toRgba(accentSecondary, 0.4, 'rgba(14, 165, 233, 0.4)')
+    '--showcase-shadow-strong': toRgba(accentSecondary, 0.4, 'rgba(14, 165, 233, 0.4)'),
+    '--showcase-ink-strong': inkStrong,
+    '--showcase-ink-soft': inkSoft,
+    '--showcase-ink-muted': inkMuted,
+    '--showcase-ink-subtle': inkSubtle,
+    '--showcase-surface-light': surfaceLight,
+    '--showcase-surface-light-alt': surfaceLightAlt,
+    '--showcase-surface-card': toRgba(surfaceLight, 0.82, 'rgba(255, 255, 255, 0.82)'),
+    '--showcase-surface-card-soft': toRgba(surfaceLight, 0.72, 'rgba(255, 255, 255, 0.72)'),
+    '--showcase-surface-panel': toRgba(surfaceLight, 0.78, 'rgba(255, 255, 255, 0.78)'),
+    '--showcase-surface-panel-soft': toRgba(surfaceLight, 0.95, 'rgba(248, 250, 252, 0.95)'),
+    '--showcase-border-light': toRgba(borderBase, 0.4, 'rgba(148, 197, 255, 0.4)'),
+    '--showcase-title-gradient': `linear-gradient(120deg, ${titleGradientStart}, ${titleGradientMid}, ${titleGradientEnd})`,
+    '--showcase-title-shadow': toRgba(accentSecondary, 0.35, 'rgba(14, 116, 144, 0.35)'),
+    '--showcase-title-sheen': toRgba(surfaceLight, 0.65, 'rgba(255, 255, 255, 0.65)'),
+    '--showcase-cta-gradient': `linear-gradient(120deg, ${ctaStart}, ${ctaEnd})`,
+    '--showcase-cta-text': normalizeColorValue(palette.ctaText, '#ecfeff'),
+    '--showcase-hero-gradient': `linear-gradient(135deg, ${heroStart} 0%, ${heroMid} 45%, ${heroEnd} 100%)`,
+    '--showcase-hero-glow-primary': toRgba(highlightBase, 0.15, 'rgba(148, 197, 255, 0.15)'),
+    '--showcase-hero-glow-secondary': toRgba(accentSecondary, 0.18, 'rgba(14, 165, 233, 0.18)'),
+    '--showcase-highlight-panel': `linear-gradient(145deg, ${toRgba(highlightBase, 0.18, 'rgba(148, 197, 255, 0.18)')}, ${toRgba(palette.backgroundMid || '#0c1220', 0.38, 'rgba(15, 23, 42, 0.38)')})`,
+    '--showcase-panel-soft-gradient': `linear-gradient(135deg, ${panelSoftStart} 0%, ${panelSoftEnd} 100%)`,
+    '--showcase-panel-strong-gradient': `linear-gradient(135deg, ${panelStrongStart} 0%, ${panelStrongEnd} 100%)`,
+    '--showcase-panel-light-gradient': `linear-gradient(135deg, ${surfaceLightAlt} 0%, ${surfaceLight} 100%)`,
+    '--showcase-panel-soft-surface': `linear-gradient(140deg, ${toRgba(highlightBase, 0.16, 'rgba(148, 197, 255, 0.16)')}, ${toRgba(palette.backgroundMid || '#0c1220', 0.42, 'rgba(12, 18, 32, 0.42)')})`,
+    '--showcase-panel-card-gradient': `linear-gradient(150deg, ${toRgba(highlightBase, 0.16, 'rgba(148, 197, 255, 0.16)')}, ${toRgba(palette.backgroundMid || '#0c1220', 0.4, 'rgba(15, 23, 42, 0.4)')})`,
+    '--showcase-impact-gradient': `linear-gradient(140deg, ${toRgba(accentSecondary, 0.12, 'rgba(56, 189, 248, 0.12)')}, ${toRgba(accentPrimary, 0.32, 'rgba(30, 64, 175, 0.32)')}, ${toRgba(palette.backgroundEnd || '#020309', 0.8, 'rgba(2, 6, 23, 0.8)')})`,
+    '--showcase-impact-card-gradient': `radial-gradient(circle at 12% 18%, ${toRgba(highlightBase, 0.26, 'rgba(191, 219, 254, 0.26)')}, transparent 55%), radial-gradient(circle at 88% 82%, ${toRgba(highlightBase, 0.24, 'rgba(147, 197, 253, 0.24)')}, transparent 52%), linear-gradient(155deg, ${toRgba(accentPrimary, 0.65, 'rgba(30, 64, 175, 0.65)')}, ${toRgba(accentSecondary, 0.55, 'rgba(15, 118, 110, 0.55)')})`,
+    '--showcase-impact-vision-gradient': `radial-gradient(circle at 16% 22%, ${toRgba(highlightBase, 0.25, 'rgba(191, 219, 254, 0.25)')}, transparent 50%), linear-gradient(150deg, ${toRgba(accentSecondary, 0.24, 'rgba(56, 189, 248, 0.24)')}, ${toRgba(accentPrimary, 0.55, 'rgba(30, 58, 138, 0.55)')})`,
+    '--showcase-risk-halo-gradient': `radial-gradient(circle at 30% 30%, ${toRgba(accentPrimary, 0.55, 'rgba(92, 50, 0, 0.55)')}, ${toRgba(accentSecondary, 0.55, 'rgba(59, 37, 0, 0.55)')})`,
+    '--showcase-risk-note': toRgba(surfaceLight, 0.9, 'rgba(255, 228, 196, 0.9)'),
+    '--showcase-partner-bg': toRgba(accentPrimary, 0.12, 'rgba(78, 131, 255, 0.12)'),
+    '--showcase-status-ok-gradient': `linear-gradient(135deg, ${statusOkStart} 0%, ${statusOkEnd} 100%)`,
+    '--showcase-status-warn-gradient': `linear-gradient(135deg, ${statusWarnStart} 0%, ${statusWarnEnd} 100%)`,
+    '--showcase-status-alert-gradient': `linear-gradient(135deg, ${statusAlertStart} 0%, ${statusAlertEnd} 100%)`,
+    '--showcase-status-alert-strong-gradient': `linear-gradient(135deg, ${statusAlertStrongStart} 0%, ${statusAlertStrongEnd} 100%)`,
+    '--showcase-status-ok-text': statusOkText,
+    '--showcase-status-warn-text': statusWarnText,
+    '--showcase-status-alert-text': statusAlertText,
+    '--showcase-accent-soft': toRgba(highlightBase, 0.85, 'rgba(147, 197, 253, 0.85)'),
+    '--showcase-accent-strong': toRgba(accentPrimary, 0.9, 'rgba(59, 130, 246, 0.9)'),
+    '--showcase-accent-muted': toRgba(accentPrimary, 0.75, 'rgba(79, 70, 229, 0.75)')
   };
 };
 
