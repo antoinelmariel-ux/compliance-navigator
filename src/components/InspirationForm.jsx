@@ -420,6 +420,9 @@ export const InspirationForm = ({
                     Ajouter
                   </button>
                 </div>
+                <p className="text-xs text-amber-600">
+                  Les fichiers doivent bien être partagés aux collaborateurs LFB.
+                </p>
                 <div className="space-y-3">
                   {(formState[field.id] || []).map((doc, index) => (
                     <div

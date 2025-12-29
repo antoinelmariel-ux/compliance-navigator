@@ -4,7 +4,7 @@ import { sanitizeRichText } from '../utils/richText.js';
 const BUTTON_BASE_CLASSES =
   'inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1';
 const LIST_BUTTON_CLASSES =
-  'inline-flex items-center gap-2 px-3 py-1.5 text-sm font-semibold rounded-full border border-blue-200 text-blue-700 bg-blue-50 shadow-sm hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1';
+  'inline-flex items-center gap-3 px-3 py-1.5 text-sm font-semibold rounded-full border border-gray-300 text-gray-900 bg-white shadow-sm hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1';
 
 const commandIsAvailable = () => typeof document !== 'undefined' && typeof document.execCommand === 'function';
 
@@ -199,16 +199,18 @@ export const RichTextEditor = ({
           <span className="sr-only">Souligner</span>
         </button>
         <button type="button" className={LIST_BUTTON_CLASSES} onClick={() => applyCommand('insertUnorderedList')}>
-          <span aria-hidden="true" className="flex items-center gap-2">
-            <span className="flex flex-col gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-current" />
-              <span className="h-1.5 w-1.5 rounded-full bg-current" />
-              <span className="h-1.5 w-1.5 rounded-full bg-current" />
+          <span aria-hidden="true" className="flex flex-col gap-2">
+            <span className="flex items-center gap-3">
+              <span className="h-2.5 w-2.5 rounded-full bg-gray-900" />
+              <span className="h-0.5 w-10 rounded-full bg-gray-900" />
             </span>
-            <span className="flex flex-col gap-1">
-              <span className="h-0.5 w-5 rounded-full bg-current" />
-              <span className="h-0.5 w-5 rounded-full bg-current" />
-              <span className="h-0.5 w-5 rounded-full bg-current" />
+            <span className="flex items-center gap-3">
+              <span className="h-2.5 w-2.5 rounded-full bg-gray-900" />
+              <span className="h-0.5 w-10 rounded-full bg-gray-900" />
+            </span>
+            <span className="flex items-center gap-3">
+              <span className="h-2.5 w-2.5 rounded-full bg-gray-900" />
+              <span className="h-0.5 w-10 rounded-full bg-gray-900" />
             </span>
           </span>
           <span className="sr-only">Liste à puces</span>
