@@ -36,7 +36,7 @@ import {
 } from './utils/inspirationConfig.js';
 import { exportInspirationToFile } from './utils/inspirationExport.js';
 
-const APP_VERSION = 'v1.0.230';
+const APP_VERSION = 'v1.0.232';
 
 const loadModule = (modulePath) => {
   if (typeof window === 'undefined') {
@@ -614,6 +614,7 @@ export const App = () => {
   const annotationFileInputRef = useRef(null);
   const loadedStylesRef = useRef(new Set());
   const pendingShowcaseProjectIdRef = useRef(null);
+  const isShowcaseScreen = screen === 'showcase';
 
   const ensureStylesheetLoaded = useCallback((href) => {
     if (typeof document === 'undefined' || !href) {
@@ -690,6 +691,22 @@ export const App = () => {
     ensureStylesheetLoaded('./src/styles/project-showcase.css');
     ensureStylesheetLoaded('./src/styles/project-showcase-theme-aurora.css');
   }, [ensureStylesheetLoaded, showcaseProjectContext]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') {
+      return undefined;
+    }
+
+    if (isShowcaseScreen) {
+      document.body.classList.add('showcase-body');
+      return () => {
+        document.body.classList.remove('showcase-body');
+      };
+    }
+
+    document.body.classList.remove('showcase-body');
+    return undefined;
+  }, [isShowcaseScreen]);
 
   useEffect(() => {
     annotationNotesRef.current = annotationNotes;
@@ -3854,6 +3871,7 @@ const updateProjectFilters = useCallback((updater) => {
                   timelineDetails={showcaseProjectContext.timelineDetails}
                   showcaseThemes={showcaseThemes}
                   hasIncompleteAnswers={Boolean(showcaseProjectContext.hasIncompleteAnswers)}
+                  renderInStandalone
                   onUpdateAnswers={
                     isOnboardingActive
                       ? noop
@@ -3871,14 +3889,17 @@ const updateProjectFilters = useCallback((updater) => {
         ) : null}
       </main>
 
-      <footer className="bg-white border-t border-gray-200 mt-10" aria-label="Pied de page">
-        <p className="text-xs text-gray-400 text-center py-4">
+      <footer
+        className={isShowcaseScreen ? 'showcase-footer' : 'bg-white border-t border-gray-200 mt-10'}
+        aria-label="Pied de page"
+      >
+        <p className={isShowcaseScreen ? undefined : 'text-xs text-gray-400 text-center py-4'}>
           Project Navigator · Version {APP_VERSION} ·{' '}
           <a
             href="./mentions-legales.html"
             target="_blank"
             rel="noopener noreferrer"
-            className="underline hover:text-gray-500"
+            className={isShowcaseScreen ? undefined : 'underline hover:text-gray-500'}
           >
             Mentions légales
           </a>
