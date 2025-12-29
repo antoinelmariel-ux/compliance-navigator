@@ -2957,10 +2957,12 @@ export const ProjectShowcase = ({
           <div className="mt-4 grid grid-cols-3 gap-3 rounded-xl bg-white p-4 shadow-inner">
             <div className="col-span-3 h-3 rounded-full bg-gradient-to-r from-indigo-500/80 to-fuchsia-400/70" />
             {Array.from({ length: 3 }).map((_, index) => (
-              <div key={`columns-preview-${index}`} className="space-y-2 rounded-lg bg-gray-50 p-2">
-                <div className="h-2 w-2/3 rounded-full bg-gray-200" />
-                <div className="h-2 w-full rounded-full bg-gray-100" />
-                <div className="h-2 w-5/6 rounded-full bg-gray-100" />
+              <div key={`columns-preview-${index}`} className="rounded-lg bg-gray-50 p-2">
+                <div className="flex h-16 items-end justify-center gap-1">
+                  <div className="h-10 w-2 rounded-full bg-indigo-200" />
+                  <div className="h-14 w-2 rounded-full bg-purple-200" />
+                  <div className="h-12 w-2 rounded-full bg-fuchsia-200" />
+                </div>
               </div>
             ))}
           </div>
