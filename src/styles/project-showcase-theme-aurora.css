@@ -510,6 +510,84 @@
   letter-spacing: -0.015em;
 }
 
+[data-showcase-theme] .aurora-body-text {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: rgba(224, 236, 255, 0.88);
+}
+
+[data-showcase-theme] .aurora-section--custom {
+  color: #0f172a;
+}
+
+[data-showcase-theme] .aurora-section--custom::before {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  opacity: 0.96;
+}
+
+[data-showcase-theme] .aurora-section--custom .aurora-section__title {
+  color: rgba(15, 23, 42, 0.92);
+}
+
+[data-showcase-theme] .aurora-section--custom .aurora-body-text {
+  color: rgba(30, 41, 59, 0.82);
+}
+
+[data-showcase-theme] .aurora-card {
+  padding: 1.4rem 1.6rem;
+  border-radius: 1.6rem;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(148, 197, 255, 0.4);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+  backdrop-filter: blur(18px);
+  color: rgba(15, 23, 42, 0.88);
+}
+
+[data-showcase-theme] .aurora-card__metric {
+  margin-top: 0.6rem;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: rgba(15, 23, 42, 0.9);
+}
+
+[data-showcase-theme] .aurora-card__caption {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: rgba(71, 85, 105, 0.85);
+}
+
+[data-showcase-theme] .aurora-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+[data-showcase-theme] .aurora-chip__dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.9), rgba(79, 70, 229, 0.9));
+  box-shadow: 0 0 12px rgba(14, 165, 233, 0.45);
+}
+
+[data-showcase-theme] .aurora-chip--tone {
+  background: rgba(219, 234, 254, 0.72);
+  border: 1px solid rgba(96, 165, 250, 0.35);
+  color: rgba(15, 23, 42, 0.82);
+}
+
+[data-showcase-theme] .aurora-chip--ghost {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  color: rgba(15, 23, 42, 0.75);
+}
+
 [data-showcase-theme] .aurora-hero::before {
   background: linear-gradient(135deg, #000000 0%, #090d15 45%, #0b1f2c 100%);
 }
@@ -1378,4 +1456,3 @@
     opacity: 1;
   }
 }
-
