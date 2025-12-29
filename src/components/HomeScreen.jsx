@@ -14,6 +14,7 @@ import {
   Upload,
   Copy,
   Trash2,
+  Close,
   Sparkles
 } from './icons.js';
 import { VirtualizedList } from './VirtualizedList.jsx';
@@ -780,6 +781,119 @@ export const HomeScreen = ({
     : [];
   const shouldShowInspirationFiltersCard = hasInspirationProjects && inspirationFilterFields.length > 0;
 
+  const handleClearProjectFilter = useCallback((target) => {
+    setFiltersState((prev) => {
+      const next = { ...prev };
+
+      if (target.type === 'sort') {
+        const defaultValue = prev.sortOrderDefault || 'desc';
+        if (prev.sortOrder === defaultValue) {
+          return prev;
+        }
+        next.sortOrder = defaultValue;
+        return next;
+      }
+
+      if (target.type === 'select') {
+        next[target.id] = DEFAULT_SELECT_FILTER_VALUE;
+      } else {
+        next[target.id] = DEFAULT_TEXT_FILTER_VALUE;
+      }
+
+      return next;
+    });
+  }, []);
+
+  const handleClearInspirationFilter = useCallback((target) => {
+    setInspirationFiltersState((prev) => {
+      const next = { ...prev };
+
+      if (target.type === 'select') {
+        next[target.id] = DEFAULT_SELECT_FILTER_VALUE;
+      } else {
+        next[target.id] = DEFAULT_TEXT_FILTER_VALUE;
+      }
+
+      return next;
+    });
+  }, []);
+
+  const activeProjectFilterChips = useMemo(() => {
+    const chips = [];
+
+    enabledFilterFields.forEach((field) => {
+      const rawValue = filtersState[field.id];
+      if (field.type === 'select') {
+        if (rawValue && rawValue !== DEFAULT_SELECT_FILTER_VALUE) {
+          chips.push({
+            id: field.id,
+            label: field.label || 'Filtre',
+            value: String(rawValue),
+            onClear: () => handleClearProjectFilter({ id: field.id, type: 'select' })
+          });
+        }
+        return;
+      }
+
+      const trimmed = typeof rawValue === 'string' ? rawValue.trim() : '';
+      if (trimmed.length > 0) {
+        chips.push({
+          id: field.id,
+          label: field.label || 'Filtre',
+          value: trimmed,
+          onClear: () => handleClearProjectFilter({ id: field.id, type: 'text' })
+        });
+      }
+    });
+
+    if (sortFilterConfig?.enabled && filtersState.sortOrder !== filtersState.sortOrderDefault) {
+      chips.push({
+        id: 'sortOrder',
+        label: sortFilterConfig.label || 'Tri',
+        value: SORT_LABELS[filtersState.sortOrder] || filtersState.sortOrder,
+        onClear: () => handleClearProjectFilter({ id: 'sortOrder', type: 'sort' })
+      });
+    }
+
+    return chips;
+  }, [
+    enabledFilterFields,
+    filtersState,
+    sortFilterConfig,
+    handleClearProjectFilter
+  ]);
+
+  const activeInspirationFilterChips = useMemo(() => {
+    const chips = [];
+
+    inspirationFilterFields.forEach((field) => {
+      const rawValue = inspirationFiltersState[field.id];
+      if (field.type === 'select') {
+        if (rawValue && rawValue !== DEFAULT_SELECT_FILTER_VALUE) {
+          chips.push({
+            id: field.id,
+            label: field.label || 'Filtre',
+            value: String(rawValue),
+            onClear: () => handleClearInspirationFilter({ id: field.id, type: 'select' })
+          });
+        }
+        return;
+      }
+
+      const trimmed = typeof rawValue === 'string' ? rawValue.trim() : '';
+      if (trimmed.length > 0) {
+        chips.push({
+          id: field.id,
+          label: field.label || 'Filtre',
+          value: trimmed,
+          onClear: () => handleClearInspirationFilter({ id: field.id, type: 'text' })
+        });
+      }
+    });
+
+    return chips;
+  }, [inspirationFilterFields, inspirationFiltersState, handleClearInspirationFilter]);
+
   const handleResetFilters = () => {
     setFiltersState(buildInitialFiltersState(normalizedFilters));
   };
@@ -1201,9 +1315,33 @@ export const HomeScreen = ({
                       }`}
                       disabled={!hasActiveFilters}
                     >
-                      Réinitialiser
+                      Effacer tous les filtres
                     </button>
                   </div>
+                  {activeProjectFilterChips.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        Filtres actifs
+                      </span>
+                      {activeProjectFilterChips.map((chip) => (
+                        <span
+                          key={chip.id}
+                          className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700"
+                        >
+                          <span className="font-semibold text-blue-800">{chip.label} :</span>
+                          <span>{chip.value}</span>
+                          <button
+                            type="button"
+                            onClick={chip.onClear}
+                            className="inline-flex h-5 w-5 items-center justify-center rounded-full text-blue-700 transition-colors hover:bg-blue-100"
+                            aria-label={`Supprimer le filtre ${chip.label}`}
+                          >
+                            <Close className="h-3 w-3" aria-hidden="true" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
                     {enabledFilterFields.map((field) => {
                       const fieldId = `project-filter-${field.id}`;
@@ -1314,7 +1452,7 @@ export const HomeScreen = ({
                       onClick={handleResetFilters}
                       className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-all hv-button hv-button-primary"
                     >
-                      Réinitialiser les filtres
+                      Effacer tous les filtres
                     </button>
                   )}
                 </div>
@@ -1358,9 +1496,33 @@ export const HomeScreen = ({
                       }`}
                       disabled={!hasActiveInspirationFilters}
                     >
-                      Réinitialiser
+                      Effacer tous les filtres
                     </button>
                   </div>
+                  {activeInspirationFilterChips.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                        Filtres actifs
+                      </span>
+                      {activeInspirationFilterChips.map((chip) => (
+                        <span
+                          key={chip.id}
+                          className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700"
+                        >
+                          <span className="font-semibold text-blue-800">{chip.label} :</span>
+                          <span>{chip.value}</span>
+                          <button
+                            type="button"
+                            onClick={chip.onClear}
+                            className="inline-flex h-5 w-5 items-center justify-center rounded-full text-blue-700 transition-colors hover:bg-blue-100"
+                            aria-label={`Supprimer le filtre ${chip.label}`}
+                          >
+                            <Close className="h-3 w-3" aria-hidden="true" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
                     {inspirationFilterFields.map((field) => {
                       const fieldId = `inspiration-filter-${field.id}`;
@@ -1434,7 +1596,7 @@ export const HomeScreen = ({
                       onClick={handleResetInspirationFilters}
                       className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-all hv-button hv-button-primary"
                     >
-                      Réinitialiser les filtres
+                      Effacer tous les filtres
                     </button>
                   )}
                 </div>
