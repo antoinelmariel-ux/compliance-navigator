@@ -55,6 +55,12 @@ export const InspirationDetail = ({
     setEditingFields({});
   }, [project]);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+    }
+  }, [project?.id]);
+
   if (!project) {
     return null;
   }
@@ -245,6 +251,9 @@ export const InspirationDetail = ({
           >
             Ajouter un document
           </button>
+          <p className="text-xs text-amber-600">
+            Les fichiers doivent bien être partagés aux collaborateurs LFB.
+          </p>
         </div>
       );
     }
@@ -350,7 +359,7 @@ export const InspirationDetail = ({
                 className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100"
               >
                 <Download className="h-4 w-4" aria-hidden="true" />
-                Exporter en JSON
+                Enregistrer
               </button>
               <button
                 type="button"
