@@ -134,21 +134,39 @@ export const RichTextEditor = ({
     [handleInput]
   );
 
+  const captureSelection = useCallback(() => {
+    if (typeof window === 'undefined' || !editorRef.current) {
+      return '';
+    }
+
+    const selection = typeof window.getSelection === 'function' ? window.getSelection() : null;
+    if (!selection || selection.rangeCount === 0) {
+      return '';
+    }
+
+    const range = selection.getRangeAt(0);
+    if (!editorRef.current.contains(range.commonAncestorContainer)) {
+      return '';
+    }
+
+    selectionRangeRef.current = range;
+    const selectedText = selection.toString() || '';
+    selectedTextRef.current = selectedText;
+    return selectedText;
+  }, []);
+
   const handleAddLink = useCallback(() => {
     if (typeof window === 'undefined' || !commandIsAvailable()) {
       return;
     }
 
-    const selection = typeof window.getSelection === 'function' ? window.getSelection() : null;
-    const selectedText = selection?.toString() || '';
-    selectionRangeRef.current =
-      selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
-    selectedTextRef.current = selectedText;
-    setLinkText(selectedText);
+    const selectedText = captureSelection();
+    const normalizedSelectedText = selectedText || selectedTextRef.current || '';
+    setLinkText(normalizedSelectedText);
     setLinkUrl('https://');
     setLinkError('');
     setIsLinkModalOpen(true);
-  }, [applyCommand]);
+  }, [captureSelection]);
 
   const handleCloseLinkModal = useCallback(() => {
     setIsLinkModalOpen(false);
@@ -199,23 +217,44 @@ export const RichTextEditor = ({
           <span className="sr-only">Souligner</span>
         </button>
         <button type="button" className={LIST_BUTTON_CLASSES} onClick={() => applyCommand('insertUnorderedList')}>
-          <span aria-hidden="true" className="flex flex-col gap-2">
-            <span className="flex items-center gap-3">
-              <span className="h-2.5 w-2.5 rounded-full bg-gray-900" />
-              <span className="h-0.5 w-10 rounded-full bg-gray-900" />
-            </span>
-            <span className="flex items-center gap-3">
-              <span className="h-2.5 w-2.5 rounded-full bg-gray-900" />
-              <span className="h-0.5 w-10 rounded-full bg-gray-900" />
-            </span>
-            <span className="flex items-center gap-3">
-              <span className="h-2.5 w-2.5 rounded-full bg-gray-900" />
-              <span className="h-0.5 w-10 rounded-full bg-gray-900" />
-            </span>
-          </span>
+          <svg
+            aria-hidden="true"
+            fill="#000000"
+            height="20px"
+            width="20px"
+            version="1.1"
+            id="Icons"
+            xmlns="http://www.w3.org/2000/svg"
+            xmlnsXlink="http://www.w3.org/1999/xlink"
+            viewBox="0 0 32 32"
+            xmlSpace="preserve"
+          >
+            <g id="SVGRepo_bgCarrier" strokeWidth="0" />
+            <g id="SVGRepo_tracerCarrier" strokeLinecap="round" strokeLinejoin="round" />
+            <g id="SVGRepo_iconCarrier">
+              <g>
+                <path d="M11,8h18c0.6,0,1-0.4,1-1s-0.4-1-1-1H11c-0.6,0-1,0.4-1,1S10.4,8,11,8z" />
+                <path d="M11,17h11c0.6,0,1-0.4,1-1s-0.4-1-1-1H11c-0.6,0-1,0.4-1,1S10.4,17,11,17z" />
+                <path d="M29,24H11c-0.6,0-1,0.4-1,1s0.4,1,1,1h18c0.6,0,1-0.4,1-1S29.6,24,29,24z" />
+                <path d="M5,4C3.3,4,2,5.3,2,7s1.3,3,3,3s3-1.3,3-3S6.7,4,5,4z" />
+                <path d="M5,13c-1.7,0-3,1.3-3,3s1.3,3,3,3s3-1.3,3-3S6.7,13,5,13z" />
+                <path d="M5,22c-1.7,0-3,1.3-3,3s1.3,3,3,3s3-1.3,3-3S6.7,22,5,22z" />
+              </g>
+            </g>
+          </svg>
           <span className="sr-only">Liste à puces</span>
         </button>
-        <button type="button" className={BUTTON_BASE_CLASSES} onClick={handleAddLink}>
+        <button
+          type="button"
+          className={BUTTON_BASE_CLASSES}
+          onMouseDown={(event) => {
+            if (event.button !== 0) {
+              return;
+            }
+            captureSelection();
+          }}
+          onClick={handleAddLink}
+        >
           <span aria-hidden="true">🔗</span>
           <span className="sr-only">Insérer un lien</span>
         </button>
