@@ -1451,3 +1451,20 @@
     opacity: 1;
   }
 }
+
+body.showcase-body {
+  background: #020309;
+}
+
+.showcase-footer {
+  background: #0b1223;
+  color: rgba(148, 163, 184, 0.85);
+  font-size: 0.85rem;
+  padding: 28px 16px 48px;
+  text-align: center;
+}
+
+.showcase-footer a {
+  color: inherit;
+  text-decoration: underline;
+}
