@@ -36,7 +36,7 @@ import {
 } from './utils/inspirationConfig.js';
 import { exportInspirationToFile } from './utils/inspirationExport.js';
 
-const APP_VERSION = 'v1.0.228';
+const APP_VERSION = 'v1.0.229';
 
 const loadModule = (modulePath) => {
   if (typeof window === 'undefined') {
