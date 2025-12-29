@@ -2482,23 +2482,27 @@ export const ProjectShowcase = ({
                   </div>
                 )}
               </div>
-              <div className="aurora-difference__grid">
+              <div className="aurora-difference__layout">
                 {hasText(innovationProcess) && (
-                  <div className="aurora-difference__item">
-                    <p className="aurora-eyebrow">Comment on s'y prend</p>
-                    <h3 className="aurora-difference__title">Processus & expérimentation</h3>
-                    <p className="aurora-difference__text">{renderTextWithLinks(innovationProcess)}</p>
+                  <div className="aurora-difference__text">
+                    <div className="aurora-difference__text-section">
+                      <p className="aurora-eyebrow">Comment on s'y prend</p>
+                      <p className="aurora-difference__label">Processus & expérimentation</p>
+                      <div className="aurora-difference__text-content">
+                        {renderTextWithLinks(innovationProcess)}
+                      </div>
+                    </div>
                   </div>
                 )}
                 {visionStatementEntries.length > 0 && (
-                  <div className="aurora-difference__item">
+                  <div className="aurora-difference__metrics">
                     <p className="aurora-eyebrow">Indicateurs de valeur</p>
-                    <h3 className="aurora-difference__title">Comment nous mesurons l'impact</h3>
-                    <ul className="aurora-difference__list">
+                    <p className="aurora-difference__label">Comment nous mesurons l'impact</p>
+                    <ul className="aurora-difference__metrics-list">
                       {visionStatementEntries.map((entry, entryIndex) => (
-                        <li key={`${entry}-${entryIndex}`} className="aurora-difference__list-item">
-                          <span className="aurora-difference__bullet" />
-                          <span>{renderTextWithLinks(entry)}</span>
+                        <li key={`${entry}-${entryIndex}`} className="aurora-difference__metrics-item">
+                          <span className="aurora-difference__metrics-bullet" />
+                          <span className="aurora-difference__metrics-text">{renderTextWithLinks(entry)}</span>
                         </li>
                       ))}
                     </ul>
@@ -2513,7 +2517,7 @@ export const ProjectShowcase = ({
           return null;
         }
         return (
-          <section key={`${sectionId}-${index}`} className="aurora-section aurora-alliances" data-showcase-section="team">
+          <section key={`${sectionId}-${index}`} className="aurora-section aurora-team" data-showcase-section="team">
             <div className="aurora-section__inner">
               <div className="aurora-section__header aurora-section__header--split">
                 <div>
@@ -2521,27 +2525,36 @@ export const ProjectShowcase = ({
                   <h2 className="aurora-section__title">Qui porte et sécurise le projet</h2>
                 </div>
               </div>
-              <div className="aurora-alliances__grid">
+              <div className="aurora-team__layout">
                 {hasText(teamLead) && (
-                  <div className="aurora-alliances__item">
-                    <p className="aurora-eyebrow">Pilotage</p>
-                    <h3 className="aurora-alliances__title">{teamLead}</h3>
-                    {hasText(teamLeadTeam) && (
-                      <p className="aurora-alliances__caption">{teamLeadTeam}</p>
-                    )}
+                  <div className="aurora-team__lead">
+                    <div className="aurora-team__lead-info">
+                      <p className="aurora-team__lead-label">Pilotage</p>
+                      <h3 className="aurora-team__lead-name">{teamLead}</h3>
+                      {hasText(teamLeadTeam) && (
+                        <p className="aurora-team__lead-team">{teamLeadTeam}</p>
+                      )}
+                    </div>
                   </div>
                 )}
-                {teamCoreMembers.length > 0 && (
-                  <div className="aurora-alliances__item">
-                    <p className="aurora-eyebrow">Équipe cœur</p>
-                    <ul className="aurora-alliances__list">
-                      {teamCoreMembers.map((member, memberIndex) => (
-                        <li key={`${member}-${memberIndex}`} className="aurora-alliances__list-item">
-                          <span className="aurora-alliances__badge" />
-                          <span>{renderTextWithLinks(member)}</span>
-                        </li>
+                {teamMemberCards.length > 0 && (
+                  <div className="aurora-team__members">
+                    <p className="aurora-team__members-label">Équipe cœur</p>
+                    <div className="aurora-team__carousel">
+                      {teamMemberCards.map((member, memberIndex) => (
+                        <div key={member.id ?? `${member.name}-${memberIndex}`} className="aurora-team__card">
+                          <div className="aurora-team__avatar" aria-hidden="true">
+                            {member.initials}
+                          </div>
+                          <div className="aurora-team__card-text">
+                            <p className="aurora-team__card-name">{member.name}</p>
+                            {member.details && (
+                              <p className="aurora-team__card-role">{member.details}</p>
+                            )}
+                          </div>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   </div>
                 )}
               </div>
