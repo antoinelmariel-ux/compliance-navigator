@@ -36,7 +36,17 @@ import {
 } from './utils/inspirationConfig.js';
 import { exportInspirationToFile } from './utils/inspirationExport.js';
 
-const APP_VERSION = 'v1.0.230';
+const APP_VERSION = 'v1.0.231';
+
+const resolveShowcaseDisplayMode = (value) => {
+  if (value === 'light') {
+    return 'light';
+  }
+  if (value === 'full') {
+    return 'full';
+  }
+  return null;
+};
 
 const loadModule = (modulePath) => {
   if (typeof window === 'undefined') {
@@ -599,8 +609,12 @@ export const App = () => {
   const backOfficePromptResolverRef = useRef(null);
   const [adminView, setAdminView] = useState('home');
   const showcaseShareInputRef = useRef(null);
+  const [showcaseDisplayMode, setShowcaseDisplayMode] = useState('full');
+  const [showcaseDisplayModeLock, setShowcaseDisplayModeLock] = useState(null);
+  const [showcaseShareMode, setShowcaseShareMode] = useState('full');
   const persistTimeoutRef = useRef(null);
   const previousScreenRef = useRef(null);
+  const pendingShowcaseDisplayModeRef = useRef(null);
   const [isAnnotationModeEnabled, setIsAnnotationModeEnabled] = useState(false);
   const [isAnnotationPaused, setIsAnnotationPaused] = useState(false);
   const [annotationNotes, setAnnotationNotes] = useState([]);
@@ -663,6 +677,8 @@ export const App = () => {
     const { search, hash } = window.location;
     const params = new URLSearchParams(search || '');
     let projectId = params.get('projectId') || params.get('showcase');
+    const rawShowcaseMode = params.get('showcaseMode');
+    const resolvedShowcaseMode = resolveShowcaseDisplayMode(rawShowcaseMode);
 
     if (!projectId && typeof hash === 'string' && hash.length > 1) {
       const normalizedHash = hash.slice(1);
@@ -675,6 +691,10 @@ export const App = () => {
 
     if (projectId) {
       pendingShowcaseProjectIdRef.current = projectId;
+    }
+
+    if (resolvedShowcaseMode) {
+      pendingShowcaseDisplayModeRef.current = resolvedShowcaseMode;
     }
   }, []);
 
@@ -2888,6 +2908,13 @@ const updateProjectFilters = useCallback((updater) => {
       }));
     }
 
+    const pendingShowcaseMode = pendingShowcaseDisplayModeRef.current;
+    const resolvedShowcaseMode = resolveShowcaseDisplayMode(pendingShowcaseMode) || 'full';
+
+    pendingShowcaseDisplayModeRef.current = null;
+    setShowcaseDisplayMode(resolvedShowcaseMode);
+    setShowcaseDisplayModeLock(resolvedShowcaseMode === 'light' ? 'light' : null);
+
     setShowcaseProjectContext({
       projectId: projectId || null,
       projectName: resolvedProjectName,
@@ -2951,6 +2978,8 @@ const updateProjectFilters = useCallback((updater) => {
 
   const handleCloseProjectShowcase = useCallback(() => {
     setShowcaseProjectContext(null);
+    setShowcaseDisplayMode('full');
+    setShowcaseDisplayModeLock(null);
     if (previousScreenRef.current) {
       setScreen(previousScreenRef.current);
     } else {
@@ -3290,25 +3319,36 @@ const updateProjectFilters = useCallback((updater) => {
   }, [navigateToSynthesis]);
 
   const showcaseProjectId = showcaseProjectContext?.projectId || '';
-  const showcaseShareUrl = useMemo(() => {
+  const buildShowcaseShareUrl = useCallback((shareMode) => {
     if (!showcaseProjectId || typeof window === 'undefined') {
       return '';
     }
 
     const url = new URL(window.location.href);
     url.searchParams.set('projectId', showcaseProjectId);
+    if (shareMode === 'light') {
+      url.searchParams.set('showcaseMode', 'light');
+    } else {
+      url.searchParams.delete('showcaseMode');
+    }
     url.hash = 'showcase';
     return url.toString();
   }, [showcaseProjectId]);
+
+  const showcaseShareUrl = useMemo(
+    () => buildShowcaseShareUrl(showcaseShareMode),
+    [buildShowcaseShareUrl, showcaseShareMode]
+  );
 
   const handleOpenShowcaseShare = useCallback(() => {
     if (!showcaseProjectId) {
       return;
     }
 
+    setShowcaseShareMode(showcaseDisplayMode === 'light' ? 'light' : 'full');
     setIsShowcaseShareOpen(true);
     setShowcaseShareFeedback('');
-  }, [showcaseProjectId]);
+  }, [showcaseDisplayMode, showcaseProjectId]);
 
   const handleCloseShowcaseShare = useCallback(() => {
     setIsShowcaseShareOpen(false);
@@ -3601,6 +3641,38 @@ const updateProjectFilters = useCallback((updater) => {
                 <p className="text-sm text-blue-600">{showcaseShareFeedback}</p>
               )}
             </div>
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-gray-700">Mode partagé</p>
+              <div className="inline-flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowcaseShareMode('full')}
+                  className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
+                    showcaseShareMode === 'full'
+                      ? 'border-blue-200 bg-blue-50 text-blue-700 shadow-sm'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                  }`}
+                  aria-pressed={showcaseShareMode === 'full'}
+                >
+                  Mode complet
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowcaseShareMode('light')}
+                  className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
+                    showcaseShareMode === 'light'
+                      ? 'border-blue-200 bg-blue-50 text-blue-700 shadow-sm'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                  }`}
+                  aria-pressed={showcaseShareMode === 'light'}
+                >
+                  Mode Light
+                </button>
+              </div>
+              <p className="text-xs text-gray-500">
+                En mode Light, seules les sections pré-sélectionnées sont visibles.
+              </p>
+            </div>
             <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
               <button
                 type="button"
@@ -3854,6 +3926,8 @@ const updateProjectFilters = useCallback((updater) => {
                   timelineDetails={showcaseProjectContext.timelineDetails}
                   showcaseThemes={showcaseThemes}
                   hasIncompleteAnswers={Boolean(showcaseProjectContext.hasIncompleteAnswers)}
+                  initialDisplayMode={showcaseDisplayMode}
+                  displayModeLock={showcaseDisplayModeLock}
                   onUpdateAnswers={
                     isOnboardingActive
                       ? noop
@@ -3862,6 +3936,7 @@ const updateProjectFilters = useCallback((updater) => {
                         : undefined
                   }
                   tourContext={tourContext}
+                  onDisplayModeChange={setShowcaseDisplayMode}
                   onAnnotationScopeChange={setShowcaseAnnotationScope}
                   onEditingStateChange={setIsShowcaseEditing}
                 />
