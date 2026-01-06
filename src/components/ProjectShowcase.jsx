@@ -1485,7 +1485,10 @@ export const ProjectShowcase = ({
   showcaseThemes = initialShowcaseThemes,
   hasIncompleteAnswers = false,
   onAnnotationScopeChange = null,
-  onEditingStateChange = null
+  onEditingStateChange = null,
+  initialDisplayMode = 'full',
+  displayModeLock = null,
+  onDisplayModeChange = null
 }) => {
   const rawProjectName = typeof projectName === 'string' ? projectName.trim() : '';
   const safeProjectName = rawProjectName.length > 0 ? rawProjectName : 'Information à compléter';
@@ -1535,7 +1538,10 @@ export const ProjectShowcase = ({
     normalizeSectionOrder(answers?.showcaseSectionOrder, sanitizeCustomSections(answers?.customShowcaseSections))
   );
   const [milestoneDragState, setMilestoneDragState] = useState(createEmptyMilestoneDragState);
-  const [displayMode, setDisplayMode] = useState('full');
+  const resolvedDisplayModeLock =
+    displayModeLock === 'light' || displayModeLock === 'full' ? displayModeLock : null;
+  const resolvedInitialDisplayMode = initialDisplayMode === 'light' ? 'light' : 'full';
+  const [displayMode, setDisplayMode] = useState(resolvedDisplayModeLock || resolvedInitialDisplayMode);
   const [lightSections, setLightSections] = useState(() =>
     buildDefaultLightSectionSelection(sectionOrder)
   );
@@ -1640,10 +1646,32 @@ export const ProjectShowcase = ({
   }, [displayMode, isLightConfigOpen, isSectionModalOpen, onAnnotationScopeChange, sectionModalStep]);
 
   const handleDisplayModeChange = useCallback((mode) => {
+    if (resolvedDisplayModeLock) {
+      return;
+    }
+
     if (mode === 'full' || mode === 'light') {
       setDisplayMode(mode);
     }
-  }, []);
+  }, [resolvedDisplayModeLock]);
+
+  useEffect(() => {
+    if (resolvedDisplayModeLock) {
+      setDisplayMode(resolvedDisplayModeLock);
+      setIsLightConfigOpen(false);
+      return;
+    }
+
+    if (initialDisplayMode === 'light' || initialDisplayMode === 'full') {
+      setDisplayMode(initialDisplayMode);
+    }
+  }, [initialDisplayMode, resolvedDisplayModeLock]);
+
+  useEffect(() => {
+    if (typeof onDisplayModeChange === 'function') {
+      onDisplayModeChange(displayMode);
+    }
+  }, [displayMode, onDisplayModeChange]);
 
   const handleOpenLightConfig = useCallback(() => {
     setPendingLightSections(lightSections);
@@ -3321,7 +3349,7 @@ export const ProjectShowcase = ({
     </div>
   ) : null;
 
-  const modeSelectionPanel = (
+  const modeSelectionPanel = resolvedDisplayModeLock ? null : (
     <div className="mb-6 rounded-2xl border border-gray-200 bg-white/80 shadow-sm backdrop-blur">
       <div
         className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
