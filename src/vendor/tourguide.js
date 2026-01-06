@@ -203,6 +203,27 @@
     return { ...DEFAULT_SCROLL_OPTIONS, ...value };
   };
 
+  const ACTION_TYPES = new Set(['next', 'prev', 'close', 'finish', 'goTo']);
+
+  const sanitizeAction = (action, index) => {
+    if (!action || typeof action !== 'object') {
+      return null;
+    }
+
+    const label = typeof action.label === 'string' ? action.label : '';
+    const actionType = ACTION_TYPES.has(action.action) ? action.action : 'next';
+    const stepId = typeof action.stepId === 'string' ? action.stepId : '';
+    const variant = typeof action.variant === 'string' ? action.variant : 'ghost';
+
+    return {
+      id: typeof action.id === 'string' ? action.id : `action-${index + 1}`,
+      label,
+      action: actionType,
+      stepId,
+      variant
+    };
+  };
+
   const resolveScrollIntoViewOptions = (stepOption, defaultOption) => {
     if (stepOption === false) {
       return false;
@@ -264,7 +285,11 @@
                 ? sanitizeScrollDuration(step.scrollDuration)
                 : mergedOptions.scrollDuration,
             onBeforeStep: typeof step?.onBeforeStep === 'function' ? step.onBeforeStep : null,
-            onAfterStep: typeof step?.onAfterStep === 'function' ? step.onAfterStep : null
+            onAfterStep: typeof step?.onAfterStep === 'function' ? step.onAfterStep : null,
+            showDefaultButtons: step?.showDefaultButtons !== false,
+            actions: Array.isArray(step?.actions)
+              ? step.actions.map(sanitizeAction).filter(Boolean)
+              : []
           })
         ).sort((a, b) => getStepOrder(a, 0) - getStepOrder(b, 0))
         : [];
@@ -281,6 +306,10 @@
       this.closeButton = null;
       this.dotsElement = null;
       this.stepIndicator = null;
+      this.actionsWrapper = null;
+      this.controlsWrapper = null;
+      this.actionsWrapper = null;
+      this.controlsWrapper = null;
       this.currentTarget = null;
       this.pendingFrame = null;
       this.listeners = new Map();
@@ -426,6 +455,44 @@
       this.showStep(prevIndex);
     }
 
+    goToStepId(stepId) {
+      if (!this.isActive || !stepId) {
+        return;
+      }
+
+      const nextIndex = this.steps.findIndex(step => step.id === stepId);
+      if (nextIndex === -1) {
+        return;
+      }
+
+      this.showStep(nextIndex);
+    }
+
+    handleAction(action) {
+      if (!action) {
+        return;
+      }
+
+      switch (action.action) {
+        case 'prev':
+          this.prev();
+          break;
+        case 'close':
+          this.close();
+          break;
+        case 'finish':
+          this.finish();
+          break;
+        case 'goTo':
+          this.goToStepId(action.stepId);
+          break;
+        case 'next':
+        default:
+          this.next();
+          break;
+      }
+    }
+
     createElements() {
       if (typeof document === 'undefined') {
         return;
@@ -468,6 +535,12 @@
       const footer = document.createElement('div');
       footer.className = 'tgjs-tooltip__footer';
 
+      const actionsWrapper = document.createElement('div');
+      actionsWrapper.className = 'tgjs-actions';
+
+      const controlsWrapper = document.createElement('div');
+      controlsWrapper.className = 'tgjs-controls';
+
       const prevButton = document.createElement('button');
       prevButton.type = 'button';
       prevButton.className = 'tgjs-button tgjs-button--ghost';
@@ -483,9 +556,12 @@
       nextButton.textContent = this.options.labels.next;
       nextButton.addEventListener('click', () => this.next());
 
-      footer.appendChild(prevButton);
-      footer.appendChild(stepIndicator);
-      footer.appendChild(nextButton);
+      controlsWrapper.appendChild(prevButton);
+      controlsWrapper.appendChild(stepIndicator);
+      controlsWrapper.appendChild(nextButton);
+
+      footer.appendChild(actionsWrapper);
+      footer.appendChild(controlsWrapper);
 
       if (this.options.showStepDots) {
         const dots = document.createElement('div');
@@ -513,6 +589,8 @@
       this.nextButton = nextButton;
       this.closeButton = closeButton;
       this.stepIndicator = stepIndicator;
+      this.actionsWrapper = actionsWrapper;
+      this.controlsWrapper = controlsWrapper;
     }
 
     attachGlobalListeners() {
@@ -704,6 +782,37 @@
 
       if (this.closeButton) {
         this.closeButton.style.display = this.options.allowClose ? 'inline-flex' : 'none';
+      }
+
+      if (this.controlsWrapper) {
+        this.controlsWrapper.style.display = step.showDefaultButtons ? 'flex' : 'none';
+      }
+
+      if (this.actionsWrapper) {
+        const actions = Array.isArray(step.actions) ? step.actions : [];
+        this.actionsWrapper.innerHTML = '';
+        if (actions.length === 0) {
+          this.actionsWrapper.style.display = 'none';
+        } else {
+          this.actionsWrapper.style.display = 'flex';
+          actions.forEach((action) => {
+            const label = action.label
+              || (action.action === 'prev'
+                ? this.options.labels.prev
+                : action.action === 'close'
+                  ? this.options.labels.close
+                  : action.action === 'finish'
+                    ? this.options.labels.finish
+                    : this.options.labels.next);
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = `tgjs-button ${action.variant === 'primary' ? 'tgjs-button--primary' : 'tgjs-button--ghost'}`;
+            button.textContent = label;
+            button.disabled = action.action === 'goTo' && !action.stepId;
+            button.addEventListener('click', () => this.handleAction(action));
+            this.actionsWrapper.appendChild(button);
+          });
+        }
       }
 
       if (this.stepIndicator) {
