@@ -139,7 +139,12 @@ export const initialQuestions = [
     "question": "Quel thème souhaitez-vous pour la vitrine ?",
     "options": [
       "Universel",
-      "Produit"
+      "Produit",
+      "Cupertino",
+      "Lumen",
+      "Voyage",
+      "Arena",
+      "Prism"
     ],
     "required": true,
     "conditions": [],
@@ -149,7 +154,12 @@ export const initialQuestions = [
       "details": "Chaque thème peut être ajusté dans le back-office grâce aux color-pickers (fond, dégradés, accents). Choisissez celui qui correspond le mieux à votre projet.",
       "tips": [
         "Universel : reprend l'identité visuelle actuelle de la vitrine.",
-        "Produit : palette solaire et contrastée pour valoriser une offre produit."
+        "Produit : palette solaire et contrastée pour valoriser une offre produit.",
+        "Cupertino : minimalisme lumineux inspiré d’Apple.",
+        "Lumen : dégradés néon et profondeur façon Stripe.",
+        "Voyage : chaleur AirBnB, accent corail et accueil doux.",
+        "Arena : contrastes sportifs et énergie Nike.",
+        "Prism : gradients vibrants inspirés d’Instagram."
       ]
     },
     "showcase": {
