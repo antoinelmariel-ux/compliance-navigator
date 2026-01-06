@@ -23,12 +23,18 @@ import { BackOfficeDashboard } from './BackOfficeDashboard.jsx';
 import { VirtualizedList } from './VirtualizedList.jsx';
 import { renderTextWithLinks } from '../utils/linkify.js';
 import { normalizeConditionGroups } from '../utils/conditionGroups.js';
+import { initialOnboardingTourConfig } from '../data/onboardingTour.js';
 import {
   normalizeTimingRequirement,
   sanitizeRiskTimingConstraint,
   sanitizeTeamQuestionEntry
 } from '../utils/rules.js';
 import { sanitizeRuleCondition } from '../utils/ruleConditions.js';
+import {
+  createOnboardingAction,
+  createOnboardingStep,
+  normalizeOnboardingConfig
+} from '../utils/onboarding.js';
 import {
   normalizeProjectFilterConfig,
   resetProjectFiltersConfig,
@@ -492,7 +498,9 @@ export const BackOffice = ({
   inspirationFilters,
   setInspirationFilters,
   inspirationFormFields,
-  setInspirationFormFields
+  setInspirationFormFields,
+  onboardingTourConfig,
+  setOnboardingTourConfig
 }) => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [editingRule, setEditingRule] = useState(null);
@@ -524,6 +532,11 @@ export const BackOffice = ({
     ? showcaseThemes
     : initialShowcaseThemes;
   const showcaseThemeCount = safeShowcaseThemes.length;
+  const normalizedOnboardingConfig = useMemo(
+    () => normalizeOnboardingConfig(onboardingTourConfig),
+    [onboardingTourConfig]
+  );
+  const onboardingStepCount = normalizedOnboardingConfig.steps.length;
 
   const normalizeColorValue = useCallback((value, fallback = '#000000') => {
     if (typeof value !== 'string') {
@@ -631,6 +644,132 @@ export const BackOffice = ({
       return nextThemes.length > 0 ? nextThemes : previousThemes;
     });
   }, [setShowcaseThemes, showcaseThemeCount]);
+
+  const updateOnboardingConfig = useCallback((updater) => {
+    if (typeof setOnboardingTourConfig !== 'function') {
+      return;
+    }
+
+    setOnboardingTourConfig((prevConfig) => {
+      const normalized = normalizeOnboardingConfig(prevConfig);
+      const nextConfig = updater(normalized) || normalized;
+      return normalizeOnboardingConfig(nextConfig);
+    });
+  }, [setOnboardingTourConfig]);
+
+  const updateOnboardingField = useCallback((field, value) => {
+    updateOnboardingConfig(prev => ({ ...prev, [field]: value }));
+  }, [updateOnboardingConfig]);
+
+  const updateOnboardingLabel = useCallback((field, value) => {
+    updateOnboardingConfig(prev => ({
+      ...prev,
+      labels: {
+        ...prev.labels,
+        [field]: value
+      }
+    }));
+  }, [updateOnboardingConfig]);
+
+  const addOnboardingStep = useCallback(() => {
+    updateOnboardingConfig((prev) => {
+      const nextSteps = Array.isArray(prev.steps) ? prev.steps.slice() : [];
+      nextSteps.push(createOnboardingStep(nextSteps.length));
+      return { ...prev, steps: nextSteps };
+    });
+  }, [updateOnboardingConfig]);
+
+  const moveOnboardingStep = useCallback((index, direction) => {
+    updateOnboardingConfig((prev) => {
+      const steps = Array.isArray(prev.steps) ? prev.steps.slice() : [];
+      const nextIndex = index + direction;
+      if (nextIndex < 0 || nextIndex >= steps.length) {
+        return prev;
+      }
+      const [removed] = steps.splice(index, 1);
+      steps.splice(nextIndex, 0, removed);
+      return { ...prev, steps };
+    });
+  }, [updateOnboardingConfig]);
+
+  const deleteOnboardingStep = useCallback((index) => {
+    updateOnboardingConfig((prev) => {
+      const steps = Array.isArray(prev.steps) ? prev.steps.slice() : [];
+      steps.splice(index, 1);
+      return { ...prev, steps };
+    });
+  }, [updateOnboardingConfig]);
+
+  const updateOnboardingStepField = useCallback((index, field, value) => {
+    updateOnboardingConfig((prev) => {
+      const steps = Array.isArray(prev.steps) ? prev.steps.slice() : [];
+      const target = steps[index];
+      if (!target) {
+        return prev;
+      }
+      steps[index] = {
+        ...target,
+        [field]: value
+      };
+      return { ...prev, steps };
+    });
+  }, [updateOnboardingConfig]);
+
+  const addOnboardingAction = useCallback((stepIndex) => {
+    updateOnboardingConfig((prev) => {
+      const steps = Array.isArray(prev.steps) ? prev.steps.slice() : [];
+      const target = steps[stepIndex];
+      if (!target) {
+        return prev;
+      }
+      const actions = Array.isArray(target.actions) ? target.actions.slice() : [];
+      actions.push(createOnboardingAction());
+      steps[stepIndex] = { ...target, actions };
+      return { ...prev, steps };
+    });
+  }, [updateOnboardingConfig]);
+
+  const updateOnboardingActionField = useCallback((stepIndex, actionIndex, field, value) => {
+    updateOnboardingConfig((prev) => {
+      const steps = Array.isArray(prev.steps) ? prev.steps.slice() : [];
+      const target = steps[stepIndex];
+      if (!target) {
+        return prev;
+      }
+      const actions = Array.isArray(target.actions) ? target.actions.slice() : [];
+      const action = actions[actionIndex];
+      if (!action) {
+        return prev;
+      }
+      actions[actionIndex] = {
+        ...action,
+        [field]: value
+      };
+      steps[stepIndex] = { ...target, actions };
+      return { ...prev, steps };
+    });
+  }, [updateOnboardingConfig]);
+
+  const deleteOnboardingAction = useCallback((stepIndex, actionIndex) => {
+    updateOnboardingConfig((prev) => {
+      const steps = Array.isArray(prev.steps) ? prev.steps.slice() : [];
+      const target = steps[stepIndex];
+      if (!target) {
+        return prev;
+      }
+      const actions = Array.isArray(target.actions) ? target.actions.slice() : [];
+      actions.splice(actionIndex, 1);
+      steps[stepIndex] = { ...target, actions };
+      return { ...prev, steps };
+    });
+  }, [updateOnboardingConfig]);
+
+  const resetOnboardingConfig = useCallback(() => {
+    if (typeof setOnboardingTourConfig !== 'function') {
+      return;
+    }
+    setOnboardingTourConfig(normalizeOnboardingConfig(initialOnboardingTourConfig));
+  }, [setOnboardingTourConfig]);
 
   const handleUndo = useCallback(() => {
     const stack = undoStackRef.current;
@@ -2633,6 +2772,11 @@ export const BackOffice = ({
       normalizeInspirationFormConfig(inspirationFormFields)
     );
     downloadDataModule('showcaseThemes.js', 'initialShowcaseThemes', safeShowcaseThemes);
+    downloadDataModule(
+      'onboardingTour.js',
+      'initialOnboardingTourConfig',
+      normalizeOnboardingConfig(onboardingTourConfig)
+    );
   };
 
   const inspirationFilterCount = inspirationFilterFields.length;
@@ -2658,6 +2802,11 @@ export const BackOffice = ({
       id: 'themes',
       label: `Thèmes vitrine (${showcaseThemeCount})`,
       panelId: 'backoffice-tabpanel-themes'
+    },
+    {
+      id: 'onboarding',
+      label: `Onboarding (${onboardingStepCount})`,
+      panelId: 'backoffice-tabpanel-onboarding'
     },
     {
       id: 'questions',
@@ -3985,6 +4134,316 @@ export const BackOffice = ({
                   </div>
                 )}
               </article>
+            </section>
+          )}
+
+          {activeTab === 'onboarding' && (
+            <section
+              id="backoffice-tabpanel-onboarding"
+              role="tabpanel"
+              aria-labelledby="backoffice-tab-onboarding"
+              className="space-y-6"
+            >
+              <article className="space-y-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hv-surface">
+                <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="space-y-2">
+                    <h2 className="text-2xl font-bold text-gray-800">Tour d'onboarding</h2>
+                    <p className="text-sm text-gray-600">
+                      Définissez le contenu du tour guidé : étapes, cibles, et boutons d'action pour proposer différents parcours.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={addOnboardingStep}
+                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 hv-button hv-button-primary"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Ajouter une étape
+                    </button>
+                    <button
+                      type="button"
+                      onClick={resetOnboardingConfig}
+                      className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm transition-colors hover:bg-gray-50 hv-button"
+                    >
+                      Réinitialiser
+                    </button>
+                  </div>
+                </header>
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <label className="flex flex-col gap-2 text-sm text-gray-700">
+                    <span className="font-semibold text-gray-700">Libellé “Suivant”</span>
+                    <input
+                      type="text"
+                      value={normalizedOnboardingConfig.labels.next}
+                      onChange={(event) => updateOnboardingLabel('next', event.target.value)}
+                      className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-2 text-sm text-gray-700">
+                    <span className="font-semibold text-gray-700">Libellé “Précédent”</span>
+                    <input
+                      type="text"
+                      value={normalizedOnboardingConfig.labels.prev}
+                      onChange={(event) => updateOnboardingLabel('prev', event.target.value)}
+                      className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-2 text-sm text-gray-700">
+                    <span className="font-semibold text-gray-700">Libellé “Fermer”</span>
+                    <input
+                      type="text"
+                      value={normalizedOnboardingConfig.labels.close}
+                      onChange={(event) => updateOnboardingLabel('close', event.target.value)}
+                      className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-2 text-sm text-gray-700">
+                    <span className="font-semibold text-gray-700">Libellé “Terminer”</span>
+                    <input
+                      type="text"
+                      value={normalizedOnboardingConfig.labels.finish}
+                      onChange={(event) => updateOnboardingLabel('finish', event.target.value)}
+                      className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    />
+                  </label>
+                </div>
+
+                <div className="flex flex-wrap gap-4 text-sm text-gray-700">
+                  <label className="inline-flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={normalizedOnboardingConfig.allowClose}
+                      onChange={(event) => updateOnboardingField('allowClose', event.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    Autoriser la fermeture manuelle
+                  </label>
+                  <label className="inline-flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={normalizedOnboardingConfig.showStepDots}
+                      onChange={(event) => updateOnboardingField('showStepDots', event.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    Afficher les points de progression
+                  </label>
+                </div>
+              </article>
+
+              {normalizedOnboardingConfig.steps.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-sm text-gray-600">
+                  Aucune étape configurée. Ajoutez une première étape pour démarrer.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {normalizedOnboardingConfig.steps.map((step, index) => (
+                    <article key={`${step.id}-${index}`} className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hv-surface">
+                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                        <div className="space-y-1">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Étape {index + 1} sur {normalizedOnboardingConfig.steps.length}
+                          </p>
+                          <h3 className="text-lg font-semibold text-gray-800">
+                            {step.title || step.id || 'Étape sans titre'}
+                          </h3>
+                          <p className="text-sm text-gray-600">{step.target || 'Aucune cible définie'}</p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => moveOnboardingStep(index, -1)}
+                            className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white p-2 text-gray-600 hover:bg-gray-50 hv-button"
+                            aria-label="Remonter l'étape"
+                          >
+                            <ArrowUp className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moveOnboardingStep(index, 1)}
+                            className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white p-2 text-gray-600 hover:bg-gray-50 hv-button"
+                            aria-label="Descendre l'étape"
+                          >
+                            <ArrowDown className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteOnboardingStep(index)}
+                            className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white p-2 text-red-600 hover:bg-red-50 hv-button"
+                            aria-label="Supprimer l'étape"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <label className="flex flex-col gap-2 text-sm text-gray-700">
+                          <span className="font-semibold text-gray-700">Identifiant</span>
+                          <input
+                            type="text"
+                            value={step.id}
+                            onChange={(event) => updateOnboardingStepField(index, 'id', event.target.value)}
+                            className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          />
+                        </label>
+                        <label className="flex flex-col gap-2 text-sm text-gray-700">
+                          <span className="font-semibold text-gray-700">Cible (sélecteur)</span>
+                          <input
+                            type="text"
+                            value={step.target}
+                            onChange={(event) => updateOnboardingStepField(index, 'target', event.target.value)}
+                            className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                            placeholder="#mon-element"
+                          />
+                        </label>
+                        <label className="flex flex-col gap-2 text-sm text-gray-700">
+                          <span className="font-semibold text-gray-700">Titre</span>
+                          <input
+                            type="text"
+                            value={step.title}
+                            onChange={(event) => updateOnboardingStepField(index, 'title', event.target.value)}
+                            className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          />
+                        </label>
+                        <label className="flex flex-col gap-2 text-sm text-gray-700">
+                          <span className="font-semibold text-gray-700">Position du tooltip</span>
+                          <select
+                            value={step.placement || ''}
+                            onChange={(event) => updateOnboardingStepField(index, 'placement', event.target.value)}
+                            className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          >
+                            <option value="">Automatique</option>
+                            <option value="top">Haut</option>
+                            <option value="bottom">Bas</option>
+                            <option value="left">Gauche</option>
+                            <option value="right">Droite</option>
+                          </select>
+                        </label>
+                        <label className="flex flex-col gap-2 text-sm text-gray-700 md:col-span-2">
+                          <span className="font-semibold text-gray-700">Message</span>
+                          <textarea
+                            rows={3}
+                            value={step.content}
+                            onChange={(event) => updateOnboardingStepField(index, 'content', event.target.value)}
+                            className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          />
+                        </label>
+                        <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                          <input
+                            type="checkbox"
+                            checked={step.showDefaultButtons !== false}
+                            onChange={(event) => updateOnboardingStepField(index, 'showDefaultButtons', event.target.checked)}
+                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          Afficher les boutons “Précédent/Suivant”
+                        </label>
+                      </div>
+
+                      <div className="mt-6 space-y-3 rounded-xl border border-gray-100 bg-gray-50 p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold text-gray-800">Boutons d'action</p>
+                            <p className="text-xs text-gray-500">
+                              Ajoutez des boutons pour proposer des choix ou des raccourcis vers d'autres étapes.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => addOnboardingAction(index)}
+                            className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 hv-button hv-button-primary"
+                          >
+                            <Plus className="w-3 h-3" />
+                            Ajouter un bouton
+                          </button>
+                        </div>
+
+                        {Array.isArray(step.actions) && step.actions.length > 0 ? (
+                          <div className="space-y-3">
+                            {step.actions.map((action, actionIndex) => (
+                              <div key={`${action.id}-${actionIndex}`} className="rounded-lg border border-gray-200 bg-white p-3">
+                                <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+                                  <label className="flex flex-col gap-1 text-xs font-medium text-gray-600">
+                                    Libellé
+                                    <input
+                                      type="text"
+                                      value={action.label}
+                                      onChange={(event) =>
+                                        updateOnboardingActionField(index, actionIndex, 'label', event.target.value)
+                                      }
+                                      className="rounded-md border border-gray-300 px-2 py-1 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                    />
+                                  </label>
+                                  <label className="flex flex-col gap-1 text-xs font-medium text-gray-600">
+                                    Action
+                                    <select
+                                      value={action.action}
+                                      onChange={(event) =>
+                                        updateOnboardingActionField(index, actionIndex, 'action', event.target.value)
+                                      }
+                                      className="rounded-md border border-gray-300 px-2 py-1 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                    >
+                                      <option value="next">Aller à l'étape suivante</option>
+                                      <option value="prev">Revenir à l'étape précédente</option>
+                                      <option value="goTo">Aller à une étape précise</option>
+                                      <option value="finish">Terminer le tour</option>
+                                      <option value="close">Fermer le tour</option>
+                                    </select>
+                                  </label>
+                                  <label className="flex flex-col gap-1 text-xs font-medium text-gray-600">
+                                    Style
+                                    <select
+                                      value={action.variant || 'ghost'}
+                                      onChange={(event) =>
+                                        updateOnboardingActionField(index, actionIndex, 'variant', event.target.value)
+                                      }
+                                      className="rounded-md border border-gray-300 px-2 py-1 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                    >
+                                      <option value="primary">Principal</option>
+                                      <option value="ghost">Secondaire</option>
+                                    </select>
+                                  </label>
+                                  <div className="flex flex-col gap-1 text-xs font-medium text-gray-600">
+                                    Étape cible
+                                    <div className="flex items-center gap-2">
+                                      <select
+                                        value={action.stepId || ''}
+                                        onChange={(event) =>
+                                          updateOnboardingActionField(index, actionIndex, 'stepId', event.target.value)
+                                        }
+                                        disabled={action.action !== 'goTo'}
+                                        className="flex-1 rounded-md border border-gray-300 px-2 py-1 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:bg-gray-100"
+                                      >
+                                        <option value="">Sélectionnez une étape</option>
+                                        {normalizedOnboardingConfig.steps.map((targetStep) => (
+                                          <option key={targetStep.id} value={targetStep.id}>
+                                            {targetStep.id}
+                                          </option>
+                                        ))}
+                                      </select>
+                                      <button
+                                        type="button"
+                                        onClick={() => deleteOnboardingAction(index, actionIndex)}
+                                        className="inline-flex items-center justify-center rounded-md border border-gray-200 bg-white p-2 text-red-600 hover:bg-red-50 hv-button"
+                                        aria-label="Supprimer le bouton"
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-gray-500">Aucun bouton personnalisé pour cette étape.</p>
+                        )}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
             </section>
           )}
 

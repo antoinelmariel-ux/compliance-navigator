@@ -97,6 +97,24 @@
 
 .tgjs-tooltip__footer {
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+}
+
+.tgjs-actions {
+  display: none;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tgjs-actions .tgjs-button {
+  flex: 1 1 auto;
+  min-width: 120px;
+}
+
+.tgjs-controls {
+  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -160,7 +178,6 @@
   }
 
   .tgjs-tooltip__footer {
-    flex-direction: column;
     align-items: stretch;
   }
 }
