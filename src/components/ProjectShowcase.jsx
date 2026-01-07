@@ -1488,7 +1488,9 @@ export const ProjectShowcase = ({
   onEditingStateChange = null,
   initialDisplayMode = 'full',
   displayModeLock = null,
-  onDisplayModeChange = null
+  onDisplayModeChange = null,
+  hideEditBar = false,
+  hideNotice = false
 }) => {
   const rawProjectName = typeof projectName === 'string' ? projectName.trim() : '';
   const safeProjectName = rawProjectName.length > 0 ? rawProjectName : 'Information à compléter';
@@ -1977,7 +1979,7 @@ export const ProjectShowcase = ({
     [lightSections]
   );
 
-  const canEdit = typeof onUpdateAnswers === 'function';
+  const canEdit = typeof onUpdateAnswers === 'function' && !hideEditBar;
   const shouldShowPreview = !isEditing || !canEdit;
   const formId = 'project-showcase-edit-form';
 
@@ -2447,7 +2449,7 @@ export const ProjectShowcase = ({
 
     switch (sectionId) {
       case 'notice':
-        if (!hasIncompleteAnswers) {
+        if (hideNotice || !hasIncompleteAnswers) {
           return null;
         }
         return (

@@ -38,7 +38,7 @@ import {
 } from './utils/inspirationConfig.js';
 import { exportInspirationToFile } from './utils/inspirationExport.js';
 
-const APP_VERSION = 'v1.0.233';
+const APP_VERSION = 'v1.0.234';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -629,6 +629,9 @@ export const App = () => {
   const [showcaseDisplayMode, setShowcaseDisplayMode] = useState('full');
   const [showcaseDisplayModeLock, setShowcaseDisplayModeLock] = useState(null);
   const [showcaseShareMode, setShowcaseShareMode] = useState('full');
+  const [showcaseShareCommentsEnabled, setShowcaseShareCommentsEnabled] = useState(false);
+  const [isShowcaseSharedView, setIsShowcaseSharedView] = useState(false);
+  const [showcaseCommentsEnabled, setShowcaseCommentsEnabled] = useState(false);
   const persistTimeoutRef = useRef(null);
   const previousScreenRef = useRef(null);
   const pendingShowcaseDisplayModeRef = useRef(null);
@@ -645,6 +648,8 @@ export const App = () => {
   const annotationFileInputRef = useRef(null);
   const loadedStylesRef = useRef(new Set());
   const pendingShowcaseProjectIdRef = useRef(null);
+  const pendingShowcaseSharedRef = useRef(false);
+  const pendingShowcaseCommentsRef = useRef(false);
 
   const ensureStylesheetLoaded = useCallback((href) => {
     if (typeof document === 'undefined' || !href) {
@@ -696,6 +701,10 @@ export const App = () => {
     let projectId = params.get('projectId') || params.get('showcase');
     const rawShowcaseMode = params.get('showcaseMode');
     const resolvedShowcaseMode = resolveShowcaseDisplayMode(rawShowcaseMode);
+    const rawShowcaseShared = params.get('showcaseShared');
+    const rawShowcaseComments = params.get('showcaseComments');
+    const isSharedView = rawShowcaseShared === '1' || rawShowcaseShared === 'true';
+    const hasCommentsEnabled = rawShowcaseComments === '1' || rawShowcaseComments === 'true';
 
     if (!projectId && typeof hash === 'string' && hash.length > 1) {
       const normalizedHash = hash.slice(1);
@@ -712,6 +721,14 @@ export const App = () => {
 
     if (resolvedShowcaseMode) {
       pendingShowcaseDisplayModeRef.current = resolvedShowcaseMode;
+    }
+
+    if (isSharedView) {
+      pendingShowcaseSharedRef.current = true;
+    }
+
+    if (hasCommentsEnabled) {
+      pendingShowcaseCommentsRef.current = true;
     }
   }, []);
 
@@ -2802,10 +2819,21 @@ const updateProjectFilters = useCallback((updater) => {
 
     const pendingShowcaseMode = pendingShowcaseDisplayModeRef.current;
     const resolvedShowcaseMode = resolveShowcaseDisplayMode(pendingShowcaseMode) || 'full';
+    const pendingSharedView = Boolean(pendingShowcaseSharedRef.current);
+    const pendingComments = Boolean(pendingShowcaseCommentsRef.current);
+    const resolvedDisplayModeLock = pendingSharedView
+      ? resolvedShowcaseMode
+      : resolvedShowcaseMode === 'light'
+        ? 'light'
+        : null;
 
     pendingShowcaseDisplayModeRef.current = null;
+    pendingShowcaseSharedRef.current = false;
+    pendingShowcaseCommentsRef.current = false;
     setShowcaseDisplayMode(resolvedShowcaseMode);
-    setShowcaseDisplayModeLock(resolvedShowcaseMode === 'light' ? 'light' : null);
+    setShowcaseDisplayModeLock(resolvedDisplayModeLock);
+    setIsShowcaseSharedView(pendingSharedView);
+    setShowcaseCommentsEnabled(pendingComments);
 
     setShowcaseProjectContext({
       projectId: projectId || null,
@@ -2872,6 +2900,8 @@ const updateProjectFilters = useCallback((updater) => {
     setShowcaseProjectContext(null);
     setShowcaseDisplayMode('full');
     setShowcaseDisplayModeLock(null);
+    setIsShowcaseSharedView(false);
+    setShowcaseCommentsEnabled(false);
     if (previousScreenRef.current) {
       setScreen(previousScreenRef.current);
     } else {
@@ -2884,12 +2914,16 @@ const updateProjectFilters = useCallback((updater) => {
     if (showcaseProjectContext?.projectId) {
       const { projectId } = showcaseProjectContext;
       setShowcaseProjectContext(null);
+      setIsShowcaseSharedView(false);
+      setShowcaseCommentsEnabled(false);
       previousScreenRef.current = null;
       handleOpenProject(projectId, { view: 'synthesis' });
       return;
     }
 
     setShowcaseProjectContext(null);
+    setIsShowcaseSharedView(false);
+    setShowcaseCommentsEnabled(false);
 
     if (previousScreenRef.current) {
       setScreen(previousScreenRef.current);
@@ -3218,14 +3252,20 @@ const updateProjectFilters = useCallback((updater) => {
 
     const url = new URL(window.location.href);
     url.searchParams.set('projectId', showcaseProjectId);
+    url.searchParams.set('showcaseShared', '1');
+    if (showcaseShareCommentsEnabled) {
+      url.searchParams.set('showcaseComments', '1');
+    } else {
+      url.searchParams.delete('showcaseComments');
+    }
     if (shareMode === 'light') {
       url.searchParams.set('showcaseMode', 'light');
     } else {
       url.searchParams.delete('showcaseMode');
     }
-    url.hash = 'showcase';
+    url.hash = `showcase=${showcaseProjectId}`;
     return url.toString();
-  }, [showcaseProjectId]);
+  }, [showcaseProjectId, showcaseShareCommentsEnabled]);
 
   const showcaseShareUrl = useMemo(
     () => buildShowcaseShareUrl(showcaseShareMode),
@@ -3238,6 +3278,7 @@ const updateProjectFilters = useCallback((updater) => {
     }
 
     setShowcaseShareMode(showcaseDisplayMode === 'light' ? 'light' : 'full');
+    setShowcaseShareCommentsEnabled(false);
     setIsShowcaseShareOpen(true);
     setShowcaseShareFeedback('');
   }, [showcaseDisplayMode, showcaseProjectId]);
@@ -3565,6 +3606,20 @@ const updateProjectFilters = useCallback((updater) => {
                 En mode Light, seules les sections pré-sélectionnées sont visibles.
               </p>
             </div>
+            <div className="space-y-2">
+              <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                  checked={showcaseShareCommentsEnabled}
+                  onChange={(event) => setShowcaseShareCommentsEnabled(event.target.checked)}
+                />
+                Commentaires possibles
+              </label>
+              <p className="text-xs text-gray-500">
+                Active un bouton de commentaires flottant pour lancer le module de post-it.
+              </p>
+            </div>
             <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
               <button
                 type="button"
@@ -3822,12 +3877,16 @@ const updateProjectFilters = useCallback((updater) => {
                   hasIncompleteAnswers={Boolean(showcaseProjectContext.hasIncompleteAnswers)}
                   initialDisplayMode={showcaseDisplayMode}
                   displayModeLock={showcaseDisplayModeLock}
+                  hideEditBar={isShowcaseSharedView}
+                  hideNotice={isShowcaseSharedView}
                   onUpdateAnswers={
-                    isOnboardingActive
-                      ? noop
-                      : showcaseProjectContext.status === 'draft' || isAdminMode
-                        ? handleUpdateProjectShowcaseAnswers
-                        : undefined
+                    isShowcaseSharedView
+                      ? undefined
+                      : isOnboardingActive
+                        ? noop
+                        : showcaseProjectContext.status === 'draft' || isAdminMode
+                          ? handleUpdateProjectShowcaseAnswers
+                          : undefined
                   }
                   tourContext={tourContext}
                   onDisplayModeChange={setShowcaseDisplayMode}
@@ -3837,22 +3896,41 @@ const updateProjectFilters = useCallback((updater) => {
               </Suspense>
             </div>
           ) : null
-        ) : null}
-      </main>
+      ) : null}
+    </main>
 
-      <footer className="bg-white border-t border-gray-200 mt-10" aria-label="Pied de page">
-        <p className="text-xs text-gray-400 text-center py-4">
-          Project Navigator · Version {APP_VERSION} ·{' '}
-          <a
-            href="./mentions-legales.html"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline hover:text-gray-500"
-          >
-            Mentions légales
-          </a>
-        </p>
-      </footer>
+    {screen === 'showcase' && isShowcaseSharedView && showcaseCommentsEnabled && (
+      <button
+        type="button"
+        onClick={handleToggleAnnotationMode}
+        className={`fixed bottom-6 right-6 z-40 inline-flex items-center gap-2 rounded-full border px-4 py-3 text-sm font-semibold shadow-lg transition hover:shadow-xl ${
+          isAnnotationModeEnabled
+            ? 'border-blue-200 bg-blue-600 text-white'
+            : 'border-blue-100 bg-white text-blue-700'
+        }`}
+        aria-pressed={isAnnotationModeEnabled}
+        aria-label={isAnnotationModeEnabled ? 'Fermer les commentaires' : 'Ouvrir les commentaires'}
+        title={isAnnotationModeEnabled ? 'Fermer les commentaires' : 'Ouvrir les commentaires'}
+        data-annotation-ui="true"
+      >
+        <MessageSquare className="h-4 w-4" />
+        <span>Commentaires</span>
+      </button>
+    )}
+
+    <footer className="bg-white border-t border-gray-200 mt-10" aria-label="Pied de page">
+      <p className="text-xs text-gray-400 text-center py-4">
+        Project Navigator · Version {APP_VERSION} ·{' '}
+        <a
+          href="./mentions-legales.html"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline hover:text-gray-500"
+        >
+          Mentions légales
+        </a>
+      </p>
+    </footer>
     </div>
   );
 };
