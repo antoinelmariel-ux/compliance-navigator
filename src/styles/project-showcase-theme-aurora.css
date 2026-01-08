@@ -3,23 +3,7 @@
 /* Thème "Aurora néon" revisité : sections cinématiques pleine largeur */
 
 [data-showcase-theme] {
-  --showcase-bg-start: #020309;
-  --showcase-bg-mid: #050b18;
-  --showcase-bg-end: #020309;
-  --showcase-glow-primary: rgba(59, 130, 246, 0.18);
-  --showcase-glow-secondary: rgba(14, 165, 233, 0.16);
-  --showcase-text-strong: #f8fafc;
-  --showcase-text-soft: #e2e8f0;
-  --showcase-accent-primary: #2563eb;
-  --showcase-accent-secondary: #06b6d4;
-  --showcase-surface: rgba(8, 13, 22, 0.78);
-  --showcase-border-soft: rgba(148, 163, 184, 0.28);
-  --showcase-border-strong: rgba(148, 163, 184, 0.25);
-  --showcase-highlight-strong: rgba(148, 197, 255, 0.85);
-  --showcase-highlight-soft: rgba(148, 197, 255, 0.7);
-  --showcase-shadow-soft: rgba(14, 165, 233, 0.32);
-  --showcase-shadow-strong: rgba(14, 165, 233, 0.4);
-  font-family: 'SF Pro Display', 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--showcase-font-family, 'SF Pro Display', 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
   color: var(--showcase-text-strong, #f8fafc);
 }
 
@@ -28,9 +12,9 @@
   min-height: 100vh;
   width: 100%;
   padding: 6rem clamp(1.5rem, 6vw, 5.5rem) 4rem;
-  background: radial-gradient(circle at 20% 20%, var(--showcase-glow-primary, rgba(59, 130, 246, 0.18)), transparent 55%),
+  background: var(--showcase-shell-background, radial-gradient(circle at 20% 20%, var(--showcase-glow-primary, rgba(59, 130, 246, 0.18)), transparent 55%),
     radial-gradient(circle at 80% 0%, var(--showcase-glow-secondary, rgba(14, 165, 233, 0.16)), transparent 60%),
-    linear-gradient(180deg, var(--showcase-bg-start, #020309) 0%, var(--showcase-bg-mid, #050b18) 40%, var(--showcase-bg-end, #020309) 100%);
+    linear-gradient(180deg, var(--showcase-bg-start, #020309) 0%, var(--showcase-bg-mid, #050b18) 40%, var(--showcase-bg-end, #020309) 100%));
   overflow: hidden;
 }
 
@@ -44,7 +28,7 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(circle at 50% 10%, var(--showcase-glow-secondary, rgba(90, 180, 255, 0.08)), transparent 65%);
+  background: var(--showcase-shell-overlay, radial-gradient(circle at 50% 10%, var(--showcase-glow-secondary, rgba(90, 180, 255, 0.08)), transparent 65%));
   mix-blend-mode: screen;
 }
 
@@ -535,27 +519,27 @@
   color: var(--showcase-ink-soft, rgba(30, 41, 59, 0.82));
 }
 
-[data-showcase-theme="universel"] .aurora-card {
-  padding: 1.4rem 1.6rem;
-  border-radius: 1.6rem;
-  background: var(--showcase-surface-card, rgba(255, 255, 255, 0.82));
-  border: 1px solid var(--showcase-border-light, rgba(148, 197, 255, 0.4));
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
-  backdrop-filter: blur(18px);
-  color: var(--showcase-ink-strong, rgba(15, 23, 42, 0.88));
+[data-showcase-theme] .aurora-card {
+  padding: var(--showcase-card-padding, 1.4rem 1.6rem);
+  border-radius: var(--showcase-card-radius, 1.6rem);
+  background: var(--showcase-card-surface, var(--showcase-surface-card, rgba(255, 255, 255, 0.82)));
+  border: 1px solid var(--showcase-card-border, var(--showcase-border-light, rgba(148, 197, 255, 0.4)));
+  box-shadow: var(--showcase-card-shadow, 0 24px 60px rgba(15, 23, 42, 0.18));
+  backdrop-filter: var(--showcase-card-backdrop, blur(18px));
+  color: var(--showcase-card-text, var(--showcase-ink-strong, rgba(15, 23, 42, 0.88)));
 }
 
-[data-showcase-theme="universel"] .aurora-card__metric {
+[data-showcase-theme] .aurora-card__metric {
   margin-top: 0.6rem;
   font-size: 1.6rem;
   font-weight: 700;
-  color: var(--showcase-ink-strong, rgba(15, 23, 42, 0.9));
+  color: var(--showcase-card-metric-color, var(--showcase-ink-strong, rgba(15, 23, 42, 0.9)));
 }
 
-[data-showcase-theme="universel"] .aurora-card__caption {
+[data-showcase-theme] .aurora-card__caption {
   margin-top: 0.5rem;
   font-size: 0.85rem;
-  color: var(--showcase-ink-muted, rgba(71, 85, 105, 0.85));
+  color: var(--showcase-card-caption-color, var(--showcase-ink-muted, rgba(71, 85, 105, 0.85)));
 }
 
 [data-showcase-theme] .aurora-chip {
@@ -1455,15 +1439,36 @@
 }
 
 /* Variations immersives pour les thèmes additionnels */
-[data-showcase-theme="cupertino"] {
-  font-family: 'Inter', 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  color: var(--showcase-text-strong, #0b0b0f);
+[data-showcase-theme="universel"] {
+  --showcase-font-family: 'SF Pro Display', 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --showcase-shell-background: radial-gradient(circle at 20% 20%, var(--showcase-glow-primary, rgba(59, 130, 246, 0.18)), transparent 55%),
+    radial-gradient(circle at 80% 0%, var(--showcase-glow-secondary, rgba(14, 165, 233, 0.16)), transparent 60%),
+    linear-gradient(180deg, var(--showcase-bg-start, #020309) 0%, var(--showcase-bg-mid, #050b18) 40%, var(--showcase-bg-end, #020309) 100%);
+  --showcase-shell-overlay: radial-gradient(circle at 50% 10%, var(--showcase-glow-secondary, rgba(90, 180, 255, 0.08)), transparent 65%);
+  --showcase-card-padding: 1.4rem 1.6rem;
+  --showcase-card-radius: 1.6rem;
+  --showcase-card-surface: var(--showcase-surface-card, rgba(255, 255, 255, 0.82));
+  --showcase-card-border: var(--showcase-border-light, rgba(148, 197, 255, 0.4));
+  --showcase-card-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+  --showcase-card-backdrop: blur(18px);
+  --showcase-card-text: var(--showcase-ink-strong, rgba(15, 23, 42, 0.88));
+  --showcase-card-metric-color: var(--showcase-ink-strong, rgba(15, 23, 42, 0.9));
+  --showcase-card-caption-color: var(--showcase-ink-muted, rgba(71, 85, 105, 0.85));
 }
 
-[data-showcase-theme="cupertino"] .aurora-shell {
-  background: radial-gradient(circle at 10% 10%, rgba(37, 99, 235, 0.1), transparent 45%),
+[data-showcase-theme="cupertino"] {
+  --showcase-font-family: 'Inter', 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --showcase-shell-background: radial-gradient(circle at 10% 10%, rgba(37, 99, 235, 0.1), transparent 45%),
     radial-gradient(circle at 80% 20%, rgba(56, 189, 248, 0.12), transparent 55%),
     linear-gradient(180deg, var(--showcase-bg-start, #f5f5f7), var(--showcase-bg-mid, #eef1f5), var(--showcase-bg-end, #f9fafb));
+  --showcase-card-padding: 1.3rem 1.5rem;
+  --showcase-card-radius: 1.4rem;
+  --showcase-card-surface: var(--showcase-surface-panel, rgba(255, 255, 255, 0.9));
+  --showcase-card-border: rgba(15, 23, 42, 0.08);
+  --showcase-card-shadow: 0 20px 45px rgba(15, 23, 42, 0.12);
+  --showcase-card-text: var(--showcase-text-strong, #0b0b0f);
+  --showcase-card-metric-color: var(--showcase-text-strong, #0b0b0f);
+  --showcase-card-caption-color: var(--showcase-ink-muted, rgba(75, 85, 99, 0.85));
 }
 
 [data-showcase-theme="cupertino"] .aurora-section {
@@ -1487,17 +1492,23 @@
 }
 
 [data-showcase-theme="lumen"] {
-  font-family: 'DM Sans', 'Inter', 'Segoe UI', sans-serif;
-}
-
-[data-showcase-theme="lumen"] .aurora-shell {
-  background: radial-gradient(circle at 12% 20%, rgba(99, 102, 241, 0.35), transparent 45%),
+  --showcase-font-family: 'DM Sans', 'Inter', 'Segoe UI', sans-serif;
+  --showcase-shell-background: radial-gradient(circle at 12% 20%, rgba(99, 102, 241, 0.35), transparent 45%),
     radial-gradient(circle at 85% 15%, rgba(34, 211, 238, 0.28), transparent 52%),
     linear-gradient(140deg, var(--showcase-bg-start, #05060f), var(--showcase-bg-mid, #0b0f24), var(--showcase-bg-end, #120c2f));
+  --showcase-shell-overlay: repeating-linear-gradient(130deg, rgba(99, 102, 241, 0.08) 0%, rgba(99, 102, 241, 0.08) 8%, transparent 8%, transparent 16%);
+  --showcase-card-padding: 1.35rem 1.55rem;
+  --showcase-card-radius: 1.5rem;
+  --showcase-card-surface: rgba(17, 24, 39, 0.72);
+  --showcase-card-border: rgba(165, 180, 252, 0.35);
+  --showcase-card-shadow: 0 26px 70px rgba(15, 23, 42, 0.45);
+  --showcase-card-backdrop: blur(20px);
+  --showcase-card-text: var(--showcase-text-strong, #e2e8f0);
+  --showcase-card-metric-color: var(--showcase-text-strong, #e2e8f0);
+  --showcase-card-caption-color: var(--showcase-text-soft, #cbd5f5);
 }
 
 [data-showcase-theme="lumen"] .aurora-shell::after {
-  background: repeating-linear-gradient(130deg, rgba(99, 102, 241, 0.08) 0%, rgba(99, 102, 241, 0.08) 8%, transparent 8%, transparent 16%);
   opacity: 0.6;
 }
 
@@ -1523,13 +1534,18 @@
 }
 
 [data-showcase-theme="voyage"] {
-  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
-}
-
-[data-showcase-theme="voyage"] .aurora-shell {
-  background: radial-gradient(circle at 15% 10%, rgba(255, 56, 92, 0.18), transparent 45%),
+  --showcase-font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  --showcase-shell-background: radial-gradient(circle at 15% 10%, rgba(255, 56, 92, 0.18), transparent 45%),
     radial-gradient(circle at 85% 15%, rgba(249, 115, 22, 0.16), transparent 50%),
     linear-gradient(180deg, var(--showcase-bg-start, #fff5f1), var(--showcase-bg-mid, #fde8e8), var(--showcase-bg-end, #fffaf5));
+  --showcase-card-padding: 1.4rem 1.6rem;
+  --showcase-card-radius: 1.8rem;
+  --showcase-card-surface: rgba(255, 250, 245, 0.9);
+  --showcase-card-border: rgba(180, 83, 9, 0.18);
+  --showcase-card-shadow: 0 26px 60px rgba(111, 63, 38, 0.2);
+  --showcase-card-text: rgba(69, 26, 3, 0.92);
+  --showcase-card-metric-color: rgba(69, 26, 3, 0.95);
+  --showcase-card-caption-color: rgba(120, 53, 15, 0.78);
 }
 
 [data-showcase-theme="voyage"] .aurora-section__inner {
@@ -1552,16 +1568,21 @@
 }
 
 [data-showcase-theme="arena"] {
-  font-family: 'Inter', 'Segoe UI', sans-serif;
+  --showcase-font-family: 'Inter', 'Segoe UI', sans-serif;
+  --showcase-shell-background: linear-gradient(135deg, #000 0%, #0b0b0b 45%, #141414 100%);
+  --showcase-shell-overlay: repeating-linear-gradient(120deg, rgba(163, 255, 18, 0.08) 0%, rgba(163, 255, 18, 0.08) 6%, transparent 6%, transparent 12%);
+  --showcase-card-padding: 1.1rem 1.3rem;
+  --showcase-card-radius: 0.75rem;
+  --showcase-card-surface: rgba(10, 10, 10, 0.88);
+  --showcase-card-border: rgba(163, 255, 18, 0.35);
+  --showcase-card-shadow: 0 18px 45px rgba(0, 0, 0, 0.45);
+  --showcase-card-text: rgba(236, 253, 245, 0.92);
+  --showcase-card-metric-color: rgba(236, 253, 245, 0.95);
+  --showcase-card-caption-color: rgba(148, 163, 184, 0.78);
   text-transform: none;
 }
 
-[data-showcase-theme="arena"] .aurora-shell {
-  background: linear-gradient(135deg, #000 0%, #0b0b0b 45%, #141414 100%);
-}
-
 [data-showcase-theme="arena"] .aurora-shell::after {
-  background: repeating-linear-gradient(120deg, rgba(163, 255, 18, 0.08) 0%, rgba(163, 255, 18, 0.08) 6%, transparent 6%, transparent 12%);
   opacity: 0.5;
 }
 
@@ -1594,13 +1615,22 @@
 }
 
 [data-showcase-theme="prism"] {
-  font-family: 'DM Sans', 'Inter', sans-serif;
+  --showcase-font-family: 'DM Sans', 'Inter', sans-serif;
+  --showcase-shell-background: radial-gradient(circle at 12% 20%, rgba(236, 72, 153, 0.25), transparent 50%),
+    radial-gradient(circle at 82% 15%, rgba(245, 158, 11, 0.2), transparent 50%),
+    linear-gradient(135deg, #14001f 0%, #2b004a 40%, #14001f 100%);
+  --showcase-card-padding: 1.4rem 1.55rem;
+  --showcase-card-radius: 1.7rem;
+  --showcase-card-surface: rgba(255, 255, 255, 0.08);
+  --showcase-card-border: rgba(255, 255, 255, 0.2);
+  --showcase-card-shadow: 0 28px 65px rgba(15, 23, 42, 0.4);
+  --showcase-card-backdrop: blur(18px);
+  --showcase-card-text: rgba(248, 250, 252, 0.95);
+  --showcase-card-metric-color: rgba(248, 250, 252, 0.98);
+  --showcase-card-caption-color: rgba(226, 232, 240, 0.78);
 }
 
 [data-showcase-theme="prism"] .aurora-shell {
-  background: radial-gradient(circle at 12% 20%, rgba(236, 72, 153, 0.25), transparent 50%),
-    radial-gradient(circle at 82% 15%, rgba(245, 158, 11, 0.2), transparent 50%),
-    linear-gradient(135deg, #14001f 0%, #2b004a 40%, #14001f 100%);
   animation: prismShift 18s ease infinite;
 }
 
