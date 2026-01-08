@@ -1506,6 +1506,7 @@ export const ProjectShowcase = ({
     [answers?.showcaseTheme, availableThemes]
   );
   const showcaseThemeId = selectedTheme?.id || FALLBACK_SHOWCASE_THEME.id;
+  const isDeezerTheme = showcaseThemeId === 'deezer';
   const showcaseThemeVariables = useMemo(
     () => buildThemeVariables(selectedTheme || FALLBACK_SHOWCASE_THEME),
     [selectedTheme]
@@ -2442,6 +2443,273 @@ export const ProjectShowcase = ({
     runway || hasTimelineSummaries || hasManualMilestones || hasTimelineProfiles || hasVigilanceAlerts
   );
 
+  const renderDeezerSection = useCallback((sectionId, index) => {
+    if (!shouldDisplaySection(sectionId)) {
+      return null;
+    }
+
+    switch (sectionId) {
+      case 'notice':
+        if (hideNotice || !hasIncompleteAnswers) {
+          return null;
+        }
+        return (
+          <section key={`${sectionId}-${index}`} className="deezer-section deezer-section--notice" data-showcase-section="notice">
+            <p className="deezer-subtitle">
+              En attente de l’ensemble des informations sur le projet pour une évaluation complète.
+            </p>
+          </section>
+        );
+      case 'hero':
+        return (
+          <section
+            key={`${sectionId}-${index}`}
+            className="deezer-section deezer-section--hero"
+            data-showcase-section="hero"
+            data-tour-id="showcase-hero"
+          >
+            <div className="deezer-parallax" aria-hidden="true" />
+            <p className="deezer-eyebrow">Now playing</p>
+            <h1 className="deezer-title">{safeProjectName}</h1>
+            {hasText(slogan) && (
+              <p className="deezer-subtitle">{renderTextWithLinks(slogan)}</p>
+            )}
+            <button type="button" className="deezer-cta">Découvrir le projet</button>
+            {heroHighlights.length > 0 && (
+              <div className="deezer-highlight-grid">
+                {heroHighlights.map((highlight) => (
+                  <div key={highlight.id} className="deezer-highlight-card">
+                    <p className="deezer-eyebrow">{highlight.label}</p>
+                    <p className="deezer-title" style={{ fontSize: '1.5rem' }}>{highlight.value}</p>
+                    <p className="deezer-subtitle">{highlight.caption}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        );
+      case 'problem':
+        return (
+          <section key={`${sectionId}-${index}`} className="deezer-section" data-showcase-section="problem">
+            <p className="deezer-eyebrow">Le problème</p>
+            <h2 className="deezer-title" style={{ fontSize: '2rem' }}>Pourquoi ce projet doit exister</h2>
+            {problemPainPoints.length > 0 && (
+              <div className="deezer-grid">
+                {problemPainPoints.map((point, pointIndex) => (
+                  <div key={`${point}-${pointIndex}`} className="deezer-card">
+                    <p className="deezer-subtitle">{renderTextWithLinks(point)}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        );
+      case 'solution':
+        return (
+          <section key={`${sectionId}-${index}`} className="deezer-section" data-showcase-section="solution">
+            <p className="deezer-eyebrow">Notre solution</p>
+            <h2 className="deezer-title" style={{ fontSize: '2rem' }}>Comment nous changeons la donne</h2>
+            <div className="deezer-grid">
+              {hasText(solutionDescription) && (
+                <div className="deezer-card">
+                  <h3>En clair</h3>
+                  <p className="deezer-subtitle">{renderTextWithLinks(solutionDescription)}</p>
+                </div>
+              )}
+              {solutionBenefits.length > 0 && (
+                <div className="deezer-card">
+                  <h3>Bénéfices clefs</h3>
+                  <ul className="deezer-list">
+                    {solutionBenefits.map((benefit, benefitIndex) => (
+                      <li key={`${benefit}-${benefitIndex}`}>{renderTextWithLinks(benefit)}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {hasText(solutionComparison) && (
+                <div className="deezer-card">
+                  <h3>Différenciation</h3>
+                  <p className="deezer-subtitle">{renderTextWithLinks(solutionComparison)}</p>
+                </div>
+              )}
+            </div>
+          </section>
+        );
+      case 'innovation':
+        if (!hasText(innovationProcess) && !hasText(visionStatement)) {
+          return null;
+        }
+        return (
+          <section key={`${sectionId}-${index}`} className="deezer-section" data-showcase-section="innovation">
+            <p className="deezer-eyebrow">Notre impact</p>
+            <h2 className="deezer-title" style={{ fontSize: '2rem' }}>Délivrer le maximum de valeur</h2>
+            <div className="deezer-grid">
+              {hasText(innovationProcess) && (
+                <div className="deezer-card">
+                  <h3>Processus & expérimentation</h3>
+                  <p className="deezer-subtitle">{renderTextWithLinks(innovationProcess)}</p>
+                </div>
+              )}
+              {visionStatementEntries.length > 0 && (
+                <div className="deezer-card">
+                  <h3>Indicateurs de valeur</h3>
+                  <ul className="deezer-list">
+                    {visionStatementEntries.map((entry, entryIndex) => (
+                      <li key={`${entry}-${entryIndex}`}>{renderTextWithLinks(entry)}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {hasText(budgetEstimate) && (
+                <div className="deezer-card">
+                  <h3>Budget estimé</h3>
+                  <p className="deezer-title" style={{ fontSize: '1.8rem' }}>{formattedBudgetEstimate} K€</p>
+                  <p className="deezer-subtitle">Prévision globale sur 12 mois.</p>
+                </div>
+              )}
+            </div>
+          </section>
+        );
+      case 'team':
+        if (!hasText(teamLead) && !hasText(teamLeadTeam) && teamCoreMembers.length === 0) {
+          return null;
+        }
+        return (
+          <section key={`${sectionId}-${index}`} className="deezer-section" data-showcase-section="team">
+            <p className="deezer-eyebrow">Équipe & alliances</p>
+            <h2 className="deezer-title" style={{ fontSize: '2rem' }}>Qui porte et sécurise le projet</h2>
+            <div className="deezer-grid">
+              {hasText(teamLead) && (
+                <div className="deezer-card">
+                  <h3>Pilotage</h3>
+                  <p className="deezer-subtitle">{teamLead}</p>
+                  {hasText(teamLeadTeam) && (
+                    <p className="deezer-subtitle">{teamLeadTeam}</p>
+                  )}
+                </div>
+              )}
+              {teamMemberCards.map((member) => (
+                <div key={member.id} className="deezer-card">
+                  <h3>{member.name}</h3>
+                  {member.details && <p className="deezer-subtitle">{member.details}</p>}
+                </div>
+              ))}
+            </div>
+          </section>
+        );
+      case 'timeline':
+        if (!hasTimelineSection) {
+          return null;
+        }
+        return (
+          <section key={`${sectionId}-${index}`} className="deezer-section" data-showcase-section="timeline" data-tour-id="showcase-roadmap">
+            <p className="deezer-eyebrow">Feuille de route</p>
+            <h2 className="deezer-title" style={{ fontSize: '2rem' }}>Les étapes clés pour livrer</h2>
+            {runway && (
+              <p className="deezer-subtitle">
+                {runway.isOverdue ? (
+                  <>Le lancement prévu le {runway.launchLabel} a déjà eu lieu.</>
+                ) : runway.isToday ? (
+                  <>Dernière ligne droite : lancement aujourd'hui ({runway.launchLabel}).</>
+                ) : (
+                  <>Compte à rebours : {runway.weeksLabel} ({runway.daysLabel}) avant le lancement prévu le {runway.launchLabel}.</>
+                )}
+              </p>
+            )}
+            {hasTimelineSummaries && (
+              <div className="deezer-grid">
+                {timelineSummariesToDisplay.map((summary, summaryIndex) => (
+                  <div key={summary.id || `timeline-summary-${summaryIndex}`} className={`deezer-card ${summary.satisfied ? '' : 'deezer-alert'}`}>
+                    {summary?.alert?.ruleName && (
+                      <p className="deezer-eyebrow">{renderTextWithLinks(summary.alert.ruleName)}</p>
+                    )}
+                    {summary?.alert?.title && (
+                      <p className="deezer-subtitle">{renderTextWithLinks(summary.alert.title)}</p>
+                    )}
+                    {summary.satisfied && (
+                      <p className="deezer-title" style={{ fontSize: '1.4rem' }}>{summary.weeks} semaines ({summary.days} jours)</p>
+                    )}
+                    {summary.alert?.requirementSummary && (
+                      <p className="deezer-subtitle">{renderTextWithLinks(summary.alert.requirementSummary)}</p>
+                    )}
+                    {summary.alert?.statusMessage && (
+                      <p className="deezer-subtitle">{renderTextWithLinks(summary.alert.statusMessage)}</p>
+                    )}
+                    {summary.alert?.teamLabel && (
+                      <p className="deezer-subtitle">Équipe référente : {summary.alert.teamLabel}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            {hasVigilanceAlerts && (
+              <div className="deezer-grid">
+                {unmatchedVigilanceAlerts.map((alert) => (
+                  <div key={alert.id} className="deezer-card deezer-alert">
+                    <p className="deezer-eyebrow">{alert.ruleName}</p>
+                    <p className="deezer-subtitle">{renderTextWithLinks(alert.title)}</p>
+                    {alert.requirementSummary && (
+                      <p className="deezer-subtitle">{alert.requirementSummary}</p>
+                    )}
+                    {alert.statusMessage && (
+                      <p className="deezer-subtitle">{alert.statusMessage}</p>
+                    )}
+                    {alert.teamLabel && (
+                      <p className="deezer-subtitle">Équipe référente : {alert.teamLabel}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            {hasTimelineEntries && (
+              <div className="deezer-timeline">
+                {timelineEntries.map((entry, entryIndex) => (
+                  <div key={entry.id || `timeline-entry-${entryIndex}`} className="deezer-timeline-item">
+                    <span className="deezer-timeline-dot" />
+                    <div>
+                      <p className="deezer-subtitle">{entry.label}</p>
+                      {entry.description && (
+                        <p className="deezer-subtitle">{renderTextWithLinks(entry.description)}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        );
+      default:
+        return null;
+    }
+  }, [
+    budgetEstimate,
+    formattedBudgetEstimate,
+    hasIncompleteAnswers,
+    hasText,
+    hasTimelineEntries,
+    hasTimelineSection,
+    hasTimelineSummaries,
+    heroHighlights,
+    innovationProcess,
+    problemPainPoints,
+    runway,
+    shouldDisplaySection,
+    solutionBenefits,
+    solutionComparison,
+    solutionDescription,
+    teamCoreMembers,
+    teamLead,
+    teamLeadTeam,
+    teamMemberCards,
+    timelineEntries,
+    timelineSummariesToDisplay,
+    unmatchedVigilanceAlerts,
+    visionStatement,
+    visionStatementEntries,
+    slogan,
+    safeProjectName
+  ]);
+
   const renderBaseSection = useCallback((sectionId, index) => {
     if (!shouldDisplaySection(sectionId)) {
       return null;
@@ -2922,6 +3190,87 @@ export const ProjectShowcase = ({
     );
   }, []);
 
+  const renderCustomSectionDeezer = useCallback((section, index) => {
+    if (!section) {
+      return null;
+    }
+
+    const templateConfig = resolveTemplateConfig(section.type);
+    const columnCount = resolveCustomSectionColumnCount(section.columnCount, section.columns);
+    const columns = normalizeCustomSectionColumns(section.columns, columnCount);
+    const activeColumns = columns.filter(column => column.trim().length > 0);
+
+    return (
+      <section
+        key={section.id}
+        className="deezer-section deezer-section--custom"
+        data-showcase-section={section.type || 'custom'}
+      >
+        <p className="deezer-eyebrow">{section.accent || 'Section additionnelle'}</p>
+        <h2 className="deezer-title" style={{ fontSize: '2rem' }}>{section.title}</h2>
+        {templateConfig.showSubtitle && section.subtitle && (
+          <p className="deezer-subtitle">{renderTextWithLinks(section.subtitle)}</p>
+        )}
+        {templateConfig.showDescription && section.description && (
+          <p className="deezer-subtitle">{renderTextWithLinks(section.description)}</p>
+        )}
+        {templateConfig.showColumns && activeColumns.length > 0 && (
+          <div
+            className="deezer-grid"
+            style={{ gridTemplateColumns: `repeat(${Math.min(columnCount, activeColumns.length)}, minmax(0, 1fr))` }}
+          >
+            {activeColumns.map((column, columnIndex) => (
+              <div key={`${section.id}-column-${columnIndex}`} className="deezer-card">
+                <p className="deezer-subtitle">{renderTextWithLinks(column)}</p>
+              </div>
+            ))}
+          </div>
+        )}
+        {templateConfig.showDocument && section.documentUrl && (
+          <div className="deezer-card">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="deezer-subtitle">Visionneuse documentaire</p>
+                <p className="deezer-subtitle">Source SharePoint • {section.documentType?.toUpperCase() || 'DOC'}</p>
+              </div>
+              <a
+                href={section.documentUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="deezer-subtitle"
+              >
+                Ouvrir dans un nouvel onglet
+              </a>
+            </div>
+            {['jpg', 'png'].includes(section.documentType) ? (
+              <img
+                src={section.documentUrl}
+                alt={`Document ${section.title || 'section personnalisée'}`}
+                className="mt-4 max-h-96 w-full rounded-xl border border-white/10 object-contain"
+                loading="lazy"
+                decoding="async"
+              />
+            ) : (
+              <iframe
+                title={`Document ${section.title || 'section personnalisée'}`}
+                src={resolveDocumentEmbedSrc(section.documentUrl, section.documentType)}
+                className="mt-4 h-80 w-full rounded-xl border border-white/10"
+                loading="lazy"
+              />
+            )}
+          </div>
+        )}
+        {templateConfig.showItems && Array.isArray(section.items) && section.items.length > 0 && (
+          <ul className="deezer-list">
+            {section.items.map((item, itemIndex) => (
+              <li key={`${section.id}-item-${itemIndex}`}>{renderTextWithLinks(item)}</li>
+            ))}
+          </ul>
+        )}
+      </section>
+    );
+  }, []);
+
   const orderedSections = useMemo(() => {
     const sections = [];
     sectionOrder.forEach((sectionId, index) => {
@@ -2929,22 +3278,32 @@ export const ProjectShowcase = ({
         return;
       }
 
+      const activeRenderCustomSection = isDeezerTheme ? renderCustomSectionDeezer : renderCustomSection;
       if (customSectionMap.has(sectionId)) {
-        const renderedCustom = renderCustomSection(customSectionMap.get(sectionId), index);
+        const renderedCustom = activeRenderCustomSection(customSectionMap.get(sectionId), index);
         if (renderedCustom) {
           sections.push(renderedCustom);
         }
         return;
       }
 
-      const rendered = renderBaseSection(sectionId, index);
+      const rendered = (isDeezerTheme ? renderDeezerSection : renderBaseSection)(sectionId, index);
       if (rendered) {
         sections.push(rendered);
       }
     });
 
     return sections;
-  }, [customSectionMap, renderBaseSection, renderCustomSection, sectionOrder, shouldDisplaySection]);
+  }, [
+    customSectionMap,
+    isDeezerTheme,
+    renderBaseSection,
+    renderCustomSection,
+    renderCustomSectionDeezer,
+    renderDeezerSection,
+    sectionOrder,
+    shouldDisplaySection
+  ]);
 
   const sectionDescriptors = useMemo(() => {
     return sectionOrder.map((sectionId) => {
@@ -3050,14 +3409,14 @@ export const ProjectShowcase = ({
   };
 
   const previewContent = shouldShowPreview ? (
-    <div className="aurora-sections" data-tour-id="showcase-preview">
+    <div className={isDeezerTheme ? 'deezer-sections' : 'aurora-sections'} data-tour-id="showcase-preview">
       {orderedSections}
     </div>
   ) : (
     <div className="aurora-preview-placeholder">
       <h2 className="aurora-preview-placeholder__title">Mode édition activé</h2>
       <p className="aurora-preview-placeholder__text">
-        Le rendu Aurora est temporairement masqué pendant vos ajustements.
+        Le rendu est temporairement masqué pendant vos ajustements.
       </p>
     </div>
   );
@@ -4149,7 +4508,7 @@ export const ProjectShowcase = ({
       <div
         data-showcase-scope
         data-showcase-theme={showcaseThemeId}
-        className="aurora-shell aurora-shell--standalone"
+        className={`${isDeezerTheme ? 'deezer-shell' : 'aurora-shell'} ${isDeezerTheme ? 'deezer-shell--standalone' : 'aurora-shell--standalone'}`}
         style={showcaseThemeVariables}
       >
         {content}
@@ -4161,7 +4520,7 @@ export const ProjectShowcase = ({
     <section
       data-showcase-scope
       data-showcase-theme={showcaseThemeId}
-      className="aurora-shell"
+      className={isDeezerTheme ? 'deezer-shell' : 'aurora-shell'}
       style={showcaseThemeVariables}
       aria-label="Vitrine marketing du projet"
     >
