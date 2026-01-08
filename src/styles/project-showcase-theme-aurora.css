@@ -1457,18 +1457,20 @@
 }
 
 [data-showcase-theme="cupertino"] {
-  --showcase-font-family: 'Inter', 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --showcase-shell-background: radial-gradient(circle at 10% 10%, rgba(37, 99, 235, 0.1), transparent 45%),
-    radial-gradient(circle at 80% 20%, rgba(56, 189, 248, 0.12), transparent 55%),
-    linear-gradient(180deg, var(--showcase-bg-start, #f5f5f7), var(--showcase-bg-mid, #eef1f5), var(--showcase-bg-end, #f9fafb));
-  --showcase-card-padding: 1.3rem 1.5rem;
-  --showcase-card-radius: 1.4rem;
-  --showcase-card-surface: var(--showcase-surface-panel, rgba(255, 255, 255, 0.9));
-  --showcase-card-border: rgba(15, 23, 42, 0.08);
-  --showcase-card-shadow: 0 20px 45px rgba(15, 23, 42, 0.12);
-  --showcase-card-text: var(--showcase-text-strong, #0b0b0f);
-  --showcase-card-metric-color: var(--showcase-text-strong, #0b0b0f);
-  --showcase-card-caption-color: var(--showcase-ink-muted, rgba(75, 85, 99, 0.85));
+  --showcase-font-family: 'SF Pro Display', 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --showcase-shell-background: radial-gradient(circle at 15% 0%, rgba(0, 122, 255, 0.14), transparent 42%),
+    radial-gradient(circle at 85% 5%, rgba(90, 200, 250, 0.18), transparent 48%),
+    linear-gradient(180deg, var(--showcase-bg-start, #f5f5f7), var(--showcase-bg-mid, #eef1f5), var(--showcase-bg-end, #ffffff));
+  --showcase-shell-overlay: linear-gradient(120deg, rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0.1));
+  --showcase-card-padding: 1.25rem 1.55rem;
+  --showcase-card-radius: 1.25rem;
+  --showcase-card-surface: rgba(255, 255, 255, 0.88);
+  --showcase-card-border: rgba(210, 210, 215, 0.8);
+  --showcase-card-shadow: 0 20px 45px rgba(60, 60, 67, 0.14);
+  --showcase-card-backdrop: saturate(180%) blur(24px);
+  --showcase-card-text: #1d1d1f;
+  --showcase-card-metric-color: #1d1d1f;
+  --showcase-card-caption-color: rgba(60, 60, 67, 0.78);
 }
 
 [data-showcase-theme="cupertino"] .aurora-section {
@@ -1481,174 +1483,219 @@
 }
 
 [data-showcase-theme="cupertino"] .aurora-hero__title {
-  font-size: clamp(2.8rem, 5vw, 4.5rem);
+  font-size: clamp(2.8rem, 5vw, 4.2rem);
+  letter-spacing: -0.045em;
 }
 
 [data-showcase-theme="cupertino"] .aurora-hero__highlights,
 [data-showcase-theme="cupertino"] .aurora-team__lead-info,
 [data-showcase-theme="cupertino"] .aurora-team__members {
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
-  border-radius: 28px;
+  box-shadow: 0 28px 60px rgba(28, 28, 30, 0.12);
+  border-radius: 24px;
+  border: 1px solid rgba(210, 210, 215, 0.7);
+  backdrop-filter: saturate(180%) blur(24px);
+}
+
+[data-showcase-theme="cupertino"] .aurora-cta {
+  border-radius: 999px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  box-shadow: 0 12px 30px rgba(0, 122, 255, 0.2);
 }
 
 [data-showcase-theme="lumen"] {
-  --showcase-font-family: 'DM Sans', 'Inter', 'Segoe UI', sans-serif;
-  --showcase-shell-background: radial-gradient(circle at 12% 20%, rgba(99, 102, 241, 0.35), transparent 45%),
-    radial-gradient(circle at 85% 15%, rgba(34, 211, 238, 0.28), transparent 52%),
-    linear-gradient(140deg, var(--showcase-bg-start, #05060f), var(--showcase-bg-mid, #0b0f24), var(--showcase-bg-end, #120c2f));
-  --showcase-shell-overlay: repeating-linear-gradient(130deg, rgba(99, 102, 241, 0.08) 0%, rgba(99, 102, 241, 0.08) 8%, transparent 8%, transparent 16%);
-  --showcase-card-padding: 1.35rem 1.55rem;
-  --showcase-card-radius: 1.5rem;
-  --showcase-card-surface: rgba(17, 24, 39, 0.72);
-  --showcase-card-border: rgba(165, 180, 252, 0.35);
-  --showcase-card-shadow: 0 26px 70px rgba(15, 23, 42, 0.45);
-  --showcase-card-backdrop: blur(20px);
-  --showcase-card-text: var(--showcase-text-strong, #e2e8f0);
-  --showcase-card-metric-color: var(--showcase-text-strong, #e2e8f0);
-  --showcase-card-caption-color: var(--showcase-text-soft, #cbd5f5);
+  --showcase-font-family: 'Circular', 'Poppins', 'Inter', 'Segoe UI', sans-serif;
+  --showcase-shell-background: radial-gradient(circle at 20% 10%, rgba(255, 90, 95, 0.22), transparent 50%),
+    radial-gradient(circle at 85% 0%, rgba(255, 181, 117, 0.22), transparent 55%),
+    linear-gradient(180deg, var(--showcase-bg-start, #fff7f4), var(--showcase-bg-mid, #fff1ec), var(--showcase-bg-end, #fffaf6));
+  --showcase-shell-overlay: linear-gradient(120deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.2));
+  --showcase-card-padding: 1.5rem 1.7rem;
+  --showcase-card-radius: 2rem;
+  --showcase-card-surface: rgba(255, 255, 255, 0.95);
+  --showcase-card-border: rgba(255, 90, 95, 0.2);
+  --showcase-card-shadow: 0 24px 60px rgba(255, 90, 95, 0.15);
+  --showcase-card-backdrop: blur(12px);
+  --showcase-card-text: #4a1d0f;
+  --showcase-card-metric-color: #6b2c1a;
+  --showcase-card-caption-color: rgba(107, 44, 26, 0.72);
 }
 
 [data-showcase-theme="lumen"] .aurora-shell::after {
-  opacity: 0.6;
+  opacity: 0.35;
 }
 
 [data-showcase-theme="lumen"] .aurora-section::before {
-  clip-path: polygon(0 0, 100% 0, 100% 80%, 0% 100%);
+  clip-path: polygon(0 0, 100% 0, 96% 88%, 0% 100%);
+  background: linear-gradient(120deg, rgba(255, 90, 95, 0.14), rgba(255, 181, 117, 0.12));
 }
 
 [data-showcase-theme="lumen"] .aurora-hero__title {
-  background: linear-gradient(120deg, #a5b4fc 0%, #22d3ee 45%, #f472b6 80%);
+  background: linear-gradient(120deg, #ff5a5f 0%, #ff8f6b 45%, #ffb86b 85%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 [data-showcase-theme="lumen"] .aurora-hero__highlights {
-  gap: 1.5rem;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.6rem;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
 }
 
 [data-showcase-theme="lumen"] .aurora-hero-highlight {
-  border-radius: 20px;
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(165, 180, 252, 0.35);
+  border-radius: 28px;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 90, 95, 0.25);
+  box-shadow: 0 16px 36px rgba(255, 90, 95, 0.18);
+}
+
+[data-showcase-theme="lumen"] .aurora-cta {
+  border-radius: 999px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 [data-showcase-theme="voyage"] {
-  --showcase-font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
-  --showcase-shell-background: radial-gradient(circle at 15% 10%, rgba(255, 56, 92, 0.18), transparent 45%),
-    radial-gradient(circle at 85% 15%, rgba(249, 115, 22, 0.16), transparent 50%),
-    linear-gradient(180deg, var(--showcase-bg-start, #fff5f1), var(--showcase-bg-mid, #fde8e8), var(--showcase-bg-end, #fffaf5));
-  --showcase-card-padding: 1.4rem 1.6rem;
-  --showcase-card-radius: 1.8rem;
-  --showcase-card-surface: rgba(255, 250, 245, 0.9);
-  --showcase-card-border: rgba(180, 83, 9, 0.18);
-  --showcase-card-shadow: 0 26px 60px rgba(111, 63, 38, 0.2);
-  --showcase-card-text: rgba(69, 26, 3, 0.92);
-  --showcase-card-metric-color: rgba(69, 26, 3, 0.95);
-  --showcase-card-caption-color: rgba(120, 53, 15, 0.78);
+  --showcase-font-family: 'Space Grotesk', 'Inter', sans-serif;
+  --showcase-shell-background: radial-gradient(circle at 15% 10%, rgba(124, 58, 237, 0.22), transparent 45%),
+    radial-gradient(circle at 80% 5%, rgba(14, 165, 233, 0.2), transparent 52%),
+    linear-gradient(160deg, var(--showcase-bg-start, #f3f0ff), var(--showcase-bg-mid, #eef5ff), var(--showcase-bg-end, #fbfbff));
+  --showcase-shell-overlay: linear-gradient(140deg, rgba(120, 119, 198, 0.08), rgba(56, 189, 248, 0.08));
+  --showcase-card-padding: 1.35rem 1.6rem;
+  --showcase-card-radius: 1.2rem;
+  --showcase-card-surface: rgba(255, 255, 255, 0.86);
+  --showcase-card-border: rgba(124, 58, 237, 0.18);
+  --showcase-card-shadow: 0 32px 70px rgba(43, 12, 120, 0.18);
+  --showcase-card-backdrop: blur(16px);
+  --showcase-card-text: rgba(30, 27, 75, 0.92);
+  --showcase-card-metric-color: rgba(30, 27, 75, 0.96);
+  --showcase-card-caption-color: rgba(67, 56, 202, 0.7);
 }
 
 [data-showcase-theme="voyage"] .aurora-section__inner {
-  border-radius: 36px;
+  border-radius: 24px;
+  border: 1px solid rgba(99, 102, 241, 0.18);
+  box-shadow: 0 20px 45px rgba(79, 70, 229, 0.1);
 }
 
 [data-showcase-theme="voyage"] .aurora-team__card,
 [data-showcase-theme="voyage"] .aurora-team__lead-info,
 [data-showcase-theme="voyage"] .aurora-team__members {
-  border-radius: 28px;
-  box-shadow: 0 30px 60px rgba(111, 63, 38, 0.18);
+  border-radius: 18px;
+  box-shadow: 0 28px 60px rgba(67, 56, 202, 0.18);
 }
 
 [data-showcase-theme="voyage"] .aurora-hero__title {
-  font-family: 'Playfair Display', 'Plus Jakarta Sans', serif;
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  letter-spacing: -0.04em;
+  background: linear-gradient(120deg, #7c3aed 0%, #38bdf8 60%, #22d3ee 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 [data-showcase-theme="voyage"] .aurora-hero__highlights {
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+[data-showcase-theme="voyage"] .aurora-cta {
+  border-radius: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 [data-showcase-theme="arena"] {
-  --showcase-font-family: 'Inter', 'Segoe UI', sans-serif;
-  --showcase-shell-background: linear-gradient(135deg, #000 0%, #0b0b0b 45%, #141414 100%);
-  --showcase-shell-overlay: repeating-linear-gradient(120deg, rgba(163, 255, 18, 0.08) 0%, rgba(163, 255, 18, 0.08) 6%, transparent 6%, transparent 12%);
-  --showcase-card-padding: 1.1rem 1.3rem;
-  --showcase-card-radius: 0.75rem;
-  --showcase-card-surface: rgba(10, 10, 10, 0.88);
-  --showcase-card-border: rgba(163, 255, 18, 0.35);
-  --showcase-card-shadow: 0 18px 45px rgba(0, 0, 0, 0.45);
-  --showcase-card-text: rgba(236, 253, 245, 0.92);
-  --showcase-card-metric-color: rgba(236, 253, 245, 0.95);
-  --showcase-card-caption-color: rgba(148, 163, 184, 0.78);
+  --showcase-font-family: 'Bebas Neue', 'Oswald', 'Inter', sans-serif;
+  --showcase-shell-background: linear-gradient(130deg, #000 0%, #0d0d0d 55%, #111827 100%);
+  --showcase-shell-overlay: repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.06) 8%, transparent 8%, transparent 16%);
+  --showcase-card-padding: 1.05rem 1.3rem;
+  --showcase-card-radius: 0.6rem;
+  --showcase-card-surface: rgba(8, 8, 8, 0.9);
+  --showcase-card-border: rgba(255, 255, 255, 0.18);
+  --showcase-card-shadow: 0 22px 55px rgba(0, 0, 0, 0.6);
+  --showcase-card-text: rgba(244, 244, 245, 0.96);
+  --showcase-card-metric-color: rgba(244, 244, 245, 0.98);
+  --showcase-card-caption-color: rgba(148, 163, 184, 0.75);
   text-transform: none;
 }
 
 [data-showcase-theme="arena"] .aurora-shell::after {
-  opacity: 0.5;
+  opacity: 0.3;
 }
 
 [data-showcase-theme="arena"] .aurora-hero__title,
 [data-showcase-theme="arena"] .aurora-section__title,
 [data-showcase-theme="arena"] .aurora-eyebrow {
-  font-family: 'Bebas Neue', 'Inter', sans-serif;
-  letter-spacing: 0.08em;
+  font-family: 'Bebas Neue', 'Oswald', sans-serif;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
 [data-showcase-theme="arena"] .aurora-hero__title {
-  font-size: clamp(3.2rem, 8vw, 6rem);
+  font-size: clamp(3.4rem, 9vw, 6.4rem);
+  font-style: italic;
 }
 
 [data-showcase-theme="arena"] .aurora-hero__highlights {
   grid-template-columns: 1fr;
+  gap: 1.2rem;
 }
 
 [data-showcase-theme="arena"] .aurora-hero-highlight {
-  border-radius: 8px;
-  border: 1px solid rgba(163, 255, 18, 0.35);
-  background: rgba(10, 10, 10, 0.8);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(13, 13, 13, 0.85);
+  transform: skew(-2deg);
 }
 
 [data-showcase-theme="arena"] .aurora-cta {
-  border-radius: 4px;
+  border-radius: 2px;
   font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 [data-showcase-theme="prism"] {
-  --showcase-font-family: 'DM Sans', 'Inter', sans-serif;
-  --showcase-shell-background: radial-gradient(circle at 12% 20%, rgba(236, 72, 153, 0.25), transparent 50%),
-    radial-gradient(circle at 82% 15%, rgba(245, 158, 11, 0.2), transparent 50%),
-    linear-gradient(135deg, #14001f 0%, #2b004a 40%, #14001f 100%);
-  --showcase-card-padding: 1.4rem 1.55rem;
-  --showcase-card-radius: 1.7rem;
-  --showcase-card-surface: rgba(255, 255, 255, 0.08);
-  --showcase-card-border: rgba(255, 255, 255, 0.2);
-  --showcase-card-shadow: 0 28px 65px rgba(15, 23, 42, 0.4);
-  --showcase-card-backdrop: blur(18px);
-  --showcase-card-text: rgba(248, 250, 252, 0.95);
-  --showcase-card-metric-color: rgba(248, 250, 252, 0.98);
-  --showcase-card-caption-color: rgba(226, 232, 240, 0.78);
+  --showcase-font-family: 'SoDo Sans', 'Poppins', 'Nunito Sans', sans-serif;
+  --showcase-shell-background: radial-gradient(circle at 12% 10%, rgba(0, 117, 74, 0.25), transparent 50%),
+    radial-gradient(circle at 85% 5%, rgba(212, 175, 55, 0.2), transparent 55%),
+    linear-gradient(160deg, #f5f3ef 0%, #e7efe8 40%, #f9f7f2 100%);
+  --showcase-shell-overlay: linear-gradient(120deg, rgba(255, 255, 255, 0.7), rgba(0, 117, 74, 0.05));
+  --showcase-card-padding: 1.45rem 1.6rem;
+  --showcase-card-radius: 1.8rem;
+  --showcase-card-surface: rgba(255, 255, 255, 0.92);
+  --showcase-card-border: rgba(0, 117, 74, 0.18);
+  --showcase-card-shadow: 0 26px 60px rgba(0, 69, 43, 0.2);
+  --showcase-card-backdrop: blur(12px);
+  --showcase-card-text: rgba(10, 50, 30, 0.95);
+  --showcase-card-metric-color: rgba(10, 50, 30, 0.98);
+  --showcase-card-caption-color: rgba(30, 69, 48, 0.7);
 }
 
 [data-showcase-theme="prism"] .aurora-shell {
-  animation: prismShift 18s ease infinite;
+  animation: prismShift 24s ease infinite;
 }
 
 [data-showcase-theme="prism"] .aurora-section__inner,
 [data-showcase-theme="prism"] .aurora-team__lead-info,
 [data-showcase-theme="prism"] .aurora-team__members {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(16px);
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(0, 117, 74, 0.18);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 24px 55px rgba(0, 69, 43, 0.18);
 }
 
 [data-showcase-theme="prism"] .aurora-hero__title {
-  text-shadow: 0 20px 40px rgba(236, 72, 153, 0.4);
+  font-family: 'Cormorant Garamond', 'Times New Roman', serif;
+  text-shadow: 0 18px 36px rgba(0, 117, 74, 0.2);
 }
 
 [data-showcase-theme="prism"] .aurora-hero-highlight {
-  border-radius: 26px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 117, 74, 0.15);
+}
+
+[data-showcase-theme="prism"] .aurora-cta {
+  border-radius: 999px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 @keyframes prismShift {
