@@ -535,7 +535,7 @@
   color: var(--showcase-ink-soft, rgba(30, 41, 59, 0.82));
 }
 
-[data-showcase-theme] .aurora-card {
+[data-showcase-theme="universel"] .aurora-card {
   padding: 1.4rem 1.6rem;
   border-radius: 1.6rem;
   background: var(--showcase-surface-card, rgba(255, 255, 255, 0.82));
@@ -545,14 +545,14 @@
   color: var(--showcase-ink-strong, rgba(15, 23, 42, 0.88));
 }
 
-[data-showcase-theme] .aurora-card__metric {
+[data-showcase-theme="universel"] .aurora-card__metric {
   margin-top: 0.6rem;
   font-size: 1.6rem;
   font-weight: 700;
   color: var(--showcase-ink-strong, rgba(15, 23, 42, 0.9));
 }
 
-[data-showcase-theme] .aurora-card__caption {
+[data-showcase-theme="universel"] .aurora-card__caption {
   margin-top: 0.5rem;
   font-size: 0.85rem;
   color: var(--showcase-ink-muted, rgba(71, 85, 105, 0.85));
@@ -1480,7 +1480,6 @@
 }
 
 [data-showcase-theme="cupertino"] .aurora-hero__highlights,
-[data-showcase-theme="cupertino"] .aurora-card,
 [data-showcase-theme="cupertino"] .aurora-team__lead-info,
 [data-showcase-theme="cupertino"] .aurora-team__members {
   box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
@@ -1537,7 +1536,6 @@
   border-radius: 36px;
 }
 
-[data-showcase-theme="voyage"] .aurora-card,
 [data-showcase-theme="voyage"] .aurora-team__card,
 [data-showcase-theme="voyage"] .aurora-team__lead-info,
 [data-showcase-theme="voyage"] .aurora-team__members {
@@ -1607,7 +1605,6 @@
 }
 
 [data-showcase-theme="prism"] .aurora-section__inner,
-[data-showcase-theme="prism"] .aurora-card,
 [data-showcase-theme="prism"] .aurora-team__lead-info,
 [data-showcase-theme="prism"] .aurora-team__members {
   background: rgba(255, 255, 255, 0.08);
