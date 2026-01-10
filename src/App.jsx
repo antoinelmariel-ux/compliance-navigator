@@ -38,7 +38,7 @@ import {
 } from './utils/inspirationConfig.js';
 import { exportInspirationToFile } from './utils/inspirationExport.js';
 
-const APP_VERSION = 'v1.0.238';
+const APP_VERSION = 'v1.0.239';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
