@@ -38,7 +38,7 @@ import {
 } from './utils/inspirationConfig.js';
 import { exportInspirationToFile } from './utils/inspirationExport.js';
 
-const APP_VERSION = 'v1.0.239';
+const APP_VERSION = 'v1.0.240';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -613,6 +613,7 @@ export const App = () => {
   const [inspirationFormFields, setInspirationFormFields] = useState(() => createDefaultInspirationFormConfig());
   const [homeView, setHomeView] = useState('platform');
   const [isHydrated, setIsHydrated] = useState(false);
+  const [isExternalProjectsLoading, setIsExternalProjectsLoading] = useState(false);
   const [isBackOfficeUnlocked, setIsBackOfficeUnlocked] = useState(false);
   const [backOfficeAuthError, setBackOfficeAuthError] = useState(null);
   const [isBackOfficePromptOpen, setIsBackOfficePromptOpen] = useState(false);
@@ -970,12 +971,15 @@ const updateProjectFilters = useCallback((updater) => {
 
   useEffect(() => {
     const loadExternal = async () => {
+      setIsExternalProjectsLoading(true);
       try {
         await synchronizeExternalProjects();
       } catch (error) {
         if (typeof console !== 'undefined' && typeof console.warn === 'function') {
           console.warn('Impossible de synchroniser les projets externes :', error);
         }
+      } finally {
+        setIsExternalProjectsLoading(false);
       }
     };
 
@@ -3766,6 +3770,7 @@ const updateProjectFilters = useCallback((updater) => {
             onImportProject={handleImportProject}
             onDuplicateProject={handleDuplicateProject}
             isAdminMode={isAdminMode}
+            isExternalProjectsLoading={isExternalProjectsLoading}
             tourContext={tourContext}
           />
         ) : screen === 'inspiration-form' ? (

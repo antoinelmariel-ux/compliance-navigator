@@ -3,7 +3,7 @@ import { analyzeAnswers } from './rules.js';
 import { normalizeProjectEntry } from './projectNormalization.js';
 import { sanitizeFileName } from './projectExport.js';
 
-const DIRECTORY_PATH = './submitted-projects/';
+const DIRECTORY_PATH = './interviews/';
 const MANIFEST_CANDIDATES = ['index.json', 'manifest.json', 'projects.json'];
 const SEQUENTIAL_PREFIX = 'projet';
 const SEQUENTIAL_MAX_ATTEMPTS = 100;
@@ -528,4 +528,3 @@ export const loadSubmittedProjectsFromDirectory = async ({
     return [];
   }
 };
-

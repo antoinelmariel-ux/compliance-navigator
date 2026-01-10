@@ -355,6 +355,7 @@ export const HomeScreen = ({
   onImportProject,
   onDuplicateProject,
   isAdminMode = false,
+  isExternalProjectsLoading = false,
   tourContext = null
 }) => {
   const normalizedFilters = useMemo(
@@ -1651,6 +1652,17 @@ export const HomeScreen = ({
                       </div>
                     )}
                   </div>
+                </div>
+              )}
+
+              {isExternalProjectsLoading && (
+                <div
+                  className="bg-white border border-blue-100 rounded-2xl p-4 text-sm text-gray-600 shadow-sm hv-surface flex items-center gap-3"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <span className="loading-spinner" aria-hidden="true" />
+                  <span>Téléchargement des interviews en cours…</span>
                 </div>
               )}
 
