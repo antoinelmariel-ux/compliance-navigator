@@ -41,7 +41,7 @@ const formatDate = (isoDate) => {
 
 const getSafeString = (value) => (typeof value === 'string' ? value : '');
 
-  const normalizeInspirationFieldValues = (value) => {
+const normalizeInspirationFieldValues = (value) => {
   if (Array.isArray(value)) {
     return value
       .map((item) => (typeof item === 'string' ? item.trim() : ''))
@@ -54,129 +54,6 @@ const getSafeString = (value) => (typeof value === 'string' ? value : '');
   }
 
   return [];
-};
-
-const MENTION_ARCHIVE_STORAGE_KEY = 'complianceNavigatorArchivedMentions';
-const MENTION_REGEX = /@[\p{L}\p{N}._-]+/gu;
-
-const loadArchivedMentionIds = () => {
-  if (typeof window === 'undefined' || !window.localStorage) {
-    return [];
-  }
-
-  try {
-    const raw = window.localStorage.getItem(MENTION_ARCHIVE_STORAGE_KEY);
-    if (!raw) {
-      return [];
-    }
-
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-    return parsed.filter((entry) => typeof entry === 'string' && entry.trim().length > 0);
-  } catch (error) {
-    return [];
-  }
-};
-
-const persistArchivedMentionIds = (ids) => {
-  if (typeof window === 'undefined' || !window.localStorage) {
-    return;
-  }
-
-  try {
-    window.localStorage.setItem(MENTION_ARCHIVE_STORAGE_KEY, JSON.stringify(ids));
-  } catch (error) {
-    // no-op
-  }
-};
-
-const extractMentionsFromText = (text) => {
-  if (typeof text !== 'string') {
-    return [];
-  }
-
-  const matches = text.match(MENTION_REGEX);
-  if (!matches) {
-    return [];
-  }
-
-  return Array.from(new Set(matches));
-};
-
-const buildMentionExcerpt = (text) => {
-  if (typeof text !== 'string') {
-    return '';
-  }
-
-  const trimmed = text.trim();
-  if (trimmed.length <= 160) {
-    return trimmed;
-  }
-
-  return `${trimmed.slice(0, 157)}...`;
-};
-
-const collectMentionsFromValue = ({
-  value,
-  projectId,
-  projectName,
-  sourceLabel,
-  sourceKey,
-  contextLabel = ''
-}) => {
-  const entries = [];
-  const pushMentions = (text, context = contextLabel) => {
-    const mentions = extractMentionsFromText(text);
-    if (mentions.length === 0) {
-      return;
-    }
-
-    const excerpt = buildMentionExcerpt(text);
-
-    mentions.forEach((mention, index) => {
-      entries.push({
-        id: `${projectId || 'unknown'}:${sourceKey}:${context || 'note'}:${mention}:${index}`,
-        mention,
-        excerpt,
-        projectName,
-        sourceLabel,
-        context
-      });
-    });
-  };
-
-  if (typeof value === 'string') {
-    pushMentions(value);
-  } else if (Array.isArray(value)) {
-    value.forEach((item, index) => {
-      if (typeof item === 'string') {
-        pushMentions(item, `${contextLabel || 'Note'} ${index + 1}`);
-        return;
-      }
-
-      if (item && typeof item === 'object') {
-        const label = item.title || item.name || `${contextLabel || 'Atelier'} ${index + 1}`;
-        const candidates = [item.notes, item.note, item.description, item.text, item.content];
-        candidates.forEach((candidate) => {
-          if (typeof candidate === 'string' && candidate.trim().length > 0) {
-            pushMentions(candidate, label);
-          }
-        });
-      }
-    });
-  } else if (value && typeof value === 'object') {
-    const candidates = [value.notes, value.note, value.description, value.text, value.content];
-    candidates.forEach((candidate) => {
-      if (typeof candidate === 'string' && candidate.trim().length > 0) {
-        pushMentions(candidate);
-      }
-    });
-  }
-
-  return entries;
 };
 
 const DEFAULT_SELECT_FILTER_VALUE = 'all';
@@ -374,68 +251,9 @@ export const HomeScreen = ({
     isOpen: false,
     project: null
   }));
-  const [isMentionsModalOpen, setIsMentionsModalOpen] = useState(false);
-  const [showArchivedMentions, setShowArchivedMentions] = useState(false);
-  const [archivedMentionIds, setArchivedMentionIds] = useState(() => loadArchivedMentionIds());
   const deleteCancelButtonRef = useRef(null);
   const deleteConfirmButtonRef = useRef(null);
   const previouslyFocusedElementRef = useRef(null);
-
-  const mentionEntries = useMemo(() => {
-    const entries = [];
-    const mentionSources = [
-      { key: 'interviewNotes', label: 'Interview' },
-      { key: 'mindmappingWorkshops', label: 'Atelier mindmapping' },
-      { key: 'mindmappingNotes', label: 'Atelier mindmapping' },
-      { key: 'mindmapWorkshops', label: 'Atelier mindmapping' },
-      { key: 'mindmapNotes', label: 'Atelier mindmapping' }
-    ];
-
-    projects.forEach((project) => {
-      if (!project) {
-        return;
-      }
-
-      const answers = project.answers || {};
-      const projectName =
-        getSafeString(project.projectName)
-        || getSafeString(project.name)
-        || getSafeString(answers.projectName)
-        || getSafeString(answers.project_name)
-        || 'Projet sans nom';
-
-      mentionSources.forEach((source) => {
-        const sourceValue = answers[source.key] ?? project[source.key];
-        if (!sourceValue) {
-          return;
-        }
-
-        entries.push(...collectMentionsFromValue({
-          value: sourceValue,
-          projectId: project.id || projectName,
-          projectName,
-          sourceLabel: source.label,
-          sourceKey: source.key,
-          contextLabel: source.label
-        }));
-      });
-    });
-
-    return entries;
-  }, [projects]);
-
-  const archivedMentionsSet = useMemo(
-    () => new Set(archivedMentionIds),
-    [archivedMentionIds]
-  );
-  const activeMentions = useMemo(
-    () => mentionEntries.filter((entry) => !archivedMentionsSet.has(entry.id)),
-    [archivedMentionsSet, mentionEntries]
-  );
-  const archivedMentions = useMemo(
-    () => mentionEntries.filter((entry) => archivedMentionsSet.has(entry.id)),
-    [archivedMentionsSet, mentionEntries]
-  );
 
   const closeDeleteDialog = useCallback(() => {
     setDeleteDialogState({ isOpen: false, project: null });
@@ -499,49 +317,6 @@ export const HomeScreen = ({
     onDeleteProject(deleteDialogState.project.id);
     closeDeleteDialog();
   }, [closeDeleteDialog, deleteDialogState.project, onDeleteProject]);
-
-  useEffect(() => {
-    persistArchivedMentionIds(archivedMentionIds);
-  }, [archivedMentionIds]);
-
-  useEffect(() => {
-    setArchivedMentionIds((previous) => {
-      const validIds = previous.filter((id) => mentionEntries.some((entry) => entry.id === id));
-      if (validIds.length === previous.length) {
-        return previous;
-      }
-      return validIds;
-    });
-  }, [mentionEntries]);
-
-  const handleOpenMentionsModal = useCallback(() => {
-    setIsMentionsModalOpen(true);
-  }, []);
-
-  const handleCloseMentionsModal = useCallback(() => {
-    setIsMentionsModalOpen(false);
-  }, []);
-
-  const handleArchiveMention = useCallback((mentionId) => {
-    if (!mentionId) {
-      return;
-    }
-
-    setArchivedMentionIds((previous) => {
-      if (previous.includes(mentionId)) {
-        return previous;
-      }
-      return [...previous, mentionId];
-    });
-  }, []);
-
-  const handleUnarchiveMention = useCallback((mentionId) => {
-    if (!mentionId) {
-      return;
-    }
-
-    setArchivedMentionIds((previous) => previous.filter((id) => id !== mentionId));
-  }, []);
 
   useEffect(() => {
     if (!deleteDialogState.isOpen) {
@@ -1380,21 +1155,8 @@ export const HomeScreen = ({
                 >
                   <Plus className="w-5 h-5" aria-hidden="true" />
                   <span className="flex flex-col leading-tight text-left">
-                    <span>+ Nouveau</span>
-                    <span>compte-rendu</span>
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleOpenMentionsModal}
-                  className="inline-flex items-center justify-center gap-3 px-5 py-3 text-base font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-xl border border-amber-200 transition-all hv-button hv-focus-ring"
-                >
-                  <AlertTriangle className="w-5 h-5" aria-hidden="true" />
-                  <span className="flex flex-col leading-tight text-left">
-                    <span>A éclaircir</span>
-                    <span className="text-xs font-medium text-amber-600">
-                      {activeMentions.length} mention{activeMentions.length > 1 ? 's' : ''} active{activeMentions.length > 1 ? 's' : ''}
-                    </span>
+                    <span>Créer un nouveau</span>
+                    <span>projet</span>
                   </span>
                 </button>
                 <button
@@ -1843,117 +1605,6 @@ export const HomeScreen = ({
           )}
         </section>
       </div>
-      {isMentionsModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
-          <div
-            className="absolute inset-0 bg-gray-900 bg-opacity-60"
-            aria-hidden="true"
-            onClick={handleCloseMentionsModal}
-          />
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="mentions-dialog-title"
-            className="relative z-10 w-full max-w-3xl rounded-2xl bg-white p-6 shadow-2xl hv-surface hv-modal-panel flex flex-col"
-          >
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <h2 id="mentions-dialog-title" className="text-xl font-semibold text-gray-900">
-                  Mentions à éclaircir
-                </h2>
-                <p className="mt-1 text-sm text-gray-600">
-                  Retrouvez toutes les mentions @ issues des interviews et ateliers de mindmapping.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={handleCloseMentionsModal}
-                className="text-sm font-semibold text-gray-500 hover:text-gray-700"
-              >
-                Fermer
-              </button>
-            </div>
-
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setShowArchivedMentions(false)}
-                className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
-                  !showArchivedMentions
-                    ? 'border-blue-200 bg-blue-50 text-blue-700 shadow-sm'
-                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-                }`}
-                aria-pressed={!showArchivedMentions}
-              >
-                Mentions actives ({activeMentions.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowArchivedMentions(true)}
-                className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
-                  showArchivedMentions
-                    ? 'border-amber-200 bg-amber-50 text-amber-700 shadow-sm'
-                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-                }`}
-                aria-pressed={showArchivedMentions}
-              >
-                Archivées ({archivedMentions.length})
-              </button>
-            </div>
-
-            <div className="mt-5 space-y-3 overflow-y-auto pr-1">
-              {(showArchivedMentions ? archivedMentions : activeMentions).length === 0 ? (
-                <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center text-sm text-gray-600">
-                  {showArchivedMentions
-                    ? "Aucune mention archivée pour l'instant."
-                    : "Aucune mention à traiter pour l'instant."}
-                </div>
-              ) : (
-                (showArchivedMentions ? archivedMentions : activeMentions).map((entry) => (
-                  <div
-                    key={entry.id}
-                    className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm flex flex-col gap-3"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-gray-800">
-                          <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
-                            {entry.mention}
-                          </span>
-                          <span className="text-xs text-gray-500">{entry.projectName}</span>
-                        </div>
-                        <p className="text-xs text-gray-500">
-                          {entry.sourceLabel}{entry.context ? ` · ${entry.context}` : ''}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          showArchivedMentions
-                            ? handleUnarchiveMention(entry.id)
-                            : handleArchiveMention(entry.id)
-                        }
-                        className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
-                          showArchivedMentions
-                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
-                            : 'bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200'
-                        }`}
-                      >
-                        {showArchivedMentions ? 'Désarchiver' : 'Archiver'}
-                      </button>
-                    </div>
-                    {entry.excerpt && (
-                      <p className="text-sm text-gray-700 whitespace-pre-line">
-                        {entry.excerpt}
-                      </p>
-                    )}
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-      )}
       {deleteDialogState.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
           <div
