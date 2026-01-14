@@ -216,7 +216,7 @@ export const RichTextEditor = ({
           <span className="underline">U</span>
           <span className="sr-only">Souligner</span>
         </button>
-        <button type="button" className={LIST_BUTTON_CLASSES} onClick={() => applyCommand('insertUnorderedList')}>
+        <button type="button" className={BUTTON_BASE_CLASSES} onClick={() => applyCommand('insertUnorderedList')}>
           <svg
             aria-hidden="true"
             fill="#000000"
