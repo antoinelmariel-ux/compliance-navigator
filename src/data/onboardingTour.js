@@ -147,10 +147,24 @@ export const initialOnboardingTourConfig = {
       content: 'Adaptez textes, messages clés et jalons pour refléter fidèlement votre projet. Ses informations sont automatiquement mise à jour dans le rapport de compliance.'
     },
     {
+      id: 'showcase-custom-sections',
+      target: '[data-tour-id="showcase-edit-panel"]',
+      title: 'Créer des sections personnalisées',
+      content:
+        'Ajoutez des sections sur-mesure avec différents modèles : listes, colonnes, accroches et même des blocs qui intègrent des documents (PDF, slides, etc.).'
+    },
+    {
       id: 'showcase-save-edits',
       target: '[data-tour-id="showcase-save-edits"]',
       title: 'Enregistrer les modifications',
       content: 'Validez vos ajustements pour mettre à jour immédiatement la vitrine.'
+    },
+    {
+      id: 'showcase-display-modes',
+      target: '[data-tour-id="showcase-display-modes"]',
+      title: 'Choisir l’affichage & activer les commentaires',
+      content:
+        'Sélectionnez un affichage Light ou complet pour masquer certaines informations pendant vos présentations. Lors du partage, vous pouvez aussi autoriser les commentaires : des post-its fictifs illustrent le résultat.'
     },
     {
       id: 'showcase-back-to-report',

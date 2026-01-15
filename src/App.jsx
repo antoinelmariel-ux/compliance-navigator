@@ -38,7 +38,7 @@ import {
 } from './utils/inspirationConfig.js';
 import { exportInspirationToFile } from './utils/inspirationExport.js';
 
-const APP_VERSION = 'v1.0.239';
+const APP_VERSION = 'v1.0.240';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -1148,6 +1148,66 @@ const updateProjectFilters = useCallback((updater) => {
     return onboardingDemoDataRef.current;
   }, [computeDemoData]);
 
+  const buildOnboardingAnnotationNotes = useCallback((projectContext) => {
+    if (!projectContext) {
+      return [];
+    }
+
+    const projectId = projectContext.projectId || 'unknown';
+    const contextId = buildAnnotationContextKey({
+      screen: 'showcase',
+      projectId,
+      scope: showcaseAnnotationScope
+    });
+    const sourceId = 'onboarding-demo';
+    const color = registerAnnotationSource(sourceId, ANNOTATION_COLORS[3]);
+
+    return [
+      {
+        id: createAnnotationId(),
+        x: 0.22,
+        y: 0.25,
+        sectionId: 'hero',
+        sectionX: 0.25,
+        sectionY: 0.2,
+        text: '💡 À montrer en mode Light pour aller droit au message.',
+        color,
+        contextId,
+        projectId,
+        projectName: projectContext.projectName || '',
+        sourceId
+      },
+      {
+        id: createAnnotationId(),
+        x: 0.68,
+        y: 0.42,
+        sectionId: 'solution',
+        sectionX: 0.65,
+        sectionY: 0.4,
+        text: 'Ajouter une capture ici pour illustrer la solution.',
+        color,
+        contextId,
+        projectId,
+        projectName: projectContext.projectName || '',
+        sourceId
+      },
+      {
+        id: createAnnotationId(),
+        x: 0.3,
+        y: 0.75,
+        sectionId: 'timeline',
+        sectionX: 0.35,
+        sectionY: 0.2,
+        text: 'Timeline OK, prévoir une date de revue en plus.',
+        color,
+        contextId,
+        projectId,
+        projectName: projectContext.projectName || '',
+        sourceId
+      }
+    ];
+  }, [registerAnnotationSource, showcaseAnnotationScope]);
+
   const buildOnboardingProjects = useCallback((demoData) => {
     const baseAnswers = cloneDeep(demoData?.answers || demoProjectAnswersSnapshot || {});
     const now = Date.now();
@@ -1244,6 +1304,11 @@ const updateProjectFilters = useCallback((updater) => {
       setHasUnsavedChanges(false);
       setBackOfficeAuthError(null);
       setIsBackOfficeUnlocked(false);
+      setAnnotationNotes([]);
+      setAnnotationSources({ session: ANNOTATION_COLORS[0] });
+      setIsAnnotationModeEnabled(false);
+      setIsAnnotationPaused(false);
+      setShowcaseAnnotationScope('display-full');
       return;
     }
 
@@ -1275,6 +1340,11 @@ const updateProjectFilters = useCallback((updater) => {
     setHasUnsavedChanges(Boolean(snapshot.hasUnsavedChanges));
     setBackOfficeAuthError(snapshot.backOfficeAuthError || null);
     setIsBackOfficeUnlocked(Boolean(snapshot.isBackOfficeUnlocked));
+    setAnnotationNotes(Array.isArray(snapshot.annotationNotes) ? snapshot.annotationNotes : []);
+    setAnnotationSources(snapshot.annotationSources || { session: ANNOTATION_COLORS[0] });
+    setIsAnnotationModeEnabled(Boolean(snapshot.isAnnotationModeEnabled));
+    setIsAnnotationPaused(Boolean(snapshot.isAnnotationPaused));
+    setShowcaseAnnotationScope(snapshot.showcaseAnnotationScope || 'display-full');
   }, [
     setActiveProjectId,
     setAdminView,
@@ -1290,7 +1360,12 @@ const updateProjectFilters = useCallback((updater) => {
     setSaveFeedback,
     setScreen,
     setShowcaseProjectContext,
-    setValidationError
+    setValidationError,
+    setAnnotationNotes,
+    setAnnotationSources,
+    setIsAnnotationModeEnabled,
+    setIsAnnotationPaused,
+    setShowcaseAnnotationScope
   ]);
 
   const finishOnboarding = useCallback((options = {}) => {
@@ -1477,9 +1552,20 @@ const updateProjectFilters = useCallback((updater) => {
       case 'showcase-bottom':
       case 'showcase-edit-trigger':
       case 'showcase-edit':
+      case 'showcase-custom-sections':
       case 'showcase-save-edits':
       case 'showcase-back-to-report': {
         openDemoShowcase();
+        break;
+      }
+      case 'showcase-display-modes': {
+        openDemoShowcase();
+        setIsAnnotationModeEnabled(true);
+        setIsAnnotationPaused(false);
+        setAnnotationNotes(buildOnboardingAnnotationNotes({
+          projectId: 'unknown',
+          projectName: demoData.projectName
+        }));
         break;
       }
       case 'project-import':
@@ -1503,12 +1589,16 @@ const updateProjectFilters = useCallback((updater) => {
     setActiveProjectId,
     setAnalysis,
     setAnswers,
+    setAnnotationNotes,
+    setIsAnnotationModeEnabled,
+    setIsAnnotationPaused,
     setCurrentQuestionIndex,
     setHasUnsavedChanges,
     setSaveFeedback,
     setScreen,
     setShowcaseProjectContext,
-    setValidationError
+    setValidationError,
+    buildOnboardingAnnotationNotes
   ]);
 
   const handleStartOnboarding = useCallback(() => {
@@ -1538,7 +1628,12 @@ const updateProjectFilters = useCallback((updater) => {
       showcaseProjectContext: cloneDeep(showcaseProjectContext),
       hasUnsavedChanges,
       backOfficeAuthError,
-      isBackOfficeUnlocked
+      isBackOfficeUnlocked,
+      annotationNotes: cloneDeep(annotationNotes),
+      annotationSources: cloneDeep(annotationSources),
+      isAnnotationModeEnabled,
+      isAnnotationPaused,
+      showcaseAnnotationScope
     };
 
     const demoData = getDemoData();
@@ -1560,6 +1655,11 @@ const updateProjectFilters = useCallback((updater) => {
     setHasUnsavedChanges(false);
     setBackOfficeAuthError(null);
     setIsBackOfficeUnlocked(false);
+    setAnnotationNotes([]);
+    setAnnotationSources({ session: ANNOTATION_COLORS[0] });
+    setIsAnnotationModeEnabled(false);
+    setIsAnnotationPaused(false);
+    setShowcaseAnnotationScope('display-full');
     setProjects(onboardingProjects);
     setProjectFiltersState(createDefaultProjectFiltersConfig());
 
@@ -1617,6 +1717,11 @@ const updateProjectFilters = useCallback((updater) => {
     hasUnsavedChanges,
     backOfficeAuthError,
     isBackOfficeUnlocked,
+    annotationNotes,
+    annotationSources,
+    isAnnotationModeEnabled,
+    isAnnotationPaused,
+    showcaseAnnotationScope,
     getDemoData,
     buildOnboardingProjects,
     normalizedOnboardingConfig,
@@ -1634,6 +1739,11 @@ const updateProjectFilters = useCallback((updater) => {
     setHasUnsavedChanges,
     setBackOfficeAuthError,
     setIsBackOfficeUnlocked,
+    setAnnotationNotes,
+    setAnnotationSources,
+    setIsAnnotationModeEnabled,
+    setIsAnnotationPaused,
+    setShowcaseAnnotationScope,
     setProjects,
     setProjectFiltersState
   ]);
