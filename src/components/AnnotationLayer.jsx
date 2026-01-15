@@ -48,6 +48,7 @@ export const AnnotationLayer = ({
   isActive = false,
   isPaused = false,
   isEditing = false,
+  hideToolbar = false,
   notes = [],
   activeContextId = '',
   projectName = '',
@@ -187,60 +188,62 @@ export const AnnotationLayer = ({
 
   return (
     <React.Fragment>
-      <div className="fixed top-0 inset-x-0 z-[99999]" data-annotation-ui="true">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8">
-          <div className="mt-2 rounded-b-xl bg-white border border-slate-200 text-slate-900 shadow-2xl px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2 text-sm text-slate-800">
-              <span className="font-semibold">Mode annotation</span>
-              <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold ${
-                isPaused ? STATUS_BADGE.paused : STATUS_BADGE.active
-              }`}>
-                <span className="w-2 h-2 rounded-full bg-white" aria-hidden="true" />
-                {isPaused ? 'En pause' : 'Actif'}
-              </span>
-              {projectName ? (
-                <span className="text-xs text-slate-600">Projet : {projectName}</span>
-              ) : null}
-            </div>
+      {!hideToolbar && (
+        <div className="fixed top-0 inset-x-0 z-[99999]" data-annotation-ui="true">
+          <div className="max-w-7xl mx-auto px-4 sm:px-8">
+            <div className="mt-2 rounded-b-xl bg-white border border-slate-200 text-slate-900 shadow-2xl px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2 text-sm text-slate-800">
+                <span className="font-semibold">Mode annotation</span>
+                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold ${
+                  isPaused ? STATUS_BADGE.paused : STATUS_BADGE.active
+                }`}>
+                  <span className="w-2 h-2 rounded-full bg-white" aria-hidden="true" />
+                  {isPaused ? 'En pause' : 'Actif'}
+                </span>
+                {projectName ? (
+                  <span className="text-xs text-slate-600">Projet : {projectName}</span>
+                ) : null}
+              </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={onExit}
-                className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white p-2 text-slate-600 hover:text-slate-900 hover:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
-                aria-label="Quitter le mode annotation"
-                title="Quitter le mode annotation"
-              >
-                <Close className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={onRequestSave}
-                className="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
-              >
-                <Save className="h-4 w-4" />
-                Sauvegarder
-              </button>
-              <button
-                type="button"
-                onClick={onRequestLoad}
-                className="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
-              >
-                <Upload className="h-4 w-4" />
-                Charger
-              </button>
-              <button
-                type="button"
-                onClick={onTogglePause}
-                className="inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
-              >
-                {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-                {isPaused ? 'Relancer' : 'Mettre en pause'}
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={onExit}
+                  className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white p-2 text-slate-600 hover:text-slate-900 hover:border-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                  aria-label="Quitter le mode annotation"
+                  title="Quitter le mode annotation"
+                >
+                  <Close className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={onRequestSave}
+                  className="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                >
+                  <Save className="h-4 w-4" />
+                  Sauvegarder
+                </button>
+                <button
+                  type="button"
+                  onClick={onRequestLoad}
+                  className="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                >
+                  <Upload className="h-4 w-4" />
+                  Charger
+                </button>
+                <button
+                  type="button"
+                  onClick={onTogglePause}
+                  className="inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                >
+                  {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+                  {isPaused ? 'Relancer' : 'Mettre en pause'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       <div className="annotation-sticky-layer" data-annotation-ui="true">
         {visibleNotes.map((note, index) => {
