@@ -3711,7 +3711,10 @@ export const ProjectShowcase = ({
   ) : null;
 
   const modeSelectionPanel = resolvedDisplayModeLock ? null : (
-    <div className="mb-6 rounded-2xl border border-gray-200 bg-white/80 shadow-sm backdrop-blur">
+    <div
+      className="mb-6 rounded-2xl border border-gray-200 bg-white/80 shadow-sm backdrop-blur"
+      data-tour-id="showcase-display-modes"
+    >
       <div
         className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
         role="group"

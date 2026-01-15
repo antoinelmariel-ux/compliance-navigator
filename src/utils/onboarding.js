@@ -6,6 +6,14 @@ const ALLOWED_ACTIONS = new Set(['next', 'prev', 'close', 'finish', 'goTo']);
 const sanitizeString = (value, fallback = '') =>
   typeof value === 'string' ? value.trim() : fallback;
 
+const sanitizeText = (value, fallback = '') => {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+
+  return value.trim().length > 0 ? value : fallback;
+};
+
 const normalizeStepId = (value, index) => {
   const candidate = sanitizeString(value);
   if (candidate) {
@@ -43,10 +51,10 @@ export const normalizeOnboardingConfig = (config, fallback = initialOnboardingTo
     allowClose: typeof base?.allowClose === 'boolean' ? base.allowClose : fallback?.allowClose ?? true,
     showStepDots: typeof base?.showStepDots === 'boolean' ? base.showStepDots : fallback?.showStepDots ?? true,
     labels: {
-      next: sanitizeString(labels.next, sanitizeString(fallbackLabels.next, 'Suivant')),
-      prev: sanitizeString(labels.prev, sanitizeString(fallbackLabels.prev, 'Précédent')),
-      close: sanitizeString(labels.close, sanitizeString(fallbackLabels.close, 'Fermer')),
-      finish: sanitizeString(labels.finish, sanitizeString(fallbackLabels.finish, 'Terminer'))
+      next: sanitizeText(labels.next, sanitizeText(fallbackLabels.next, 'Suivant')),
+      prev: sanitizeText(labels.prev, sanitizeText(fallbackLabels.prev, 'Précédent')),
+      close: sanitizeText(labels.close, sanitizeText(fallbackLabels.close, 'Fermer')),
+      finish: sanitizeText(labels.finish, sanitizeText(fallbackLabels.finish, 'Terminer'))
     },
     steps: steps.map((step, index) => {
       const fallbackStep = fallback?.steps?.[index] || {};
@@ -56,8 +64,8 @@ export const normalizeOnboardingConfig = (config, fallback = initialOnboardingTo
       return {
         id: normalizeStepId(rawStep?.id, index),
         target: sanitizeString(rawStep?.target, sanitizeString(fallbackStep?.target)),
-        title: sanitizeString(rawStep?.title, sanitizeString(fallbackStep?.title)),
-        content: sanitizeString(rawStep?.content, sanitizeString(fallbackStep?.content)),
+        title: sanitizeText(rawStep?.title, sanitizeText(fallbackStep?.title)),
+        content: sanitizeText(rawStep?.content, sanitizeText(fallbackStep?.content)),
         placement: sanitizeString(rawStep?.placement, sanitizeString(fallbackStep?.placement)),
         highlightPadding: typeof rawStep?.highlightPadding === 'number'
           ? rawStep.highlightPadding
@@ -69,7 +77,7 @@ export const normalizeOnboardingConfig = (config, fallback = initialOnboardingTo
           .filter(action => action && typeof action === 'object')
           .map((action) => ({
             id: sanitizeString(action.id) || `action-${index}-${Date.now().toString(36)}`,
-            label: sanitizeString(action.label, 'Action'),
+            label: sanitizeText(action.label, 'Action'),
             action: ALLOWED_ACTIONS.has(action.action) ? action.action : 'next',
             stepId: sanitizeString(action.stepId),
             variant: sanitizeString(action.variant, DEFAULT_ACTION_VARIANT)
