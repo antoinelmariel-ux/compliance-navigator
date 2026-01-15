@@ -38,7 +38,7 @@ import {
 } from './utils/inspirationConfig.js';
 import { exportInspirationToFile } from './utils/inspirationExport.js';
 
-const APP_VERSION = 'v1.0.238';
+const APP_VERSION = 'v1.0.239';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -3404,7 +3404,7 @@ const updateProjectFilters = useCallback((updater) => {
                   <button
                     type="button"
                     onClick={handleToggleAnnotationMode}
-                    className={`order-first self-start sm:order-last sm:self-center inline-flex min-h-[44px] h-11 px-4 items-center justify-center rounded-full border text-blue-700 shadow-sm transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                    className={`order-first self-start sm:order-last sm:self-center inline-flex h-10 px-4 items-center justify-center rounded-full border text-blue-700 shadow-sm transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                       isAnnotationModeEnabled ? 'bg-blue-50 border-blue-200' : 'bg-white border-blue-100'
                     }`}
                     aria-pressed={isAnnotationModeEnabled}
@@ -3418,7 +3418,7 @@ const updateProjectFilters = useCallback((updater) => {
                   <button
                     type="button"
                     onClick={handleOpenShowcaseShare}
-                    className={`order-first self-start sm:order-last sm:self-center inline-flex min-h-[44px] h-11 px-4 items-center justify-center rounded-full border text-blue-700 shadow-sm transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                    className={`order-first self-start sm:order-last sm:self-center inline-flex h-10 px-4 items-center justify-center rounded-full border text-blue-700 shadow-sm transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                       showcaseProjectId ? 'bg-white border-blue-100' : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
                     }`}
                     aria-label="Partager la vitrine du projet"
