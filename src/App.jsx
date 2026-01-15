@@ -38,7 +38,7 @@ import {
 } from './utils/inspirationConfig.js';
 import { exportInspirationToFile } from './utils/inspirationExport.js';
 
-const APP_VERSION = 'v1.0.240';
+const APP_VERSION = 'v1.0.241';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -1488,6 +1488,13 @@ const updateProjectFilters = useCallback((updater) => {
       scrollToTop();
     };
 
+    const shouldOpenShareModal = stepId === 'showcase-display-modes';
+
+    if (!shouldOpenShareModal && isShowcaseShareOpen) {
+      setIsShowcaseShareOpen(false);
+      setShowcaseShareFeedback('');
+    }
+
     switch (stepId) {
       case 'welcome':
       case 'create-project': {
@@ -1560,6 +1567,18 @@ const updateProjectFilters = useCallback((updater) => {
       }
       case 'showcase-display-modes': {
         openDemoShowcase();
+        setShowcaseShareMode(showcaseDisplayMode === 'light' ? 'light' : 'full');
+        setShowcaseShareCommentsEnabled(false);
+        setIsShowcaseShareOpen(true);
+        setShowcaseShareFeedback('');
+        setIsAnnotationModeEnabled(false);
+        setIsAnnotationPaused(false);
+        break;
+      }
+      case 'showcase-comments': {
+        openDemoShowcase();
+        setIsShowcaseShareOpen(false);
+        setShowcaseShareFeedback('');
         setIsAnnotationModeEnabled(true);
         setIsAnnotationPaused(false);
         setAnnotationNotes(buildOnboardingAnnotationNotes({
@@ -1594,11 +1613,17 @@ const updateProjectFilters = useCallback((updater) => {
     setIsAnnotationPaused,
     setCurrentQuestionIndex,
     setHasUnsavedChanges,
+    setIsShowcaseShareOpen,
     setSaveFeedback,
     setScreen,
+    setShowcaseShareCommentsEnabled,
+    setShowcaseShareFeedback,
+    setShowcaseShareMode,
     setShowcaseProjectContext,
     setValidationError,
-    buildOnboardingAnnotationNotes
+    buildOnboardingAnnotationNotes,
+    showcaseDisplayMode,
+    isShowcaseShareOpen
   ]);
 
   const handleStartOnboarding = useCallback(() => {
