@@ -38,7 +38,7 @@ import {
 } from './utils/inspirationConfig.js';
 import { exportInspirationToFile } from './utils/inspirationExport.js';
 
-const APP_VERSION = 'v1.0.241';
+const APP_VERSION = 'v1.0.242';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -1946,6 +1946,40 @@ const updateProjectFilters = useCallback((updater) => {
     [activeShowcaseProjectId, screen, showcaseAnnotationScope]
   );
 
+  useEffect(() => {
+    if (!isOnboardingActive || onboardingStepId !== 'showcase-comments') {
+      return;
+    }
+
+    if (screen !== 'showcase') {
+      return;
+    }
+
+    const hasOnboardingNotes = annotationNotes.some(note => note?.sourceId === 'onboarding-demo');
+    if (hasOnboardingNotes) {
+      return;
+    }
+
+    const demoData = getDemoData();
+    setIsAnnotationModeEnabled(true);
+    setIsAnnotationPaused(false);
+    setAnnotationNotes(buildOnboardingAnnotationNotes({
+      projectId: showcaseProjectContext?.projectId || 'unknown',
+      projectName: demoData.projectName
+    }));
+  }, [
+    annotationNotes,
+    buildOnboardingAnnotationNotes,
+    getDemoData,
+    isOnboardingActive,
+    onboardingStepId,
+    screen,
+    setAnnotationNotes,
+    setIsAnnotationModeEnabled,
+    setIsAnnotationPaused,
+    showcaseProjectContext
+  ]);
+
   const registerAnnotationSource = useCallback((sourceId, preferredColor) => {
     if (!sourceId) {
       return ANNOTATION_COLORS[0];
@@ -3490,6 +3524,7 @@ const updateProjectFilters = useCallback((updater) => {
         isActive={isAnnotationModeEnabled && screen === 'showcase'}
         isPaused={isAnnotationPaused}
         isEditing={isShowcaseEditing}
+        hideToolbar={isOnboardingActive && onboardingStepId === 'showcase-back-to-report'}
         notes={annotationNotes}
         activeContextId={activeAnnotationContextKey}
         sourceColors={annotationSources}
