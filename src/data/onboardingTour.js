@@ -124,7 +124,7 @@ export const initialOnboardingTourConfig = {
     },
     {
       id: 'showcase-bottom',
-      target: '[data-tour-id="showcase-preview-bottom"]',
+      target: '[data-tour-id="showcase-roadmap"]',
       title: 'Explorer la suite de la vitrine',
       content: 'Vous retrouvez sur la vitrine les jalons de votre projet mais également les alertes liées à des problématiques de respect de certains délais.',
       scrollIntoViewOptions: {
@@ -165,6 +165,13 @@ export const initialOnboardingTourConfig = {
       title: 'Choisir l’affichage & activer les commentaires',
       content:
         'Sélectionnez un affichage Light ou complet pour masquer certaines informations pendant vos présentations. Lors du partage, vous pouvez aussi autoriser les commentaires : des post-its fictifs illustrent le résultat.'
+    },
+    {
+      id: 'showcase-comments',
+      target: '[data-tour-id="showcase-preview"]',
+      title: 'Illustrer les commentaires',
+      content:
+        'La vitrine peut être commentée : les post-its s’affichent directement sur la vitrine pour recueillir les retours des parties prenantes.'
     },
     {
       id: 'showcase-back-to-report',

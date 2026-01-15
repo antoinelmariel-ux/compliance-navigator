@@ -1918,7 +1918,11 @@ export const ProjectShowcase = ({
     }
 
     const { activeStep } = tourContext;
-    const shouldForceEditing = activeStep === 'showcase-edit' || activeStep === 'showcase-save-edits';
+    const shouldForceEditing = [
+      'showcase-edit',
+      'showcase-save-edits',
+      'showcase-custom-sections'
+    ].includes(activeStep);
 
     if (shouldForceEditing) {
       setDraftValues(buildDraftValues(editableFields, answers, rawProjectName));
@@ -1939,8 +1943,11 @@ export const ProjectShowcase = ({
       selector = '[data-tour-id="showcase-preview"]';
       scrollOptions = { behavior: 'smooth', block: 'start' };
     } else if (activeStep === 'showcase-bottom') {
-      selector = '[data-tour-id="showcase-preview-bottom"]';
-      scrollOptions = { behavior: 'smooth', block: 'end' };
+      selector = '[data-tour-id="showcase-roadmap"]';
+      scrollOptions = { behavior: 'smooth', block: 'center' };
+    } else if (activeStep === 'showcase-comments') {
+      selector = '[data-tour-id="showcase-preview"]';
+      scrollOptions = { behavior: 'smooth', block: 'center' };
     } else if (activeStep === 'showcase-edit-trigger') {
       selector = '[data-tour-id="showcase-edit-trigger"]';
     } else if (activeStep === 'showcase-edit' || activeStep === 'showcase-save-edits') {
@@ -1951,11 +1958,19 @@ export const ProjectShowcase = ({
       let element = document.querySelector(selector);
       if (!element && activeStep === 'showcase-bottom') {
         element = document.querySelector('[data-tour-id="showcase-preview"]');
-        scrollOptions = { behavior: 'smooth', block: 'end' };
+        scrollOptions = { behavior: 'smooth', block: 'center' };
       }
       if (element && typeof element.scrollIntoView === 'function') {
         element.scrollIntoView(scrollOptions);
       }
+    }
+
+    if (activeStep === 'showcase-custom-sections') {
+      if (!isSectionModalOpen) {
+        handleOpenSectionModal();
+      }
+    } else if (isSectionModalOpen && activeStep !== 'showcase-custom-sections') {
+      handleCloseSectionModal();
     }
   }, [
     tourContext,
@@ -1965,7 +1980,10 @@ export const ProjectShowcase = ({
     rawProjectName,
     resetMilestoneDragState,
     isEditing,
-    setDraftValues
+    setDraftValues,
+    handleOpenSectionModal,
+    handleCloseSectionModal,
+    isSectionModalOpen
   ]);
 
   const isLightMode = displayMode === 'light';
