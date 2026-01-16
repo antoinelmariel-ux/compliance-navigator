@@ -38,7 +38,7 @@ import {
 } from './utils/inspirationConfig.js';
 import { exportInspirationToFile } from './utils/inspirationExport.js';
 
-const APP_VERSION = 'v1.0.242';
+const APP_VERSION = 'v1.0.243';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -666,6 +666,21 @@ export const App = () => {
     link.dataset.dynamic = 'true';
     document.head.appendChild(link);
     loadedStylesRef.current.add(href);
+  }, []);
+
+  const isAnnotationUiInteraction = useCallback((event) => {
+    const path = typeof event?.composedPath === 'function' ? event.composedPath() : [];
+    if (Array.isArray(path) && path.length > 0) {
+      return path.some(node => node instanceof Element && node.dataset?.annotationUi === 'true');
+    }
+
+    const target = event?.target;
+    const element = target instanceof Element ? target : target?.parentElement;
+    if (element?.closest) {
+      return Boolean(element.closest('[data-annotation-ui="true"]'));
+    }
+
+    return false;
   }, []);
 
   useEffect(() => {
@@ -2215,7 +2230,7 @@ const updateProjectFilters = useCallback((updater) => {
     const handleDocumentClick = (event) => {
       const target = event?.target;
 
-      if (target instanceof Element && target.closest('[data-annotation-ui="true"]')) {
+      if (isAnnotationUiInteraction(event)) {
         return;
       }
 
@@ -2227,7 +2242,7 @@ const updateProjectFilters = useCallback((updater) => {
     return () => {
       window.removeEventListener('click', handleDocumentClick, true);
     };
-  }, [handleAddAnnotationNote, isAnnotationModeEnabled, isAnnotationPaused, screen]);
+  }, [handleAddAnnotationNote, isAnnotationModeEnabled, isAnnotationPaused, isAnnotationUiInteraction, screen]);
 
   useEffect(() => {
     if (!showcaseProjectContext) {

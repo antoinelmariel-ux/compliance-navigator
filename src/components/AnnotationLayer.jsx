@@ -189,7 +189,7 @@ export const AnnotationLayer = ({
   return (
     <React.Fragment>
       {!hideToolbar && (
-        <div className="fixed top-0 inset-x-0 z-[99999]" data-annotation-ui="true">
+        <div className="fixed top-0 inset-x-0 z-[2147483600]" data-annotation-ui="true">
           <div className="max-w-7xl mx-auto px-4 sm:px-8">
             <div className="mt-2 rounded-b-xl bg-white border border-slate-200 text-slate-900 shadow-2xl px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2 text-sm text-slate-800">

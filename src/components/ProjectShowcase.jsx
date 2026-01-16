@@ -1568,7 +1568,6 @@ export const ProjectShowcase = ({
     columnCount: 1,
     columns: ['']
   });
-  const [sectionDraftItemsText, setSectionDraftItemsText] = useState('');
 
   const resetMilestoneDragState = useCallback(() => {
     setMilestoneDragState(createEmptyMilestoneDragState());
@@ -1772,7 +1771,6 @@ export const ProjectShowcase = ({
       columnCount: 1,
       columns: ['']
     });
-    setSectionDraftItemsText('');
     setIsSectionModalOpen(true);
   }, []);
 
@@ -1791,7 +1789,6 @@ export const ProjectShowcase = ({
       columnCount: 1,
       columns: ['']
     });
-    setSectionDraftItemsText('');
   }, []);
 
   useEffect(() => {
@@ -1829,7 +1826,6 @@ export const ProjectShowcase = ({
       columnCount,
       columns
     });
-    setSectionDraftItemsText(Array.isArray(placeholder.items) ? placeholder.items.join('\n') : '');
     setSectionModalStep('form');
   }, [selectedTemplateIndex]);
 
@@ -1861,16 +1857,33 @@ export const ProjectShowcase = ({
     });
   }, []);
 
-  const handleSectionDraftItemsChange = useCallback((value) => {
-    setSectionDraftItemsText(value);
-    const items = value
-      .split(/\r?\n/)
-      .map(entry => entry.trim())
-      .filter(Boolean);
+  const handleSectionDraftItemChange = useCallback((index, value) => {
+    setSectionDraft(previous => {
+      const items = Array.isArray(previous.items) ? [...previous.items] : [];
+      items[index] = value;
+      return {
+        ...previous,
+        items
+      };
+    });
+  }, []);
+
+  const handleSectionDraftItemAdd = useCallback(() => {
     setSectionDraft(previous => ({
       ...previous,
-      items
+      items: [...(Array.isArray(previous.items) ? previous.items : []), '']
     }));
+  }, []);
+
+  const handleSectionDraftItemRemove = useCallback((index) => {
+    setSectionDraft(previous => {
+      const items = Array.isArray(previous.items) ? [...previous.items] : [];
+      items.splice(index, 1);
+      return {
+        ...previous,
+        items
+      };
+    });
   }, []);
 
   const handleSubmitNewSection = useCallback((event) => {
@@ -2087,17 +2100,43 @@ export const ProjectShowcase = ({
     );
   }, []);
 
-  const handleCustomSectionItemsChange = useCallback((sectionId, value) => {
-    const items = value
-      .split(/\r?\n/)
-      .map(entry => entry.trim())
-      .filter(Boolean);
-
+  const handleCustomSectionItemChange = useCallback((sectionId, index, value) => {
     setCustomSections(prev =>
       prev.map(section => {
         if (!section || section.id !== sectionId) {
           return section;
         }
+
+        const items = Array.isArray(section.items) ? [...section.items] : [];
+        items[index] = value;
+
+        return {
+          ...section,
+          items
+        };
+      })
+    );
+  }, []);
+
+  const handleCustomSectionItemAdd = useCallback((sectionId) => {
+    setCustomSections(prev =>
+      prev.map(section => (
+        section && section.id === sectionId
+          ? { ...section, items: [...(Array.isArray(section.items) ? section.items : []), ''] }
+          : section
+      ))
+    );
+  }, []);
+
+  const handleCustomSectionItemRemove = useCallback((sectionId, index) => {
+    setCustomSections(prev =>
+      prev.map(section => {
+        if (!section || section.id !== sectionId) {
+          return section;
+        }
+
+        const items = Array.isArray(section.items) ? [...section.items] : [];
+        items.splice(index, 1);
 
         return {
           ...section,
@@ -3127,9 +3166,9 @@ export const ProjectShowcase = ({
           <div className="aurora-section__header aurora-section__header--split">
             <div>
               {templateConfig.showAccent && (
-                <p className="aurora-eyebrow">{section.accent || 'Section additionnelle'}</p>
+                <p className="aurora-eyebrow">{renderTextWithLinks(section.accent || 'Section additionnelle')}</p>
               )}
-              <h2 className="aurora-section__title">{section.title}</h2>
+              <h2 className="aurora-section__title">{renderTextWithLinks(section.title || 'Section personnalisée')}</h2>
               {templateConfig.showSubtitle && section.subtitle && (
                 <p className="mt-1 text-sm text-gray-600">{renderTextWithLinks(section.subtitle)}</p>
               )}
@@ -3224,8 +3263,8 @@ export const ProjectShowcase = ({
         className="deezer-section deezer-section--custom"
         data-showcase-section={section.type || 'custom'}
       >
-        <p className="deezer-eyebrow">{section.accent || 'Section additionnelle'}</p>
-        <h2 className="deezer-title" style={{ fontSize: '2rem' }}>{section.title}</h2>
+        <p className="deezer-eyebrow">{renderTextWithLinks(section.accent || 'Section additionnelle')}</p>
+        <h2 className="deezer-title" style={{ fontSize: '2rem' }}>{renderTextWithLinks(section.title || 'Section personnalisée')}</h2>
         {templateConfig.showSubtitle && section.subtitle && (
           <p className="deezer-subtitle">{renderTextWithLinks(section.subtitle)}</p>
         )}
@@ -3515,39 +3554,38 @@ export const ProjectShowcase = ({
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-1">
                 <label htmlFor="section-title" className="text-sm font-medium text-gray-800">Titre</label>
-                <input
+                <RichTextEditor
                   id="section-title"
-                  type="text"
                   value={sectionDraft.title}
-                  onChange={(event) => handleSectionDraftChange('title', event.target.value)}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
+                  onChange={(nextValue) => handleSectionDraftChange('title', nextValue)}
                   placeholder={selectedTemplate?.placeholder?.title || 'Titre du bloc'}
-                  required
+                  compact
+                  ariaLabel="Titre de la section"
                 />
               </div>
               {selectedTemplateConfig.showSubtitle && (
                 <div className="space-y-1">
                   <label htmlFor="section-subtitle" className="text-sm font-medium text-gray-800">Sous-titre</label>
-                  <input
+                  <RichTextEditor
                     id="section-subtitle"
-                    type="text"
                     value={sectionDraft.subtitle}
-                    onChange={(event) => handleSectionDraftChange('subtitle', event.target.value)}
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
+                    onChange={(nextValue) => handleSectionDraftChange('subtitle', nextValue)}
                     placeholder={selectedTemplate?.placeholder?.subtitle || 'Complément de contexte'}
+                    compact
+                    ariaLabel="Sous-titre de la section"
                   />
                 </div>
               )}
               {selectedTemplateConfig.showAccent && (
                 <div className="space-y-1">
                   <label htmlFor="section-accent" className="text-sm font-medium text-gray-800">Sous-titre d'accroche (optionnel)</label>
-                  <input
+                  <RichTextEditor
                     id="section-accent"
-                    type="text"
                     value={sectionDraft.accent}
-                    onChange={(event) => handleSectionDraftChange('accent', event.target.value)}
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
+                    onChange={(nextValue) => handleSectionDraftChange('accent', nextValue)}
                     placeholder="Sous-titre court"
+                    compact
+                    ariaLabel="Accroche de la section"
                   />
                 </div>
               )}
@@ -3555,13 +3593,12 @@ export const ProjectShowcase = ({
             {selectedTemplateConfig.showDescription && (
               <div className="space-y-1">
                 <label htmlFor="section-description" className="text-sm font-medium text-gray-800">Description</label>
-                <textarea
+                <RichTextEditor
                   id="section-description"
                   value={sectionDraft.description}
-                  onChange={(event) => handleSectionDraftChange('description', event.target.value)}
-                  rows={4}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
+                  onChange={(nextValue) => handleSectionDraftChange('description', nextValue)}
                   placeholder={selectedTemplate?.placeholder?.description || 'Expliquez le contenu principal de cette section'}
+                  ariaLabel="Description de la section"
                 />
               </div>
             )}
@@ -3594,13 +3631,13 @@ export const ProjectShowcase = ({
                       >
                         Contenu colonne {columnIndex + 1}
                       </label>
-                      <textarea
+                      <RichTextEditor
                         id={`section-column-${columnIndex}`}
                         value={column}
-                        onChange={(event) => handleSectionDraftColumnChange(columnIndex, event.target.value)}
-                        rows={3}
-                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
+                        onChange={(nextValue) => handleSectionDraftColumnChange(columnIndex, nextValue)}
                         placeholder={`Contenu de la colonne ${columnIndex + 1}`}
+                        compact
+                        ariaLabel={`Contenu colonne ${columnIndex + 1}`}
                       />
                     </div>
                   ))}
@@ -3649,16 +3686,47 @@ export const ProjectShowcase = ({
               </div>
             )}
             {selectedTemplateConfig.showItems && (
-              <div className="space-y-1">
-                <label htmlFor="section-items" className="text-sm font-medium text-gray-800">Liste (une ligne par élément)</label>
-                <textarea
-                  id="section-items"
-                  value={sectionDraftItemsText}
-                  onChange={(event) => handleSectionDraftItemsChange(event.target.value)}
-                  rows={4}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
-                  placeholder={(selectedTemplate?.placeholder?.items || ['Élément #1', 'Élément #2']).join('\n')}
-                />
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-gray-800">
+                  Liste (chaque élément peut être enrichi)
+                </label>
+                {Array.isArray(sectionDraft.items) && sectionDraft.items.length > 0 ? (
+                  <div className="space-y-3">
+                    {sectionDraft.items.map((item, itemIndex) => (
+                      <div key={`section-draft-item-${itemIndex}`} className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-semibold text-gray-500">Élément {itemIndex + 1}</p>
+                          <button
+                            type="button"
+                            onClick={() => handleSectionDraftItemRemove(itemIndex)}
+                            className="inline-flex items-center gap-1 rounded-full border border-gray-200 px-2 py-1 text-xs text-gray-600 hover:border-red-200 hover:text-red-600"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                            Supprimer
+                          </button>
+                        </div>
+                        <RichTextEditor
+                          id={`section-items-${itemIndex}`}
+                          value={item}
+                          onChange={(nextValue) => handleSectionDraftItemChange(itemIndex, nextValue)}
+                          placeholder="Élément de liste"
+                          compact
+                          ariaLabel={`Élément de liste ${itemIndex + 1}`}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-500">Aucun élément ajouté pour le moment.</p>
+                )}
+                <button
+                  type="button"
+                  onClick={handleSectionDraftItemAdd}
+                  className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-700 transition hover:border-blue-200 hover:text-blue-700"
+                >
+                  <Plus className="h-4 w-4" />
+                  Ajouter un élément
+                </button>
               </div>
             )}
             <div className="flex flex-wrap justify-between gap-2">
@@ -3905,7 +3973,7 @@ export const ProjectShowcase = ({
                       ☰
                     </span>
                     <div>
-                      <p className="text-sm font-semibold text-gray-900">{section.title}</p>
+                      <p className="text-sm font-semibold text-gray-900">{renderTextWithLinks(section.title)}</p>
                       <p className="text-xs text-gray-500">{section.subtitle}</p>
                     </div>
                   </div>
@@ -3940,7 +4008,6 @@ export const ProjectShowcase = ({
           if (block.type === 'custom') {
             const section = block.section;
             const templateConfig = resolveTemplateConfig(section.type);
-            const itemsText = Array.isArray(section.items) ? section.items.join('\n') : '';
             const sectionTitle = section.title || 'Section personnalisée';
             const annotationSectionId = section.type || 'custom';
 
@@ -3951,7 +4018,7 @@ export const ProjectShowcase = ({
                 data-annotation-target-section={annotationSectionId}
               >
                 <div className="flex flex-col gap-1">
-                  <p className="aurora-field__label">{sectionTitle}</p>
+                  <p className="aurora-field__label">{renderTextWithLinks(sectionTitle)}</p>
                   <p className="text-xs text-gray-500">Bloc personnalisé</p>
                 </div>
                 <div className="mt-4 grid gap-4 md:grid-cols-2">
@@ -3959,13 +4026,13 @@ export const ProjectShowcase = ({
                     <label htmlFor={`custom-section-${section.id}-title`} className="text-sm font-medium text-gray-800">
                       Titre
                     </label>
-                    <input
+                    <RichTextEditor
                       id={`custom-section-${section.id}-title`}
-                      type="text"
                       value={section.title || ''}
-                      onChange={(event) => handleCustomSectionFieldChange(section.id, 'title', event.target.value)}
-                      className="aurora-form-control"
+                      onChange={(nextValue) => handleCustomSectionFieldChange(section.id, 'title', nextValue)}
                       placeholder="Titre du bloc"
+                      compact
+                      ariaLabel="Titre du bloc"
                     />
                   </div>
                 </div>
@@ -3974,13 +4041,13 @@ export const ProjectShowcase = ({
                     <label htmlFor={`custom-section-${section.id}-subtitle`} className="text-sm font-medium text-gray-800">
                       Sous-titre
                     </label>
-                    <input
+                    <RichTextEditor
                       id={`custom-section-${section.id}-subtitle`}
-                      type="text"
                       value={section.subtitle || ''}
-                      onChange={(event) => handleCustomSectionFieldChange(section.id, 'subtitle', event.target.value)}
-                      className="aurora-form-control"
+                      onChange={(nextValue) => handleCustomSectionFieldChange(section.id, 'subtitle', nextValue)}
                       placeholder="Complément de contexte"
+                      compact
+                      ariaLabel="Sous-titre du bloc"
                     />
                   </div>
                 )}
@@ -3989,13 +4056,13 @@ export const ProjectShowcase = ({
                     <label htmlFor={`custom-section-${section.id}-accent`} className="text-sm font-medium text-gray-800">
                       Sous-titre d'accroche (optionnel)
                     </label>
-                    <input
+                    <RichTextEditor
                       id={`custom-section-${section.id}-accent`}
-                      type="text"
                       value={section.accent || ''}
-                      onChange={(event) => handleCustomSectionFieldChange(section.id, 'accent', event.target.value)}
-                      className="aurora-form-control"
+                      onChange={(nextValue) => handleCustomSectionFieldChange(section.id, 'accent', nextValue)}
                       placeholder="Sous-titre court"
+                      compact
+                      ariaLabel="Accroche du bloc"
                     />
                   </div>
                 )}
@@ -4061,13 +4128,12 @@ export const ProjectShowcase = ({
                     <label htmlFor={`custom-section-${section.id}-description`} className="text-sm font-medium text-gray-800">
                       Description
                     </label>
-                    <textarea
+                    <RichTextEditor
                       id={`custom-section-${section.id}-description`}
                       value={section.description || ''}
-                      onChange={(event) => handleCustomSectionFieldChange(section.id, 'description', event.target.value)}
-                      rows={4}
-                      className="aurora-form-control aurora-form-control--textarea"
+                      onChange={(nextValue) => handleCustomSectionFieldChange(section.id, 'description', nextValue)}
                       placeholder="Expliquez le contenu principal de cette section"
+                      ariaLabel="Description de la section"
                     />
                   </div>
                 )}
@@ -4082,31 +4148,60 @@ export const ProjectShowcase = ({
                           >
                             Contenu colonne {columnIndex + 1}
                           </label>
-                          <textarea
+                          <RichTextEditor
                             id={`custom-section-${section.id}-column-${columnIndex}`}
                             value={column}
-                            onChange={(event) => handleCustomSectionColumnChange(section.id, columnIndex, event.target.value)}
-                            rows={3}
-                            className="aurora-form-control aurora-form-control--textarea"
+                            onChange={(nextValue) => handleCustomSectionColumnChange(section.id, columnIndex, nextValue)}
                             placeholder={`Contenu de la colonne ${columnIndex + 1}`}
+                            compact
+                            ariaLabel={`Contenu colonne ${columnIndex + 1}`}
                           />
                         </div>
                       ))}
                   </div>
                 )}
                 {templateConfig.showItems && (
-                  <div className="mt-4 space-y-1">
-                    <label htmlFor={`custom-section-${section.id}-items`} className="text-sm font-medium text-gray-800">
-                      Liste (une ligne par élément)
+                  <div className="mt-4 space-y-3">
+                    <label className="text-sm font-medium text-gray-800">
+                      Liste (chaque élément peut être enrichi)
                     </label>
-                    <textarea
-                      id={`custom-section-${section.id}-items`}
-                      value={itemsText}
-                      onChange={(event) => handleCustomSectionItemsChange(section.id, event.target.value)}
-                      rows={4}
-                      className="aurora-form-control aurora-form-control--textarea"
-                      placeholder="Élément #1&#10;Élément #2"
-                    />
+                    {Array.isArray(section.items) && section.items.length > 0 ? (
+                      <div className="space-y-3">
+                        {section.items.map((item, itemIndex) => (
+                          <div key={`${section.id}-item-${itemIndex}`} className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <p className="text-xs font-semibold text-gray-500">Élément {itemIndex + 1}</p>
+                              <button
+                                type="button"
+                                onClick={() => handleCustomSectionItemRemove(section.id, itemIndex)}
+                                className="inline-flex items-center gap-1 rounded-full border border-gray-200 px-2 py-1 text-xs text-gray-600 hover:border-red-200 hover:text-red-600"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                                Supprimer
+                              </button>
+                            </div>
+                            <RichTextEditor
+                              id={`custom-section-${section.id}-items-${itemIndex}`}
+                              value={item}
+                              onChange={(nextValue) => handleCustomSectionItemChange(section.id, itemIndex, nextValue)}
+                              placeholder="Élément de liste"
+                              compact
+                              ariaLabel={`Élément de liste ${itemIndex + 1}`}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-500">Aucun élément ajouté pour le moment.</p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleCustomSectionItemAdd(section.id)}
+                      className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-700 transition hover:border-blue-200 hover:text-blue-700"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Ajouter un élément
+                    </button>
                   </div>
                 )}
               </div>
