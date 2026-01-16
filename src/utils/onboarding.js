@@ -2,6 +2,7 @@ import { initialOnboardingTourConfig } from '../data/onboardingTour.js';
 
 const DEFAULT_ACTION_VARIANT = 'ghost';
 const ALLOWED_ACTIONS = new Set(['next', 'prev', 'close', 'finish', 'goTo']);
+const ALLOWED_HIGHLIGHT_SCOPES = new Set(['target', 'page']);
 
 const sanitizeString = (value, fallback = '') =>
   typeof value === 'string' ? value.trim() : fallback;
@@ -28,6 +29,7 @@ export const createOnboardingStep = (index = 0) => ({
   title: 'Nouvelle étape',
   content: '',
   placement: 'bottom',
+  highlightScope: 'target',
   showDefaultButtons: true,
   actions: []
 });
@@ -67,6 +69,11 @@ export const normalizeOnboardingConfig = (config, fallback = initialOnboardingTo
         title: sanitizeText(rawStep?.title, sanitizeText(fallbackStep?.title)),
         content: sanitizeText(rawStep?.content, sanitizeText(fallbackStep?.content)),
         placement: sanitizeString(rawStep?.placement, sanitizeString(fallbackStep?.placement)),
+        highlightScope: ALLOWED_HIGHLIGHT_SCOPES.has(rawStep?.highlightScope)
+          ? rawStep.highlightScope
+          : ALLOWED_HIGHLIGHT_SCOPES.has(fallbackStep?.highlightScope)
+            ? fallbackStep.highlightScope
+            : 'target',
         highlightPadding: typeof rawStep?.highlightPadding === 'number'
           ? rawStep.highlightPadding
           : fallbackStep?.highlightPadding,

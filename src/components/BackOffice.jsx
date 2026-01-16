@@ -4289,14 +4289,35 @@ export const BackOffice = ({
                           />
                         </label>
                         <label className="flex flex-col gap-2 text-sm text-gray-700">
-                          <span className="font-semibold text-gray-700">Cible (sélecteur)</span>
+                          <span className="font-semibold text-gray-700">Cible (ID d'élément)</span>
                           <input
                             type="text"
-                            value={step.target}
+                            value={typeof step.target === 'string' && step.target.startsWith('#') ? step.target.slice(1) : ''}
+                            onChange={(event) => {
+                              const nextId = event.target.value.trim();
+                              if (nextId.length > 0) {
+                                updateOnboardingStepField(index, 'target', `#${nextId}`);
+                              } else if (typeof step.target === 'string' && step.target.startsWith('#')) {
+                                updateOnboardingStepField(index, 'target', '');
+                              }
+                            }}
+                            className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                            placeholder="mon-element"
+                          />
+                          <span className="text-xs text-gray-500">Saisissez l'attribut id (sans #) pour cibler un élément précis.</span>
+                        </label>
+                        <label className="flex flex-col gap-2 text-sm text-gray-700">
+                          <span className="font-semibold text-gray-700">Cible (sélecteur CSS avancé)</span>
+                          <input
+                            type="text"
+                            value={step.target || ''}
                             onChange={(event) => updateOnboardingStepField(index, 'target', event.target.value)}
                             className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                            placeholder="#mon-element"
+                            placeholder="#mon-element ou .ma-classe"
                           />
+                          <span className="text-xs text-gray-500">
+                            Utilisez un sélecteur personnalisé si besoin (ex. [data-tour-id="home-create-project"]).
+                          </span>
                         </label>
                         <label className="flex flex-col gap-2 text-sm text-gray-700">
                           <span className="font-semibold text-gray-700">Titre</span>
@@ -4319,6 +4340,17 @@ export const BackOffice = ({
                             <option value="bottom">Bas</option>
                             <option value="left">Gauche</option>
                             <option value="right">Droite</option>
+                          </select>
+                        </label>
+                        <label className="flex flex-col gap-2 text-sm text-gray-700">
+                          <span className="font-semibold text-gray-700">Visibilité du focus</span>
+                          <select
+                            value={step.highlightScope || 'target'}
+                            onChange={(event) => updateOnboardingStepField(index, 'highlightScope', event.target.value)}
+                            className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                          >
+                            <option value="target">Uniquement la cible</option>
+                            <option value="page">Page entière</option>
                           </select>
                         </label>
                         <label className="flex flex-col gap-2 text-sm text-gray-700 md:col-span-2">

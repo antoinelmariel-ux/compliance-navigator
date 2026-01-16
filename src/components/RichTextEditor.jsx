@@ -292,9 +292,8 @@ export const RichTextEditor = ({
       {isLinkModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
           <div className="absolute inset-0 bg-gray-900/50" onClick={handleCloseLinkModal} aria-hidden="true" />
-          <form
+          <div
             className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl"
-            onSubmit={handleConfirmLink}
             role="dialog"
             aria-modal="true"
             aria-labelledby={`${id}-link-modal-title`}
@@ -344,13 +343,14 @@ export const RichTextEditor = ({
                 Annuler
               </button>
               <button
-                type="submit"
+                type="button"
+                onClick={handleConfirmLink}
                 className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
               >
                 Insérer le lien
               </button>
             </div>
-          </form>
+          </div>
         </div>
       )}
     </div>

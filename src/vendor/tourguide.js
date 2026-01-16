@@ -272,6 +272,7 @@
             content: step && step.content ? String(step.content) : '',
             target: step ? step.target : null,
             placement: step && step.placement ? step.placement : 'auto',
+            highlightScope: step && step.highlightScope === 'page' ? 'page' : 'target',
             highlightPadding:
               typeof step?.highlightPadding === 'number'
                 ? step.highlightPadding
@@ -849,7 +850,17 @@
       }
 
       let rect;
-      if (target && typeof target.getBoundingClientRect === 'function') {
+      const highlightScope = step && step.highlightScope === 'page' ? 'page' : 'target';
+      if (highlightScope === 'page') {
+        const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 0;
+        const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 0;
+        rect = {
+          top: 0,
+          left: 0,
+          width: viewportWidth,
+          height: viewportHeight
+        };
+      } else if (target && typeof target.getBoundingClientRect === 'function') {
         rect = target.getBoundingClientRect();
       } else {
         const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 0;
@@ -864,9 +875,11 @@
         };
       }
 
-      const padding = typeof step.highlightPadding === 'number'
-        ? step.highlightPadding
-        : this.options.highlightPadding;
+      const padding = highlightScope === 'page'
+        ? 0
+        : typeof step.highlightPadding === 'number'
+          ? step.highlightPadding
+          : this.options.highlightPadding;
 
       const top = rect.top - padding;
       const left = rect.left - padding;
@@ -877,6 +890,12 @@
       this.highlightElement.style.left = `${Math.max(0, left)}px`;
       this.highlightElement.style.width = `${Math.max(0, width)}px`;
       this.highlightElement.style.height = `${Math.max(0, height)}px`;
+
+      this.highlightElement.classList.toggle('tgjs-highlight--page', highlightScope === 'page');
+
+      if (highlightScope === 'page') {
+        return;
+      }
 
       if (target && typeof target.scrollIntoView === 'function') {
         const hasStepScrollOption = step && hasOwn.call(step, 'scrollIntoViewOptions');
@@ -936,11 +955,13 @@
       tooltip.style.top = '0px';
       tooltip.style.left = '0px';
 
-      const padding = typeof step.highlightPadding === 'number'
-        ? step.highlightPadding
-        : this.options.highlightPadding;
-
       let rect;
+      const highlightScope = step && step.highlightScope === 'page' ? 'page' : 'target';
+      const padding = highlightScope === 'page'
+        ? 0
+        : typeof step.highlightPadding === 'number'
+          ? step.highlightPadding
+          : this.options.highlightPadding;
       if (target && typeof target.getBoundingClientRect === 'function') {
         rect = target.getBoundingClientRect();
       } else {
@@ -962,7 +983,10 @@
       let top = rect.bottom + padding + 16;
       let left = rect.left;
 
-      const placement = (step.placement || 'auto').toLowerCase();
+      const placement =
+        highlightScope === 'page' && (!step.placement || step.placement === 'auto')
+          ? 'center'
+          : (step.placement || 'auto').toLowerCase();
 
       if (placement === 'top') {
         top = rect.top - tooltipRect.height - padding - 16;

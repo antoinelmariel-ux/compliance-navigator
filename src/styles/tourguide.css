@@ -19,6 +19,12 @@
   pointer-events: none;
 }
 
+.tgjs-highlight--page {
+  border-radius: 0;
+  border-color: transparent;
+  box-shadow: none;
+}
+
 .tgjs-tooltip {
   position: absolute;
   min-width: 260px;
