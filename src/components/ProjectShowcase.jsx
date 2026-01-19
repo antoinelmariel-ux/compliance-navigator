@@ -30,7 +30,7 @@ const SECTION_TEMPLATES = [
     placeholder: {
       title: 'Impact attendu',
       description: 'Un message synthétique pour convaincre immédiatement.',
-      accent: 'Nouveau'
+      badge: 'Badge'
     }
   },
   {
@@ -85,7 +85,8 @@ const SECTION_TEMPLATES = [
 const SECTION_TEMPLATE_CONFIG = {
   highlight: {
     showSubtitle: false,
-    showAccent: true,
+    showAccent: false,
+    showBadge: true,
     showDescription: true,
     showColumns: false,
     showDocument: false,
@@ -94,6 +95,7 @@ const SECTION_TEMPLATE_CONFIG = {
   columns: {
     showSubtitle: true,
     showAccent: false,
+    showBadge: false,
     showDescription: false,
     showColumns: true,
     showDocument: false,
@@ -102,6 +104,7 @@ const SECTION_TEMPLATE_CONFIG = {
   'document-viewer': {
     showSubtitle: true,
     showAccent: true,
+    showBadge: false,
     showDescription: true,
     showColumns: false,
     showDocument: true,
@@ -110,6 +113,7 @@ const SECTION_TEMPLATE_CONFIG = {
   story: {
     showSubtitle: false,
     showAccent: false,
+    showBadge: false,
     showDescription: true,
     showColumns: false,
     showDocument: false,
@@ -118,6 +122,7 @@ const SECTION_TEMPLATE_CONFIG = {
   checklist: {
     showSubtitle: false,
     showAccent: false,
+    showBadge: false,
     showDescription: true,
     showColumns: false,
     showDocument: false,
@@ -3156,6 +3161,8 @@ export const ProjectShowcase = ({
     const columns = normalizeCustomSectionColumns(section.columns, columnCount);
     const activeColumns = columns.filter(column => column.trim().length > 0);
 
+    const badgeLabel = section.accent || 'Badge';
+
     return (
       <section
         key={section.id}
@@ -3167,6 +3174,9 @@ export const ProjectShowcase = ({
             <div>
               {templateConfig.showAccent && (
                 <p className="aurora-eyebrow">{renderTextWithLinks(section.accent || 'Section additionnelle')}</p>
+              )}
+              {templateConfig.showBadge && (
+                <div className="aurora-chip aurora-chip--ghost">{renderTextWithLinks(badgeLabel)}</div>
               )}
               <h2 className="aurora-section__title">{renderTextWithLinks(section.title || 'Section personnalisée')}</h2>
               {templateConfig.showSubtitle && section.subtitle && (
@@ -3257,13 +3267,20 @@ export const ProjectShowcase = ({
     const columns = normalizeCustomSectionColumns(section.columns, columnCount);
     const activeColumns = columns.filter(column => column.trim().length > 0);
 
+    const badgeLabel = section.accent || 'Badge';
+
     return (
       <section
         key={section.id}
         className="deezer-section deezer-section--custom"
         data-showcase-section={section.type || 'custom'}
       >
-        <p className="deezer-eyebrow">{renderTextWithLinks(section.accent || 'Section additionnelle')}</p>
+        {templateConfig.showAccent && (
+          <p className="deezer-eyebrow">{renderTextWithLinks(section.accent || 'Section additionnelle')}</p>
+        )}
+        {templateConfig.showBadge && (
+          <div className="aurora-chip aurora-chip--ghost">{renderTextWithLinks(badgeLabel)}</div>
+        )}
         <h2 className="deezer-title" style={{ fontSize: '2rem' }}>{renderTextWithLinks(section.title || 'Section personnalisée')}</h2>
         {templateConfig.showSubtitle && section.subtitle && (
           <p className="deezer-subtitle">{renderTextWithLinks(section.subtitle)}</p>
@@ -3458,7 +3475,11 @@ export const ProjectShowcase = ({
               <div className="h-3 w-24 rounded-full bg-blue-200" />
               <div className="h-6 w-12 rounded-full bg-blue-100" />
             </div>
-            <div className="h-12 rounded-xl bg-gradient-to-r from-blue-500/80 to-cyan-400/70" />
+            <div className="flex h-20 items-end justify-center gap-3 rounded-xl bg-blue-50">
+              <div className="h-16 w-6 rounded-lg bg-blue-200" />
+              <div className="h-20 w-6 rounded-lg bg-blue-100" />
+              <div className="h-12 w-6 rounded-lg bg-blue-200" />
+            </div>
             <div className="h-2 w-3/4 rounded-full bg-gray-200" />
           </div>
         );
@@ -3576,6 +3597,19 @@ export const ProjectShowcase = ({
                   />
                 </div>
               )}
+              {selectedTemplateConfig.showBadge && (
+                <div className="space-y-1">
+                  <label htmlFor="section-badge" className="text-sm font-medium text-gray-800">Badge</label>
+                  <RichTextEditor
+                    id="section-badge"
+                    value={sectionDraft.accent}
+                    onChange={(nextValue) => handleSectionDraftChange('accent', nextValue)}
+                    placeholder={selectedTemplate?.placeholder?.badge || 'Badge'}
+                    compact
+                    ariaLabel="Badge de la section"
+                  />
+                </div>
+              )}
               {selectedTemplateConfig.showAccent && (
                 <div className="space-y-1">
                   <label htmlFor="section-accent" className="text-sm font-medium text-gray-800">Sous-titre d'accroche (optionnel)</label>
@@ -3611,7 +3645,7 @@ export const ProjectShowcase = ({
                       id="section-column-count"
                       value={sectionDraft.columnCount}
                       onChange={(event) => handleSectionDraftColumnCountChange(event.target.value)}
-                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
+                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
                     >
                       {Array.from({ length: MAX_CUSTOM_SECTION_COLUMNS }, (_, index) => (
                         <option key={`section-column-count-${index + 1}`} value={index + 1}>
@@ -3659,7 +3693,7 @@ export const ProjectShowcase = ({
                       handleSectionDraftChange('documentUrl', nextValue);
                       handleSharePointWarning(nextValue);
                     }}
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-500 shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
                     placeholder={selectedTemplate?.placeholder?.documentUrl || 'https://votre-tenant.sharepoint.com/...'}
                   />
                   <p className="text-xs text-gray-500">
@@ -3674,7 +3708,7 @@ export const ProjectShowcase = ({
                     id="section-document-type"
                     value={sectionDraft.documentType}
                     onChange={(event) => handleSectionDraftChange('documentType', event.target.value)}
-                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-400 focus:ring focus:ring-blue-100"
                   >
                     {DOCUMENT_VIEWER_TYPES.map(type => (
                       <option key={type.id} value={type.id}>
@@ -4048,6 +4082,21 @@ export const ProjectShowcase = ({
                       placeholder="Complément de contexte"
                       compact
                       ariaLabel="Sous-titre du bloc"
+                    />
+                  </div>
+                )}
+                {templateConfig.showBadge && (
+                  <div className="space-y-1">
+                    <label htmlFor={`custom-section-${section.id}-badge`} className="text-sm font-medium text-gray-800">
+                      Badge
+                    </label>
+                    <RichTextEditor
+                      id={`custom-section-${section.id}-badge`}
+                      value={section.accent || ''}
+                      onChange={(nextValue) => handleCustomSectionFieldChange(section.id, 'accent', nextValue)}
+                      placeholder="Badge"
+                      compact
+                      ariaLabel="Badge du bloc"
                     />
                   </div>
                 )}
