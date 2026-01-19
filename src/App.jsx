@@ -38,7 +38,7 @@ import {
 } from './utils/inspirationConfig.js';
 import { exportInspirationToFile } from './utils/inspirationExport.js';
 
-const APP_VERSION = 'v1.0.244';
+const APP_VERSION = 'v1.0.245';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -646,6 +646,7 @@ export const App = () => {
   const [showcaseShareFeedback, setShowcaseShareFeedback] = useState('');
   const annotationNotesRef = useRef(annotationNotes);
   const annotationFileInputRef = useRef(null);
+  const showcaseProjectNameRef = useRef('');
   const loadedStylesRef = useRef(new Set());
   const pendingShowcaseProjectIdRef = useRef(null);
   const pendingShowcaseSharedRef = useRef(false);
@@ -764,6 +765,12 @@ export const App = () => {
   useEffect(() => {
     annotationNotesRef.current = annotationNotes;
   }, [annotationNotes]);
+
+  useEffect(() => {
+    if (showcaseProjectContext?.projectId) {
+      showcaseProjectNameRef.current = showcaseProjectContext.projectName || '';
+    }
+  }, [showcaseProjectContext?.projectId, showcaseProjectContext?.projectName]);
 
   useEffect(() => {
     isOnboardingActiveRef.current = isOnboardingActive;
@@ -2245,20 +2252,20 @@ const updateProjectFilters = useCallback((updater) => {
   }, [handleAddAnnotationNote, isAnnotationModeEnabled, isAnnotationPaused, isAnnotationUiInteraction, screen]);
 
   useEffect(() => {
-    if (!showcaseProjectContext) {
+    if (!showcaseProjectContext?.projectId) {
       return undefined;
     }
 
-    const { projectName, projectId } = showcaseProjectContext;
+    const projectId = showcaseProjectContext.projectId;
 
     return () => {
       const projectNotes = (annotationNotesRef.current || []).filter(note => note?.projectId === projectId);
 
       if (projectNotes.length > 0) {
-        downloadAnnotationFile(projectNotes, projectName);
+        downloadAnnotationFile(projectNotes, showcaseProjectNameRef.current);
       }
     };
-  }, [downloadAnnotationFile, showcaseProjectContext]);
+  }, [downloadAnnotationFile, showcaseProjectContext?.projectId]);
 
   const isAdminMode = mode === 'admin';
   const isAdminHomeView = isAdminMode && adminView === 'home';
