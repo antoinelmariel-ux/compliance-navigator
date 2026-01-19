@@ -124,6 +124,10 @@
   z-index: 200;
 }
 
+.annotation-toolbar {
+  z-index: 2147483600;
+}
+
 .annotation-sticky {
   position: absolute;
   transform: translate(-50%, -50%) translateY(var(--feedback-note-raise, 0));

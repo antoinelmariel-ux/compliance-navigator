@@ -266,7 +266,7 @@ export const RichTextEditor = ({
       <div className="relative">
         {showPlaceholder && (
           <div
-            className="pointer-events-none absolute inset-0 px-4 py-3 text-sm text-gray-400 select-none leading-relaxed"
+            className="pointer-events-none absolute inset-0 px-4 py-3 text-sm text-gray-500 select-none leading-relaxed"
             style={{ pointerEvents: 'none', userSelect: 'none' }}
           >
             {placeholder}
@@ -275,7 +275,7 @@ export const RichTextEditor = ({
         <div
           id={id}
           ref={editorRef}
-          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[120px] prose prose-sm max-w-none hv-focus-ring hv-richtext"
+          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[120px] prose prose-sm max-w-none hv-focus-ring hv-richtext"
           style={{ minHeight }}
           contentEditable={true}
           suppressContentEditableWarning
