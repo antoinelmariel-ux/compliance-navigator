@@ -3162,6 +3162,9 @@ export const ProjectShowcase = ({
     const activeColumns = columns.filter(column => column.trim().length > 0);
 
     const badgeLabel = section.accent || 'Badge';
+    const headerBadgeLabel = templateConfig.showBadge
+      ? badgeLabel
+      : `Bloc personnalisé #${index + 1}`;
 
     return (
       <section
@@ -3175,15 +3178,12 @@ export const ProjectShowcase = ({
               {templateConfig.showAccent && (
                 <p className="aurora-eyebrow">{renderTextWithLinks(section.accent || 'Section additionnelle')}</p>
               )}
-              {templateConfig.showBadge && (
-                <div className="aurora-chip aurora-chip--ghost">{renderTextWithLinks(badgeLabel)}</div>
-              )}
               <h2 className="aurora-section__title">{renderTextWithLinks(section.title || 'Section personnalisée')}</h2>
               {templateConfig.showSubtitle && section.subtitle && (
                 <p className="mt-1 text-sm text-gray-600">{renderTextWithLinks(section.subtitle)}</p>
               )}
             </div>
-            <div className="aurora-chip aurora-chip--ghost">Bloc personnalisé #{index + 1}</div>
+            <div className="aurora-chip aurora-chip--ghost">{renderTextWithLinks(headerBadgeLabel)}</div>
           </div>
           {templateConfig.showDescription && section.description && (
             <p className="aurora-body-text">{renderTextWithLinks(section.description)}</p>
@@ -3268,6 +3268,9 @@ export const ProjectShowcase = ({
     const activeColumns = columns.filter(column => column.trim().length > 0);
 
     const badgeLabel = section.accent || 'Badge';
+    const headerBadgeLabel = templateConfig.showBadge
+      ? badgeLabel
+      : `Bloc personnalisé #${index + 1}`;
 
     return (
       <section
@@ -3279,7 +3282,7 @@ export const ProjectShowcase = ({
           <p className="deezer-eyebrow">{renderTextWithLinks(section.accent || 'Section additionnelle')}</p>
         )}
         {templateConfig.showBadge && (
-          <div className="aurora-chip aurora-chip--ghost">{renderTextWithLinks(badgeLabel)}</div>
+          <div className="aurora-chip aurora-chip--ghost">{renderTextWithLinks(headerBadgeLabel)}</div>
         )}
         <h2 className="deezer-title" style={{ fontSize: '2rem' }}>{renderTextWithLinks(section.title || 'Section personnalisée')}</h2>
         {templateConfig.showSubtitle && section.subtitle && (
