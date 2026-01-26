@@ -15,6 +15,7 @@ import { initialTeams } from './data/teams.js';
 import { initialShowcaseThemes } from './data/showcaseThemes.js';
 import { initialInspirationProjects } from './data/inspirationProjects.js';
 import { initialOnboardingTourConfig } from './data/onboardingTour.js';
+import { initialValidationCommitteeConfig } from './data/validationCommitteeConfig.js';
 import { loadPersistedState, persistState } from './utils/storage.js';
 import { shouldShowQuestion } from './utils/questions.js';
 import { analyzeAnswers } from './utils/rules.js';
@@ -37,8 +38,9 @@ import {
   normalizeInspirationFormConfig
 } from './utils/inspirationConfig.js';
 import { exportInspirationToFile } from './utils/inspirationExport.js';
+import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
 
-const APP_VERSION = 'v1.0.249';
+const APP_VERSION = 'v1.0.250';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -550,6 +552,15 @@ const buildInitialOnboardingConfig = () => {
   return cloneDeep(initialOnboardingTourConfig);
 };
 
+const buildInitialValidationCommitteeConfig = () => {
+  const savedState = loadPersistedState();
+  if (savedState && savedState.validationCommitteeConfig) {
+    return normalizeValidationCommitteeConfig(savedState.validationCommitteeConfig);
+  }
+
+  return normalizeValidationCommitteeConfig(initialValidationCommitteeConfig);
+};
+
 const isOnboardingProject = (project) => {
   if (!project || typeof project !== 'object') {
     return false;
@@ -613,6 +624,7 @@ export const App = () => {
   const [inspirationFormFields, setInspirationFormFields] = useState(() => createDefaultInspirationFormConfig());
   const [homeView, setHomeView] = useState('platform');
   const [isHydrated, setIsHydrated] = useState(false);
+  const [validationCommitteeConfig, setValidationCommitteeConfig] = useState(buildInitialValidationCommitteeConfig);
   const [isBackOfficeUnlocked, setIsBackOfficeUnlocked] = useState(false);
   const [backOfficeAuthError, setBackOfficeAuthError] = useState(null);
   const [isBackOfficePromptOpen, setIsBackOfficePromptOpen] = useState(false);
@@ -1846,6 +1858,7 @@ const updateProjectFilters = useCallback((updater) => {
         inspirationFilters: normalizeInspirationFiltersConfig(inspirationFilters),
         inspirationFormFields: normalizeInspirationFormConfig(inspirationFormFields),
         onboardingTourConfig: normalizedOnboardingConfig,
+        validationCommitteeConfig: normalizeValidationCommitteeConfig(validationCommitteeConfig),
         homeView,
         activeInspirationId
       });
@@ -1877,6 +1890,7 @@ const updateProjectFilters = useCallback((updater) => {
     inspirationFilters,
     inspirationFormFields,
     normalizedOnboardingConfig,
+    validationCommitteeConfig,
     homeView,
     activeInspirationId,
     isHydrated,
@@ -3938,6 +3952,8 @@ const updateProjectFilters = useCallback((updater) => {
               setInspirationFormFields={updateInspirationFormFields}
               onboardingTourConfig={onboardingTourConfig}
               setOnboardingTourConfig={setOnboardingTourConfig}
+              validationCommitteeConfig={validationCommitteeConfig}
+              setValidationCommitteeConfig={setValidationCommitteeConfig}
             />
           </Suspense>
         ) : screen === 'home' ? (
@@ -4011,35 +4027,36 @@ const updateProjectFilters = useCallback((updater) => {
             onProceedToSynthesis={handleProceedToSynthesis}
           />
         ) : screen === 'synthesis' ? (
-          <SynthesisReport
-            answers={answers}
-            analysis={analysis}
-            teams={teams}
-            questions={activeQuestions}
-            projectStatus={activeProject?.status || null}
-            projectId={activeProjectId}
-            projectName={activeProjectName}
-            onOpenProjectShowcase={handleOpenActiveProjectShowcase}
-            isProjectEditable={isActiveProjectEditable}
-            onRestart={handleRestart}
-            onBack={isActiveProjectEditable ? handleBackToQuestionnaire : undefined}
-            onUpdateAnswers={isActiveProjectEditable ? handleUpdateAnswers : undefined}
-            onSubmitProject={handleSubmitProject}
-            onNavigateToQuestion={handleNavigateToQuestionFromReport}
-            isExistingProject={Boolean(activeProjectId)}
-            onSaveDraft={
-              isOnboardingActive
-                ? noop
-                : isActiveProjectEditable
-                  ? handleSaveDraft
-                  : undefined
-            }
-            saveFeedback={saveFeedback}
-            onDismissSaveFeedback={handleDismissSaveFeedback}
-            isAdminMode={isAdminMode}
-            hasIncompleteAnswers={hasIncompleteAnswers}
-            tourContext={tourContext}
-          />
+            <SynthesisReport
+              answers={answers}
+              analysis={analysis}
+              teams={teams}
+              questions={activeQuestions}
+              projectStatus={activeProject?.status || null}
+              projectId={activeProjectId}
+              projectName={activeProjectName}
+              onOpenProjectShowcase={handleOpenActiveProjectShowcase}
+              isProjectEditable={isActiveProjectEditable}
+              onRestart={handleRestart}
+              onBack={isActiveProjectEditable ? handleBackToQuestionnaire : undefined}
+              onUpdateAnswers={isActiveProjectEditable ? handleUpdateAnswers : undefined}
+              onSubmitProject={handleSubmitProject}
+              onNavigateToQuestion={handleNavigateToQuestionFromReport}
+              isExistingProject={Boolean(activeProjectId)}
+              onSaveDraft={
+                isOnboardingActive
+                  ? noop
+                  : isActiveProjectEditable
+                    ? handleSaveDraft
+                    : undefined
+              }
+              saveFeedback={saveFeedback}
+              onDismissSaveFeedback={handleDismissSaveFeedback}
+              isAdminMode={isAdminMode}
+              hasIncompleteAnswers={hasIncompleteAnswers}
+              tourContext={tourContext}
+              validationCommitteeConfig={validationCommitteeConfig}
+            />
         ) : screen === 'showcase' ? (
           showcaseProjectContext ? (
             <div className="space-y-4">

@@ -55,8 +55,23 @@ const demoProjectAnswers = {
   BUDGET: '30'
 };
 
-demoProjectAnswers[COMPLIANCE_COMMENTS_KEY] =
-  'Projet validé par les équipes compliance. Les risques ont été discutés avec les parties prenantes et validés.';
+demoProjectAnswers[COMPLIANCE_COMMENTS_KEY] = {
+  teams: {
+    com: {
+      comment:
+        'Le dispositif de communication est validé sous réserve de soumettre les visuels finaux pour contrôle.',
+      status: 'validated_with_conditions'
+    },
+    legal: {
+      comment: 'Le parcours contractuel est conforme aux exigences réglementaires.',
+      status: 'validated'
+    }
+  },
+  committee: {
+    comment: 'Le comité valide le lancement avec un suivi mensuel des indicateurs de risque.',
+    status: 'validated'
+  }
+};
 
 const DEMO_VERSION = 1;
 const DEMO_TIMESTAMP = '2025-10-19T06:08:36.021Z';
