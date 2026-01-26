@@ -559,6 +559,7 @@ export const BackOffice = ({
   const createValidationCommittee = useCallback((index = 0) => ({
     id: `committee-${Date.now()}-${Math.round(Math.random() * 1000)}`,
     name: `Comité ${index + 1}`,
+    commentRequired: true,
     emails: [],
     ruleTriggers: {
       matchMode: 'any',
@@ -5784,7 +5785,8 @@ export const BackOffice = ({
                 </header>
 
                 <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-900">
-                  Le commentaire est requis dès qu’un des critères configurés pour un comité est atteint.
+                  Activez la demande de commentaire pour chaque comité selon vos besoins. Le commentaire est requis
+                  lorsque les critères du comité et l’option dédiée sont actifs.
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
@@ -5800,7 +5802,7 @@ export const BackOffice = ({
                         }));
                       }}
                     />
-                    Activer la demande de commentaire des comités de validation
+                    Activer le suivi des comités de validation
                   </label>
                   <button
                     type="button"
@@ -5830,6 +5832,20 @@ export const BackOffice = ({
                             <p className="text-xs text-gray-500">
                               Configurez les contacts et les règles de déclenchement spécifiques à ce comité.
                             </p>
+                            <label className="inline-flex items-center gap-2 text-xs font-medium text-gray-600">
+                              <input
+                                type="checkbox"
+                                className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                                checked={committee.commentRequired !== false}
+                                onChange={(event) =>
+                                  updateCommitteeEntry(committee.id, (prev) => ({
+                                    ...prev,
+                                    commentRequired: event.target.checked
+                                  }))
+                                }
+                              />
+                              Activer la demande de commentaire
+                            </label>
                           </div>
                           <button
                             type="button"

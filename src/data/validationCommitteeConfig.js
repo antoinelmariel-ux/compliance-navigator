@@ -4,6 +4,7 @@ export const initialValidationCommitteeConfig = {
     {
       id: 'committee-default',
       name: 'Comité de validation',
+      commentRequired: true,
       emails: ['comite.validation@company.com', 'secretariat.validation@company.com'],
       ruleTriggers: {
         matchMode: 'any',
