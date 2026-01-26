@@ -67,8 +67,13 @@ const COMMENT_STATUS_OPTIONS = [
   },
   {
     value: 'validated_with_conditions',
-    label: 'Validé sous condition',
+    label: 'Validé sous conditions',
     badgeClass: 'bg-amber-100 text-amber-800 border-amber-200'
+  },
+  {
+    value: 'pending_information',
+    label: "En attente d'informations",
+    badgeClass: 'bg-blue-100 text-blue-800 border-blue-200'
   },
   {
     value: 'not_concerned',
@@ -130,16 +135,15 @@ const isAnswerProvided = (value) => {
   return value !== null && value !== undefined;
 };
 
-const getCommentStatusMeta = (status) => {
-  return COMMENT_STATUS_OPTIONS.find((option) => option.value === status) || COMMENT_STATUS_OPTIONS[2];
-};
+const getCommentStatusMeta = (status) =>
+  COMMENT_STATUS_OPTIONS.find((option) => option.value === status) || null;
 
 const normalizeCommentEntry = (entry) => {
   const comment = typeof entry?.comment === 'string' ? entry.comment : '';
   const statusCandidate = typeof entry?.status === 'string' ? entry.status : '';
   const status = COMMENT_STATUS_OPTIONS.some((option) => option.value === statusCandidate)
     ? statusCandidate
-    : COMMENT_STATUS_OPTIONS[2].value;
+    : '';
 
   return {
     comment,
@@ -1686,9 +1690,11 @@ export const SynthesisReport = ({
                                 <p className="text-xs text-gray-500">{teamContactLabel}</p>
                               )}
                             </div>
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${statusMeta.badgeClass}`}>
-                              {statusMeta.label}
-                            </span>
+                            {statusMeta && (
+                              <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${statusMeta.badgeClass}`}>
+                                {statusMeta.label}
+                              </span>
+                            )}
                           </div>
 
                           {isAdminMode ? (
@@ -1715,6 +1721,7 @@ export const SynthesisReport = ({
                                   }
                                   className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                                 >
+                                  <option value="">Sélectionner un statut</option>
                                   {COMMENT_STATUS_OPTIONS.map((option) => (
                                     <option key={`status-${team.id}-${option.value}`} value={option.value}>
                                       {option.label}
@@ -1801,6 +1808,9 @@ export const SynthesisReport = ({
                       const committeeCommentEntry = committeeCommentMap[committee.id] || normalizeCommentEntry();
                       const committeeDraft = complianceCommentDrafts.committees?.[committee.id] || committeeCommentEntry;
                       const feedbackMessage = getComplianceFeedbackMessage(`committee-${committee.id}`);
+                      const committeeStatusMeta = getCommentStatusMeta(
+                        isAdminMode ? committeeDraft.status : committeeCommentEntry.status
+                      );
                       const isRequired = triggeredCommitteeIds.has(committee.id);
                       const isDirty =
                         committeeDraft.comment !== committeeCommentEntry.comment
@@ -1817,19 +1827,13 @@ export const SynthesisReport = ({
                                   : 'Commentaire optionnel selon la configuration.'}
                               </p>
                             </div>
-                            <span
-                              className={`px-3 py-1 rounded-full text-xs font-semibold border ${
-                                getCommentStatusMeta(
-                                  isAdminMode ? committeeDraft.status : committeeCommentEntry.status
-                                ).badgeClass
-                              }`}
-                            >
-                              {
-                                getCommentStatusMeta(
-                                  isAdminMode ? committeeDraft.status : committeeCommentEntry.status
-                                ).label
-                              }
-                            </span>
+                            {committeeStatusMeta && (
+                              <span
+                                className={`px-3 py-1 rounded-full text-xs font-semibold border ${committeeStatusMeta.badgeClass}`}
+                              >
+                                {committeeStatusMeta.label}
+                              </span>
+                            )}
                           </div>
 
                           {isAdminMode ? (
@@ -1863,6 +1867,7 @@ export const SynthesisReport = ({
                                   }
                                   className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                                 >
+                                  <option value="">Sélectionner un statut</option>
                                   {COMMENT_STATUS_OPTIONS.map((option) => (
                                     <option key={`status-committee-${committee.id}-${option.value}`} value={option.value}>
                                       {option.label}
