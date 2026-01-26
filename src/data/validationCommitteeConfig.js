@@ -9,10 +9,19 @@ export const initialValidationCommitteeConfig = {
         matchMode: 'any',
         questionIds: []
       },
+      answerTriggers: {
+        matchMode: 'any',
+        conditions: []
+      },
+      ruleTriggers: {
+        matchMode: 'any',
+        ruleIds: []
+      },
       riskTriggers: {
         requireRisks: false,
         minRiskCount: null,
-        minRiskLevel: ''
+        minRiskLevel: '',
+        minRiskScore: null
       },
       teamTriggers: {
         minTeamsCount: null
