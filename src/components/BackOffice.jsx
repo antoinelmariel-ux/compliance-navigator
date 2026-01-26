@@ -29,7 +29,14 @@ import {
   sanitizeRiskTimingConstraint,
   sanitizeTeamQuestionEntry
 } from '../utils/rules.js';
-import { sanitizeRuleCondition } from '../utils/ruleConditions.js';
+import {
+  applyRuleConditionGroups,
+  createEmptyQuestionCondition,
+  createEmptyTimingCondition,
+  normalizeRuleConditionGroups,
+  sanitizeRuleCondition
+} from '../utils/ruleConditions.js';
+import { ensureOperatorForType, getOperatorOptionsForType } from '../utils/operatorOptions.js';
 import { formatTeamContacts, parseTeamContacts } from '../utils/teamContacts.js';
 import {
   createOnboardingAction,
@@ -545,6 +552,10 @@ export const BackOffice = ({
     () => normalizeValidationCommitteeConfig(validationCommitteeConfig),
     [validationCommitteeConfig]
   );
+  const dateQuestions = useMemo(
+    () => (Array.isArray(questions) ? questions.filter((question) => question?.type === 'date') : []),
+    [questions]
+  );
   const createValidationCommittee = useCallback((index = 0) => ({
     id: `committee-${Date.now()}-${Math.round(Math.random() * 1000)}`,
     name: `Comité ${index + 1}`,
@@ -553,6 +564,7 @@ export const BackOffice = ({
       matchMode: 'any',
       ruleIds: []
     },
+    conditionGroups: [],
     riskTriggers: {
       minRiskScore: null
     },
@@ -600,6 +612,155 @@ export const BackOffice = ({
       });
     },
     [updateValidationCommitteeConfig]
+  );
+  const sanitizeCommitteeConditionGroups = useCallback(
+    (groups) => (
+      Array.isArray(groups)
+        ? groups.map((group) => ({
+            ...group,
+            conditions: Array.isArray(group.conditions)
+              ? group.conditions.map((condition) => {
+                  const sanitizedCondition = sanitizeRuleCondition(condition);
+                  if (sanitizedCondition.type === 'timing') {
+                    return sanitizedCondition;
+                  }
+
+                  const question = questions.find((item) => item.id === sanitizedCondition.question);
+                  const questionType = question?.type || 'choice';
+                  return {
+                    ...sanitizedCondition,
+                    operator: ensureOperatorForType(questionType, sanitizedCondition.operator)
+                  };
+                })
+              : []
+          }))
+        : []
+    ),
+    [questions]
+  );
+  const updateCommitteeConditionGroups = useCallback(
+    (committeeId, updater) => {
+      updateCommitteeEntry(committeeId, (prev) => {
+        const currentGroups = Array.isArray(prev.conditionGroups) ? prev.conditionGroups : [];
+        const nextGroups = sanitizeCommitteeConditionGroups(
+          typeof updater === 'function' ? updater(currentGroups) : updater
+        );
+        return applyRuleConditionGroups(prev, nextGroups);
+      });
+    },
+    [sanitizeCommitteeConditionGroups, updateCommitteeEntry]
+  );
+  const withUpdatedCommitteeCondition = useCallback(
+    (groups, groupIndex, conditionIndex, updater) => {
+      const updated = [...groups];
+      const target = updated[groupIndex] || { logic: 'all', conditions: [] };
+      const conditions = Array.isArray(target.conditions) ? [...target.conditions] : [];
+      const currentCondition = sanitizeRuleCondition(
+        conditions[conditionIndex] || createEmptyQuestionCondition()
+      );
+      const updatedCondition = sanitizeRuleCondition(
+        updater ? updater(currentCondition) || currentCondition : currentCondition
+      );
+
+      const nextCondition = updatedCondition.type === 'timing'
+        ? updatedCondition
+        : (() => {
+          const question = questions.find((item) => item.id === updatedCondition.question);
+          const questionType = question?.type || 'choice';
+          return {
+            ...updatedCondition,
+            operator: ensureOperatorForType(questionType, updatedCondition.operator)
+          };
+        })();
+
+      conditions[conditionIndex] = nextCondition;
+      updated[groupIndex] = { ...target, conditions };
+      return updated;
+    },
+    [questions]
+  );
+  const addCommitteeConditionGroup = useCallback(
+    (committeeId) => {
+      updateCommitteeConditionGroups(committeeId, (groups) => ([
+        ...groups,
+        { logic: 'all', conditions: [createEmptyQuestionCondition()] }
+      ]));
+    },
+    [updateCommitteeConditionGroups]
+  );
+  const updateCommitteeConditionGroupLogic = useCallback(
+    (committeeId, groupIndex, logic) => {
+      updateCommitteeConditionGroups(committeeId, (groups) => {
+        const updated = [...groups];
+        const target = updated[groupIndex] || { logic: 'all', conditions: [] };
+        updated[groupIndex] = {
+          ...target,
+          logic: logic === 'any' ? 'any' : 'all'
+        };
+        return updated;
+      });
+    },
+    [updateCommitteeConditionGroups]
+  );
+  const deleteCommitteeConditionGroup = useCallback(
+    (committeeId, groupIndex) => {
+      updateCommitteeConditionGroups(committeeId, (groups) => groups.filter((_, idx) => idx !== groupIndex));
+    },
+    [updateCommitteeConditionGroups]
+  );
+  const addCommitteeCondition = useCallback(
+    (committeeId, groupIndex) => {
+      updateCommitteeConditionGroups(committeeId, (groups) => {
+        const updated = [...groups];
+        const target = updated[groupIndex] || { logic: 'all', conditions: [] };
+        const conditions = Array.isArray(target.conditions) ? [...target.conditions] : [];
+        conditions.push(createEmptyQuestionCondition());
+        updated[groupIndex] = { ...target, conditions };
+        return updated;
+      });
+    },
+    [updateCommitteeConditionGroups]
+  );
+  const updateCommitteeConditionField = useCallback(
+    (committeeId, groupIndex, conditionIndex, field, value) => {
+      updateCommitteeConditionGroups(committeeId, (groups) =>
+        withUpdatedCommitteeCondition(groups, groupIndex, conditionIndex, (condition) => ({
+          ...condition,
+          [field]: value
+        }))
+      );
+    },
+    [updateCommitteeConditionGroups, withUpdatedCommitteeCondition]
+  );
+  const deleteCommitteeCondition = useCallback(
+    (committeeId, groupIndex, conditionIndex) => {
+      updateCommitteeConditionGroups(committeeId, (groups) => {
+        const updated = [...groups];
+        const target = updated[groupIndex] || { logic: 'all', conditions: [] };
+        const conditions = Array.isArray(target.conditions)
+          ? target.conditions.filter((_, idx) => idx !== conditionIndex)
+          : [];
+        updated[groupIndex] = { ...target, conditions };
+        return updated;
+      });
+    },
+    [updateCommitteeConditionGroups]
+  );
+  const handleCommitteeConditionTypeChange = useCallback(
+    (committeeId, groupIndex, conditionIndex, type) => {
+      updateCommitteeConditionGroups(committeeId, (groups) => {
+        const updated = [...groups];
+        const target = updated[groupIndex] || { logic: 'all', conditions: [] };
+        const conditions = Array.isArray(target.conditions) ? [...target.conditions] : [];
+        const normalizedType = type === 'timing' ? 'timing' : 'question';
+        conditions[conditionIndex] = normalizedType === 'timing'
+          ? createEmptyTimingCondition()
+          : createEmptyQuestionCondition();
+        updated[groupIndex] = { ...target, conditions };
+        return updated;
+      });
+    },
+    [updateCommitteeConditionGroups]
   );
 
   const removeCommitteeEntry = useCallback(
@@ -5725,6 +5886,470 @@ export const BackOffice = ({
                               Séparez plusieurs adresses par une virgule, un point-virgule ou un retour à la ligne.
                             </p>
                           </div>
+                        </div>
+
+                        <div className="space-y-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                              <h4 className="text-base font-semibold text-gray-800">
+                                Conditions de déclenchement
+                              </h4>
+                              <p className="text-xs text-gray-600">
+                                Déclenchez ce comité en fonction des réponses renseignées dans le projet.
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => addCommitteeConditionGroup(committee.id)}
+                              className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100"
+                            >
+                              <Plus className="h-4 w-4" />
+                              Ajouter un groupe
+                            </button>
+                          </div>
+
+                          {(() => {
+                            const conditionGroups = normalizeRuleConditionGroups(committee);
+
+                            if (conditionGroups.length === 0) {
+                              return (
+                                <div className="rounded-lg border border-dashed border-blue-200 bg-white p-4 text-center text-sm text-blue-700">
+                                  <p>Ce comité ne dépend pas encore des réponses du projet.</p>
+                                  <button
+                                    type="button"
+                                    onClick={() => addCommitteeConditionGroup(committee.id)}
+                                    className="mt-3 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white hover:bg-blue-700"
+                                  >
+                                    <Plus className="h-4 w-4" />
+                                    Créer un groupe de conditions
+                                  </button>
+                                </div>
+                              );
+                            }
+
+                            return (
+                              <div className="space-y-4">
+                                <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
+                                  {conditionGroups.length === 1 ? (
+                                    (() => {
+                                      const logic = conditionGroups[0].logic === 'any' ? 'any' : 'all';
+                                      const logicLabel = logic === 'any' ? 'OU' : 'ET';
+                                      const logicDescription = logic === 'any'
+                                        ? 'au moins une des conditions ci-dessous est remplie'
+                                        : 'toutes les conditions ci-dessous sont remplies';
+
+                                      return (
+                                        <p>
+                                          <strong>Logique :</strong> Le comité se déclenche si{' '}
+                                          <strong className="text-blue-700">{logicDescription}</strong>{' '}
+                                          (logique {logicLabel}).
+                                        </p>
+                                      );
+                                    })()
+                                  ) : (
+                                    <div className="space-y-1">
+                                      <p>
+                                        <strong>Logique :</strong> Le comité se déclenche lorsque{' '}
+                                        <strong className="text-blue-700">chaque groupe de conditions</strong> est validé (logique globale <strong>ET</strong>).
+                                      </p>
+                                      <p>
+                                        À l'intérieur d'un groupe, choisissez si{' '}
+                                        <strong className="text-blue-700">toutes</strong> les conditions doivent être vraies (ET) ou si{' '}
+                                        <strong className="text-blue-700">au moins une</strong> suffit (OU).
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="space-y-6">
+                                  {conditionGroups.map((group, groupIdx) => {
+                                    const logic = group.logic === 'any' ? 'any' : 'all';
+                                    const conditions = Array.isArray(group.conditions) ? group.conditions : [];
+                                    const connectorLabel = logic === 'any' ? 'OU' : 'ET';
+
+                                    return (
+                                      <div key={`${committee.id}-group-${groupIdx}`}>
+                                        {groupIdx > 0 && (
+                                          <div className="flex justify-center -mb-3" aria-hidden="true">
+                                            <span className="rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white shadow">
+                                              ET
+                                            </span>
+                                          </div>
+                                        )}
+
+                                        <div className="rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-blue-100 p-4">
+                                          <div className="mb-4 flex flex-wrap items-center gap-3">
+                                            <span className="text-sm font-semibold text-gray-700">
+                                              Groupe {groupIdx + 1}
+                                            </span>
+                                            <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-blue-800">
+                                              <span className="font-semibold">Logique interne</span>
+                                              <select
+                                                value={logic}
+                                                onChange={(event) =>
+                                                  updateCommitteeConditionGroupLogic(
+                                                    committee.id,
+                                                    groupIdx,
+                                                    event.target.value
+                                                  )
+                                                }
+                                                className="rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-xs focus:ring-2 focus:ring-blue-500"
+                                              >
+                                                <option value="all">Toutes les conditions (ET)</option>
+                                                <option value="any">Au moins une condition (OU)</option>
+                                              </select>
+                                            </div>
+                                            <button
+                                              type="button"
+                                              onClick={() => deleteCommitteeConditionGroup(committee.id, groupIdx)}
+                                              className="ml-auto rounded p-2 text-red-600 hover:bg-red-50"
+                                              aria-label={`Supprimer le groupe ${groupIdx + 1}`}
+                                            >
+                                              <Trash2 className="h-4 w-4" />
+                                            </button>
+                                          </div>
+
+                                          {conditions.length === 0 ? (
+                                            <div className="rounded-lg border border-dashed border-blue-200 bg-white p-4 text-sm text-blue-700">
+                                              <p>Ajoutez une condition pour définir ce groupe.</p>
+                                              <button
+                                                type="button"
+                                                onClick={() => addCommitteeCondition(committee.id, groupIdx)}
+                                                className="mt-3 inline-flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-100"
+                                              >
+                                                <Plus className="h-4 w-4" />
+                                                Ajouter une condition
+                                              </button>
+                                            </div>
+                                          ) : (
+                                            <div className="space-y-4">
+                                              {conditions.map((condition, conditionIdx) => {
+                                                const conditionType = condition.type === 'timing' ? 'timing' : 'question';
+                                                const selectedQuestion = questions.find((item) => item.id === condition.question);
+                                                const selectedQuestionType = selectedQuestion?.type || 'choice';
+                                                const usesOptions = ['choice', 'multi_choice'].includes(selectedQuestionType);
+                                                const inputType = selectedQuestionType === 'number'
+                                                  ? 'number'
+                                                  : selectedQuestionType === 'date'
+                                                    ? 'date'
+                                                    : 'text';
+                                                const placeholder = selectedQuestionType === 'date'
+                                                  ? 'AAAA-MM-JJ'
+                                                  : selectedQuestionType === 'url'
+                                                    ? 'https://...'
+                                                    : 'Valeur (texte, date, etc.)';
+
+                                                return (
+                                                  <div
+                                                    key={`${committee.id}-condition-${groupIdx}-${conditionIdx}`}
+                                                    className="rounded-lg border border-blue-200 bg-white p-4 shadow-sm"
+                                                  >
+                                                    <div className="mb-3 flex flex-wrap items-center gap-3">
+                                                      {conditionIdx > 0 && (
+                                                        <span className="rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white">
+                                                          {connectorLabel}
+                                                        </span>
+                                                      )}
+                                                      <span className="text-sm font-semibold text-gray-700">
+                                                        Condition {conditionIdx + 1}
+                                                      </span>
+                                                      <select
+                                                        value={conditionType}
+                                                        onChange={(event) =>
+                                                          handleCommitteeConditionTypeChange(
+                                                            committee.id,
+                                                            groupIdx,
+                                                            conditionIdx,
+                                                            event.target.value
+                                                          )
+                                                        }
+                                                        className="rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                                                      >
+                                                        <option value="question">Basée sur une réponse</option>
+                                                        <option value="timing">Comparaison de dates</option>
+                                                      </select>
+                                                      <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                          deleteCommitteeCondition(committee.id, groupIdx, conditionIdx)
+                                                        }
+                                                        className="ml-auto rounded p-1 text-red-600 hover:bg-red-50"
+                                                      >
+                                                        <Trash2 className="h-4 w-4" />
+                                                      </button>
+                                                    </div>
+
+                                                    {conditionType === 'timing' ? (
+                                                      <div className="space-y-4">
+                                                        {dateQuestions.length >= 2 ? (
+                                                          <>
+                                                            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                                                              <div>
+                                                                <label className="mb-1 block text-xs font-medium text-gray-600">
+                                                                  Date de départ
+                                                                </label>
+                                                                <select
+                                                                  value={condition.startQuestion}
+                                                                  onChange={(event) =>
+                                                                    updateCommitteeConditionField(
+                                                                      committee.id,
+                                                                      groupIdx,
+                                                                      conditionIdx,
+                                                                      'startQuestion',
+                                                                      event.target.value
+                                                                    )
+                                                                  }
+                                                                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                                                                >
+                                                                  <option value="">Sélectionner...</option>
+                                                                  {dateQuestions.map((question) => (
+                                                                    <option key={question.id} value={question.id}>
+                                                                      {question.id} - {question.question ?? ''}
+                                                                    </option>
+                                                                  ))}
+                                                                </select>
+                                                              </div>
+
+                                                              <div>
+                                                                <label className="mb-1 block text-xs font-medium text-gray-600">
+                                                                  Date d'arrivée
+                                                                </label>
+                                                                <select
+                                                                  value={condition.endQuestion}
+                                                                  onChange={(event) =>
+                                                                    updateCommitteeConditionField(
+                                                                      committee.id,
+                                                                      groupIdx,
+                                                                      conditionIdx,
+                                                                      'endQuestion',
+                                                                      event.target.value
+                                                                    )
+                                                                  }
+                                                                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                                                                >
+                                                                  <option value="">Sélectionner...</option>
+                                                                  {dateQuestions.map((question) => (
+                                                                    <option key={question.id} value={question.id}>
+                                                                      {question.id} - {question.question ?? ''}
+                                                                    </option>
+                                                                  ))}
+                                                                </select>
+                                                              </div>
+                                                            </div>
+
+                                                            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                                                              <div>
+                                                                <label className="mb-1 block text-xs font-medium text-gray-600">
+                                                                  Durée minimale (semaines)
+                                                                </label>
+                                                                <input
+                                                                  type="number"
+                                                                  min="0"
+                                                                  value={condition.minimumWeeks ?? ''}
+                                                                  onChange={(event) =>
+                                                                    updateCommitteeConditionField(
+                                                                      committee.id,
+                                                                      groupIdx,
+                                                                      conditionIdx,
+                                                                      'minimumWeeks',
+                                                                      event.target.value === '' ? undefined : Number(event.target.value)
+                                                                    )
+                                                                  }
+                                                                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                                                                  placeholder="Ex: 8"
+                                                                />
+                                                              </div>
+
+                                                              <div>
+                                                                <label className="mb-1 block text-xs font-medium text-gray-600">
+                                                                  Durée maximale (semaines - optionnel)
+                                                                </label>
+                                                                <input
+                                                                  type="number"
+                                                                  min="0"
+                                                                  value={condition.maximumWeeks ?? ''}
+                                                                  onChange={(event) =>
+                                                                    updateCommitteeConditionField(
+                                                                      committee.id,
+                                                                      groupIdx,
+                                                                      conditionIdx,
+                                                                      'maximumWeeks',
+                                                                      event.target.value === '' ? undefined : Number(event.target.value)
+                                                                    )
+                                                                  }
+                                                                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                                                                  placeholder="Laisser vide si non concerné"
+                                                                />
+                                                              </div>
+                                                            </div>
+
+                                                            <p className="text-xs text-gray-500">
+                                                              Le comité se déclenche si la durée entre les deux dates respecte les contraintes définies.
+                                                            </p>
+                                                          </>
+                                                        ) : (
+                                                          <div className="rounded-lg border border-dashed border-blue-200 bg-white p-4 text-sm text-blue-700">
+                                                            Ajoutez au moins deux questions de type date pour configurer cette condition temporelle.
+                                                          </div>
+                                                        )}
+                                                      </div>
+                                                    ) : (
+                                                      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                                                        <div>
+                                                          <label className="mb-1 block text-xs font-medium text-gray-600">
+                                                            Question
+                                                          </label>
+                                                          <select
+                                                            value={condition.question}
+                                                            onChange={(event) =>
+                                                              updateCommitteeConditionField(
+                                                                committee.id,
+                                                                groupIdx,
+                                                                conditionIdx,
+                                                                'question',
+                                                                event.target.value
+                                                              )
+                                                            }
+                                                            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                                                          >
+                                                            <option value="">Sélectionner...</option>
+                                                            {questions.map((question) => (
+                                                              <option key={question.id} value={question.id}>
+                                                                {question.id} - {question.question ?? ''}
+                                                              </option>
+                                                            ))}
+                                                          </select>
+                                                        </div>
+
+                                                        <div>
+                                                          <label className="mb-1 block text-xs font-medium text-gray-600">
+                                                            Opérateur
+                                                          </label>
+                                                          {(() => {
+                                                            const operatorOptions = getOperatorOptionsForType(selectedQuestionType);
+                                                            const operatorValue = ensureOperatorForType(
+                                                              selectedQuestionType,
+                                                              condition.operator
+                                                            );
+                                                            return (
+                                                              <select
+                                                                value={operatorValue}
+                                                                onChange={(event) =>
+                                                                  updateCommitteeConditionField(
+                                                                    committee.id,
+                                                                    groupIdx,
+                                                                    conditionIdx,
+                                                                    'operator',
+                                                                    event.target.value
+                                                                  )
+                                                                }
+                                                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                                                              >
+                                                                {operatorOptions.map((option) => (
+                                                                  <option key={option.value} value={option.value}>
+                                                                    {option.label}
+                                                                  </option>
+                                                                ))}
+                                                              </select>
+                                                            );
+                                                          })()}
+                                                        </div>
+
+                                                        <div>
+                                                          <label className="mb-1 block text-xs font-medium text-gray-600">
+                                                            Valeur
+                                                          </label>
+                                                          {(() => {
+                                                            if (!condition.question) {
+                                                              return (
+                                                                <input
+                                                                  type="text"
+                                                                  value={condition.value}
+                                                                  onChange={(event) =>
+                                                                    updateCommitteeConditionField(
+                                                                      committee.id,
+                                                                      groupIdx,
+                                                                      conditionIdx,
+                                                                      'value',
+                                                                      event.target.value
+                                                                    )
+                                                                  }
+                                                                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                                                                  placeholder="Valeur (texte, date, etc.)"
+                                                                />
+                                                              );
+                                                            }
+
+                                                            if (usesOptions) {
+                                                              return (
+                                                                <select
+                                                                  value={condition.value}
+                                                                  onChange={(event) =>
+                                                                    updateCommitteeConditionField(
+                                                                      committee.id,
+                                                                      groupIdx,
+                                                                      conditionIdx,
+                                                                      'value',
+                                                                      event.target.value
+                                                                    )
+                                                                  }
+                                                                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                                                                >
+                                                                  <option value="">Sélectionner...</option>
+                                                                  {(selectedQuestion?.options || []).map((option, optionIndex) => (
+                                                                    <option key={optionIndex} value={option}>
+                                                                      {option}
+                                                                    </option>
+                                                                  ))}
+                                                                </select>
+                                                              );
+                                                            }
+
+                                                            return (
+                                                              <input
+                                                                type={inputType}
+                                                                value={condition.value}
+                                                                onChange={(event) =>
+                                                                  updateCommitteeConditionField(
+                                                                    committee.id,
+                                                                    groupIdx,
+                                                                    conditionIdx,
+                                                                    'value',
+                                                                    event.target.value
+                                                                  )
+                                                                }
+                                                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                                                                placeholder={placeholder}
+                                                              />
+                                                            );
+                                                          })()}
+                                                        </div>
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                );
+                                              })}
+
+                                              <div className="flex justify-end border-t border-blue-100 pt-3">
+                                                <button
+                                                  type="button"
+                                                  onClick={() => addCommitteeCondition(committee.id, groupIdx)}
+                                                  className="inline-flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-2 text-sm font-medium text-blue-600 hover:bg-blue-100"
+                                                >
+                                                  <Plus className="h-4 w-4" />
+                                                  Ajouter une condition
+                                                </button>
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </div>
 
                         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
