@@ -40,7 +40,7 @@ import {
 import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
 
-const APP_VERSION = 'v1.0.251';
+const APP_VERSION = 'v1.0.252';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -1923,8 +1923,8 @@ const updateProjectFilters = useCallback((updater) => {
   );
 
   const hasIncompleteAnswers = useMemo(
-    () => activeQuestions.some(question => !isAnswerProvided(answers[question.id])),
-    [activeQuestions, answers]
+    () => unansweredMandatoryQuestions.length > 0,
+    [unansweredMandatoryQuestions]
   );
 
   const teamLeadTeamOptions = useMemo(() => {
@@ -2998,7 +2998,9 @@ const updateProjectFilters = useCallback((updater) => {
       : Object.keys(answersSource).length;
 
     const hasShowcaseIncompleteAnswers = visibleQuestions.length > 0
-      ? visibleQuestions.some(question => !isAnswerProvided(answersSource[question.id]))
+      ? visibleQuestions.some(
+        question => question.required && !isAnswerProvided(answersSource[question.id])
+      )
       : Object.keys(answersSource).length === 0;
 
     const totalQuestions = visibleQuestions.length > 0
