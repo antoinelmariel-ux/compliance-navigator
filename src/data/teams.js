@@ -46,11 +46,5 @@ export const initialTeams = [
     "name": "Ethique & Compliance",
     "contacts": ["ethique@company.com", "compliance@company.com"],
     "expertise": "Garantir la conformité globale du projet à la réglementation interne et externe (dont Loi d'Encadrement des Avantages)"
-  },
-  {
-    "id": "validation-committee",
-    "name": "Comité de validation",
-    "contacts": ["comite.validation@company.com", "secretariat.validation@company.com"],
-    "expertise": "Arbitrer les décisions clés et valider la conformité finale des projets"
   }
 ];
