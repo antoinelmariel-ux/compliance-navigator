@@ -60,6 +60,8 @@ const normalizeTeamTriggers = (value) => {
   };
 };
 
+const normalizeCommentRequirement = (value) => value !== false;
+
 const normalizeCommittee = (value = {}, index = 0) => {
   const id = sanitizeTextValue(value?.id) || `committee-${index + 1}`;
   const name = sanitizeTextValue(value?.name) || `Comité ${index + 1}`;
@@ -71,6 +73,7 @@ const normalizeCommittee = (value = {}, index = 0) => {
       id,
       name,
       emails,
+      commentRequired: normalizeCommentRequirement(value?.commentRequired),
       ruleTriggers: normalizeRuleTriggers(value?.ruleTriggers),
       riskTriggers: normalizeRiskTriggers(value?.riskTriggers),
       teamTriggers: normalizeTeamTriggers(value?.teamTriggers)
@@ -166,4 +169,4 @@ export const getTriggeredValidationCommittees = (config, context = {}) => {
 };
 
 export const shouldRequireValidationCommittee = (config, context = {}) =>
-  getTriggeredValidationCommittees(config, context).length > 0;
+  getTriggeredValidationCommittees(config, context).some((committee) => committee.commentRequired);

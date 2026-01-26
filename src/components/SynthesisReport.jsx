@@ -657,8 +657,30 @@ const buildPlainTextEmail = (html) => {
   return text.trim();
 };
 
-const buildMailtoLink = ({ projectName, relevantTeams, body }) => {
-  const recipients = relevantTeams.flatMap((team) => normalizeTeamContacts(team));
+const normalizeRecipients = (recipients) => {
+  const uniqueRecipients = new Map();
+  (Array.isArray(recipients) ? recipients : []).forEach((recipient) => {
+    if (typeof recipient !== 'string') {
+      return;
+    }
+    const trimmed = recipient.trim();
+    if (!trimmed) {
+      return;
+    }
+    const key = trimmed.toLowerCase();
+    if (!uniqueRecipients.has(key)) {
+      uniqueRecipients.set(key, trimmed);
+    }
+  });
+  return Array.from(uniqueRecipients.values());
+};
+
+const buildMailtoLink = ({ projectName, relevantTeams, committees, body }) => {
+  const teamRecipients = relevantTeams.flatMap((team) => normalizeTeamContacts(team));
+  const committeeRecipients = (Array.isArray(committees) ? committees : []).flatMap((committee) =>
+    Array.isArray(committee?.emails) ? committee.emails : []
+  );
+  const recipients = normalizeRecipients([...teamRecipients, ...committeeRecipients]);
 
   const toField = recipients.join(',');
   const subject = projectName || 'Projet compliance';
@@ -758,6 +780,10 @@ export const SynthesisReport = ({
         relevantTeams
       }),
     [analysis, answers, normalizedValidationCommitteeConfig, relevantTeams]
+  );
+  const requiredValidationCommittees = useMemo(
+    () => triggeredValidationCommittees.filter((committee) => committee.commentRequired),
+    [triggeredValidationCommittees]
   );
 
   const resolveTeamLabel = useCallback(
@@ -1101,6 +1127,10 @@ export const SynthesisReport = ({
     () => new Set(triggeredValidationCommittees.map((committee) => committee.id)),
     [triggeredValidationCommittees]
   );
+  const requiredCommitteeIds = useMemo(
+    () => new Set(requiredValidationCommittees.map((committee) => committee.id)),
+    [requiredValidationCommittees]
+  );
   const committeesToDisplay = validationCommittees.filter((committee) => {
     if (isAdminMode) {
       return true;
@@ -1218,7 +1248,12 @@ export const SynthesisReport = ({
     setAttachmentReminder({ fileName });
 
     const fallbackBody = `${emailText}\n\nFichier du projet : ${fileName}\nLe fichier JSON a été téléchargé automatiquement ; merci de l'ajouter en pièce jointe avant envoi.`;
-    const mailtoLink = buildMailtoLink({ projectName: effectiveProjectName, relevantTeams, body: fallbackBody });
+    const mailtoLink = buildMailtoLink({
+      projectName: effectiveProjectName,
+      relevantTeams,
+      committees: triggeredValidationCommittees,
+      body: fallbackBody
+    });
     if (typeof window !== 'undefined') {
       window.location.href = mailtoLink;
     }
@@ -1228,6 +1263,7 @@ export const SynthesisReport = ({
     effectiveProjectName,
     questions,
     relevantTeams,
+    triggeredValidationCommittees,
     timelineDetails,
     setAttachmentReminder
   ]);
@@ -1794,11 +1830,11 @@ export const SynthesisReport = ({
 
                 {shouldShowCommitteeSection && (
                   <div className="space-y-4">
-                    {triggeredValidationCommittees.length > 0 && (
+                    {requiredValidationCommittees.length > 0 && (
                       <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                         <p className="font-medium">Comité(s) requis pour ce projet :</p>
                         <ul className="mt-2 list-disc pl-5 space-y-1">
-                          {triggeredValidationCommittees.map((committee) => (
+                          {requiredValidationCommittees.map((committee) => (
                             <li key={`required-${committee.id}`}>{committee.name}</li>
                           ))}
                         </ul>
@@ -1811,7 +1847,7 @@ export const SynthesisReport = ({
                       const committeeStatusMeta = getCommentStatusMeta(
                         isAdminMode ? committeeDraft.status : committeeCommentEntry.status
                       );
-                      const isRequired = triggeredCommitteeIds.has(committee.id);
+                      const isRequired = requiredCommitteeIds.has(committee.id);
                       const isDirty =
                         committeeDraft.comment !== committeeCommentEntry.comment
                         || committeeDraft.status !== committeeCommentEntry.status;
