@@ -34,6 +34,16 @@ const SECTION_TEMPLATES = [
     }
   },
   {
+    id: 'aurora-section__inner',
+    name: 'Chiffre en avant',
+    description: 'Un format percutant pour faire ressortir un indicateur majeur.',
+    placeholder: {
+      title: 'Chiffre clé',
+      description: 'Mettez en lumière un KPI, un taux ou un volume essentiel.',
+      badge: 'KPI'
+    }
+  },
+  {
     id: 'columns',
     name: 'Bloc multi-colonnes',
     description: 'Un contenu réparti sur plusieurs colonnes pour comparer ou structurer l’information.',
@@ -84,6 +94,15 @@ const SECTION_TEMPLATES = [
 
 const SECTION_TEMPLATE_CONFIG = {
   highlight: {
+    showSubtitle: false,
+    showAccent: false,
+    showBadge: true,
+    showDescription: true,
+    showColumns: false,
+    showDocument: false,
+    showItems: false
+  },
+  'aurora-section__inner': {
     showSubtitle: false,
     showAccent: false,
     showBadge: true,
@@ -3165,6 +3184,9 @@ export const ProjectShowcase = ({
     const headerBadgeLabel = templateConfig.showBadge
       ? badgeLabel
       : `Bloc personnalisé #${index + 1}`;
+    const innerClassName = section.type === 'aurora-section__inner'
+      ? 'aurora-section__inner'
+      : 'aurora-section__inner aurora-section__inner--narrow';
 
     return (
       <section
@@ -3172,7 +3194,7 @@ export const ProjectShowcase = ({
         className="aurora-section aurora-section--custom"
         data-showcase-section={section.type || 'custom'}
       >
-        <div className="aurora-section__inner aurora-section__inner--narrow">
+        <div className={innerClassName}>
           <div className="aurora-section__header aurora-section__header--split">
             <div>
               {templateConfig.showAccent && (
@@ -3408,6 +3430,7 @@ export const ProjectShowcase = ({
   const selectedTemplateConfig = resolveTemplateConfig(selectedTemplate?.id);
   const templateAccentClasses = {
     highlight: 'from-blue-500/80 via-cyan-400/70 to-emerald-300/70',
+    'aurora-section__inner': 'from-sky-500/80 via-indigo-400/70 to-fuchsia-300/70',
     columns: 'from-indigo-500/80 via-purple-400/70 to-fuchsia-300/70',
     'document-viewer': 'from-emerald-500/80 via-teal-400/70 to-sky-300/70',
     story: 'from-amber-400/80 via-orange-300/70 to-rose-300/70',
@@ -3418,10 +3441,26 @@ export const ProjectShowcase = ({
 
   const renderTemplateThumbnail = (templateId) => {
     switch (templateId) {
+      case 'aurora-section__inner':
+        return (
+          <div className="mt-4 space-y-3 rounded-xl bg-white p-4 shadow-inner">
+            <div className="flex items-center justify-between gap-3">
+              <div className="h-3 w-24 rounded-full bg-sky-200" />
+              <div className="h-5 w-12 rounded-full bg-indigo-100" />
+            </div>
+            <div className="flex items-end justify-between rounded-2xl bg-slate-50 px-4 py-6">
+              <div className="space-y-2">
+                <div className="h-2 w-24 rounded-full bg-gray-200" />
+                <div className="h-2 w-16 rounded-full bg-gray-100" />
+              </div>
+              <div className="text-2xl font-semibold text-indigo-400">98%</div>
+            </div>
+          </div>
+        );
       case 'columns':
         return (
           <div className="mt-4 grid grid-cols-3 gap-3 rounded-xl bg-white p-4 shadow-inner">
-            <div className="col-span-3 h-3 rounded-full bg-gradient-to-r from-indigo-500/80 to-fuchsia-400/70" />
+            <div className="col-span-3 h-3 rounded-full bg-gradient-to-r from-indigo-500/80 via-purple-400/70 to-fuchsia-300/70" />
             {Array.from({ length: 3 }).map((_, index) => (
               <div key={`columns-preview-${index}`} className="rounded-lg bg-gray-50 p-2">
                 <div className="flex h-16 items-end justify-center gap-1">
