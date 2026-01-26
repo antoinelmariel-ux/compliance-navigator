@@ -9,6 +9,7 @@ export const initialValidationCommitteeConfig = {
         matchMode: 'any',
         ruleIds: []
       },
+      conditionGroups: [],
       riskTriggers: {
         minRiskScore: null
       },

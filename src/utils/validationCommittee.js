@@ -1,3 +1,6 @@
+import { normalizeRuleConditionGroups, applyRuleConditionGroups } from './ruleConditions.js';
+import { evaluateRule } from './rules.js';
+
 export const DEFAULT_COMMITTEE_ID = 'committee-default';
 
 const sanitizeTextValue = (value) => (typeof value === 'string' ? value.trim() : '');
@@ -61,15 +64,19 @@ const normalizeCommittee = (value = {}, index = 0) => {
   const id = sanitizeTextValue(value?.id) || `committee-${index + 1}`;
   const name = sanitizeTextValue(value?.name) || `Comité ${index + 1}`;
   const emails = normalizeEmails(value?.emails ?? value?.contacts);
+  const conditionGroups = normalizeRuleConditionGroups(value);
 
-  return {
-    id,
-    name,
-    emails,
-    ruleTriggers: normalizeRuleTriggers(value?.ruleTriggers),
-    riskTriggers: normalizeRiskTriggers(value?.riskTriggers),
-    teamTriggers: normalizeTeamTriggers(value?.teamTriggers)
-  };
+  return applyRuleConditionGroups(
+    {
+      id,
+      name,
+      emails,
+      ruleTriggers: normalizeRuleTriggers(value?.ruleTriggers),
+      riskTriggers: normalizeRiskTriggers(value?.riskTriggers),
+      teamTriggers: normalizeTeamTriggers(value?.teamTriggers)
+    },
+    conditionGroups
+  );
 };
 
 const buildDefaultCommittee = (value = {}) =>
@@ -112,6 +119,7 @@ const getMinimumRiskScore = (risks) => {
 
 const shouldTriggerCommittee = (committee, context = {}) => {
   const analysis = context?.analysis || {};
+  const answers = context?.answers || {};
   const relevantTeams = Array.isArray(context?.relevantTeams) ? context.relevantTeams : [];
   const risks = Array.isArray(analysis?.risks) ? analysis.risks : [];
   const triggeredRuleIds = Array.isArray(analysis?.triggeredRules)
@@ -119,6 +127,8 @@ const shouldTriggerCommittee = (committee, context = {}) => {
         .map((rule) => rule?.id)
         .filter((id) => typeof id === 'string')
     : [];
+  const conditionGroups = normalizeRuleConditionGroups(committee);
+  const hasConditionTriggers = conditionGroups.some((group) => group.conditions.length > 0);
 
   const triggers = [];
 
@@ -136,6 +146,11 @@ const shouldTriggerCommittee = (committee, context = {}) => {
 
   if (committee.teamTriggers.minTeamsCount) {
     triggers.push(relevantTeams.length >= committee.teamTriggers.minTeamsCount);
+  }
+
+  if (hasConditionTriggers) {
+    const evaluation = evaluateRule({ ...committee, conditionGroups }, answers);
+    triggers.push(evaluation.triggered);
   }
 
   return triggers.some(Boolean);
