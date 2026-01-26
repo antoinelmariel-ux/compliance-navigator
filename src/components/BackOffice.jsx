@@ -30,6 +30,7 @@ import {
   sanitizeTeamQuestionEntry
 } from '../utils/rules.js';
 import { sanitizeRuleCondition } from '../utils/ruleConditions.js';
+import { formatTeamContacts, parseTeamContacts } from '../utils/teamContacts.js';
 import {
   createOnboardingAction,
   createOnboardingStep,
@@ -3092,7 +3093,7 @@ export const BackOffice = ({
     const newTeam = {
       id: getNextId(teams, 'team'),
       name: 'Nouvelle équipe',
-      contact: 'email@company.com',
+      contacts: ['email@company.com'],
       expertise: "Domaine d'expertise"
     };
 
@@ -6034,15 +6035,21 @@ export const BackOffice = ({
                     </div>
 
                     <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1" htmlFor={`${team.id}-contact`}>
-                      Contact principal
+                      Contacts e-mail
                     </label>
-                    <input
+                    <textarea
                       id={`${team.id}-contact`}
-                      type="text"
-                      value={team.contact}
-                      onChange={(event) => updateTeamField(index, 'contact', event.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-4 hv-focus-ring"
+                      value={formatTeamContacts(team, ', ')}
+                      onChange={(event) =>
+                        updateTeamField(index, 'contacts', parseTeamContacts(event.target.value))
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-2 hv-focus-ring"
+                      rows={2}
+                      placeholder="ex : contact@company.com, support@company.com"
                     />
+                    <p className="text-xs text-gray-500 mb-4">
+                      Séparez plusieurs adresses par une virgule, un point-virgule ou un retour à la ligne.
+                    </p>
 
                     <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1" htmlFor={`${team.id}-expertise`}>
                       Domaine d'expertise
