@@ -1,5 +1,3 @@
-import { normalizeAnswerForComparison } from './questions.js';
-
 const COMPLEXITY_ORDER = ['Faible', 'Moyen', 'Élevé'];
 export const DEFAULT_COMMITTEE_ID = 'committee-default';
 
@@ -156,18 +154,6 @@ export const normalizeValidationCommitteeConfig = (value = {}) => {
   };
 };
 
-const isAnswerProvided = (value) => {
-  if (Array.isArray(value)) {
-    return value.length > 0;
-  }
-
-  if (typeof value === 'string') {
-    return value.trim().length > 0;
-  }
-
-  return value !== null && value !== undefined;
-};
-
 const isComplexityAtLeast = (actual, minimum) => {
   if (!actual || !minimum) {
     return false;
@@ -183,36 +169,23 @@ const isComplexityAtLeast = (actual, minimum) => {
   return actualIndex >= minimumIndex;
 };
 
-const matchesAnswerTrigger = (condition, answers) => {
-  if (!condition?.questionId) {
-    return false;
+const getMinimumRiskScore = (risks) => {
+  if (!Array.isArray(risks) || risks.length === 0) {
+    return 0;
   }
 
-  const expected = condition.value;
-  if (typeof expected !== 'string' || expected.length === 0) {
-    return false;
+  const weights = risks
+    .map((risk) => (Number.isFinite(risk?.weight) ? risk.weight : null))
+    .filter((weight) => weight !== null);
+
+  if (weights.length === 0) {
+    return 0;
   }
 
-  const rawAnswer = answers?.[condition.questionId];
-  if (rawAnswer === null || rawAnswer === undefined || rawAnswer === '') {
-    return false;
-  }
-
-  if (Array.isArray(rawAnswer) && rawAnswer.length === 0) {
-    return false;
-  }
-
-  const answer = normalizeAnswerForComparison(rawAnswer);
-
-  if (Array.isArray(answer)) {
-    return answer.includes(expected);
-  }
-
-  return String(answer) === expected;
+  return Math.min(...weights);
 };
 
 const shouldTriggerCommittee = (committee, context = {}) => {
-  const answers = context?.answers || {};
   const analysis = context?.analysis || {};
   const relevantTeams = Array.isArray(context?.relevantTeams) ? context.relevantTeams : [];
   const risks = Array.isArray(analysis?.risks) ? analysis.risks : [];
@@ -224,34 +197,10 @@ const shouldTriggerCommittee = (committee, context = {}) => {
 
   const triggers = [];
 
-  if (committee.questionTriggers.questionIds.length > 0) {
-    const questionMatches = committee.questionTriggers.questionIds.map((questionId) =>
-      isAnswerProvided(answers?.[questionId])
-    );
-    triggers.push(
-      committee.questionTriggers.matchMode === 'all'
-        ? questionMatches.every(Boolean)
-        : questionMatches.some(Boolean)
-    );
-  }
-
-  if (committee.answerTriggers.conditions.length > 0) {
-    const answerMatches = committee.answerTriggers.conditions.map((condition) =>
-      matchesAnswerTrigger(condition, answers)
-    );
-    triggers.push(
-      committee.answerTriggers.matchMode === 'all'
-        ? answerMatches.every(Boolean)
-        : answerMatches.some(Boolean)
-    );
-  }
-
   if (committee.ruleTriggers.ruleIds.length > 0) {
     const ruleMatches = committee.ruleTriggers.ruleIds.map((ruleId) => triggeredRuleIds.includes(ruleId));
     triggers.push(
-      committee.ruleTriggers.matchMode === 'all'
-        ? ruleMatches.every(Boolean)
-        : ruleMatches.some(Boolean)
+      ruleMatches.some(Boolean)
     );
   }
 
@@ -268,7 +217,8 @@ const shouldTriggerCommittee = (committee, context = {}) => {
   }
 
   if (committee.riskTriggers.minRiskScore !== null && committee.riskTriggers.minRiskScore !== undefined) {
-    triggers.push((analysis?.riskScore ?? 0) >= committee.riskTriggers.minRiskScore);
+    const minimumRiskScore = getMinimumRiskScore(risks);
+    triggers.push(minimumRiskScore >= committee.riskTriggers.minRiskScore);
   }
 
   if (committee.teamTriggers.minTeamsCount) {
