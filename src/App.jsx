@@ -40,7 +40,7 @@ import {
 import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
 
-const APP_VERSION = 'v1.0.250';
+const APP_VERSION = 'v1.0.251';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {

@@ -26,6 +26,7 @@ import {
   normalizeValidationCommitteeConfig,
   shouldRequireValidationCommittee
 } from '../utils/validationCommittee.js';
+import { formatTeamContacts, normalizeTeamContacts } from '../utils/teamContacts.js';
 
 const escapeHtml = (value) => {
   if (value === null || value === undefined) {
@@ -447,7 +448,10 @@ const buildEmailHtml = ({
             .map(team => {
               const teamPriority = getTeamPriority(analysis, team.id);
               const teamQuestions = analysis.questions?.[team.id] || [];
-              const contact = team.contact ? `<span style="color:#4b5563;"> | Contact : ${escapeHtml(team.contact)}</span>` : '';
+              const teamContactLabel = formatTeamContacts(team, ', ');
+              const contact = teamContactLabel
+                ? `<span style="color:#4b5563;"> | Contacts : ${escapeHtml(teamContactLabel)}</span>`
+                : '';
 
               const formattedTeamQuestions = Array.isArray(teamQuestions)
                 ? teamQuestions
@@ -630,9 +634,7 @@ const buildPlainTextEmail = (html) => {
 };
 
 const buildMailtoLink = ({ projectName, relevantTeams, body }) => {
-  const recipients = relevantTeams
-    .map(team => (team.contact || '').trim())
-    .filter(contact => contact.length > 0);
+  const recipients = relevantTeams.flatMap((team) => normalizeTeamContacts(team));
 
   const toField = recipients.join(',');
   const subject = projectName || 'Projet compliance';
@@ -1347,6 +1349,7 @@ export const SynthesisReport = ({
               {relevantTeams.map(team => {
                 const teamPriority = getTeamPriority(analysis, team.id);
                 const teamQuestions = analysis.questions?.[team.id];
+                const teamContactLabel = formatTeamContacts(team, ' · ');
                 const formattedTeamQuestions = Array.isArray(teamQuestions)
                   ? teamQuestions
                       .map(normalizeTeamQuestionForDisplay)
@@ -1362,10 +1365,12 @@ export const SynthesisReport = ({
                       </span>
                     </div>
                     <p className="text-sm text-gray-600 mb-3">{renderTextWithLinks(team.expertise)}</p>
-                    <div className="mt-2 text-sm text-blue-600 font-medium flex items-center gap-2">
-                      <Mail className="w-4 h-4" />
-                      {renderTextWithLinks(team.contact)}
-                    </div>
+                    {teamContactLabel && (
+                      <div className="mt-2 text-sm text-blue-600 font-medium flex items-center gap-2">
+                        <Mail className="w-4 h-4" />
+                        {renderTextWithLinks(teamContactLabel)}
+                      </div>
+                    )}
 
                     {formattedTeamQuestions.length > 0 && (
                       <div className="mt-4">
@@ -1620,14 +1625,15 @@ export const SynthesisReport = ({
                       const isDirty =
                         draftEntry.comment !== storedEntry.comment || draftEntry.status !== storedEntry.status;
                       const feedbackMessage = getComplianceFeedbackMessage(`team-${team.id}`);
+                      const teamContactLabel = formatTeamContacts(team, ' · ');
 
                       return (
                         <article key={`compliance-comment-${team.id}`} className="rounded-xl border border-gray-200 p-4 bg-gray-50">
                           <div className="flex flex-wrap items-start justify-between gap-2">
                             <div>
                               <h3 className="text-base font-semibold text-gray-800">{team.name}</h3>
-                              {team.contact && (
-                                <p className="text-xs text-gray-500">{team.contact}</p>
+                              {teamContactLabel && (
+                                <p className="text-xs text-gray-500">{teamContactLabel}</p>
                               )}
                             </div>
                             <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${statusMeta.badgeClass}`}>
