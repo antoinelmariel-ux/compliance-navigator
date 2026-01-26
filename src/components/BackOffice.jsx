@@ -549,22 +549,11 @@ export const BackOffice = ({
     id: `committee-${Date.now()}-${Math.round(Math.random() * 1000)}`,
     name: `Comité ${index + 1}`,
     emails: [],
-    questionTriggers: {
-      matchMode: 'any',
-      questionIds: []
-    },
-    answerTriggers: {
-      matchMode: 'any',
-      conditions: []
-    },
     ruleTriggers: {
       matchMode: 'any',
       ruleIds: []
     },
     riskTriggers: {
-      requireRisks: false,
-      minRiskCount: null,
-      minRiskLevel: '',
       minRiskScore: null
     },
     teamTriggers: {
@@ -2888,25 +2877,6 @@ export const BackOffice = ({
 
   const inspirationFilterCount = inspirationFilterFields.length;
   const inspirationFormCount = inspirationFormFieldEntries.length;
-  const validationCommitteeQuestionOptions = useMemo(
-    () =>
-      (Array.isArray(questions) ? questions : [])
-        .filter((question) => question && question.id)
-        .map((question) => ({
-          value: question.id,
-          label: question.question ? `${question.question} (${question.id})` : question.id
-        })),
-    [questions]
-  );
-  const validationCommitteeQuestionMap = useMemo(() => {
-    const map = {};
-    (Array.isArray(questions) ? questions : []).forEach((question) => {
-      if (question?.id) {
-        map[question.id] = question;
-      }
-    });
-    return map;
-  }, [questions]);
   const validationCommitteeRuleOptions = useMemo(
     () =>
       (Array.isArray(rules) ? rules : [])
@@ -2956,7 +2926,7 @@ export const BackOffice = ({
     },
     {
       id: 'validationCommittee',
-      label: 'Comité de validation',
+      label: 'Comités de validation',
       panelId: 'backoffice-tabpanel-validationCommittee'
     },
     {
@@ -5760,317 +5730,6 @@ export const BackOffice = ({
                         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                           <div className="space-y-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
                             <div>
-                              <h4 className="text-base font-semibold text-gray-800">Questions renseignées</h4>
-                              <p className="text-xs text-gray-600">
-                                Déclenchez le comité dès qu’une réponse est donnée à ces questions.
-                              </p>
-                            </div>
-                            <div>
-                              <label
-                                htmlFor={`validation-committee-questions-${committee.id}`}
-                                className="text-sm font-medium text-gray-700"
-                              >
-                                Questions déclenchantes
-                              </label>
-                              <select
-                                id={`validation-committee-questions-${committee.id}`}
-                                multiple
-                                value={committee.questionTriggers.questionIds}
-                                onChange={(event) => {
-                                  const selected = Array.from(event.target.selectedOptions).map((option) => option.value);
-                                  updateCommitteeEntry(committee.id, (prev) => ({
-                                    ...prev,
-                                    questionTriggers: {
-                                      ...prev.questionTriggers,
-                                      questionIds: selected
-                                    }
-                                  }));
-                                }}
-                                className="mt-2 h-40 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                              >
-                                {validationCommitteeQuestionOptions.length === 0 && (
-                                  <option value="" disabled>
-                                    Aucune question disponible.
-                                  </option>
-                                )}
-                                {validationCommitteeQuestionOptions.map((option) => (
-                                  <option key={`validation-question-${committee.id}-${option.value}`} value={option.value}>
-                                    {option.label}
-                                  </option>
-                                ))}
-                              </select>
-                              <p className="mt-2 text-xs text-gray-500">
-                                Maintenez Ctrl/⌘ pour sélectionner plusieurs questions.
-                              </p>
-                            </div>
-                            <fieldset className="space-y-2">
-                              <legend className="text-sm font-medium text-gray-700">Logique appliquée</legend>
-                              <label className="flex items-center gap-2 text-sm text-gray-600">
-                                <input
-                                  type="radio"
-                                  name={`validation-committee-questions-mode-${committee.id}`}
-                                  className="h-4 w-4 text-blue-600"
-                                  checked={committee.questionTriggers.matchMode === 'any'}
-                                  onChange={() => {
-                                    updateCommitteeEntry(committee.id, (prev) => ({
-                                      ...prev,
-                                      questionTriggers: {
-                                        ...prev.questionTriggers,
-                                        matchMode: 'any'
-                                      }
-                                    }));
-                                  }}
-                                />
-                                Déclencher dès qu’une question sélectionnée est renseignée.
-                              </label>
-                              <label className="flex items-center gap-2 text-sm text-gray-600">
-                                <input
-                                  type="radio"
-                                  name={`validation-committee-questions-mode-${committee.id}`}
-                                  className="h-4 w-4 text-blue-600"
-                                  checked={committee.questionTriggers.matchMode === 'all'}
-                                  onChange={() => {
-                                    updateCommitteeEntry(committee.id, (prev) => ({
-                                      ...prev,
-                                      questionTriggers: {
-                                        ...prev.questionTriggers,
-                                        matchMode: 'all'
-                                      }
-                                    }));
-                                  }}
-                                />
-                                Déclencher lorsque toutes les questions sélectionnées sont renseignées.
-                              </label>
-                            </fieldset>
-                          </div>
-
-                          <div className="space-y-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
-                            <div>
-                              <h4 className="text-base font-semibold text-gray-800">Réponses spécifiques</h4>
-                              <p className="text-xs text-gray-600">
-                                Associez des questions et des réponses précises avec une logique ET / OU.
-                              </p>
-                            </div>
-                            {committee.answerTriggers.conditions.length === 0 ? (
-                              <p className="text-xs text-gray-500">
-                                Ajoutez au moins une combinaison question/réponse pour activer ce critère.
-                              </p>
-                            ) : (
-                              <div className="space-y-3">
-                                {committee.answerTriggers.conditions.map((condition, conditionIndex) => {
-                                  const questionOptions = Array.isArray(
-                                    validationCommitteeQuestionMap[condition.questionId]?.options
-                                  )
-                                    ? validationCommitteeQuestionMap[condition.questionId].options
-                                    : [];
-                                  const hasQuestionOptions = questionOptions.length > 0;
-
-                                  return (
-                                    <div key={`validation-committee-answer-${committee.id}-${conditionIndex}`} className="space-y-2">
-                                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_auto] sm:items-center">
-                                        <div>
-                                          <label
-                                            htmlFor={`validation-committee-answer-question-${committee.id}-${conditionIndex}`}
-                                            className="text-xs font-medium text-gray-700"
-                                          >
-                                            Question
-                                          </label>
-                                          <select
-                                            id={`validation-committee-answer-question-${committee.id}-${conditionIndex}`}
-                                            value={condition.questionId}
-                                            onChange={(event) => {
-                                              const nextQuestionId = event.target.value;
-                                              updateCommitteeEntry(committee.id, (prev) => {
-                                                const nextConditions = prev.answerTriggers.conditions.map((entry, index) =>
-                                                  index === conditionIndex
-                                                    ? {
-                                                      ...entry,
-                                                      questionId: nextQuestionId,
-                                                      value: ''
-                                                    }
-                                                    : entry
-                                                );
-                                                return {
-                                                  ...prev,
-                                                  answerTriggers: {
-                                                    ...prev.answerTriggers,
-                                                    conditions: nextConditions
-                                                  }
-                                                };
-                                              });
-                                            }}
-                                            className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                                          >
-                                            <option value="">Sélectionner une question</option>
-                                            {validationCommitteeQuestionOptions.map((option) => (
-                                              <option
-                                                key={`validation-committee-answer-question-option-${committee.id}-${option.value}`}
-                                                value={option.value}
-                                              >
-                                                {option.label}
-                                              </option>
-                                            ))}
-                                          </select>
-                                        </div>
-                                        <div>
-                                          <label
-                                            htmlFor={`validation-committee-answer-value-${committee.id}-${conditionIndex}`}
-                                            className="text-xs font-medium text-gray-700"
-                                          >
-                                            Réponse attendue
-                                          </label>
-                                          {hasQuestionOptions ? (
-                                            <select
-                                              id={`validation-committee-answer-value-${committee.id}-${conditionIndex}`}
-                                              value={condition.value}
-                                              onChange={(event) => {
-                                                const nextValue = event.target.value;
-                                                updateCommitteeEntry(committee.id, (prev) => {
-                                                  const nextConditions = prev.answerTriggers.conditions.map((entry, index) =>
-                                                    index === conditionIndex
-                                                      ? {
-                                                        ...entry,
-                                                        value: nextValue
-                                                      }
-                                                      : entry
-                                                  );
-                                                  return {
-                                                    ...prev,
-                                                    answerTriggers: {
-                                                      ...prev.answerTriggers,
-                                                      conditions: nextConditions
-                                                    }
-                                                  };
-                                                });
-                                              }}
-                                              className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                                            >
-                                              <option value="">Sélectionner une réponse</option>
-                                              {questionOptions.map((option) => (
-                                                <option
-                                                  key={`validation-committee-answer-option-${committee.id}-${conditionIndex}-${option}`}
-                                                  value={option}
-                                                >
-                                                  {option}
-                                                </option>
-                                              ))}
-                                            </select>
-                                          ) : (
-                                            <input
-                                              id={`validation-committee-answer-value-${committee.id}-${conditionIndex}`}
-                                              type="text"
-                                              value={condition.value}
-                                              onChange={(event) => {
-                                                const nextValue = event.target.value;
-                                                updateCommitteeEntry(committee.id, (prev) => {
-                                                  const nextConditions = prev.answerTriggers.conditions.map((entry, index) =>
-                                                    index === conditionIndex
-                                                      ? {
-                                                        ...entry,
-                                                        value: nextValue
-                                                      }
-                                                      : entry
-                                                  );
-                                                  return {
-                                                    ...prev,
-                                                    answerTriggers: {
-                                                      ...prev.answerTriggers,
-                                                      conditions: nextConditions
-                                                    }
-                                                  };
-                                                });
-                                              }}
-                                              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                                              placeholder="Ex. Oui"
-                                            />
-                                          )}
-                                        </div>
-                                        <div className="flex justify-end sm:pt-5">
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              updateCommitteeEntry(committee.id, (prev) => ({
-                                                ...prev,
-                                                answerTriggers: {
-                                                  ...prev.answerTriggers,
-                                                  conditions: prev.answerTriggers.conditions.filter(
-                                                    (_, index) => index !== conditionIndex
-                                                  )
-                                                }
-                                              }));
-                                            }}
-                                            className="text-xs font-semibold text-red-600 hover:text-red-700"
-                                          >
-                                            Retirer
-                                          </button>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => {
-                                updateCommitteeEntry(committee.id, (prev) => ({
-                                  ...prev,
-                                  answerTriggers: {
-                                    ...prev.answerTriggers,
-                                    conditions: [
-                                      ...prev.answerTriggers.conditions,
-                                      { questionId: '', value: '' }
-                                    ]
-                                  }
-                                }));
-                              }}
-                              className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-white px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100"
-                            >
-                              Ajouter une réponse
-                            </button>
-                            <fieldset className="space-y-2">
-                              <legend className="text-sm font-medium text-gray-700">Logique appliquée</legend>
-                              <label className="flex items-center gap-2 text-sm text-gray-600">
-                                <input
-                                  type="radio"
-                                  name={`validation-committee-answers-mode-${committee.id}`}
-                                  className="h-4 w-4 text-blue-600"
-                                  checked={committee.answerTriggers.matchMode === 'any'}
-                                  onChange={() => {
-                                    updateCommitteeEntry(committee.id, (prev) => ({
-                                      ...prev,
-                                      answerTriggers: {
-                                        ...prev.answerTriggers,
-                                        matchMode: 'any'
-                                      }
-                                    }));
-                                  }}
-                                />
-                                Déclencher dès qu’une combinaison question/réponse est satisfaite.
-                              </label>
-                              <label className="flex items-center gap-2 text-sm text-gray-600">
-                                <input
-                                  type="radio"
-                                  name={`validation-committee-answers-mode-${committee.id}`}
-                                  className="h-4 w-4 text-blue-600"
-                                  checked={committee.answerTriggers.matchMode === 'all'}
-                                  onChange={() => {
-                                    updateCommitteeEntry(committee.id, (prev) => ({
-                                      ...prev,
-                                      answerTriggers: {
-                                        ...prev.answerTriggers,
-                                        matchMode: 'all'
-                                      }
-                                    }));
-                                  }}
-                                />
-                                Déclencher uniquement si toutes les combinaisons sont satisfaites.
-                              </label>
-                            </fieldset>
-                          </div>
-
-                          <div className="space-y-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
-                            <div>
                               <h4 className="text-base font-semibold text-gray-800">Règles déclenchantes</h4>
                               <p className="text-xs text-gray-600">
                                 Déclenchez le comité en fonction des règles activées par le projet.
@@ -6114,45 +5773,9 @@ export const BackOffice = ({
                                 Maintenez Ctrl/⌘ pour sélectionner plusieurs règles.
                               </p>
                             </div>
-                            <fieldset className="space-y-2">
-                              <legend className="text-sm font-medium text-gray-700">Logique appliquée</legend>
-                              <label className="flex items-center gap-2 text-sm text-gray-600">
-                                <input
-                                  type="radio"
-                                  name={`validation-committee-rules-mode-${committee.id}`}
-                                  className="h-4 w-4 text-blue-600"
-                                  checked={committee.ruleTriggers.matchMode === 'any'}
-                                  onChange={() => {
-                                    updateCommitteeEntry(committee.id, (prev) => ({
-                                      ...prev,
-                                      ruleTriggers: {
-                                        ...prev.ruleTriggers,
-                                        matchMode: 'any'
-                                      }
-                                    }));
-                                  }}
-                                />
-                                Déclencher dès qu’une règle sélectionnée est activée.
-                              </label>
-                              <label className="flex items-center gap-2 text-sm text-gray-600">
-                                <input
-                                  type="radio"
-                                  name={`validation-committee-rules-mode-${committee.id}`}
-                                  className="h-4 w-4 text-blue-600"
-                                  checked={committee.ruleTriggers.matchMode === 'all'}
-                                  onChange={() => {
-                                    updateCommitteeEntry(committee.id, (prev) => ({
-                                      ...prev,
-                                      ruleTriggers: {
-                                        ...prev.ruleTriggers,
-                                        matchMode: 'all'
-                                      }
-                                    }));
-                                  }}
-                                />
-                                Déclencher uniquement si toutes les règles sélectionnées sont activées.
-                              </label>
-                            </fieldset>
+                            <p className="text-xs text-gray-500">
+                              Le comité se déclenche dès qu’une règle sélectionnée est activée.
+                            </p>
                           </div>
 
                           <div className="space-y-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
@@ -6162,104 +5785,32 @@ export const BackOffice = ({
                                 Reliez l’obligation à l’analyse des risques et au score du projet.
                               </p>
                             </div>
-                            <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                            <div>
+                              <label
+                                htmlFor={`validation-committee-risk-score-${committee.id}`}
+                                className="text-sm font-medium text-gray-700"
+                              >
+                                Score de risque minimal
+                              </label>
                               <input
-                                type="checkbox"
-                                className="h-4 w-4 rounded border-gray-300 text-blue-600"
-                                checked={committee.riskTriggers.requireRisks}
+                                id={`validation-committee-risk-score-${committee.id}`}
+                                type="number"
+                                min="0"
+                                step="0.5"
+                                value={committee.riskTriggers.minRiskScore ?? ''}
                                 onChange={(event) => {
+                                  const value = event.target.value;
                                   updateCommitteeEntry(committee.id, (prev) => ({
                                     ...prev,
                                     riskTriggers: {
                                       ...prev.riskTriggers,
-                                      requireRisks: event.target.checked
+                                      minRiskScore: value === '' ? null : Number(value)
                                     }
                                   }));
                                 }}
+                                className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                placeholder="Ex. 3,5"
                               />
-                              Exiger le comité dès qu’un risque est détecté.
-                            </label>
-                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                              <div>
-                                <label
-                                  htmlFor={`validation-committee-risk-count-${committee.id}`}
-                                  className="text-sm font-medium text-gray-700"
-                                >
-                                  Nombre minimal de risques
-                                </label>
-                                <input
-                                  id={`validation-committee-risk-count-${committee.id}`}
-                                  type="number"
-                                  min="1"
-                                  value={committee.riskTriggers.minRiskCount ?? ''}
-                                  onChange={(event) => {
-                                    const value = event.target.value;
-                                    updateCommitteeEntry(committee.id, (prev) => ({
-                                      ...prev,
-                                      riskTriggers: {
-                                        ...prev.riskTriggers,
-                                        minRiskCount: value === '' ? null : Number(value)
-                                      }
-                                    }));
-                                  }}
-                                  className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                                  placeholder="Ex. 2"
-                                />
-                              </div>
-                              <div>
-                                <label
-                                  htmlFor={`validation-committee-risk-level-${committee.id}`}
-                                  className="text-sm font-medium text-gray-700"
-                                >
-                                  Niveau de risque minimal
-                                </label>
-                                <select
-                                  id={`validation-committee-risk-level-${committee.id}`}
-                                  value={committee.riskTriggers.minRiskLevel}
-                                  onChange={(event) => {
-                                    updateCommitteeEntry(committee.id, (prev) => ({
-                                      ...prev,
-                                      riskTriggers: {
-                                        ...prev.riskTriggers,
-                                        minRiskLevel: event.target.value
-                                      }
-                                    }));
-                                  }}
-                                  className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                                >
-                                  <option value="">Aucun seuil</option>
-                                  <option value="Faible">Faible</option>
-                                  <option value="Moyen">Moyen</option>
-                                  <option value="Élevé">Élevé</option>
-                                </select>
-                              </div>
-                              <div>
-                                <label
-                                  htmlFor={`validation-committee-risk-score-${committee.id}`}
-                                  className="text-sm font-medium text-gray-700"
-                                >
-                                  Score de risque minimal
-                                </label>
-                                <input
-                                  id={`validation-committee-risk-score-${committee.id}`}
-                                  type="number"
-                                  min="0"
-                                  step="0.5"
-                                  value={committee.riskTriggers.minRiskScore ?? ''}
-                                  onChange={(event) => {
-                                    const value = event.target.value;
-                                    updateCommitteeEntry(committee.id, (prev) => ({
-                                      ...prev,
-                                      riskTriggers: {
-                                        ...prev.riskTriggers,
-                                        minRiskScore: value === '' ? null : Number(value)
-                                      }
-                                    }));
-                                  }}
-                                  className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                                  placeholder="Ex. 3,5"
-                                />
-                              </div>
                             </div>
                           </div>
 

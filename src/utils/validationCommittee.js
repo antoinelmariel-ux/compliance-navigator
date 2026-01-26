@@ -1,4 +1,3 @@
-const COMPLEXITY_ORDER = ['Faible', 'Moyen', 'Élevé'];
 export const DEFAULT_COMMITTEE_ID = 'committee-default';
 
 const sanitizeTextValue = (value) => (typeof value === 'string' ? value.trim() : '');
@@ -20,50 +19,6 @@ const normalizeEmails = (value) => {
   return [];
 };
 
-const normalizeQuestionTriggers = (value) => {
-  const questionIds = Array.isArray(value?.questionIds)
-    ? value.questionIds.filter((id) => typeof id === 'string' && id.trim().length > 0)
-    : [];
-  const matchMode = value?.matchMode === 'all' ? 'all' : 'any';
-
-  return {
-    matchMode,
-    questionIds
-  };
-};
-
-const normalizeAnswerTriggerConditions = (conditions) => {
-  if (!Array.isArray(conditions)) {
-    return [];
-  }
-
-  return conditions
-    .map((condition) => {
-      const questionId = sanitizeTextValue(condition?.questionId);
-      const rawValue = condition?.value;
-      const value = typeof rawValue === 'string'
-        ? rawValue.trim()
-        : rawValue === 0 || rawValue === false
-          ? String(rawValue)
-          : '';
-
-      if (!questionId || value.length === 0) {
-        return null;
-      }
-
-      return {
-        questionId,
-        value
-      };
-    })
-    .filter(Boolean);
-};
-
-const normalizeAnswerTriggers = (value) => ({
-  matchMode: value?.matchMode === 'all' ? 'all' : 'any',
-  conditions: normalizeAnswerTriggerConditions(value?.conditions)
-});
-
 const normalizeRuleTriggers = (value) => {
   const ruleIds = Array.isArray(value?.ruleIds)
     ? value.ruleIds.filter((id) => typeof id === 'string' && id.trim().length > 0)
@@ -77,16 +32,6 @@ const normalizeRuleTriggers = (value) => {
 };
 
 const normalizeRiskTriggers = (value) => {
-  const requireRisks = Boolean(value?.requireRisks);
-  const rawMinRiskCount = value?.minRiskCount;
-  const minRiskCount = rawMinRiskCount === null || rawMinRiskCount === undefined || rawMinRiskCount === ''
-    ? null
-    : Number.isFinite(Number(rawMinRiskCount))
-      ? Math.max(1, Number(rawMinRiskCount))
-      : null;
-  const minRiskLevel = COMPLEXITY_ORDER.includes(value?.minRiskLevel)
-    ? value.minRiskLevel
-    : '';
   const rawMinRiskScore = value?.minRiskScore;
   const minRiskScore = rawMinRiskScore === null || rawMinRiskScore === undefined || rawMinRiskScore === ''
     ? null
@@ -95,9 +40,6 @@ const normalizeRiskTriggers = (value) => {
       : null;
 
   return {
-    requireRisks,
-    minRiskCount,
-    minRiskLevel,
     minRiskScore
   };
 };
@@ -124,8 +66,6 @@ const normalizeCommittee = (value = {}, index = 0) => {
     id,
     name,
     emails,
-    questionTriggers: normalizeQuestionTriggers(value?.questionTriggers),
-    answerTriggers: normalizeAnswerTriggers(value?.answerTriggers),
     ruleTriggers: normalizeRuleTriggers(value?.ruleTriggers),
     riskTriggers: normalizeRiskTriggers(value?.riskTriggers),
     teamTriggers: normalizeTeamTriggers(value?.teamTriggers)
@@ -152,21 +92,6 @@ export const normalizeValidationCommitteeConfig = (value = {}) => {
     enabled: value?.enabled !== false,
     committees
   };
-};
-
-const isComplexityAtLeast = (actual, minimum) => {
-  if (!actual || !minimum) {
-    return false;
-  }
-
-  const actualIndex = COMPLEXITY_ORDER.indexOf(actual);
-  const minimumIndex = COMPLEXITY_ORDER.indexOf(minimum);
-
-  if (actualIndex === -1 || minimumIndex === -1) {
-    return false;
-  }
-
-  return actualIndex >= minimumIndex;
 };
 
 const getMinimumRiskScore = (risks) => {
@@ -202,18 +127,6 @@ const shouldTriggerCommittee = (committee, context = {}) => {
     triggers.push(
       ruleMatches.some(Boolean)
     );
-  }
-
-  if (committee.riskTriggers.requireRisks) {
-    triggers.push(risks.length > 0);
-  }
-
-  if (committee.riskTriggers.minRiskCount) {
-    triggers.push(risks.length >= committee.riskTriggers.minRiskCount);
-  }
-
-  if (committee.riskTriggers.minRiskLevel) {
-    triggers.push(isComplexityAtLeast(analysis?.complexity, committee.riskTriggers.minRiskLevel));
   }
 
   if (committee.riskTriggers.minRiskScore !== null && committee.riskTriggers.minRiskScore !== undefined) {
