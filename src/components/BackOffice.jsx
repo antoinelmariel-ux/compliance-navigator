@@ -545,6 +545,31 @@ export const BackOffice = ({
     () => normalizeValidationCommitteeConfig(validationCommitteeConfig),
     [validationCommitteeConfig]
   );
+  const createValidationCommittee = useCallback((index = 0) => ({
+    id: `committee-${Date.now()}-${Math.round(Math.random() * 1000)}`,
+    name: `Comité ${index + 1}`,
+    emails: [],
+    questionTriggers: {
+      matchMode: 'any',
+      questionIds: []
+    },
+    riskTriggers: {
+      requireRisks: false,
+      minRiskCount: null,
+      minRiskLevel: ''
+    },
+    teamTriggers: {
+      minTeamsCount: null
+    }
+  }), []);
+  const parseEmailList = useCallback((value) => (
+    typeof value === 'string'
+      ? value
+        .split(/[,;\n]/)
+        .map((entry) => entry.trim())
+        .filter((entry) => entry.length > 0)
+      : []
+  ), []);
 
   const updateValidationCommitteeConfig = useCallback(
     (updater) => {
@@ -559,6 +584,52 @@ export const BackOffice = ({
     },
     [setValidationCommitteeConfig]
   );
+  const updateCommitteeEntry = useCallback(
+    (committeeId, updater) => {
+      updateValidationCommitteeConfig((prev) => {
+        const normalized = normalizeValidationCommitteeConfig(prev);
+        const nextCommittees = normalized.committees.map((committee) =>
+          committee.id === committeeId
+            ? typeof updater === 'function'
+              ? updater(committee)
+              : updater
+            : committee
+        );
+        return {
+          ...normalized,
+          committees: nextCommittees
+        };
+      });
+    },
+    [updateValidationCommitteeConfig]
+  );
+
+  const removeCommitteeEntry = useCallback(
+    (committeeId) => {
+      updateValidationCommitteeConfig((prev) => {
+        const normalized = normalizeValidationCommitteeConfig(prev);
+        const nextCommittees = normalized.committees.filter((committee) => committee.id !== committeeId);
+        return {
+          ...normalized,
+          committees: nextCommittees
+        };
+      });
+    },
+    [updateValidationCommitteeConfig]
+  );
+
+  const addCommitteeEntry = useCallback(() => {
+    updateValidationCommitteeConfig((prev) => {
+      const normalized = normalizeValidationCommitteeConfig(prev);
+      return {
+        ...normalized,
+        committees: [
+          ...normalized.committees,
+          createValidationCommittee(normalized.committees.length)
+        ]
+      };
+    });
+  }, [createValidationCommittee, updateValidationCommitteeConfig]);
 
   const normalizeColorValue = useCallback((value, fallback = '#000000') => {
     if (typeof value !== 'string') {
@@ -5549,220 +5620,322 @@ export const BackOffice = ({
                 <header className="space-y-2">
                   <h2 className="text-2xl font-bold text-gray-800">Comité de validation</h2>
                   <p className="text-sm text-gray-600">
-                    Configurez les critères qui imposent la rédaction d’un commentaire par le comité de validation.
+                    Définissez plusieurs comités avec leurs contacts et leurs règles de déclenchement.
                   </p>
                 </header>
 
                 <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-900">
-                  Le commentaire est requis dès qu’un des critères ci-dessous est atteint.
+                  Le commentaire est requis dès qu’un des critères configurés pour un comité est atteint.
                 </div>
 
-                <label className="inline-flex items-center gap-3 text-sm font-medium text-gray-700">
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 rounded border-gray-300 text-blue-600"
-                    checked={normalizedValidationCommitteeConfig.enabled}
-                    onChange={(event) => {
-                      updateValidationCommitteeConfig((prev) => ({
-                        ...prev,
-                        enabled: event.target.checked
-                      }));
-                    }}
-                  />
-                  Activer la demande de commentaire du comité de validation
-                </label>
+                <div className="flex flex-wrap items-center gap-3">
+                  <label className="inline-flex items-center gap-3 text-sm font-medium text-gray-700">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                      checked={normalizedValidationCommitteeConfig.enabled}
+                      onChange={(event) => {
+                        updateValidationCommitteeConfig((prev) => ({
+                          ...prev,
+                          enabled: event.target.checked
+                        }));
+                      }}
+                    />
+                    Activer la demande de commentaire des comités de validation
+                  </label>
+                  <button
+                    type="button"
+                    onClick={addCommitteeEntry}
+                    className="ml-auto inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100"
+                  >
+                    Ajouter un comité
+                  </button>
+                </div>
 
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                  <div className="space-y-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-800">Réponses à des questions</h3>
-                      <p className="text-xs text-gray-600">
-                        Sélectionnez les questions dont une réponse déclenche le comité.
-                      </p>
-                    </div>
-                    <div>
-                      <label htmlFor="validation-committee-questions" className="text-sm font-medium text-gray-700">
-                        Questions déclenchantes
-                      </label>
-                      <select
-                        id="validation-committee-questions"
-                        multiple
-                        value={normalizedValidationCommitteeConfig.questionTriggers.questionIds}
-                        onChange={(event) => {
-                          const selected = Array.from(event.target.selectedOptions).map((option) => option.value);
-                          updateValidationCommitteeConfig((prev) => ({
-                            ...prev,
-                            questionTriggers: {
-                              ...prev.questionTriggers,
-                              questionIds: selected
-                            }
-                          }));
-                        }}
-                        className="mt-2 h-40 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                {normalizedValidationCommitteeConfig.committees.length === 0 ? (
+                  <p className="text-sm text-gray-500">
+                    Aucun comité n’est configuré. Ajoutez-en un pour définir ses règles.
+                  </p>
+                ) : (
+                  <div className="space-y-6">
+                    {normalizedValidationCommitteeConfig.committees.map((committee, index) => (
+                      <article
+                        key={committee.id}
+                        className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-5"
                       >
-                        {validationCommitteeQuestionOptions.length === 0 && (
-                          <option value="" disabled>
-                            Aucune question disponible.
-                          </option>
-                        )}
-                        {validationCommitteeQuestionOptions.map((option) => (
-                          <option key={`validation-question-${option.value}`} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                      <p className="mt-2 text-xs text-gray-500">
-                        Maintenez Ctrl/⌘ pour sélectionner plusieurs questions.
-                      </p>
-                    </div>
-                    <fieldset className="space-y-2">
-                      <legend className="text-sm font-medium text-gray-700">Logique appliquée</legend>
-                      <label className="flex items-center gap-2 text-sm text-gray-600">
-                        <input
-                          type="radio"
-                          name="validation-committee-questions-mode"
-                          className="h-4 w-4 text-blue-600"
-                          checked={normalizedValidationCommitteeConfig.questionTriggers.matchMode === 'any'}
-                          onChange={() => {
-                            updateValidationCommitteeConfig((prev) => ({
-                              ...prev,
-                              questionTriggers: {
-                                ...prev.questionTriggers,
-                                matchMode: 'any'
-                              }
-                            }));
-                          }}
-                        />
-                        Déclencher dès qu’une question sélectionnée est renseignée.
-                      </label>
-                      <label className="flex items-center gap-2 text-sm text-gray-600">
-                        <input
-                          type="radio"
-                          name="validation-committee-questions-mode"
-                          className="h-4 w-4 text-blue-600"
-                          checked={normalizedValidationCommitteeConfig.questionTriggers.matchMode === 'all'}
-                          onChange={() => {
-                            updateValidationCommitteeConfig((prev) => ({
-                              ...prev,
-                              questionTriggers: {
-                                ...prev.questionTriggers,
-                                matchMode: 'all'
-                              }
-                            }));
-                          }}
-                        />
-                        Déclencher lorsque toutes les questions sélectionnées sont renseignées.
-                      </label>
-                    </fieldset>
-                  </div>
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div className="space-y-2">
+                            <h3 className="text-lg font-semibold text-gray-800">
+                              {committee.name || `Comité ${index + 1}`}
+                            </h3>
+                            <p className="text-xs text-gray-500">
+                              Configurez les contacts et les règles de déclenchement spécifiques à ce comité.
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeCommitteeEntry(committee.id)}
+                            className="text-xs font-semibold text-red-600 hover:text-red-700"
+                          >
+                            Supprimer
+                          </button>
+                        </div>
 
-                  <div className="space-y-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-800">Risques identifiés</h3>
-                      <p className="text-xs text-gray-600">
-                        Reliez l’obligation à l’analyse des risques du projet.
-                      </p>
-                    </div>
-                    <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 rounded border-gray-300 text-blue-600"
-                        checked={normalizedValidationCommitteeConfig.riskTriggers.requireRisks}
-                        onChange={(event) => {
-                          updateValidationCommitteeConfig((prev) => ({
-                            ...prev,
-                            riskTriggers: {
-                              ...prev.riskTriggers,
-                              requireRisks: event.target.checked
-                            }
-                          }));
-                        }}
-                      />
-                      Exiger le comité dès qu’un risque est détecté.
-                    </label>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <div>
-                        <label htmlFor="validation-committee-risk-count" className="text-sm font-medium text-gray-700">
-                          Nombre minimal de risques
-                        </label>
-                        <input
-                          id="validation-committee-risk-count"
-                          type="number"
-                          min="1"
-                          value={normalizedValidationCommitteeConfig.riskTriggers.minRiskCount ?? ''}
-                          onChange={(event) => {
-                            const value = event.target.value;
-                            updateValidationCommitteeConfig((prev) => ({
-                              ...prev,
-                              riskTriggers: {
-                                ...prev.riskTriggers,
-                                minRiskCount: value === '' ? null : Number(value)
+                        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                          <div>
+                            <label
+                              htmlFor={`validation-committee-name-${committee.id}`}
+                              className="text-sm font-medium text-gray-700"
+                            >
+                              Nom du comité
+                            </label>
+                            <input
+                              id={`validation-committee-name-${committee.id}`}
+                              type="text"
+                              value={committee.name}
+                              onChange={(event) =>
+                                updateCommitteeEntry(committee.id, (prev) => ({
+                                  ...prev,
+                                  name: event.target.value
+                                }))
                               }
-                            }));
-                          }}
-                          className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                          placeholder="Ex. 2"
-                        />
-                      </div>
-                      <div>
-                        <label htmlFor="validation-committee-risk-level" className="text-sm font-medium text-gray-700">
-                          Niveau de risque minimal
-                        </label>
-                        <select
-                          id="validation-committee-risk-level"
-                          value={normalizedValidationCommitteeConfig.riskTriggers.minRiskLevel}
-                          onChange={(event) => {
-                            updateValidationCommitteeConfig((prev) => ({
-                              ...prev,
-                              riskTriggers: {
-                                ...prev.riskTriggers,
-                                minRiskLevel: event.target.value
+                              className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                              placeholder={`Comité ${index + 1}`}
+                            />
+                          </div>
+                          <div>
+                            <label
+                              htmlFor={`validation-committee-emails-${committee.id}`}
+                              className="text-sm font-medium text-gray-700"
+                            >
+                              Adresses mail
+                            </label>
+                            <input
+                              id={`validation-committee-emails-${committee.id}`}
+                              type="text"
+                              value={committee.emails.join(', ')}
+                              onChange={(event) =>
+                                updateCommitteeEntry(committee.id, (prev) => ({
+                                  ...prev,
+                                  emails: parseEmailList(event.target.value)
+                                }))
                               }
-                            }));
-                          }}
-                          className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                        >
-                          <option value="">Aucun seuil</option>
-                          <option value="Faible">Faible</option>
-                          <option value="Moyen">Moyen</option>
-                          <option value="Élevé">Élevé</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
+                              className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                              placeholder="ex: comite@company.com, bureau@company.com"
+                            />
+                            <p className="mt-2 text-xs text-gray-500">
+                              Séparez plusieurs adresses par une virgule, un point-virgule ou un retour à la ligne.
+                            </p>
+                          </div>
+                        </div>
 
-                  <div className="space-y-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-800">Équipes sollicitées</h3>
-                      <p className="text-xs text-gray-600">
-                        Déclenchez le comité en fonction du nombre d’équipes compliance impliquées.
-                      </p>
-                    </div>
-                    <div>
-                      <label htmlFor="validation-committee-team-count" className="text-sm font-medium text-gray-700">
-                        Nombre minimal d’équipes
-                      </label>
-                      <input
-                        id="validation-committee-team-count"
-                        type="number"
-                        min="1"
-                        value={normalizedValidationCommitteeConfig.teamTriggers.minTeamsCount ?? ''}
-                        onChange={(event) => {
-                          const value = event.target.value;
-                          updateValidationCommitteeConfig((prev) => ({
-                            ...prev,
-                            teamTriggers: {
-                              ...prev.teamTriggers,
-                              minTeamsCount: value === '' ? null : Number(value)
-                            }
-                          }));
-                        }}
-                        className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                        placeholder="Ex. 3"
-                      />
-                    </div>
+                        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                          <div className="space-y-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
+                            <div>
+                              <h4 className="text-base font-semibold text-gray-800">Réponses à des questions</h4>
+                              <p className="text-xs text-gray-600">
+                                Sélectionnez les questions dont une réponse déclenche ce comité.
+                              </p>
+                            </div>
+                            <div>
+                              <label
+                                htmlFor={`validation-committee-questions-${committee.id}`}
+                                className="text-sm font-medium text-gray-700"
+                              >
+                                Questions déclenchantes
+                              </label>
+                              <select
+                                id={`validation-committee-questions-${committee.id}`}
+                                multiple
+                                value={committee.questionTriggers.questionIds}
+                                onChange={(event) => {
+                                  const selected = Array.from(event.target.selectedOptions).map((option) => option.value);
+                                  updateCommitteeEntry(committee.id, (prev) => ({
+                                    ...prev,
+                                    questionTriggers: {
+                                      ...prev.questionTriggers,
+                                      questionIds: selected
+                                    }
+                                  }));
+                                }}
+                                className="mt-2 h-40 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                              >
+                                {validationCommitteeQuestionOptions.length === 0 && (
+                                  <option value="" disabled>
+                                    Aucune question disponible.
+                                  </option>
+                                )}
+                                {validationCommitteeQuestionOptions.map((option) => (
+                                  <option key={`validation-question-${committee.id}-${option.value}`} value={option.value}>
+                                    {option.label}
+                                  </option>
+                                ))}
+                              </select>
+                              <p className="mt-2 text-xs text-gray-500">
+                                Maintenez Ctrl/⌘ pour sélectionner plusieurs questions.
+                              </p>
+                            </div>
+                            <fieldset className="space-y-2">
+                              <legend className="text-sm font-medium text-gray-700">Logique appliquée</legend>
+                              <label className="flex items-center gap-2 text-sm text-gray-600">
+                                <input
+                                  type="radio"
+                                  name={`validation-committee-questions-mode-${committee.id}`}
+                                  className="h-4 w-4 text-blue-600"
+                                  checked={committee.questionTriggers.matchMode === 'any'}
+                                  onChange={() => {
+                                    updateCommitteeEntry(committee.id, (prev) => ({
+                                      ...prev,
+                                      questionTriggers: {
+                                        ...prev.questionTriggers,
+                                        matchMode: 'any'
+                                      }
+                                    }));
+                                  }}
+                                />
+                                Déclencher dès qu’une question sélectionnée est renseignée.
+                              </label>
+                              <label className="flex items-center gap-2 text-sm text-gray-600">
+                                <input
+                                  type="radio"
+                                  name={`validation-committee-questions-mode-${committee.id}`}
+                                  className="h-4 w-4 text-blue-600"
+                                  checked={committee.questionTriggers.matchMode === 'all'}
+                                  onChange={() => {
+                                    updateCommitteeEntry(committee.id, (prev) => ({
+                                      ...prev,
+                                      questionTriggers: {
+                                        ...prev.questionTriggers,
+                                        matchMode: 'all'
+                                      }
+                                    }));
+                                  }}
+                                />
+                                Déclencher lorsque toutes les questions sélectionnées sont renseignées.
+                              </label>
+                            </fieldset>
+                          </div>
+
+                          <div className="space-y-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
+                            <div>
+                              <h4 className="text-base font-semibold text-gray-800">Risques identifiés</h4>
+                              <p className="text-xs text-gray-600">
+                                Reliez l’obligation à l’analyse des risques du projet.
+                              </p>
+                            </div>
+                            <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                              <input
+                                type="checkbox"
+                                className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                                checked={committee.riskTriggers.requireRisks}
+                                onChange={(event) => {
+                                  updateCommitteeEntry(committee.id, (prev) => ({
+                                    ...prev,
+                                    riskTriggers: {
+                                      ...prev.riskTriggers,
+                                      requireRisks: event.target.checked
+                                    }
+                                  }));
+                                }}
+                              />
+                              Exiger le comité dès qu’un risque est détecté.
+                            </label>
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                              <div>
+                                <label
+                                  htmlFor={`validation-committee-risk-count-${committee.id}`}
+                                  className="text-sm font-medium text-gray-700"
+                                >
+                                  Nombre minimal de risques
+                                </label>
+                                <input
+                                  id={`validation-committee-risk-count-${committee.id}`}
+                                  type="number"
+                                  min="1"
+                                  value={committee.riskTriggers.minRiskCount ?? ''}
+                                  onChange={(event) => {
+                                    const value = event.target.value;
+                                    updateCommitteeEntry(committee.id, (prev) => ({
+                                      ...prev,
+                                      riskTriggers: {
+                                        ...prev.riskTriggers,
+                                        minRiskCount: value === '' ? null : Number(value)
+                                      }
+                                    }));
+                                  }}
+                                  className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                  placeholder="Ex. 2"
+                                />
+                              </div>
+                              <div>
+                                <label
+                                  htmlFor={`validation-committee-risk-level-${committee.id}`}
+                                  className="text-sm font-medium text-gray-700"
+                                >
+                                  Niveau de risque minimal
+                                </label>
+                                <select
+                                  id={`validation-committee-risk-level-${committee.id}`}
+                                  value={committee.riskTriggers.minRiskLevel}
+                                  onChange={(event) => {
+                                    updateCommitteeEntry(committee.id, (prev) => ({
+                                      ...prev,
+                                      riskTriggers: {
+                                        ...prev.riskTriggers,
+                                        minRiskLevel: event.target.value
+                                      }
+                                    }));
+                                  }}
+                                  className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                >
+                                  <option value="">Aucun seuil</option>
+                                  <option value="Faible">Faible</option>
+                                  <option value="Moyen">Moyen</option>
+                                  <option value="Élevé">Élevé</option>
+                                </select>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="space-y-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
+                            <div>
+                              <h4 className="text-base font-semibold text-gray-800">Équipes sollicitées</h4>
+                              <p className="text-xs text-gray-600">
+                                Déclenchez ce comité en fonction du nombre d’équipes compliance impliquées.
+                              </p>
+                            </div>
+                            <div>
+                              <label
+                                htmlFor={`validation-committee-team-count-${committee.id}`}
+                                className="text-sm font-medium text-gray-700"
+                              >
+                                Nombre minimal d’équipes
+                              </label>
+                              <input
+                                id={`validation-committee-team-count-${committee.id}`}
+                                type="number"
+                                min="1"
+                                value={committee.teamTriggers.minTeamsCount ?? ''}
+                                onChange={(event) => {
+                                  const value = event.target.value;
+                                  updateCommitteeEntry(committee.id, (prev) => ({
+                                    ...prev,
+                                    teamTriggers: {
+                                      ...prev.teamTriggers,
+                                      minTeamsCount: value === '' ? null : Number(value)
+                                    }
+                                  }));
+                                }}
+                                className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                placeholder="Ex. 3"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </article>
+                    ))}
                   </div>
-                </div>
+                )}
               </article>
             </section>
           )}

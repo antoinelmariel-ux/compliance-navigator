@@ -1,4 +1,24 @@
 const COMPLEXITY_ORDER = ['Faible', 'Moyen', 'Élevé'];
+export const DEFAULT_COMMITTEE_ID = 'committee-default';
+
+const sanitizeTextValue = (value) => (typeof value === 'string' ? value.trim() : '');
+
+const normalizeEmails = (value) => {
+  if (Array.isArray(value)) {
+    return value
+      .map((entry) => sanitizeTextValue(entry))
+      .filter((entry) => entry.length > 0);
+  }
+
+  if (typeof value === 'string') {
+    return value
+      .split(/[,;\n]/)
+      .map((entry) => entry.trim())
+      .filter((entry) => entry.length > 0);
+  }
+
+  return [];
+};
 
 const normalizeQuestionTriggers = (value) => {
   const questionIds = Array.isArray(value?.questionIds)
@@ -44,12 +64,40 @@ const normalizeTeamTriggers = (value) => {
   };
 };
 
-export const normalizeValidationCommitteeConfig = (value = {}) => {
+const normalizeCommittee = (value = {}, index = 0) => {
+  const id = sanitizeTextValue(value?.id) || `committee-${index + 1}`;
+  const name = sanitizeTextValue(value?.name) || `Comité ${index + 1}`;
+  const emails = normalizeEmails(value?.emails ?? value?.contacts);
+
   return {
-    enabled: value?.enabled !== false,
+    id,
+    name,
+    emails,
     questionTriggers: normalizeQuestionTriggers(value?.questionTriggers),
     riskTriggers: normalizeRiskTriggers(value?.riskTriggers),
     teamTriggers: normalizeTeamTriggers(value?.teamTriggers)
+  };
+};
+
+const buildDefaultCommittee = (value = {}) =>
+  normalizeCommittee(
+    {
+      id: DEFAULT_COMMITTEE_ID,
+      name: 'Comité de validation',
+      ...value
+    },
+    0
+  );
+
+export const normalizeValidationCommitteeConfig = (value = {}) => {
+  const hasCommittees = Array.isArray(value?.committees);
+  const committees = hasCommittees
+    ? value.committees.map((committee, index) => normalizeCommittee(committee, index))
+    : [buildDefaultCommittee(value)];
+
+  return {
+    enabled: value?.enabled !== false,
+    committees
   };
 };
 
@@ -80,12 +128,7 @@ const isComplexityAtLeast = (actual, minimum) => {
   return actualIndex >= minimumIndex;
 };
 
-export const shouldRequireValidationCommittee = (config, context = {}) => {
-  const normalized = normalizeValidationCommitteeConfig(config);
-  if (!normalized.enabled) {
-    return false;
-  }
-
+const shouldTriggerCommittee = (committee, context = {}) => {
   const answers = context?.answers || {};
   const analysis = context?.analysis || {};
   const relevantTeams = Array.isArray(context?.relevantTeams) ? context.relevantTeams : [];
@@ -93,32 +136,44 @@ export const shouldRequireValidationCommittee = (config, context = {}) => {
 
   const triggers = [];
 
-  if (normalized.questionTriggers.questionIds.length > 0) {
-    const questionMatches = normalized.questionTriggers.questionIds.map((questionId) =>
+  if (committee.questionTriggers.questionIds.length > 0) {
+    const questionMatches = committee.questionTriggers.questionIds.map((questionId) =>
       isAnswerProvided(answers?.[questionId])
     );
     triggers.push(
-      normalized.questionTriggers.matchMode === 'all'
+      committee.questionTriggers.matchMode === 'all'
         ? questionMatches.every(Boolean)
         : questionMatches.some(Boolean)
     );
   }
 
-  if (normalized.riskTriggers.requireRisks) {
+  if (committee.riskTriggers.requireRisks) {
     triggers.push(risks.length > 0);
   }
 
-  if (normalized.riskTriggers.minRiskCount) {
-    triggers.push(risks.length >= normalized.riskTriggers.minRiskCount);
+  if (committee.riskTriggers.minRiskCount) {
+    triggers.push(risks.length >= committee.riskTriggers.minRiskCount);
   }
 
-  if (normalized.riskTriggers.minRiskLevel) {
-    triggers.push(isComplexityAtLeast(analysis?.complexity, normalized.riskTriggers.minRiskLevel));
+  if (committee.riskTriggers.minRiskLevel) {
+    triggers.push(isComplexityAtLeast(analysis?.complexity, committee.riskTriggers.minRiskLevel));
   }
 
-  if (normalized.teamTriggers.minTeamsCount) {
-    triggers.push(relevantTeams.length >= normalized.teamTriggers.minTeamsCount);
+  if (committee.teamTriggers.minTeamsCount) {
+    triggers.push(relevantTeams.length >= committee.teamTriggers.minTeamsCount);
   }
 
   return triggers.some(Boolean);
 };
+
+export const getTriggeredValidationCommittees = (config, context = {}) => {
+  const normalized = normalizeValidationCommitteeConfig(config);
+  if (!normalized.enabled) {
+    return [];
+  }
+
+  return normalized.committees.filter((committee) => shouldTriggerCommittee(committee, context));
+};
+
+export const shouldRequireValidationCommittee = (config, context = {}) =>
+  getTriggeredValidationCommittees(config, context).length > 0;

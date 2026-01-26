@@ -67,9 +67,11 @@ demoProjectAnswers[COMPLIANCE_COMMENTS_KEY] = {
       status: 'validated'
     }
   },
-  committee: {
-    comment: 'Le comité valide le lancement avec un suivi mensuel des indicateurs de risque.',
-    status: 'validated'
+  committees: {
+    'committee-default': {
+      comment: 'Le comité valide le lancement avec un suivi mensuel des indicateurs de risque.',
+      status: 'validated'
+    }
   }
 };
 

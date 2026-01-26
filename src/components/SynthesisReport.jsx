@@ -23,8 +23,9 @@ import {
   sanitizeFileName
 } from '../utils/projectExport.js';
 import {
-  normalizeValidationCommitteeConfig,
-  shouldRequireValidationCommittee
+  DEFAULT_COMMITTEE_ID,
+  getTriggeredValidationCommittees,
+  normalizeValidationCommitteeConfig
 } from '../utils/validationCommittee.js';
 import { formatTeamContacts, normalizeTeamContacts } from '../utils/teamContacts.js';
 
@@ -148,9 +149,20 @@ const normalizeCommentEntry = (entry) => {
 
 const normalizeComplianceComments = (value) => {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
+    const teams = value.teams && typeof value.teams === 'object' ? value.teams : {};
+    const committees =
+      value.committees && typeof value.committees === 'object' ? value.committees : {};
+    const legacyCommittee =
+      value.committee && typeof value.committee === 'object' ? value.committee : null;
+
     return {
-      teams: value.teams && typeof value.teams === 'object' ? value.teams : {},
-      committee: value.committee && typeof value.committee === 'object' ? value.committee : {},
+      teams,
+      committees: legacyCommittee && !committees[DEFAULT_COMMITTEE_ID]
+        ? {
+          ...committees,
+          [DEFAULT_COMMITTEE_ID]: legacyCommittee
+        }
+        : committees,
       legacy: typeof value.legacy === 'string' ? value.legacy : ''
     };
   }
@@ -158,20 +170,21 @@ const normalizeComplianceComments = (value) => {
   if (typeof value === 'string') {
     return {
       teams: {},
-      committee: {},
+      committees: {},
       legacy: value
     };
   }
 
   return {
     teams: {},
-    committee: {},
+    committees: {},
     legacy: ''
   };
 };
 
-const buildComplianceCommentDrafts = (comments, teams) => {
+const buildComplianceCommentDrafts = (comments, teams, committees) => {
   const teamDrafts = {};
+  const committeeDrafts = {};
 
   (Array.isArray(teams) ? teams : []).forEach((team) => {
     if (!team?.id) {
@@ -180,9 +193,16 @@ const buildComplianceCommentDrafts = (comments, teams) => {
     teamDrafts[team.id] = normalizeCommentEntry(comments?.teams?.[team.id]);
   });
 
+  (Array.isArray(committees) ? committees : []).forEach((committee) => {
+    if (!committee?.id) {
+      return;
+    }
+    committeeDrafts[committee.id] = normalizeCommentEntry(comments?.committees?.[committee.id]);
+  });
+
   return {
     teams: teamDrafts,
-    committee: normalizeCommentEntry(comments?.committee)
+    committees: committeeDrafts
   };
 };
 
@@ -717,7 +737,7 @@ export const SynthesisReport = ({
     [answers]
   );
   const [complianceCommentDrafts, setComplianceCommentDrafts] = useState(() =>
-    buildComplianceCommentDrafts(complianceComments, relevantTeams)
+    buildComplianceCommentDrafts(complianceComments, relevantTeams, [])
   );
   const [complianceCommentFeedback, setComplianceCommentFeedback] = useState(null);
   const canSaveComplianceComment = typeof onUpdateAnswers === 'function';
@@ -725,9 +745,10 @@ export const SynthesisReport = ({
     () => normalizeValidationCommitteeConfig(validationCommitteeConfig),
     [validationCommitteeConfig]
   );
-  const isValidationCommitteeRequired = useMemo(
+  const validationCommittees = normalizedValidationCommitteeConfig.committees;
+  const triggeredValidationCommittees = useMemo(
     () =>
-      shouldRequireValidationCommittee(normalizedValidationCommitteeConfig, {
+      getTriggeredValidationCommittees(normalizedValidationCommitteeConfig, {
         answers,
         analysis,
         relevantTeams
@@ -884,8 +905,10 @@ export const SynthesisReport = ({
   }, [attachmentReminder]);
 
   useEffect(() => {
-    setComplianceCommentDrafts(buildComplianceCommentDrafts(complianceComments, relevantTeams));
-  }, [complianceComments, relevantTeams]);
+    setComplianceCommentDrafts(
+      buildComplianceCommentDrafts(complianceComments, relevantTeams, validationCommittees)
+    );
+  }, [complianceComments, relevantTeams, validationCommittees]);
 
   useEffect(() => {
     return () => {
@@ -919,7 +942,7 @@ export const SynthesisReport = ({
 
       const isCommittee = targetType === 'committee';
       const currentEntry = isCommittee
-        ? complianceCommentDrafts.committee
+        ? complianceCommentDrafts.committees?.[targetId]
         : complianceCommentDrafts.teams?.[targetId];
 
       if (!currentEntry) {
@@ -936,12 +959,12 @@ export const SynthesisReport = ({
 
       const nextComments = {
         teams: { ...(complianceComments?.teams || {}) },
-        committee: { ...(complianceComments?.committee || {}) },
+        committees: { ...(complianceComments?.committees || {}) },
         legacy: complianceComments?.legacy || ''
       };
 
-      if (isCommittee) {
-        nextComments.committee = nextEntry;
+      if (isCommittee && targetId) {
+        nextComments.committees[targetId] = nextEntry;
       } else if (targetId) {
         nextComments.teams[targetId] = nextEntry;
       }
@@ -951,9 +974,13 @@ export const SynthesisReport = ({
       });
 
       setComplianceCommentDrafts((prev) => {
-        const nextDrafts = { ...prev, teams: { ...(prev?.teams || {}) } };
-        if (isCommittee) {
-          nextDrafts.committee = nextEntry;
+        const nextDrafts = {
+          ...prev,
+          teams: { ...(prev?.teams || {}) },
+          committees: { ...(prev?.committees || {}) }
+        };
+        if (isCommittee && targetId) {
+          nextDrafts.committees[targetId] = nextEntry;
         } else if (targetId) {
           nextDrafts.teams[targetId] = nextEntry;
         }
@@ -979,10 +1006,14 @@ export const SynthesisReport = ({
   const handleComplianceCommentChange = useCallback(
     ({ targetId, targetType, field, value }) => {
       setComplianceCommentDrafts((prev) => {
-        const nextDrafts = { ...prev, teams: { ...(prev?.teams || {}) } };
-        if (targetType === 'committee') {
-          nextDrafts.committee = {
-            ...prev?.committee,
+        const nextDrafts = {
+          ...prev,
+          teams: { ...(prev?.teams || {}) },
+          committees: { ...(prev?.committees || {}) }
+        };
+        if (targetType === 'committee' && targetId) {
+          nextDrafts.committees[targetId] = {
+            ...prev?.committees?.[targetId],
             [field]: value
           };
         } else if (targetId) {
@@ -1052,9 +1083,28 @@ export const SynthesisReport = ({
 
   const legacyComplianceComment = complianceComments.legacy?.trim() || '';
   const hasLegacyComplianceComment = legacyComplianceComment.length > 0;
-  const committeeCommentEntry = normalizeCommentEntry(complianceComments.committee);
-  const hasCommitteeComment = committeeCommentEntry.comment.trim().length > 0;
-  const shouldShowCommitteeSection = isValidationCommitteeRequired || hasCommitteeComment;
+  const committeeCommentMap = useMemo(() => {
+    const nextMap = {};
+    validationCommittees.forEach((committee) => {
+      if (!committee?.id) {
+        return;
+      }
+      nextMap[committee.id] = normalizeCommentEntry(complianceComments.committees?.[committee.id]);
+    });
+    return nextMap;
+  }, [complianceComments.committees, validationCommittees]);
+  const triggeredCommitteeIds = useMemo(
+    () => new Set(triggeredValidationCommittees.map((committee) => committee.id)),
+    [triggeredValidationCommittees]
+  );
+  const committeesToDisplay = validationCommittees.filter((committee) => {
+    if (isAdminMode) {
+      return true;
+    }
+    const hasComment = committeeCommentMap[committee.id]?.comment?.trim().length > 0;
+    return triggeredCommitteeIds.has(committee.id) || hasComment;
+  });
+  const shouldShowCommitteeSection = committeesToDisplay.length > 0;
   const shouldShowComplianceCommentsSection =
     isAdminMode || relevantTeams.length > 0 || shouldShowCommitteeSection || hasLegacyComplianceComment;
 
@@ -1737,132 +1787,152 @@ export const SynthesisReport = ({
 
                 {shouldShowCommitteeSection && (
                   <div className="space-y-4">
-                    {isValidationCommitteeRequired && (
+                    {triggeredValidationCommittees.length > 0 && (
                       <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                        Le comité de validation est requis pour ce projet. Merci de renseigner son commentaire.
+                        <p className="font-medium">Comité(s) requis pour ce projet :</p>
+                        <ul className="mt-2 list-disc pl-5 space-y-1">
+                          {triggeredValidationCommittees.map((committee) => (
+                            <li key={`required-${committee.id}`}>{committee.name}</li>
+                          ))}
+                        </ul>
                       </div>
                     )}
-                    <article className="rounded-xl border border-gray-200 p-4 bg-gray-50">
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <div>
-                          <h3 className="text-base font-semibold text-gray-800">Comité de validation</h3>
-                          <p className="text-xs text-gray-500">Commentaire optionnel selon la configuration.</p>
-                        </div>
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-semibold border ${
-                            getCommentStatusMeta(
-                              isAdminMode ? complianceCommentDrafts.committee.status : committeeCommentEntry.status
-                            ).badgeClass
-                          }`}
-                        >
-                          {
-                            getCommentStatusMeta(
-                              isAdminMode ? complianceCommentDrafts.committee.status : committeeCommentEntry.status
-                            ).label
-                          }
-                        </span>
-                      </div>
+                    {committeesToDisplay.map((committee) => {
+                      const committeeCommentEntry = committeeCommentMap[committee.id] || normalizeCommentEntry();
+                      const committeeDraft = complianceCommentDrafts.committees?.[committee.id] || committeeCommentEntry;
+                      const feedbackMessage = getComplianceFeedbackMessage(`committee-${committee.id}`);
+                      const isRequired = triggeredCommitteeIds.has(committee.id);
+                      const isDirty =
+                        committeeDraft.comment !== committeeCommentEntry.comment
+                        || committeeDraft.status !== committeeCommentEntry.status;
 
-                      {isAdminMode ? (
-                        <form
-                          onSubmit={(event) =>
-                            handleComplianceCommentSubmit({ event, targetId: 'committee', targetType: 'committee' })
-                          }
-                          className="mt-4 space-y-3"
-                        >
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700" htmlFor="compliance-committee-status">
-                              Statut
-                            </label>
-                            <select
-                              id="compliance-committee-status"
-                              value={complianceCommentDrafts.committee.status}
-                              onChange={(event) =>
-                                handleComplianceCommentChange({
-                                  targetId: 'committee',
-                                  targetType: 'committee',
-                                  field: 'status',
-                                  value: event.target.value
-                                })
-                              }
-                              className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                            >
-                              {COMMENT_STATUS_OPTIONS.map((option) => (
-                                <option key={`status-committee-${option.value}`} value={option.value}>
-                                  {option.label}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700" htmlFor="compliance-committee-comment">
-                              Commentaire
-                            </label>
-                            <textarea
-                              id="compliance-committee-comment"
-                              rows={4}
-                              className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                              placeholder="Ajoutez ici les décisions ou arbitrages du comité..."
-                              value={complianceCommentDrafts.committee.comment}
-                              onChange={(event) =>
-                                handleComplianceCommentChange({
-                                  targetId: 'committee',
-                                  targetType: 'committee',
-                                  field: 'comment',
-                                  value: event.target.value
-                                })
-                              }
-                            />
-                          </div>
-                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                            <p className="text-xs text-gray-500">
-                              Le commentaire du comité est enregistré dans le rapport projet.
-                            </p>
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                              {(() => {
-                                const committeeDraft = complianceCommentDrafts.committee;
-                                const isDirty =
-                                  committeeDraft.comment !== committeeCommentEntry.comment
-                                  || committeeDraft.status !== committeeCommentEntry.status;
-                                const feedbackMessage = getComplianceFeedbackMessage('committee-committee');
-                                return (
-                                  <>
-                                    <button
-                                      type="submit"
-                                      className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all hv-button ${
-                                        canSaveComplianceComment && isDirty
-                                          ? 'bg-blue-600 text-white hover:bg-blue-700 hv-button-primary'
-                                          : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                      }`}
-                                      disabled={!canSaveComplianceComment || !isDirty}
-                                    >
-                                      Enregistrer le commentaire
-                                    </button>
-                                    {feedbackMessage && (
-                                      <span className="text-xs font-medium text-emerald-700">
-                                        {feedbackMessage}
-                                      </span>
-                                    )}
-                                  </>
-                                );
-                              })()}
+                      return (
+                        <article key={committee.id} className="rounded-xl border border-gray-200 p-4 bg-gray-50">
+                          <div className="flex flex-wrap items-start justify-between gap-2">
+                            <div>
+                              <h3 className="text-base font-semibold text-gray-800">{committee.name}</h3>
+                              <p className="text-xs text-gray-500">
+                                {isRequired
+                                  ? 'Commentaire requis selon la configuration.'
+                                  : 'Commentaire optionnel selon la configuration.'}
+                              </p>
                             </div>
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-semibold border ${
+                                getCommentStatusMeta(
+                                  isAdminMode ? committeeDraft.status : committeeCommentEntry.status
+                                ).badgeClass
+                              }`}
+                            >
+                              {
+                                getCommentStatusMeta(
+                                  isAdminMode ? committeeDraft.status : committeeCommentEntry.status
+                                ).label
+                              }
+                            </span>
                           </div>
-                        </form>
-                      ) : (
-                        <div className="mt-3">
-                          {committeeCommentEntry.comment.trim().length > 0 ? (
-                            <p className="text-sm text-gray-800 whitespace-pre-line">
-                              {renderTextWithLinks(committeeCommentEntry.comment)}
-                            </p>
+
+                          {isAdminMode ? (
+                            <form
+                              onSubmit={(event) =>
+                                handleComplianceCommentSubmit({
+                                  event,
+                                  targetId: committee.id,
+                                  targetType: 'committee'
+                                })
+                              }
+                              className="mt-4 space-y-3"
+                            >
+                              <div>
+                                <label
+                                  className="block text-sm font-medium text-gray-700"
+                                  htmlFor={`compliance-committee-status-${committee.id}`}
+                                >
+                                  Statut
+                                </label>
+                                <select
+                                  id={`compliance-committee-status-${committee.id}`}
+                                  value={committeeDraft.status}
+                                  onChange={(event) =>
+                                    handleComplianceCommentChange({
+                                      targetId: committee.id,
+                                      targetType: 'committee',
+                                      field: 'status',
+                                      value: event.target.value
+                                    })
+                                  }
+                                  className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                >
+                                  {COMMENT_STATUS_OPTIONS.map((option) => (
+                                    <option key={`status-committee-${committee.id}-${option.value}`} value={option.value}>
+                                      {option.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div>
+                                <label
+                                  className="block text-sm font-medium text-gray-700"
+                                  htmlFor={`compliance-committee-comment-${committee.id}`}
+                                >
+                                  Commentaire
+                                </label>
+                                <textarea
+                                  id={`compliance-committee-comment-${committee.id}`}
+                                  rows={4}
+                                  className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                                  placeholder="Ajoutez ici les décisions ou arbitrages du comité..."
+                                  value={committeeDraft.comment}
+                                  onChange={(event) =>
+                                    handleComplianceCommentChange({
+                                      targetId: committee.id,
+                                      targetType: 'committee',
+                                      field: 'comment',
+                                      value: event.target.value
+                                    })
+                                  }
+                                />
+                              </div>
+                              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                <p className="text-xs text-gray-500">
+                                  Le commentaire du comité est enregistré dans le rapport projet.
+                                </p>
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                                  <button
+                                    type="submit"
+                                    className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all hv-button ${
+                                      canSaveComplianceComment && isDirty
+                                        ? 'bg-blue-600 text-white hover:bg-blue-700 hv-button-primary'
+                                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                    }`}
+                                    disabled={!canSaveComplianceComment || !isDirty}
+                                  >
+                                    Enregistrer le commentaire
+                                  </button>
+                                  {feedbackMessage && (
+                                    <span className="text-xs font-medium text-emerald-700">
+                                      {feedbackMessage}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </form>
                           ) : (
-                            <p className="text-sm text-gray-500">
-                              Aucun commentaire du comité pour le moment.
-                            </p>
+                            <div className="mt-3">
+                              {committeeCommentEntry.comment.trim().length > 0 ? (
+                                <p className="text-sm text-gray-800 whitespace-pre-line">
+                                  {renderTextWithLinks(committeeCommentEntry.comment)}
+                                </p>
+                              ) : (
+                                <p className="text-sm text-gray-500">
+                                  Aucun commentaire du comité pour le moment.
+                                </p>
+                              )}
+                            </div>
                           )}
-                        </div>
-                      )}
-                    </article>
+                        </article>
+                      );
+                    })}
                   </div>
                 )}
 
