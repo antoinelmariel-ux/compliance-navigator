@@ -16,6 +16,7 @@ import { initialShowcaseThemes } from './data/showcaseThemes.js';
 import { initialInspirationProjects } from './data/inspirationProjects.js';
 import { initialOnboardingTourConfig } from './data/onboardingTour.js';
 import { initialValidationCommitteeConfig } from './data/validationCommitteeConfig.js';
+import { initialAdminEmails } from './data/adminEmails.js';
 import { loadPersistedState, persistState } from './utils/storage.js';
 import { shouldShowQuestion } from './utils/questions.js';
 import { analyzeAnswers } from './utils/rules.js';
@@ -41,7 +42,7 @@ import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.266';
+const APP_VERSION = 'v1.0.267';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -149,6 +150,8 @@ const verifyBackOfficePassword = async (value) => {
 
   return digest === BACK_OFFICE_PASSWORD_FALLBACK_DIGEST;
 };
+
+const normalizeEmail = (value) => (typeof value === 'string' ? value.trim().toLowerCase() : '');
 
 const cloneDeep = (value) => {
   if (value === null || value === undefined) {
@@ -562,6 +565,15 @@ const buildInitialValidationCommitteeConfig = () => {
   return normalizeValidationCommitteeConfig(initialValidationCommitteeConfig);
 };
 
+const buildInitialAdminEmailsState = () => {
+  const savedState = loadPersistedState();
+  if (savedState && Array.isArray(savedState.adminEmails)) {
+    return savedState.adminEmails;
+  }
+
+  return cloneDeep(initialAdminEmails);
+};
+
 const isOnboardingProject = (project) => {
   if (!project || typeof project !== 'object') {
     return false;
@@ -626,6 +638,7 @@ export const App = () => {
   const [homeView, setHomeView] = useState('platform');
   const [isHydrated, setIsHydrated] = useState(false);
   const [validationCommitteeConfig, setValidationCommitteeConfig] = useState(buildInitialValidationCommitteeConfig);
+  const [adminEmails, setAdminEmails] = useState(buildInitialAdminEmailsState);
   const [isBackOfficeUnlocked, setIsBackOfficeUnlocked] = useState(false);
   const [backOfficeAuthError, setBackOfficeAuthError] = useState(null);
   const [isBackOfficePromptOpen, setIsBackOfficePromptOpen] = useState(false);
@@ -635,6 +648,18 @@ export const App = () => {
   const normalizedOnboardingConfig = useMemo(
     () => normalizeOnboardingConfig(onboardingTourConfig),
     [onboardingTourConfig]
+  );
+  const normalizedAdminEmails = useMemo(
+    () => (Array.isArray(adminEmails) ? adminEmails.map(normalizeEmail).filter(Boolean) : []),
+    [adminEmails]
+  );
+  const currentUserEmail = useMemo(
+    () => normalizeEmail(currentUser?.mail || currentUser?.userPrincipalName || ''),
+    []
+  );
+  const isCurrentUserAdmin = useMemo(
+    () => !!currentUserEmail && normalizedAdminEmails.includes(currentUserEmail),
+    [currentUserEmail, normalizedAdminEmails]
   );
   const backOfficePromptResolverRef = useRef(null);
   const [adminView, setAdminView] = useState('home');
@@ -1860,6 +1885,7 @@ const updateProjectFilters = useCallback((updater) => {
         inspirationFormFields: normalizeInspirationFormConfig(inspirationFormFields),
         onboardingTourConfig: normalizedOnboardingConfig,
         validationCommitteeConfig: normalizeValidationCommitteeConfig(validationCommitteeConfig),
+        adminEmails,
         homeView,
         activeInspirationId
       });
@@ -1892,6 +1918,7 @@ const updateProjectFilters = useCallback((updater) => {
     inspirationFormFields,
     normalizedOnboardingConfig,
     validationCommitteeConfig,
+    adminEmails,
     homeView,
     activeInspirationId,
     isHydrated,
@@ -2572,6 +2599,12 @@ const updateProjectFilters = useCallback((updater) => {
       return true;
     }
 
+    if (isCurrentUserAdmin) {
+      setIsBackOfficeUnlocked(true);
+      setBackOfficeAuthError(null);
+      return true;
+    }
+
     if (isBackOfficeUnlocked) {
       setBackOfficeAuthError(null);
       return true;
@@ -2581,6 +2614,7 @@ const updateProjectFilters = useCallback((updater) => {
     return openBackOfficePrompt();
   }, [
     isAdminMode,
+    isCurrentUserAdmin,
     isBackOfficeUnlocked,
     openBackOfficePrompt,
     setBackOfficeAuthError,
@@ -3957,6 +3991,8 @@ const updateProjectFilters = useCallback((updater) => {
               setOnboardingTourConfig={setOnboardingTourConfig}
               validationCommitteeConfig={validationCommitteeConfig}
               setValidationCommitteeConfig={setValidationCommitteeConfig}
+              adminEmails={adminEmails}
+              setAdminEmails={setAdminEmails}
             />
           </Suspense>
         ) : screen === 'home' ? (

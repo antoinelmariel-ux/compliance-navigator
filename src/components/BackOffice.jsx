@@ -511,7 +511,9 @@ export const BackOffice = ({
   onboardingTourConfig,
   setOnboardingTourConfig,
   validationCommitteeConfig,
-  setValidationCommitteeConfig
+  setValidationCommitteeConfig,
+  adminEmails,
+  setAdminEmails
 }) => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [editingRule, setEditingRule] = useState(null);
@@ -581,6 +583,10 @@ export const BackOffice = ({
         .filter((entry) => entry.length > 0)
       : []
   ), []);
+  const normalizedAdminEmails = useMemo(
+    () => (Array.isArray(adminEmails) ? adminEmails.filter(Boolean) : []),
+    [adminEmails]
+  );
 
   const updateValidationCommitteeConfig = useCallback(
     (updater) => {
@@ -3035,10 +3041,12 @@ export const BackOffice = ({
       'initialValidationCommitteeConfig',
       normalizeValidationCommitteeConfig(validationCommitteeConfig)
     );
+    downloadDataModule('adminEmails.js', 'initialAdminEmails', normalizedAdminEmails);
   };
 
   const inspirationFilterCount = inspirationFilterFields.length;
   const inspirationFormCount = inspirationFormFieldEntries.length;
+  const adminEmailCount = normalizedAdminEmails.length;
   const validationCommitteeRuleOptions = useMemo(
     () =>
       (Array.isArray(rules) ? rules : [])
@@ -3090,6 +3098,11 @@ export const BackOffice = ({
       id: 'validationCommittee',
       label: 'Comités de validation',
       panelId: 'backoffice-tabpanel-validationCommittee'
+    },
+    {
+      id: 'administrators',
+      label: `Administrateurs (${adminEmailCount})`,
+      panelId: 'backoffice-tabpanel-administrators'
     },
     {
       id: 'riskLevels',
@@ -6495,6 +6508,68 @@ export const BackOffice = ({
                   </div>
                 )}
               </article>
+            </section>
+          )}
+
+          {activeTab === 'administrators' && (
+            <section
+              id="backoffice-tabpanel-administrators"
+              role="tabpanel"
+              aria-labelledby="backoffice-tab-administrators"
+              className="space-y-4"
+            >
+              <div className="flex flex-col gap-2">
+                <h2 className="text-2xl font-bold text-gray-800">Administrateurs</h2>
+                <p className="text-sm text-gray-600">
+                  Ajoutez les adresses e-mail autorisées à accéder au back-office sans mot de passe.
+                </p>
+              </div>
+
+              <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hv-surface space-y-4">
+                <div>
+                  <label htmlFor="admin-emails" className="text-sm font-medium text-gray-700">
+                    Adresses e-mail des administrateurs
+                  </label>
+                  <textarea
+                    id="admin-emails"
+                    rows={4}
+                    value={normalizedAdminEmails.join('\n')}
+                    onChange={(event) => {
+                      const nextEmails = parseEmailList(event.target.value);
+                      if (typeof setAdminEmails === 'function') {
+                        setAdminEmails(nextEmails);
+                      }
+                    }}
+                    className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    placeholder="admin1@entreprise.com\nadmin2@entreprise.com"
+                  />
+                  <p className="mt-2 text-xs text-gray-500">
+                    Séparez chaque adresse par une virgule, un point-virgule ou un retour à la ligne.
+                  </p>
+                </div>
+
+                {normalizedAdminEmails.length > 0 ? (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Administrateurs enregistrés ({normalizedAdminEmails.length})
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {normalizedAdminEmails.map((email) => (
+                        <span
+                          key={email}
+                          className="px-2 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100 text-xs font-medium"
+                        >
+                          {email}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500">
+                    Aucune adresse administrateur n'est encore enregistrée.
+                  </p>
+                )}
+              </div>
             </section>
           )}
 
