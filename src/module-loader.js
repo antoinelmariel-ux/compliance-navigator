@@ -140,7 +140,27 @@
     return xhr.responseText;
   };
 
+  const normalizeModuleUrl = (value) => {
+    if (typeof value !== 'string') {
+      return '';
+    }
+
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return '';
+    }
+
+    return trimmed.split('#')[0].split('?')[0];
+  };
+
+  const isJsonModule = (url) => normalizeModuleUrl(url).toLowerCase().endsWith('.json');
+
   const transformSource = (url, source) => {
+    if (isJsonModule(url)) {
+      const parsed = JSON.parse(source);
+      return `module.exports = ${JSON.stringify(parsed)};`;
+    }
+
     const sourceHash = computeSourceHash(source);
     const cached = readCacheRecord(url, sourceHash);
     if (cached) {
