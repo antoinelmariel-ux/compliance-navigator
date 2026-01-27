@@ -1,3 +1,3 @@
 export const initialAdminEmails = [
-  "antoine.lassauge@lbf.fr"
+  "antoine.lassauge@lfb.fr"
 ];
