@@ -632,6 +632,13 @@ export const HomeScreen = ({
     const direction = selectedOrder === 'asc' ? 'asc' : 'desc';
 
     return selection.slice().sort((a, b) => {
+      const statusA = a?.status === 'draft' ? 0 : 1;
+      const statusB = b?.status === 'draft' ? 0 : 1;
+
+      if (statusA !== statusB) {
+        return statusA - statusB;
+      }
+
       const timeA = getProjectTimestamp(a);
       const timeB = getProjectTimestamp(b);
       const diff = timeA - timeB;
