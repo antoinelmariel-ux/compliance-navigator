@@ -39,8 +39,9 @@ import {
 } from './utils/inspirationConfig.js';
 import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
+import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.264';
+const APP_VERSION = 'v1.0.265';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -3965,6 +3966,7 @@ const updateProjectFilters = useCallback((updater) => {
             teamLeadOptions={teamLeadTeamOptions}
             inspirationProjects={inspirationProjects}
             inspirationFilters={inspirationFilters}
+            currentUser={currentUser}
             homeView={homeView}
             onHomeViewChange={setHomeView}
             onStartInspirationProject={handleStartInspirationProject}

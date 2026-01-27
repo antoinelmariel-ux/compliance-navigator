@@ -232,12 +232,17 @@ export const HomeScreen = ({
   onImportProject,
   onDuplicateProject,
   isAdminMode = false,
-  tourContext = null
+  tourContext = null,
+  currentUser = null
 }) => {
   const normalizedFilters = useMemo(
     () => normalizeProjectFilterConfig(projectFilters),
     [projectFilters]
   );
+  const currentUserFirstName = getSafeString(currentUser?.givenName).trim();
+  const heroHeadline = currentUserFirstName.length > 0
+    ? `${currentUserFirstName}, anticipez les besoins compliance de vos projets en quelques minutes`
+    : 'Anticipez les besoins compliance de vos projets en quelques minutes';
   const [filtersState, setFiltersState] = useState(() => buildInitialFiltersState(normalizedFilters));
   const normalizedInspirationFilters = useMemo(
     () => normalizeInspirationFiltersConfig(inspirationFilters),
@@ -1148,7 +1153,7 @@ export const HomeScreen = ({
                 <Target className="w-4 h-4 mr-2" /> Votre copilote compliance
               </span>
               <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 leading-tight">
-                Anticipez les besoins compliance de vos projets en quelques minutes
+                {heroHeadline}
               </h1>
               <p className="text-lg text-gray-600 leading-relaxed max-w-2xl">
                 Project Navigator vous guide pas à pas pour qualifier votre initiative, identifier les interlocuteurs à mobiliser et sécuriser vos délais réglementaires.
