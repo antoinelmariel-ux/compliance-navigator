@@ -42,7 +42,7 @@ import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.268';
+const APP_VERSION = 'v1.0.269';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -657,6 +657,19 @@ export const App = () => {
     () => normalizeEmail(currentUser?.mail || currentUser?.userPrincipalName || ''),
     []
   );
+  const currentUserDisplayName = useMemo(() => {
+    const firstName = typeof currentUser?.givenName === 'string' ? currentUser.givenName.trim() : '';
+    const lastName = typeof currentUser?.surname === 'string' ? currentUser.surname.trim() : '';
+    const combined = `${firstName} ${lastName}`.trim();
+    if (combined) {
+      return combined;
+    }
+    const displayName = typeof currentUser?.displayName === 'string' ? currentUser.displayName.trim() : '';
+    if (displayName) {
+      return displayName;
+    }
+    return currentUserEmail;
+  }, [currentUser, currentUserEmail]);
   const isCurrentUserAdmin = useMemo(
     () => !!currentUserEmail && normalizedAdminEmails.includes(currentUserEmail),
     [currentUserEmail, normalizedAdminEmails]
@@ -1341,7 +1354,7 @@ const updateProjectFilters = useCallback((updater) => {
         answers: {}
       })
     ];
-  }, [analyzeAnswers, questions, riskLevelRules, riskWeights, rules, shouldShowQuestion]);
+  }, [analyzeAnswers, currentUserEmail, questions, riskLevelRules, riskWeights, rules, shouldShowQuestion]);
 
   const restoreOnboardingSnapshot = useCallback(() => {
     const snapshot = onboardingStateRef.current;
@@ -2107,7 +2120,7 @@ const updateProjectFilters = useCallback((updater) => {
     const height = typeof window !== 'undefined' ? window.innerHeight || 1 : 1;
     const x = clamp01(clientX / width);
     const y = clamp01(clientY / height);
-    const sourceId = 'session';
+    const sourceId = currentUserDisplayName || 'session';
     const color = registerAnnotationSource(sourceId);
     const { sectionId, sectionX, sectionY } = resolveAnnotationTarget(clientX, clientY, targetElement);
 
@@ -2133,6 +2146,7 @@ const updateProjectFilters = useCallback((updater) => {
     setAutoFocusAnnotationId(newNoteId);
   }, [
     activeAnnotationContextKey,
+    currentUserDisplayName,
     isAnnotationPaused,
     registerAnnotationSource,
     resolveAnnotationTarget,
@@ -2541,6 +2555,111 @@ const updateProjectFilters = useCallback((updater) => {
     rules,
     shouldShowQuestion
   ]);
+
+  const handleUpdateComplianceComments = useCallback((updates) => {
+    if (!activeProjectId || !updates || typeof updates !== 'object') {
+      return;
+    }
+
+    let sanitizedResult = null;
+
+    setAnswers(prevAnswers => {
+      const nextAnswers = { ...prevAnswers };
+      Object.entries(updates).forEach(([key, value]) => {
+        if (value === null || value === undefined) {
+          delete nextAnswers[key];
+        } else {
+          nextAnswers[key] = value;
+        }
+      });
+      sanitizedResult = nextAnswers;
+      return nextAnswers;
+    });
+
+    if (sanitizedResult) {
+      setHasUnsavedChanges(true);
+      setProjects(prevProjects => {
+        const projectIndex = prevProjects.findIndex(project => project.id === activeProjectId);
+        if (projectIndex === -1) {
+          return prevProjects;
+        }
+
+        const project = prevProjects[projectIndex];
+        if (!project) {
+          return prevProjects;
+        }
+
+        const updatedProject = {
+          ...project,
+          answers: sanitizedResult,
+          lastUpdated: new Date().toISOString()
+        };
+
+        const nextProjects = prevProjects.slice();
+        nextProjects[projectIndex] = updatedProject;
+        return nextProjects;
+      });
+    }
+  }, [activeProjectId, setHasUnsavedChanges]);
+
+  const handleAddSharedMember = useCallback((email) => {
+    if (!activeProjectId) {
+      return;
+    }
+
+    const normalizedEmail = normalizeEmail(email);
+    if (!normalizedEmail) {
+      return;
+    }
+
+    setProjects(prevProjects => prevProjects.map(project => {
+      if (project.id !== activeProjectId) {
+        return project;
+      }
+
+      const existingShared = Array.isArray(project.sharedWith) ? project.sharedWith : [];
+      const alreadyShared = existingShared.some(entry => normalizeEmail(entry) === normalizedEmail);
+      if (alreadyShared) {
+        return project;
+      }
+
+      return {
+        ...project,
+        ownerEmail: project.ownerEmail || currentUserEmail || '',
+        sharedWith: [...existingShared, normalizedEmail],
+        lastUpdated: new Date().toISOString()
+      };
+    }));
+  }, [activeProjectId, currentUserEmail]);
+
+  const handleRemoveSharedMember = useCallback((email) => {
+    if (!activeProjectId) {
+      return;
+    }
+
+    const normalizedEmail = normalizeEmail(email);
+    if (!normalizedEmail) {
+      return;
+    }
+
+    setProjects(prevProjects => prevProjects.map(project => {
+      if (project.id !== activeProjectId) {
+        return project;
+      }
+
+      const existingShared = Array.isArray(project.sharedWith) ? project.sharedWith : [];
+      const nextShared = existingShared.filter(entry => normalizeEmail(entry) !== normalizedEmail);
+      if (nextShared.length === existingShared.length) {
+        return project;
+      }
+
+      return {
+        ...project,
+        sharedWith: nextShared,
+        lastUpdated: new Date().toISOString()
+      };
+    }));
+  }, [activeProjectId]);
 
   const resetProjectState = useCallback(() => {
     setAnswers({});
@@ -2982,7 +3101,9 @@ const updateProjectFilters = useCallback((updater) => {
         lastUpdated: new Date().toISOString(),
         lastQuestionIndex: 0,
         totalQuestions,
-        answeredQuestions: Math.min(answeredQuestionsCount, totalQuestions || answeredQuestionsCount)
+        answeredQuestions: Math.min(answeredQuestionsCount, totalQuestions || answeredQuestionsCount),
+        ownerEmail: currentUserEmail || sourceProject.ownerEmail || '',
+        sharedWith: []
       };
 
       return [duplicateEntry, ...prevProjects];
@@ -3305,6 +3426,7 @@ const updateProjectFilters = useCallback((updater) => {
     const status = payload.status === 'submitted' ? 'submitted' : 'draft';
     const projectId = activeProjectId || payload.id || `project-${Date.now()}`;
     const relevantQuestions = questions.filter(question => shouldShowQuestion(question, sanitizedAnswers));
+    const existingProject = projects.find(project => project?.id === projectId);
     const computedTotalQuestions = payload.totalQuestions
       || (relevantQuestions.length > 0 ? relevantQuestions.length : activeQuestions.length);
     const totalQuestions = computedTotalQuestions > 0 ? computedTotalQuestions : activeQuestions.length;
@@ -3357,7 +3479,9 @@ const updateProjectFilters = useCallback((updater) => {
       lastUpdated: now,
       lastQuestionIndex: clampedLastIndex,
       totalQuestions,
-      answeredQuestions: Math.min(answeredQuestionsCount, totalQuestions || answeredQuestionsCount)
+      answeredQuestions: Math.min(answeredQuestionsCount, totalQuestions || answeredQuestionsCount),
+      ownerEmail: existingProject?.ownerEmail || currentUserEmail || '',
+      sharedWith: Array.isArray(existingProject?.sharedWith) ? existingProject.sharedWith : []
     };
 
     if (status === 'submitted') {
@@ -3380,7 +3504,9 @@ const updateProjectFilters = useCallback((updater) => {
     analyzeAnswers,
     answers,
     currentQuestionIndex,
+    currentUserEmail,
     extractProjectName,
+    projects,
     questions,
     riskLevelRules,
     riskWeights,
@@ -4080,6 +4206,11 @@ const updateProjectFilters = useCallback((updater) => {
               onRestart={handleRestart}
               onBack={isActiveProjectEditable ? handleBackToQuestionnaire : undefined}
               onUpdateAnswers={isActiveProjectEditable ? handleUpdateAnswers : undefined}
+              onUpdateComplianceComments={activeProjectId ? handleUpdateComplianceComments : undefined}
+              currentUser={currentUser}
+              sharedMembers={activeProject?.sharedWith || []}
+              onShareProjectMember={activeProjectId ? handleAddSharedMember : undefined}
+              onRemoveProjectMember={activeProjectId ? handleRemoveSharedMember : undefined}
               onSubmitProject={handleSubmitProject}
               onNavigateToQuestion={handleNavigateToQuestionFromReport}
               isExistingProject={Boolean(activeProjectId)}

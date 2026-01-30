@@ -40,6 +40,7 @@ const formatDate = (isoDate) => {
 };
 
 const getSafeString = (value) => (typeof value === 'string' ? value : '');
+const normalizeEmail = (value) => getSafeString(value).trim().toLowerCase();
 
 const normalizeInspirationFieldValues = (value) => {
   if (Array.isArray(value)) {
@@ -239,6 +240,10 @@ export const HomeScreen = ({
     () => normalizeProjectFilterConfig(projectFilters),
     [projectFilters]
   );
+  const currentUserEmail = useMemo(
+    () => normalizeEmail(currentUser?.mail || currentUser?.userPrincipalName || ''),
+    [currentUser]
+  );
   const currentUserFirstName = getSafeString(currentUser?.givenName).trim();
   const heroHeadline = currentUserFirstName.length > 0
     ? `${currentUserFirstName}, anticipez les besoins compliance de vos projets en quelques minutes`
@@ -259,6 +264,28 @@ export const HomeScreen = ({
   const deleteCancelButtonRef = useRef(null);
   const deleteConfirmButtonRef = useRef(null);
   const previouslyFocusedElementRef = useRef(null);
+
+  const accessibleProjects = useMemo(() => {
+    if (!Array.isArray(projects)) {
+      return [];
+    }
+
+    if (isAdminMode || !currentUserEmail) {
+      return projects;
+    }
+
+    return projects.filter((project) => {
+      const ownerEmail = normalizeEmail(project?.ownerEmail);
+      const sharedWith = Array.isArray(project?.sharedWith) ? project.sharedWith : [];
+      const isShared = sharedWith.some((entry) => normalizeEmail(entry) === currentUserEmail);
+
+      if (!ownerEmail && sharedWith.length === 0) {
+        return true;
+      }
+
+      return ownerEmail === currentUserEmail || isShared;
+    });
+  }, [projects, isAdminMode, currentUserEmail]);
 
   const closeDeleteDialog = useCallback(() => {
     setDeleteDialogState({ isOpen: false, project: null });
@@ -544,7 +571,7 @@ export const HomeScreen = ({
         });
       }
 
-      projects.forEach((project) => {
+      accessibleProjects.forEach((project) => {
         const value = getProjectFilterValue(field, project).trim();
         if (value.length > 0) {
           options.add(value);
@@ -555,7 +582,7 @@ export const HomeScreen = ({
     });
 
     return map;
-  }, [normalizedFilters.fields, projects, teamLeadOptions]);
+  }, [accessibleProjects, normalizedFilters.fields, teamLeadOptions]);
 
   const inspirationFilterOptions = useMemo(() => {
     const fields = Array.isArray(normalizedInspirationFilters.fields) ? normalizedInspirationFilters.fields : [];
@@ -593,13 +620,13 @@ export const HomeScreen = ({
   }, [normalizedInspirationFilters.fields, inspirationProjects]);
 
   const filteredProjects = useMemo(() => {
-    if (!Array.isArray(projects)) {
+    if (!Array.isArray(accessibleProjects)) {
       return [];
     }
 
     const activeFields = Array.isArray(normalizedFilters.fields) ? normalizedFilters.fields : [];
 
-    const selection = projects.filter((project) => {
+    const selection = accessibleProjects.filter((project) => {
       for (let index = 0; index < activeFields.length; index += 1) {
         const field = activeFields[index];
         if (!field || !field.enabled || field.id === 'dateOrder') {
@@ -650,7 +677,7 @@ export const HomeScreen = ({
 
       return direction === 'asc' ? diff : -diff;
     });
-  }, [projects, normalizedFilters, filtersState]);
+  }, [accessibleProjects, normalizedFilters, filtersState]);
 
   const filteredInspirationProjects = useMemo(() => {
     if (!Array.isArray(inspirationProjects)) {
@@ -703,7 +730,7 @@ export const HomeScreen = ({
   }, [filteredProjects]);
   const shouldVirtualizeProjects = projectRows.length > 6;
 
-  const hasProjects = projects.length > 0;
+  const hasProjects = accessibleProjects.length > 0;
   const hasFilteredProjects = filteredProjects.length > 0;
   const hasInspirationProjects = inspirationProjects.length > 0;
   const hasFilteredInspirationProjects = filteredInspirationProjects.length > 0;
@@ -779,7 +806,7 @@ export const HomeScreen = ({
   }, [normalizedInspirationFilters.fields, inspirationFiltersState]);
 
   const displayedProjectsCount = filteredProjects.length;
-  const totalProjectsCount = projects.length;
+  const totalProjectsCount = accessibleProjects.length;
   const sortFilterConfig = Array.isArray(normalizedFilters.fields)
     ? normalizedFilters.fields.find(field => field && field.id === 'dateOrder')
     : null;

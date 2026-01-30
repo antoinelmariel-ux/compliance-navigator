@@ -46,6 +46,26 @@ const formatNumber = (value, options = {}) => {
   return Number(value).toLocaleString('fr-FR', options);
 };
 
+const normalizeEmail = (value) => (typeof value === 'string' ? value.trim().toLowerCase() : '');
+
+const formatTimestamp = (value) => {
+  if (!value) {
+    return '';
+  }
+
+  try {
+    return new Date(value).toLocaleString('fr-FR', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch (error) {
+    return '';
+  }
+};
+
 const formatCriterionScore = (value) => {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) {
@@ -144,10 +164,24 @@ const normalizeCommentEntry = (entry) => {
   const status = COMMENT_STATUS_OPTIONS.some((option) => option.value === statusCandidate)
     ? statusCandidate
     : '';
+  const replies = Array.isArray(entry?.replies)
+    ? entry.replies
+        .map((reply, index) => ({
+          id: typeof reply?.id === 'string' && reply.id.trim().length > 0
+            ? reply.id
+            : `reply-${index}`,
+          message: typeof reply?.message === 'string' ? reply.message : '',
+          authorName: typeof reply?.authorName === 'string' ? reply.authorName : '',
+          authorEmail: typeof reply?.authorEmail === 'string' ? reply.authorEmail : '',
+          createdAt: typeof reply?.createdAt === 'string' ? reply.createdAt : ''
+        }))
+        .filter((reply) => reply.message.trim().length > 0 || reply.authorName || reply.authorEmail)
+    : [];
 
   return {
     comment,
-    status
+    status,
+    replies
   };
 };
 
@@ -714,6 +748,11 @@ export const SynthesisReport = ({
   onRestart,
   onBack,
   onUpdateAnswers,
+  onUpdateComplianceComments,
+  currentUser = null,
+  sharedMembers = [],
+  onShareProjectMember,
+  onRemoveProjectMember,
   onSubmitProject,
   onNavigateToQuestion,
   onSaveDraft,
@@ -729,6 +768,10 @@ export const SynthesisReport = ({
   const [attachmentReminder, setAttachmentReminder] = useState(null);
   const reminderCloseButtonRef = useRef(null);
   const complianceCommentFeedbackTimeoutRef = useRef(null);
+  const [expandedThreads, setExpandedThreads] = useState({});
+  const [complianceReplyDrafts, setComplianceReplyDrafts] = useState({});
+  const [shareMemberDraft, setShareMemberDraft] = useState('');
+  const [shareMemberFeedback, setShareMemberFeedback] = useState('');
   useEffect(() => {
     if (!tourContext?.isActive) {
       return;
@@ -766,7 +809,45 @@ export const SynthesisReport = ({
     buildComplianceCommentDrafts(complianceComments, relevantTeams, [])
   );
   const [complianceCommentFeedback, setComplianceCommentFeedback] = useState(null);
-  const canSaveComplianceComment = typeof onUpdateAnswers === 'function';
+  const updateComplianceComments =
+    typeof onUpdateComplianceComments === 'function' ? onUpdateComplianceComments : onUpdateAnswers;
+  const canSaveComplianceComment = typeof updateComplianceComments === 'function';
+  const currentUserEmail = useMemo(
+    () => normalizeEmail(currentUser?.mail || currentUser?.userPrincipalName || ''),
+    [currentUser]
+  );
+  const currentUserDisplayName = useMemo(() => {
+    const firstName = typeof currentUser?.givenName === 'string' ? currentUser.givenName.trim() : '';
+    const lastName = typeof currentUser?.surname === 'string' ? currentUser.surname.trim() : '';
+    const combined = `${firstName} ${lastName}`.trim();
+    if (combined) {
+      return combined;
+    }
+    const displayName = typeof currentUser?.displayName === 'string' ? currentUser.displayName.trim() : '';
+    if (displayName) {
+      return displayName;
+    }
+    return currentUserEmail;
+  }, [currentUser, currentUserEmail]);
+  const complianceTeamIdsForUser = useMemo(() => {
+    if (!currentUserEmail) {
+      return new Set();
+    }
+
+    const matched = new Set();
+    relevantTeams.forEach((team) => {
+      const contacts = normalizeTeamContacts(team);
+      const isMember = contacts.some((contact) => normalizeEmail(contact) === currentUserEmail);
+      if (isMember && team?.id) {
+        matched.add(team.id);
+      }
+    });
+    return matched;
+  }, [currentUserEmail, relevantTeams]);
+  const normalizedSharedMembers = useMemo(
+    () => (Array.isArray(sharedMembers) ? sharedMembers.filter(Boolean) : []),
+    [sharedMembers]
+  );
   const normalizedValidationCommitteeConfig = useMemo(
     () => normalizeValidationCommitteeConfig(validationCommitteeConfig),
     [validationCommitteeConfig]
@@ -984,7 +1065,8 @@ export const SynthesisReport = ({
       const trimmedDraft = normalizedDraft.trim();
       const nextEntry = {
         comment: trimmedDraft,
-        status: currentEntry.status
+        status: currentEntry.status,
+        replies: Array.isArray(currentEntry.replies) ? currentEntry.replies : []
       };
 
       const nextComments = {
@@ -999,7 +1081,7 @@ export const SynthesisReport = ({
         nextComments.teams[targetId] = nextEntry;
       }
 
-      onUpdateAnswers({
+      updateComplianceComments({
         [COMPLIANCE_COMMENTS_KEY]: nextComments
       });
 
@@ -1019,16 +1101,14 @@ export const SynthesisReport = ({
 
       scheduleComplianceFeedback(
         `${targetType}-${targetId || 'committee'}`,
-        trimmedDraft.length > 0
-          ? 'Commentaire enregistré. Enregistrez ensuite le projet et chargez-le dans le dossier « submitted-projects » pour le rendre visible au porteur de projet.'
-          : 'Commentaire effacé.'
+        trimmedDraft.length > 0 ? 'Commentaire enregistré.' : 'Commentaire effacé.'
       );
     },
     [
       canSaveComplianceComment,
       complianceCommentDrafts,
       complianceComments,
-      onUpdateAnswers,
+      updateComplianceComments,
       scheduleComplianceFeedback
     ]
   );
@@ -1065,6 +1145,148 @@ export const SynthesisReport = ({
     },
     [complianceCommentFeedback]
   );
+
+  const handleComplianceReplyChange = useCallback((threadKey, value) => {
+    setComplianceReplyDrafts(prev => ({
+      ...prev,
+      [threadKey]: value
+    }));
+  }, []);
+
+  const handleComplianceReplySubmit = useCallback(
+    ({ targetId, targetType }) => {
+      if (!canSaveComplianceComment) {
+        return;
+      }
+
+      const threadKey = `${targetType}-${targetId}`;
+      const draft = complianceReplyDrafts[threadKey] || '';
+      const trimmed = draft.trim();
+
+      if (!trimmed) {
+        return;
+      }
+
+      const sourceEntry = targetType === 'committee'
+        ? complianceComments.committees?.[targetId]
+        : complianceComments.teams?.[targetId];
+      const normalizedEntry = normalizeCommentEntry(sourceEntry);
+      const reply = {
+        id: `reply-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        message: trimmed,
+        authorName: currentUserDisplayName || 'Utilisateur',
+        authorEmail: currentUserEmail,
+        createdAt: new Date().toISOString()
+      };
+      const nextEntry = {
+        ...normalizedEntry,
+        replies: [...(normalizedEntry.replies || []), reply]
+      };
+
+      const nextComments = {
+        teams: { ...(complianceComments?.teams || {}) },
+        committees: { ...(complianceComments?.committees || {}) },
+        legacy: complianceComments?.legacy || ''
+      };
+
+      if (targetType === 'committee') {
+        nextComments.committees[targetId] = nextEntry;
+      } else {
+        nextComments.teams[targetId] = nextEntry;
+      }
+
+      updateComplianceComments({
+        [COMPLIANCE_COMMENTS_KEY]: nextComments
+      });
+
+      setComplianceReplyDrafts(prev => ({
+        ...prev,
+        [threadKey]: ''
+      }));
+
+      scheduleComplianceFeedback(threadKey, 'Réponse ajoutée.');
+    },
+    [
+      canSaveComplianceComment,
+      complianceComments,
+      complianceReplyDrafts,
+      currentUserDisplayName,
+      currentUserEmail,
+      updateComplianceComments,
+      scheduleComplianceFeedback
+    ]
+  );
+
+  const shouldCollapseThread = useCallback((messages) => {
+    if (!Array.isArray(messages)) {
+      return false;
+    }
+
+    if (messages.length > 3) {
+      return true;
+    }
+
+    const totalLength = messages.reduce((sum, message) => sum + (message.message || '').length, 0);
+    const hasLongMessage = messages.some((message) => (message.message || '').length > 280);
+
+    return totalLength > 600 || hasLongMessage;
+  }, []);
+
+  const getThreadMessages = useCallback((entry, authorLabel) => {
+    const normalized = normalizeCommentEntry(entry);
+    const messages = [];
+
+    if (normalized.comment.trim().length > 0) {
+      messages.push({
+        id: `comment-${authorLabel || 'team'}`,
+        message: normalized.comment,
+        authorName: authorLabel || 'Équipe compliance',
+        createdAt: ''
+      });
+    }
+
+    normalized.replies.forEach((reply) => {
+      messages.push({
+        id: reply.id,
+        message: reply.message,
+        authorName: reply.authorName || reply.authorEmail || 'Utilisateur',
+        createdAt: reply.createdAt
+      });
+    });
+
+    return messages;
+  }, []);
+
+  const toggleThreadExpanded = useCallback((threadKey) => {
+    setExpandedThreads(prev => ({
+      ...prev,
+      [threadKey]: true
+    }));
+  }, []);
+
+  const handleShareMemberAdd = useCallback(() => {
+    if (typeof onShareProjectMember !== 'function') {
+      return;
+    }
+
+    const normalized = normalizeEmail(shareMemberDraft);
+    if (!normalized) {
+      setShareMemberFeedback('Veuillez saisir une adresse e-mail valide.');
+      return;
+    }
+
+    onShareProjectMember(normalized);
+    setShareMemberDraft('');
+    setShareMemberFeedback(`${normalized} ajouté à l'équipe.`);
+  }, [onShareProjectMember, shareMemberDraft]);
+
+  const handleShareMemberRemove = useCallback((email) => {
+    if (typeof onRemoveProjectMember !== 'function') {
+      return;
+    }
+
+    onRemoveProjectMember(email);
+  }, [onRemoveProjectMember]);
 
   const handleOpenShowcase = useCallback(() => {
     if (typeof onOpenProjectShowcase === 'function') {
@@ -1334,6 +1556,60 @@ export const SynthesisReport = ({
               </button>
             </div>
           </div>
+
+          {(onShareProjectMember || onRemoveProjectMember) && (
+            <div className="mb-6 rounded-xl border border-gray-200 bg-gray-50 p-4">
+              <div>
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-600">
+                  Partage du projet
+                </h2>
+                <p className="text-xs text-gray-500 mt-1">
+                  Ajoutez un membre de l’équipe pour qu’il retrouve aussi ce projet dans sa liste.
+                </p>
+              </div>
+              <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
+                <input
+                  type="email"
+                  value={shareMemberDraft}
+                  onChange={(event) => setShareMemberDraft(event.target.value)}
+                  placeholder="prenom.nom@entreprise.com"
+                  className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700"
+                />
+                <button
+                  type="button"
+                  onClick={handleShareMemberAdd}
+                  className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700"
+                >
+                  Ajouter
+                </button>
+              </div>
+              {shareMemberFeedback && (
+                <p className="mt-2 text-xs text-emerald-600">{shareMemberFeedback}</p>
+              )}
+              {normalizedSharedMembers.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {normalizedSharedMembers.map((member) => (
+                    <span
+                      key={member}
+                      className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700"
+                    >
+                      {member}
+                      {typeof onRemoveProjectMember === 'function' && (
+                        <button
+                          type="button"
+                          onClick={() => handleShareMemberRemove(member)}
+                          className="rounded-full p-0.5 text-blue-700 hover:bg-blue-100"
+                          aria-label={`Retirer ${member}`}
+                        >
+                          ×
+                        </button>
+                      )}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {hasSaveFeedback && (
             <div className="mb-6" role="status" aria-live="polite">
@@ -1716,6 +1992,12 @@ export const SynthesisReport = ({
                         draftEntry.comment !== storedEntry.comment || draftEntry.status !== storedEntry.status;
                       const feedbackMessage = getComplianceFeedbackMessage(`team-${team.id}`);
                       const teamContactLabel = formatTeamContacts(team, ' · ');
+                      const canEditTeamComment = isAdminMode || complianceTeamIdsForUser.has(team.id);
+                      const threadKey = `team-${team.id}`;
+                      const threadMessages = getThreadMessages(storedEntry, team.name);
+                      const isThreadExpanded = Boolean(expandedThreads[threadKey]);
+                      const shouldCollapse = !isThreadExpanded && shouldCollapseThread(threadMessages);
+                      const visibleMessages = shouldCollapse ? threadMessages.slice(0, 2) : threadMessages;
 
                       return (
                         <article key={`compliance-comment-${team.id}`} className="rounded-xl border border-gray-200 p-4 bg-gray-50">
@@ -1733,7 +2015,7 @@ export const SynthesisReport = ({
                             )}
                           </div>
 
-                          {isAdminMode ? (
+                          {canEditTeamComment ? (
                             <form
                               onSubmit={(event) =>
                                 handleComplianceCommentSubmit({ event, targetId: team.id, targetType: 'team' })
@@ -1787,7 +2069,7 @@ export const SynthesisReport = ({
                               </div>
                               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                 <p className="text-xs text-gray-500">
-                                  Ces commentaires sont enregistrés dans le rapport. Enregistrez ensuite le projet et chargez-le dans le dossier « submitted-projects » pour qu’ils soient visibles par le Chef de projet.
+                                  Ces commentaires sont enregistrés dans le rapport compliance du projet.
                                 </p>
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                                   <button
@@ -1809,19 +2091,77 @@ export const SynthesisReport = ({
                                 </div>
                               </div>
                             </form>
-                          ) : (
-                            <div className="mt-3">
-                              {storedEntry.comment.trim().length > 0 ? (
-                                <p className="text-sm text-gray-800 whitespace-pre-line">
-                                  {renderTextWithLinks(storedEntry.comment)}
-                                </p>
-                              ) : (
-                                <p className="text-sm text-gray-500">
-                                  Aucun commentaire communiqué pour le moment.
-                                </p>
-                              )}
+                          ) : null}
+
+                          <div className="mt-4 space-y-3">
+                            {visibleMessages.length > 0 ? (
+                              <div className="space-y-3">
+                                {visibleMessages.map((message) => {
+                                  const trimmedMessage = message.message.trim();
+                                  const isTruncated = shouldCollapse && trimmedMessage.length > 240;
+                                  const preview = isTruncated ? `${trimmedMessage.slice(0, 220)}…` : trimmedMessage;
+                                  return (
+                                    <div key={message.id} className="rounded-lg bg-white border border-gray-200 p-3">
+                                      <div className="flex items-center justify-between gap-2 text-xs text-gray-500">
+                                        <span className="font-semibold text-gray-700">{message.authorName}</span>
+                                        {message.createdAt && <span>{formatTimestamp(message.createdAt)}</span>}
+                                      </div>
+                                      <p className="mt-2 text-sm text-gray-700 whitespace-pre-line">
+                                        {renderTextWithLinks(preview)}
+                                      </p>
+                                    </div>
+                                  );
+                                })}
+                                {shouldCollapse && (
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleThreadExpanded(threadKey)}
+                                    className="text-xs font-semibold text-blue-600 hover:text-blue-700"
+                                  >
+                                    Voir plus
+                                  </button>
+                                )}
+                              </div>
+                            ) : (
+                              <p className="text-sm text-gray-500">
+                                Aucun commentaire communiqué pour le moment.
+                              </p>
+                            )}
+                            <div className="border-t border-gray-200 pt-3">
+                              <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                                Répondre
+                              </label>
+                              <textarea
+                                rows={3}
+                                value={complianceReplyDrafts[threadKey] || ''}
+                                onChange={(event) => handleComplianceReplyChange(threadKey, event.target.value)}
+                                className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                                placeholder="Votre réponse..."
+                              />
+                              <div className="mt-2 flex items-center gap-3">
+                                <button
+                                  type="button"
+                                  onClick={() => handleComplianceReplySubmit({ targetId: team.id, targetType: 'team' })}
+                                  className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+                                    canSaveComplianceComment && (complianceReplyDrafts[threadKey] || '').trim().length > 0
+                                      ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                  }`}
+                                  disabled={
+                                    !canSaveComplianceComment
+                                    || (complianceReplyDrafts[threadKey] || '').trim().length === 0
+                                  }
+                                >
+                                  Envoyer la réponse
+                                </button>
+                                {feedbackMessage && (
+                                  <span className="text-xs font-medium text-emerald-700">
+                                    {feedbackMessage}
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                          )}
+                          </div>
                         </article>
                       );
                     })}
@@ -1851,6 +2191,11 @@ export const SynthesisReport = ({
                       const isDirty =
                         committeeDraft.comment !== committeeCommentEntry.comment
                         || committeeDraft.status !== committeeCommentEntry.status;
+                      const threadKey = `committee-${committee.id}`;
+                      const threadMessages = getThreadMessages(committeeCommentEntry, committee.name);
+                      const isThreadExpanded = Boolean(expandedThreads[threadKey]);
+                      const shouldCollapse = !isThreadExpanded && shouldCollapseThread(threadMessages);
+                      const visibleMessages = shouldCollapse ? threadMessages.slice(0, 2) : threadMessages;
 
                       return (
                         <article key={committee.id} className="rounded-xl border border-gray-200 p-4 bg-gray-50">
@@ -1958,19 +2303,79 @@ export const SynthesisReport = ({
                                 </div>
                               </div>
                             </form>
-                          ) : (
-                            <div className="mt-3">
-                              {committeeCommentEntry.comment.trim().length > 0 ? (
-                                <p className="text-sm text-gray-800 whitespace-pre-line">
-                                  {renderTextWithLinks(committeeCommentEntry.comment)}
-                                </p>
-                              ) : (
-                                <p className="text-sm text-gray-500">
-                                  Aucun commentaire du comité pour le moment.
-                                </p>
-                              )}
+                          ) : null}
+
+                          <div className="mt-4 space-y-3">
+                            {visibleMessages.length > 0 ? (
+                              <div className="space-y-3">
+                                {visibleMessages.map((message) => {
+                                  const trimmedMessage = message.message.trim();
+                                  const isTruncated = shouldCollapse && trimmedMessage.length > 240;
+                                  const preview = isTruncated ? `${trimmedMessage.slice(0, 220)}…` : trimmedMessage;
+                                  return (
+                                    <div key={message.id} className="rounded-lg bg-white border border-gray-200 p-3">
+                                      <div className="flex items-center justify-between gap-2 text-xs text-gray-500">
+                                        <span className="font-semibold text-gray-700">{message.authorName}</span>
+                                        {message.createdAt && <span>{formatTimestamp(message.createdAt)}</span>}
+                                      </div>
+                                      <p className="mt-2 text-sm text-gray-700 whitespace-pre-line">
+                                        {renderTextWithLinks(preview)}
+                                      </p>
+                                    </div>
+                                  );
+                                })}
+                                {shouldCollapse && (
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleThreadExpanded(threadKey)}
+                                    className="text-xs font-semibold text-blue-600 hover:text-blue-700"
+                                  >
+                                    Voir plus
+                                  </button>
+                                )}
+                              </div>
+                            ) : (
+                              <p className="text-sm text-gray-500">
+                                Aucun commentaire du comité pour le moment.
+                              </p>
+                            )}
+                            <div className="border-t border-gray-200 pt-3">
+                              <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                                Répondre
+                              </label>
+                              <textarea
+                                rows={3}
+                                value={complianceReplyDrafts[threadKey] || ''}
+                                onChange={(event) => handleComplianceReplyChange(threadKey, event.target.value)}
+                                className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                                placeholder="Votre réponse..."
+                              />
+                              <div className="mt-2 flex items-center gap-3">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleComplianceReplySubmit({ targetId: committee.id, targetType: 'committee' })
+                                  }
+                                  className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+                                    canSaveComplianceComment && (complianceReplyDrafts[threadKey] || '').trim().length > 0
+                                      ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                  }`}
+                                  disabled={
+                                    !canSaveComplianceComment
+                                    || (complianceReplyDrafts[threadKey] || '').trim().length === 0
+                                  }
+                                >
+                                  Envoyer la réponse
+                                </button>
+                                {feedbackMessage && (
+                                  <span className="text-xs font-medium text-emerald-700">
+                                    {feedbackMessage}
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                          )}
+                          </div>
                         </article>
                       );
                     })}
