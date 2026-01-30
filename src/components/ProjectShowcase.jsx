@@ -320,6 +320,8 @@ const areCustomSectionsEqual = (previous, next) => {
   });
 };
 
+const MISSING_INFO_LABEL = 'Information à compléter';
+
 const findQuestionById = (questions, id) => {
   if (!Array.isArray(questions)) {
     return null;
@@ -345,7 +347,7 @@ const getFormattedAnswer = (questions, answers, id) => {
     return formatted;
   }
 
-  return question.required ? 'Information à compléter' : '';
+  return question.required ? MISSING_INFO_LABEL : '';
 };
 
 const getRawAnswer = (answers, id) => {
@@ -1517,7 +1519,15 @@ export const ProjectShowcase = ({
   hideNotice = false
 }) => {
   const rawProjectName = typeof projectName === 'string' ? projectName.trim() : '';
-  const safeProjectName = rawProjectName.length > 0 ? rawProjectName : 'Information à compléter';
+  const safeProjectName = rawProjectName.length > 0 ? rawProjectName : MISSING_INFO_LABEL;
+  const isMissingInfoLabel = useCallback(
+    (value) => typeof value === 'string' && value.trim() === MISSING_INFO_LABEL,
+    []
+  );
+  const missingInfoClass = useCallback(
+    (value) => (isMissingInfoLabel(value) ? 'text-rose-600' : ''),
+    [isMissingInfoLabel]
+  );
   const normalizedTeams = Array.isArray(relevantTeams) ? relevantTeams : [];
   const availableThemes = useMemo(
     () => (Array.isArray(showcaseThemes) && showcaseThemes.length > 0
@@ -2551,9 +2561,9 @@ export const ProjectShowcase = ({
           >
             <div className="deezer-parallax" aria-hidden="true" />
             <p className="deezer-eyebrow">Now playing</p>
-            <h1 className="deezer-title">{safeProjectName}</h1>
+            <h1 className={`deezer-title ${missingInfoClass(safeProjectName)}`}>{safeProjectName}</h1>
             {hasText(slogan) && (
-              <p className="deezer-subtitle">{renderTextWithLinks(slogan)}</p>
+              <p className={`deezer-subtitle ${missingInfoClass(slogan)}`}>{renderTextWithLinks(slogan)}</p>
             )}
             <button type="button" className="deezer-cta">Découvrir le projet</button>
             {heroHighlights.length > 0 && (
@@ -2561,7 +2571,12 @@ export const ProjectShowcase = ({
                 {heroHighlights.map((highlight) => (
                   <div key={highlight.id} className="deezer-highlight-card">
                     <p className="deezer-eyebrow">{highlight.label}</p>
-                    <p className="deezer-title" style={{ fontSize: '1.5rem' }}>{highlight.value}</p>
+                    <p
+                      className={`deezer-title ${missingInfoClass(highlight.value)}`}
+                      style={{ fontSize: '1.5rem' }}
+                    >
+                      {highlight.value}
+                    </p>
                     <p className="deezer-subtitle">{highlight.caption}</p>
                   </div>
                 ))}
@@ -2594,7 +2609,9 @@ export const ProjectShowcase = ({
               {hasText(solutionDescription) && (
                 <div className="deezer-card">
                   <h3>En clair</h3>
-                  <p className="deezer-subtitle">{renderTextWithLinks(solutionDescription)}</p>
+                  <p className={`deezer-subtitle ${missingInfoClass(solutionDescription)}`}>
+                    {renderTextWithLinks(solutionDescription)}
+                  </p>
                 </div>
               )}
               {solutionBenefits.length > 0 && (
@@ -2610,7 +2627,9 @@ export const ProjectShowcase = ({
               {hasText(solutionComparison) && (
                 <div className="deezer-card">
                   <h3>Différenciation</h3>
-                  <p className="deezer-subtitle">{renderTextWithLinks(solutionComparison)}</p>
+                  <p className={`deezer-subtitle ${missingInfoClass(solutionComparison)}`}>
+                    {renderTextWithLinks(solutionComparison)}
+                  </p>
                 </div>
               )}
             </div>
@@ -2628,7 +2647,9 @@ export const ProjectShowcase = ({
               {hasText(innovationProcess) && (
                 <div className="deezer-card">
                   <h3>Processus & expérimentation</h3>
-                  <p className="deezer-subtitle">{renderTextWithLinks(innovationProcess)}</p>
+                  <p className={`deezer-subtitle ${missingInfoClass(innovationProcess)}`}>
+                    {renderTextWithLinks(innovationProcess)}
+                  </p>
                 </div>
               )}
               {visionStatementEntries.length > 0 && (
@@ -2644,7 +2665,12 @@ export const ProjectShowcase = ({
               {hasText(budgetEstimate) && (
                 <div className="deezer-card">
                   <h3>Budget estimé</h3>
-                  <p className="deezer-title" style={{ fontSize: '1.8rem' }}>{formattedBudgetEstimate} K€</p>
+                  <p
+                    className={`deezer-title ${missingInfoClass(budgetEstimate)}`}
+                    style={{ fontSize: '1.8rem' }}
+                  >
+                    {formattedBudgetEstimate} K€
+                  </p>
                   <p className="deezer-subtitle">Prévision globale sur 12 mois.</p>
                 </div>
               )}
@@ -2663,9 +2689,9 @@ export const ProjectShowcase = ({
               {hasText(teamLead) && (
                 <div className="deezer-card">
                   <h3>Pilotage</h3>
-                  <p className="deezer-subtitle">{teamLead}</p>
+                  <p className={`deezer-subtitle ${missingInfoClass(teamLead)}`}>{teamLead}</p>
                   {hasText(teamLeadTeam) && (
-                    <p className="deezer-subtitle">{teamLeadTeam}</p>
+                    <p className={`deezer-subtitle ${missingInfoClass(teamLeadTeam)}`}>{teamLeadTeam}</p>
                   )}
                 </div>
               )}
@@ -2820,9 +2846,11 @@ export const ProjectShowcase = ({
           >
             <div className="aurora-section__inner">
               <div className="aurora-hero__copy">
-                <h1 className="aurora-hero__title">{safeProjectName}</h1>
+                <h1 className={`aurora-hero__title ${missingInfoClass(safeProjectName)}`}>{safeProjectName}</h1>
                 {hasText(slogan) && (
-                  <p className="aurora-hero__subtitle">{renderTextWithLinks(slogan)}</p>
+                  <p className={`aurora-hero__subtitle ${missingInfoClass(slogan)}`}>
+                    {renderTextWithLinks(slogan)}
+                  </p>
                 )}
                 <div className="aurora-cta-group">
                   <button type="button" className="aurora-cta">Découvrir le projet</button>
@@ -2837,7 +2865,9 @@ export const ProjectShowcase = ({
                       style={{ animationDelay: `${highlightIndex * 0.15}s` }}
                     >
                       <p className="aurora-hero-highlight__label">{highlight.label}</p>
-                      <p className="aurora-hero-highlight__value">{highlight.value}</p>
+                      <p className={`aurora-hero-highlight__value ${missingInfoClass(highlight.value)}`}>
+                        {highlight.value}
+                      </p>
                       <p className="aurora-hero-highlight__caption">{highlight.caption}</p>
                     </div>
                   ))}
@@ -2885,7 +2915,9 @@ export const ProjectShowcase = ({
                 {hasText(solutionDescription) && (
                   <div className="aurora-pillar">
                     <h3 className="aurora-pillar__title">En clair</h3>
-                    <p className="aurora-pillar__text">{renderTextWithLinks(solutionDescription)}</p>
+                    <p className={`aurora-pillar__text ${missingInfoClass(solutionDescription)}`}>
+                      {renderTextWithLinks(solutionDescription)}
+                    </p>
                   </div>
                 )}
                 {solutionBenefits.length > 0 && (
@@ -2904,7 +2936,9 @@ export const ProjectShowcase = ({
                 {hasText(solutionComparison) && (
                   <div className="aurora-pillar">
                     <h3 className="aurora-pillar__title">Pourquoi c'est différent</h3>
-                    <p className="aurora-pillar__text">{renderTextWithLinks(solutionComparison)}</p>
+                    <p className={`aurora-pillar__text ${missingInfoClass(solutionComparison)}`}>
+                      {renderTextWithLinks(solutionComparison)}
+                    </p>
                   </div>
                 )}
               </div>
@@ -2926,7 +2960,9 @@ export const ProjectShowcase = ({
                 {hasText(budgetEstimate) && (
                   <div className="aurora-card aurora-card--budget" data-tour-id="showcase-budget">
                     <p className="aurora-eyebrow">Budget estimé</p>
-                    <p className="aurora-card__metric">{formattedBudgetEstimate} K€</p>
+                    <p className={`aurora-card__metric ${missingInfoClass(budgetEstimate)}`}>
+                      {formattedBudgetEstimate} K€
+                    </p>
                     <p className="aurora-card__caption">Prévision globale sur 12 mois.</p>
                   </div>
                 )}
@@ -2938,7 +2974,9 @@ export const ProjectShowcase = ({
                       <p className="aurora-eyebrow">Comment on s'y prend</p>
                       <p className="aurora-difference__label">Processus & expérimentation</p>
                       <div className="aurora-difference__text-content">
-                        {renderTextWithLinks(innovationProcess)}
+                        <span className={missingInfoClass(innovationProcess)}>
+                          {renderTextWithLinks(innovationProcess)}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -2979,9 +3017,11 @@ export const ProjectShowcase = ({
                   <div className="aurora-team__lead">
                     <div className="aurora-team__lead-info">
                       <p className="aurora-team__lead-label">Pilotage</p>
-                      <h3 className="aurora-team__lead-name">{teamLead}</h3>
+                      <h3 className={`aurora-team__lead-name ${missingInfoClass(teamLead)}`}>{teamLead}</h3>
                       {hasText(teamLeadTeam) && (
-                        <p className="aurora-team__lead-team">{teamLeadTeam}</p>
+                        <p className={`aurora-team__lead-team ${missingInfoClass(teamLeadTeam)}`}>
+                          {teamLeadTeam}
+                        </p>
                       )}
                     </div>
                   </div>

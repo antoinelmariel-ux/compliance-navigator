@@ -42,7 +42,7 @@ import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.270';
+const APP_VERSION = 'v1.0.271';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -2661,15 +2661,22 @@ const updateProjectFilters = useCallback((updater) => {
     }));
   }, [activeProjectId]);
 
+  const buildDefaultAnswers = useCallback(() => {
+    if (currentUserDisplayName) {
+      return { teamLead: currentUserDisplayName };
+    }
+    return {};
+  }, [currentUserDisplayName]);
+
   const resetProjectState = useCallback(() => {
-    setAnswers({});
+    setAnswers(buildDefaultAnswers());
     setCurrentQuestionIndex(0);
     setAnalysis(null);
     setValidationError(null);
     setActiveProjectId(null);
     setHasUnsavedChanges(false);
     setReturnToSynthesisAfterEdit(false);
-  }, [setHasUnsavedChanges]);
+  }, [buildDefaultAnswers, setHasUnsavedChanges]);
 
   const openBackOfficePrompt = useCallback(() => new Promise((resolve) => {
     backOfficePromptResolverRef.current = resolve;
@@ -2779,12 +2786,14 @@ const updateProjectFilters = useCallback((updater) => {
   const handleSaveInspirationProject = useCallback((payload) => {
     const project = {
       id: createInspirationId(),
-      ...payload
+      ...payload,
+      ownerEmail: currentUserEmail || '',
+      teamLead: currentUserDisplayName || ''
     };
     setInspirationProjects((prev) => [project, ...(Array.isArray(prev) ? prev : [])]);
     setHomeView('inspiration');
     setScreen('home');
-  }, []);
+  }, [currentUserDisplayName, currentUserEmail]);
 
   const handleOpenInspirationProject = useCallback((projectId) => {
     if (!projectId) {
@@ -3069,6 +3078,10 @@ const updateProjectFilters = useCallback((updater) => {
         ? JSON.parse(JSON.stringify(sourceProject.answers))
         : {};
 
+      if (currentUserDisplayName) {
+        answersClone.teamLead = currentUserDisplayName;
+      }
+
       const relevantQuestions = questions.filter(question => shouldShowQuestion(question, answersClone));
       const totalQuestions = relevantQuestions.length > 0
         ? relevantQuestions.length
@@ -3102,13 +3115,22 @@ const updateProjectFilters = useCallback((updater) => {
         lastQuestionIndex: 0,
         totalQuestions,
         answeredQuestions: Math.min(answeredQuestionsCount, totalQuestions || answeredQuestionsCount),
-        ownerEmail: currentUserEmail || sourceProject.ownerEmail || '',
+        ownerEmail: currentUserEmail || '',
         sharedWith: []
       };
 
       return [duplicateEntry, ...prevProjects];
     });
-  }, [analyzeAnswers, questions, riskLevelRules, riskWeights, rules, shouldShowQuestion]);
+  }, [
+    analyzeAnswers,
+    currentUserDisplayName,
+    currentUserEmail,
+    questions,
+    riskLevelRules,
+    riskWeights,
+    rules,
+    shouldShowQuestion
+  ]);
 
   const openProjectShowcase = useCallback((context = {}) => {
     const {
