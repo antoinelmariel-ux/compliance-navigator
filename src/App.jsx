@@ -42,7 +42,7 @@ import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.270';
+const APP_VERSION = 'v1.0.271';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -152,6 +152,26 @@ const verifyBackOfficePassword = async (value) => {
 };
 
 const normalizeEmail = (value) => (typeof value === 'string' ? value.trim().toLowerCase() : '');
+
+const buildOwnerSnapshot = (user) => {
+  if (!user || typeof user !== 'object') {
+    return null;
+  }
+
+  const email = normalizeEmail(user.mail || user.userPrincipalName || '');
+  const userPrincipalName = normalizeEmail(user.userPrincipalName || '');
+  const displayName = typeof user.displayName === 'string' ? user.displayName.trim() : '';
+  const givenName = typeof user.givenName === 'string' ? user.givenName.trim() : '';
+  const surname = typeof user.surname === 'string' ? user.surname.trim() : '';
+  const fallbackDisplayName = `${givenName} ${surname}`.trim();
+
+  return {
+    id: typeof user.id === 'string' ? user.id : '',
+    displayName: displayName || fallbackDisplayName || email,
+    mail: email,
+    userPrincipalName
+  };
+};
 
 const cloneDeep = (value) => {
   if (value === null || value === undefined) {
@@ -657,6 +677,7 @@ export const App = () => {
     () => normalizeEmail(currentUser?.mail || currentUser?.userPrincipalName || ''),
     []
   );
+  const currentUserOwner = useMemo(() => buildOwnerSnapshot(currentUser), []);
   const currentUserDisplayName = useMemo(() => {
     const firstName = typeof currentUser?.givenName === 'string' ? currentUser.givenName.trim() : '';
     const lastName = typeof currentUser?.surname === 'string' ? currentUser.surname.trim() : '';
@@ -2779,12 +2800,13 @@ const updateProjectFilters = useCallback((updater) => {
   const handleSaveInspirationProject = useCallback((payload) => {
     const project = {
       id: createInspirationId(),
+      owner: currentUserOwner,
       ...payload
     };
     setInspirationProjects((prev) => [project, ...(Array.isArray(prev) ? prev : [])]);
     setHomeView('inspiration');
     setScreen('home');
-  }, []);
+  }, [currentUserOwner]);
 
   const handleOpenInspirationProject = useCallback((projectId) => {
     if (!projectId) {
@@ -3103,12 +3125,22 @@ const updateProjectFilters = useCallback((updater) => {
         totalQuestions,
         answeredQuestions: Math.min(answeredQuestionsCount, totalQuestions || answeredQuestionsCount),
         ownerEmail: currentUserEmail || sourceProject.ownerEmail || '',
+        owner: currentUserOwner || sourceProject.owner || null,
         sharedWith: []
       };
 
       return [duplicateEntry, ...prevProjects];
     });
-  }, [analyzeAnswers, questions, riskLevelRules, riskWeights, rules, shouldShowQuestion]);
+  }, [
+    analyzeAnswers,
+    currentUserEmail,
+    currentUserOwner,
+    questions,
+    riskLevelRules,
+    riskWeights,
+    rules,
+    shouldShowQuestion
+  ]);
 
   const openProjectShowcase = useCallback((context = {}) => {
     const {
@@ -3481,6 +3513,7 @@ const updateProjectFilters = useCallback((updater) => {
       totalQuestions,
       answeredQuestions: Math.min(answeredQuestionsCount, totalQuestions || answeredQuestionsCount),
       ownerEmail: existingProject?.ownerEmail || currentUserEmail || '',
+      owner: existingProject?.owner || currentUserOwner || null,
       sharedWith: Array.isArray(existingProject?.sharedWith) ? existingProject.sharedWith : []
     };
 
@@ -3505,6 +3538,7 @@ const updateProjectFilters = useCallback((updater) => {
     answers,
     currentQuestionIndex,
     currentUserEmail,
+    currentUserOwner,
     extractProjectName,
     projects,
     questions,
