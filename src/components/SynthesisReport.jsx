@@ -244,6 +244,8 @@ const buildComplianceCommentDrafts = (comments, teams, committees) => {
   };
 };
 
+const MISSING_INFO_LABEL = 'Information à compléter';
+
 const formatOverviewValue = (question, answer) => {
   const formatted = formatAnswer(question, answer);
 
@@ -255,7 +257,7 @@ const formatOverviewValue = (question, answer) => {
     return formatted;
   }
 
-  return question?.required ? 'Information à compléter' : '';
+  return question?.required ? MISSING_INFO_LABEL : '';
 };
 
 const formatRiskTimingViolation = (violation) => {
@@ -1572,7 +1574,7 @@ export const SynthesisReport = ({
                   type="email"
                   value={shareMemberDraft}
                   onChange={(event) => setShareMemberDraft(event.target.value)}
-                  placeholder="prenom.nom@entreprise.com"
+                  placeholder="prenom.nom@lfb.fr"
                   className="flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700"
                 />
                 <button
@@ -1673,9 +1675,19 @@ export const SynthesisReport = ({
                         </button>
                       )}
                     </div>
-                    <p className="font-semibold text-gray-900 whitespace-pre-line">
-                      {renderTextWithLinks(displayValue || 'Information à compléter')}
-                    </p>
+                    {(() => {
+                      const resolvedValue = displayValue || MISSING_INFO_LABEL;
+                      const isMissingInfo = resolvedValue === MISSING_INFO_LABEL;
+                      return (
+                        <p
+                          className={`font-semibold whitespace-pre-line ${
+                            isMissingInfo ? 'text-rose-600' : 'text-gray-900'
+                          }`}
+                        >
+                          {renderTextWithLinks(resolvedValue)}
+                        </p>
+                      );
+                    })()}
                   </div>
                 );
               })}
