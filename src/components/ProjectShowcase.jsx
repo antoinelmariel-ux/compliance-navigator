@@ -1540,7 +1540,10 @@ export const ProjectShowcase = ({
     [answers?.showcaseTheme, availableThemes]
   );
   const showcaseThemeId = selectedTheme?.id || FALLBACK_SHOWCASE_THEME.id;
-  const isDeezerTheme = showcaseThemeId === 'deezer';
+  const showcaseLayout =
+    selectedTheme?.layout || (showcaseThemeId === 'deezer' ? 'deezer' : 'aurora');
+  const isDeezerTheme = showcaseLayout === 'deezer';
+  const isEditorialTheme = showcaseLayout === 'editorial';
   const showcaseThemeVariables = useMemo(
     () => buildThemeVariables(selectedTheme || FALLBACK_SHOWCASE_THEME),
     [selectedTheme]
@@ -2817,6 +2820,306 @@ export const ProjectShowcase = ({
     safeProjectName
   ]);
 
+  const renderEditorialSection = useCallback((sectionId, index) => {
+    if (!shouldDisplaySection(sectionId)) {
+      return null;
+    }
+
+    switch (sectionId) {
+      case 'notice':
+        if (hideNotice || !hasIncompleteAnswers) {
+          return null;
+        }
+        return (
+          <section key={`${sectionId}-${index}`} className="editorial-section" data-showcase-section="notice">
+            <div className="editorial-alert">
+              En attente de l’ensemble des informations sur le projet pour une évaluation complète.
+            </div>
+          </section>
+        );
+      case 'hero':
+        return (
+          <section
+            key={`${sectionId}-${index}`}
+            className="editorial-section editorial-section--hero"
+            data-showcase-section="hero"
+            data-tour-id="showcase-hero"
+          >
+            <div className="editorial-hero">
+              <div className="editorial-hero__copy">
+                <p className="editorial-eyebrow">Dossier stratégique</p>
+                <h1 className={`editorial-title ${missingInfoClass(safeProjectName)}`}>{safeProjectName}</h1>
+                {hasText(slogan) && (
+                  <p className={`editorial-subtitle ${missingInfoClass(slogan)}`}>{renderTextWithLinks(slogan)}</p>
+                )}
+                <div className="editorial-hero__cta">
+                  <button type="button" className="editorial-cta">Explorer le brief</button>
+                </div>
+              </div>
+              {heroHighlights.length > 0 && (
+                <div className="editorial-hero__highlights">
+                  {heroHighlights.map((highlight) => (
+                    <div key={highlight.id} className="editorial-highlight">
+                      <p className="editorial-highlight__label">{highlight.label}</p>
+                      <p className={`editorial-highlight__value ${missingInfoClass(highlight.value)}`}>
+                        {highlight.value}
+                      </p>
+                      <p className="editorial-highlight__caption">{highlight.caption}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        );
+      case 'problem':
+        return (
+          <section key={`${sectionId}-${index}`} className="editorial-section" data-showcase-section="problem">
+            <div className="editorial-section__header">
+              <p className="editorial-eyebrow">Le problème</p>
+              <h2 className="editorial-section__title">Les tensions à résoudre</h2>
+            </div>
+            {problemPainPoints.length > 0 && (
+              <div className="editorial-grid">
+                {problemPainPoints.map((point, pointIndex) => (
+                  <div key={`${point}-${pointIndex}`} className="editorial-card">
+                    <p className="editorial-card__text">{renderTextWithLinks(point)}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        );
+      case 'solution':
+        return (
+          <section key={`${sectionId}-${index}`} className="editorial-section" data-showcase-section="solution">
+            <div className="editorial-section__header">
+              <p className="editorial-eyebrow">Notre réponse</p>
+              <h2 className="editorial-section__title">Une solution pensée pour l'exécution</h2>
+            </div>
+            <div className="editorial-split">
+              {hasText(solutionDescription) && (
+                <div className="editorial-card editorial-card--wide">
+                  <h3 className="editorial-card__title">En clair</h3>
+                  <p className={`editorial-card__text ${missingInfoClass(solutionDescription)}`}>
+                    {renderTextWithLinks(solutionDescription)}
+                  </p>
+                </div>
+              )}
+              {solutionBenefits.length > 0 && (
+                <div className="editorial-card">
+                  <h3 className="editorial-card__title">Bénéfices clefs</h3>
+                  <ul className="editorial-list">
+                    {solutionBenefits.map((benefit, benefitIndex) => (
+                      <li key={`${benefit}-${benefitIndex}`}>{renderTextWithLinks(benefit)}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {hasText(solutionComparison) && (
+                <div className="editorial-card">
+                  <h3 className="editorial-card__title">Différenciation</h3>
+                  <p className={`editorial-card__text ${missingInfoClass(solutionComparison)}`}>
+                    {renderTextWithLinks(solutionComparison)}
+                  </p>
+                </div>
+              )}
+            </div>
+          </section>
+        );
+      case 'innovation':
+        if (!hasText(innovationProcess) && !hasText(visionStatement) && !hasText(budgetEstimate)) {
+          return null;
+        }
+        return (
+          <section key={`${sectionId}-${index}`} className="editorial-section" data-showcase-section="innovation">
+            <div className="editorial-section__header">
+              <p className="editorial-eyebrow">Différenciation & impact</p>
+              <h2 className="editorial-section__title">Ce qui crée l'écart</h2>
+            </div>
+            <div className="editorial-grid editorial-grid--featured">
+              {hasText(innovationProcess) && (
+                <div className="editorial-card">
+                  <h3 className="editorial-card__title">Processus & expérimentation</h3>
+                  <p className={`editorial-card__text ${missingInfoClass(innovationProcess)}`}>
+                    {renderTextWithLinks(innovationProcess)}
+                  </p>
+                </div>
+              )}
+              {visionStatementEntries.length > 0 && (
+                <div className="editorial-card">
+                  <h3 className="editorial-card__title">Indicateurs de valeur</h3>
+                  <ul className="editorial-list">
+                    {visionStatementEntries.map((entry, entryIndex) => (
+                      <li key={`${entry}-${entryIndex}`}>{renderTextWithLinks(entry)}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {hasText(budgetEstimate) && (
+                <div className="editorial-card editorial-card--accent">
+                  <h3 className="editorial-card__title">Budget estimé</h3>
+                  <p className={`editorial-metric ${missingInfoClass(budgetEstimate)}`}>
+                    {formattedBudgetEstimate} K€
+                  </p>
+                  <p className="editorial-card__caption">Prévision globale sur 12 mois.</p>
+                </div>
+              )}
+            </div>
+          </section>
+        );
+      case 'team':
+        if (!hasText(teamLead) && !hasText(teamLeadTeam) && teamCoreMembers.length === 0) {
+          return null;
+        }
+        return (
+          <section key={`${sectionId}-${index}`} className="editorial-section" data-showcase-section="team">
+            <div className="editorial-section__header">
+              <p className="editorial-eyebrow">Équipe & alliances</p>
+              <h2 className="editorial-section__title">Les forces mobilisées</h2>
+            </div>
+            <div className="editorial-grid editorial-grid--team">
+              {hasText(teamLead) && (
+                <div className="editorial-card editorial-card--lead">
+                  <p className="editorial-card__kicker">Pilotage</p>
+                  <h3 className={`editorial-card__title ${missingInfoClass(teamLead)}`}>{teamLead}</h3>
+                  {hasText(teamLeadTeam) && (
+                    <p className={`editorial-card__text ${missingInfoClass(teamLeadTeam)}`}>{teamLeadTeam}</p>
+                  )}
+                </div>
+              )}
+              {teamMemberCards.map((member) => (
+                <div key={member.id} className="editorial-card">
+                  <h3 className="editorial-card__title">{member.name}</h3>
+                  {member.details && <p className="editorial-card__text">{member.details}</p>}
+                </div>
+              ))}
+            </div>
+          </section>
+        );
+      case 'timeline':
+        if (!hasTimelineSection) {
+          return null;
+        }
+        return (
+          <section
+            key={`${sectionId}-${index}`}
+            className="editorial-section"
+            data-showcase-section="timeline"
+            data-tour-id="showcase-roadmap"
+          >
+            <div className="editorial-section__header">
+              <p className="editorial-eyebrow">Feuille de route</p>
+              <h2 className="editorial-section__title">Les jalons clés à sécuriser</h2>
+            </div>
+            {runway && (
+              <p className="editorial-subtitle">
+                {runway.isOverdue ? (
+                  <>Le lancement prévu le {runway.launchLabel} a déjà eu lieu.</>
+                ) : runway.isToday ? (
+                  <>Dernière ligne droite : lancement aujourd'hui ({runway.launchLabel}).</>
+                ) : (
+                  <>Compte à rebours : {runway.weeksLabel} ({runway.daysLabel}) avant le lancement prévu le {runway.launchLabel}.</>
+                )}
+              </p>
+            )}
+            {hasTimelineSummaries && (
+              <div className="editorial-grid">
+                {timelineSummariesToDisplay.map((summary, summaryIndex) => (
+                  <div
+                    key={summary.id || `timeline-summary-${summaryIndex}`}
+                    className={`editorial-card ${summary.satisfied ? '' : 'editorial-card--alert'}`}
+                  >
+                    {summary?.alert?.ruleName && (
+                      <p className="editorial-card__kicker">{renderTextWithLinks(summary.alert.ruleName)}</p>
+                    )}
+                    {summary?.alert?.title && (
+                      <p className="editorial-card__text">{renderTextWithLinks(summary.alert.title)}</p>
+                    )}
+                    {summary.satisfied && (
+                      <p className="editorial-metric">{summary.weeks} semaines ({summary.days} jours)</p>
+                    )}
+                    {summary.alert?.requirementSummary && (
+                      <p className="editorial-card__text">{renderTextWithLinks(summary.alert.requirementSummary)}</p>
+                    )}
+                    {summary.alert?.statusMessage && (
+                      <p className="editorial-card__text">{renderTextWithLinks(summary.alert.statusMessage)}</p>
+                    )}
+                    {summary.alert?.teamLabel && (
+                      <p className="editorial-card__caption">Équipe référente : {summary.alert.teamLabel}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            {hasVigilanceAlerts && (
+              <div className="editorial-grid">
+                {unmatchedVigilanceAlerts.map((alert) => (
+                  <div key={alert.id} className="editorial-card editorial-card--alert">
+                    <p className="editorial-card__kicker">{alert.ruleName}</p>
+                    <p className="editorial-card__text">{renderTextWithLinks(alert.title)}</p>
+                    {alert.requirementSummary && (
+                      <p className="editorial-card__text">{alert.requirementSummary}</p>
+                    )}
+                    {alert.statusMessage && (
+                      <p className="editorial-card__text">{alert.statusMessage}</p>
+                    )}
+                    {alert.teamLabel && (
+                      <p className="editorial-card__caption">Équipe référente : {alert.teamLabel}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            {hasTimelineEntries && (
+              <ul className="editorial-timeline">
+                {timelineEntries.map((entry, entryIndex) => (
+                  <li key={entry.id || `timeline-entry-${entryIndex}`} className="editorial-timeline__item">
+                    <span className="editorial-timeline__dot" />
+                    <div>
+                      <p className="editorial-timeline__label">{entry.label}</p>
+                      {entry.description && (
+                        <p className="editorial-timeline__caption">{renderTextWithLinks(entry.description)}</p>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        );
+      default:
+        return null;
+    }
+  }, [
+    budgetEstimate,
+    formattedBudgetEstimate,
+    hasIncompleteAnswers,
+    hasText,
+    hasTimelineEntries,
+    hasTimelineSection,
+    hasTimelineSummaries,
+    heroHighlights,
+    innovationProcess,
+    problemPainPoints,
+    runway,
+    shouldDisplaySection,
+    solutionBenefits,
+    solutionComparison,
+    solutionDescription,
+    teamCoreMembers,
+    teamLead,
+    teamLeadTeam,
+    teamMemberCards,
+    timelineEntries,
+    timelineSummariesToDisplay,
+    unmatchedVigilanceAlerts,
+    visionStatement,
+    visionStatementEntries,
+    slogan,
+    safeProjectName
+  ]);
+
   const renderBaseSection = useCallback((sectionId, index) => {
     if (!shouldDisplaySection(sectionId)) {
       return null;
@@ -3410,6 +3713,99 @@ export const ProjectShowcase = ({
     );
   }, []);
 
+  const renderCustomSectionEditorial = useCallback((section, index) => {
+    if (!section) {
+      return null;
+    }
+
+    const templateConfig = resolveTemplateConfig(section.type);
+    const columnCount = resolveCustomSectionColumnCount(section.columnCount, section.columns);
+    const columns = normalizeCustomSectionColumns(section.columns, columnCount);
+    const activeColumns = columns.filter(column => column.trim().length > 0);
+
+    const badgeLabel = section.accent || 'Badge';
+    const headerBadgeLabel = templateConfig.showBadge
+      ? badgeLabel
+      : `Bloc personnalisé #${index + 1}`;
+
+    return (
+      <section
+        key={section.id}
+        className="editorial-section editorial-section--custom"
+        data-showcase-section={section.type || 'custom'}
+      >
+        <div className="editorial-section__header">
+          {templateConfig.showAccent && (
+            <p className="editorial-eyebrow">{renderTextWithLinks(section.accent || 'Section additionnelle')}</p>
+          )}
+          <h2 className="editorial-section__title">{renderTextWithLinks(section.title || 'Section personnalisée')}</h2>
+          {templateConfig.showBadge && (
+            <span className="editorial-badge">{renderTextWithLinks(headerBadgeLabel)}</span>
+          )}
+        </div>
+        {templateConfig.showSubtitle && section.subtitle && (
+          <p className="editorial-subtitle">{renderTextWithLinks(section.subtitle)}</p>
+        )}
+        {templateConfig.showDescription && section.description && (
+          <p className="editorial-card__text">{renderTextWithLinks(section.description)}</p>
+        )}
+        {templateConfig.showColumns && activeColumns.length > 0 && (
+          <div
+            className="editorial-grid"
+            style={{ gridTemplateColumns: `repeat(${Math.min(columnCount, activeColumns.length)}, minmax(0, 1fr))` }}
+          >
+            {activeColumns.map((column, columnIndex) => (
+              <div key={`${section.id}-column-${columnIndex}`} className="editorial-card">
+                <p className="editorial-card__text">{renderTextWithLinks(column)}</p>
+              </div>
+            ))}
+          </div>
+        )}
+        {templateConfig.showDocument && section.documentUrl && (
+          <div className="editorial-card editorial-card--document">
+            <div className="editorial-document__header">
+              <div>
+                <p className="editorial-card__kicker">Visionneuse documentaire</p>
+                <p className="editorial-card__caption">Source SharePoint • {section.documentType?.toUpperCase() || 'DOC'}</p>
+              </div>
+              <a
+                href={section.documentUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="editorial-link"
+              >
+                Ouvrir dans un nouvel onglet
+              </a>
+            </div>
+            {['jpg', 'png'].includes(section.documentType) ? (
+              <img
+                src={section.documentUrl}
+                alt={`Document ${section.title || 'section personnalisée'}`}
+                className="editorial-document__media"
+                loading="lazy"
+                decoding="async"
+              />
+            ) : (
+              <iframe
+                title={`Document ${section.title || 'section personnalisée'}`}
+                src={resolveDocumentEmbedSrc(section.documentUrl, section.documentType)}
+                className="editorial-document__media"
+                loading="lazy"
+              />
+            )}
+          </div>
+        )}
+        {templateConfig.showItems && Array.isArray(section.items) && section.items.length > 0 && (
+          <ul className="editorial-list">
+            {section.items.map((item, itemIndex) => (
+              <li key={`${section.id}-item-${itemIndex}`}>{renderTextWithLinks(item)}</li>
+            ))}
+          </ul>
+        )}
+      </section>
+    );
+  }, []);
+
   const orderedSections = useMemo(() => {
     const sections = [];
     sectionOrder.forEach((sectionId, index) => {
@@ -3417,7 +3813,11 @@ export const ProjectShowcase = ({
         return;
       }
 
-      const activeRenderCustomSection = isDeezerTheme ? renderCustomSectionDeezer : renderCustomSection;
+      const activeRenderCustomSection = isDeezerTheme
+        ? renderCustomSectionDeezer
+        : isEditorialTheme
+          ? renderCustomSectionEditorial
+          : renderCustomSection;
       if (customSectionMap.has(sectionId)) {
         const renderedCustom = activeRenderCustomSection(customSectionMap.get(sectionId), index);
         if (renderedCustom) {
@@ -3426,7 +3826,13 @@ export const ProjectShowcase = ({
         return;
       }
 
-      const rendered = (isDeezerTheme ? renderDeezerSection : renderBaseSection)(sectionId, index);
+      const rendered = (
+        isDeezerTheme
+          ? renderDeezerSection
+          : isEditorialTheme
+            ? renderEditorialSection
+            : renderBaseSection
+      )(sectionId, index);
       if (rendered) {
         sections.push(rendered);
       }
@@ -3436,10 +3842,13 @@ export const ProjectShowcase = ({
   }, [
     customSectionMap,
     isDeezerTheme,
+    isEditorialTheme,
     renderBaseSection,
     renderCustomSection,
     renderCustomSectionDeezer,
+    renderCustomSectionEditorial,
     renderDeezerSection,
+    renderEditorialSection,
     sectionOrder,
     shouldDisplaySection
   ]);
@@ -3568,8 +3977,14 @@ export const ProjectShowcase = ({
     }
   };
 
+  const previewClassName = isDeezerTheme
+    ? 'deezer-sections'
+    : isEditorialTheme
+      ? 'editorial-sections'
+      : 'aurora-sections';
+
   const previewContent = shouldShowPreview ? (
-    <div className={isDeezerTheme ? 'deezer-sections' : 'aurora-sections'} data-tour-id="showcase-preview">
+    <div className={previewClassName} data-tour-id="showcase-preview">
       {orderedSections}
     </div>
   ) : (
@@ -4750,12 +5165,24 @@ export const ProjectShowcase = ({
     </>
   );
 
+  const shellClassName = isDeezerTheme
+    ? 'deezer-shell'
+    : isEditorialTheme
+      ? 'editorial-shell'
+      : 'aurora-shell';
+  const shellStandaloneClassName = isDeezerTheme
+    ? 'deezer-shell--standalone'
+    : isEditorialTheme
+      ? 'editorial-shell--standalone'
+      : 'aurora-shell--standalone';
+
   if (renderInStandalone) {
     return (
       <div
         data-showcase-scope
         data-showcase-theme={showcaseThemeId}
-        className={`${isDeezerTheme ? 'deezer-shell' : 'aurora-shell'} ${isDeezerTheme ? 'deezer-shell--standalone' : 'aurora-shell--standalone'}`}
+        data-showcase-layout={showcaseLayout}
+        className={`${shellClassName} ${shellStandaloneClassName}`}
         style={showcaseThemeVariables}
       >
         {content}
@@ -4767,7 +5194,8 @@ export const ProjectShowcase = ({
     <section
       data-showcase-scope
       data-showcase-theme={showcaseThemeId}
-      className={isDeezerTheme ? 'deezer-shell' : 'aurora-shell'}
+      data-showcase-layout={showcaseLayout}
+      className={shellClassName}
       style={showcaseThemeVariables}
       aria-label="Vitrine marketing du projet"
     >
