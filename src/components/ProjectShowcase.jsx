@@ -1544,7 +1544,6 @@ export const ProjectShowcase = ({
     selectedTheme?.layout || (showcaseThemeId === 'deezer' ? 'deezer' : 'aurora');
   const isDeezerTheme = showcaseLayout === 'deezer';
   const isEditorialTheme = showcaseLayout === 'editorial';
-  const isFibclotTheme = showcaseLayout === 'fibclot';
   const showcaseThemeVariables = useMemo(
     () => buildThemeVariables(selectedTheme || FALLBACK_SHOWCASE_THEME),
     [selectedTheme]
@@ -3121,313 +3120,6 @@ export const ProjectShowcase = ({
     safeProjectName
   ]);
 
-  const renderFibclotSection = useCallback((sectionId, index) => {
-    if (!shouldDisplaySection(sectionId)) {
-      return null;
-    }
-
-    switch (sectionId) {
-      case 'notice':
-        if (hideNotice || !hasIncompleteAnswers) {
-          return null;
-        }
-        return (
-          <section
-            key={`${sectionId}-${index}`}
-            className="fibclot-section fibclot-section--notice"
-            data-showcase-section="notice"
-          >
-            <p className="fibclot-subtitle">
-              En attente de l’ensemble des informations sur le projet pour une évaluation complète.
-            </p>
-          </section>
-        );
-      case 'hero':
-        return (
-          <section
-            key={`${sectionId}-${index}`}
-            className="fibclot-section fibclot-section--hero"
-            data-showcase-section="hero"
-            data-tour-id="showcase-hero"
-          >
-            <div className="fibclot-hero">
-              <div className="fibclot-hero__copy">
-                <p className="fibclot-eyebrow">Fibclot showcase</p>
-                <h1 className={`fibclot-title ${missingInfoClass(safeProjectName)}`}>{safeProjectName}</h1>
-                {hasText(slogan) && (
-                  <p className={`fibclot-subtitle ${missingInfoClass(slogan)}`}>{renderTextWithLinks(slogan)}</p>
-                )}
-                <button type="button" className="fibclot-cta">Explorer le projet</button>
-              </div>
-              {heroHighlights.length > 0 && (
-                <div className="fibclot-metric-grid">
-                  {heroHighlights.map((highlight) => (
-                    <div key={highlight.id} className="fibclot-metric-card">
-                      <p className="fibclot-metric-label">{highlight.label}</p>
-                      <p className={`fibclot-metric-value ${missingInfoClass(highlight.value)}`}>
-                        {highlight.value}
-                      </p>
-                      <p className="fibclot-subtitle">{highlight.caption}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </section>
-        );
-      case 'problem':
-        return (
-          <section key={`${sectionId}-${index}`} className="fibclot-section" data-showcase-section="problem">
-            <div className="fibclot-section__header">
-              <p className="fibclot-eyebrow">Le problème</p>
-              <h2 className="fibclot-title" style={{ fontSize: '2rem' }}>Les irritants à résoudre</h2>
-            </div>
-            {problemPainPoints.length > 0 && (
-              <div className="fibclot-grid">
-                {problemPainPoints.map((point, pointIndex) => (
-                  <div key={`${point}-${pointIndex}`} className="fibclot-card">
-                    <p className="fibclot-subtitle">{renderTextWithLinks(point)}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-        );
-      case 'solution':
-        return (
-          <section key={`${sectionId}-${index}`} className="fibclot-section" data-showcase-section="solution">
-            <div className="fibclot-section__header">
-              <p className="fibclot-eyebrow">Notre réponse</p>
-              <h2 className="fibclot-title" style={{ fontSize: '2rem' }}>Une solution claire et actionnable</h2>
-            </div>
-            <div className="fibclot-grid">
-              {hasText(solutionDescription) && (
-                <div className="fibclot-card">
-                  <h3 className="fibclot-card__title">Synthèse</h3>
-                  <p className={`fibclot-subtitle ${missingInfoClass(solutionDescription)}`}>
-                    {renderTextWithLinks(solutionDescription)}
-                  </p>
-                </div>
-              )}
-              {solutionBenefits.length > 0 && (
-                <div className="fibclot-card">
-                  <h3 className="fibclot-card__title">Bénéfices clés</h3>
-                  <ul className="fibclot-list">
-                    {solutionBenefits.map((benefit, benefitIndex) => (
-                      <li key={`${benefit}-${benefitIndex}`}>{renderTextWithLinks(benefit)}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {hasText(solutionComparison) && (
-                <div className="fibclot-card">
-                  <h3 className="fibclot-card__title">Différenciation</h3>
-                  <p className={`fibclot-subtitle ${missingInfoClass(solutionComparison)}`}>
-                    {renderTextWithLinks(solutionComparison)}
-                  </p>
-                </div>
-              )}
-            </div>
-          </section>
-        );
-      case 'innovation':
-        if (!hasText(innovationProcess) && !hasText(visionStatement)) {
-          return null;
-        }
-        return (
-          <section key={`${sectionId}-${index}`} className="fibclot-section" data-showcase-section="innovation">
-            <div className="fibclot-section__header">
-              <p className="fibclot-eyebrow">Impact & vision</p>
-              <h2 className="fibclot-title" style={{ fontSize: '2rem' }}>Créer de la valeur mesurable</h2>
-            </div>
-            <div className="fibclot-grid">
-              {hasText(innovationProcess) && (
-                <div className="fibclot-card">
-                  <h3 className="fibclot-card__title">Axes de transformation</h3>
-                  <p className={`fibclot-subtitle ${missingInfoClass(innovationProcess)}`}>
-                    {renderTextWithLinks(innovationProcess)}
-                  </p>
-                </div>
-              )}
-              {visionStatementEntries.length > 0 && (
-                <div className="fibclot-card">
-                  <h3 className="fibclot-card__title">Indicateurs d'impact</h3>
-                  <ul className="fibclot-list">
-                    {visionStatementEntries.map((entry, entryIndex) => (
-                      <li key={`${entry}-${entryIndex}`}>{renderTextWithLinks(entry)}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {hasText(budgetEstimate) && (
-                <div className="fibclot-card">
-                  <span className="fibclot-badge">Budget</span>
-                  <p
-                    className={`fibclot-metric-value ${missingInfoClass(budgetEstimate)}`}
-                    style={{ marginTop: '0.5rem' }}
-                  >
-                    {formattedBudgetEstimate} K€
-                  </p>
-                  <p className="fibclot-subtitle">Prévision globale sur 12 mois.</p>
-                </div>
-              )}
-            </div>
-          </section>
-        );
-      case 'team':
-        if (!hasText(teamLead) && !hasText(teamLeadTeam) && teamCoreMembers.length === 0) {
-          return null;
-        }
-        return (
-          <section key={`${sectionId}-${index}`} className="fibclot-section" data-showcase-section="team">
-            <div className="fibclot-section__header">
-              <p className="fibclot-eyebrow">Équipe</p>
-              <h2 className="fibclot-title" style={{ fontSize: '2rem' }}>Les forces mobilisées</h2>
-            </div>
-            <div className="fibclot-grid">
-              {hasText(teamLead) && (
-                <div className="fibclot-card">
-                  <h3 className="fibclot-card__title">Lead projet</h3>
-                  <p className={`fibclot-subtitle ${missingInfoClass(teamLead)}`}>{teamLead}</p>
-                  {hasText(teamLeadTeam) && (
-                    <p className={`fibclot-subtitle ${missingInfoClass(teamLeadTeam)}`}>{teamLeadTeam}</p>
-                  )}
-                </div>
-              )}
-              {teamMemberCards.map((member) => (
-                <div key={member.id} className="fibclot-card">
-                  <h3 className="fibclot-card__title">{member.name}</h3>
-                  {member.details && <p className="fibclot-subtitle">{member.details}</p>}
-                </div>
-              ))}
-            </div>
-          </section>
-        );
-      case 'timeline':
-        if (!hasTimelineSection) {
-          return null;
-        }
-        return (
-          <section
-            key={`${sectionId}-${index}`}
-            className="fibclot-section"
-            data-showcase-section="timeline"
-            data-tour-id="showcase-roadmap"
-          >
-            <div className="fibclot-section__header">
-              <p className="fibclot-eyebrow">Feuille de route</p>
-              <h2 className="fibclot-title" style={{ fontSize: '2rem' }}>Les jalons clés</h2>
-            </div>
-            {runway && (
-              <p className="fibclot-subtitle">
-                {runway.isOverdue ? (
-                  <>Le lancement prévu le {runway.launchLabel} a déjà eu lieu.</>
-                ) : runway.isToday ? (
-                  <>Dernière ligne droite : lancement aujourd'hui ({runway.launchLabel}).</>
-                ) : (
-                  <>Compte à rebours : {runway.weeksLabel} ({runway.daysLabel}) avant le lancement prévu le {runway.launchLabel}.</>
-                )}
-              </p>
-            )}
-            {hasTimelineSummaries && (
-              <div className="fibclot-grid">
-                {timelineSummariesToDisplay.map((summary, summaryIndex) => (
-                  <div
-                    key={summary.id || `timeline-summary-${summaryIndex}`}
-                    className={`fibclot-card ${summary.satisfied ? '' : 'fibclot-alert'}`}
-                  >
-                    {summary?.alert?.ruleName && (
-                      <p className="fibclot-eyebrow">{renderTextWithLinks(summary.alert.ruleName)}</p>
-                    )}
-                    {summary?.alert?.title && (
-                      <p className="fibclot-subtitle">{renderTextWithLinks(summary.alert.title)}</p>
-                    )}
-                    {summary.satisfied && (
-                      <p className="fibclot-metric-value" style={{ fontSize: '1.3rem' }}>
-                        {summary.weeks} semaines ({summary.days} jours)
-                      </p>
-                    )}
-                    {summary.alert?.requirementSummary && (
-                      <p className="fibclot-subtitle">{renderTextWithLinks(summary.alert.requirementSummary)}</p>
-                    )}
-                    {summary.alert?.statusMessage && (
-                      <p className="fibclot-subtitle">{renderTextWithLinks(summary.alert.statusMessage)}</p>
-                    )}
-                    {summary.alert?.teamLabel && (
-                      <p className="fibclot-subtitle">Équipe référente : {summary.alert.teamLabel}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-            {hasVigilanceAlerts && (
-              <div className="fibclot-grid">
-                {unmatchedVigilanceAlerts.map((alert) => (
-                  <div key={alert.id} className="fibclot-card fibclot-alert">
-                    <p className="fibclot-eyebrow">{alert.ruleName}</p>
-                    <p className="fibclot-subtitle">{renderTextWithLinks(alert.title)}</p>
-                    {alert.requirementSummary && (
-                      <p className="fibclot-subtitle">{alert.requirementSummary}</p>
-                    )}
-                    {alert.statusMessage && (
-                      <p className="fibclot-subtitle">{alert.statusMessage}</p>
-                    )}
-                    {alert.teamLabel && (
-                      <p className="fibclot-subtitle">Équipe référente : {alert.teamLabel}</p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-            {hasTimelineEntries && (
-              <div className="fibclot-timeline">
-                {timelineEntries.map((entry, entryIndex) => (
-                  <div key={entry.id || `timeline-entry-${entryIndex}`} className="fibclot-timeline-item">
-                    <span className="fibclot-timeline-dot" />
-                    <div>
-                      <p className="fibclot-subtitle">{entry.label}</p>
-                      {entry.description && (
-                        <p className="fibclot-subtitle">{renderTextWithLinks(entry.description)}</p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-        );
-      default:
-        return null;
-    }
-  }, [
-    budgetEstimate,
-    formattedBudgetEstimate,
-    hasIncompleteAnswers,
-    hasText,
-    hasTimelineEntries,
-    hasTimelineSection,
-    hasTimelineSummaries,
-    heroHighlights,
-    innovationProcess,
-    problemPainPoints,
-    runway,
-    shouldDisplaySection,
-    solutionBenefits,
-    solutionComparison,
-    solutionDescription,
-    teamCoreMembers,
-    teamLead,
-    teamLeadTeam,
-    teamMemberCards,
-    timelineEntries,
-    timelineSummariesToDisplay,
-    unmatchedVigilanceAlerts,
-    visionStatement,
-    visionStatementEntries,
-    slogan,
-    safeProjectName
-  ]);
-
   const renderBaseSection = useCallback((sectionId, index) => {
     if (!shouldDisplaySection(sectionId)) {
       return null;
@@ -4114,103 +3806,6 @@ export const ProjectShowcase = ({
     );
   }, []);
 
-  const renderCustomSectionFibclot = useCallback((section, index) => {
-    if (!section) {
-      return null;
-    }
-
-    const templateConfig = resolveTemplateConfig(section.type);
-    const columnCount = resolveCustomSectionColumnCount(section.columnCount, section.columns);
-    const columns = normalizeCustomSectionColumns(section.columns, columnCount);
-    const activeColumns = columns.filter(column => column.trim().length > 0);
-
-    const badgeLabel = section.accent || 'Badge';
-    const headerBadgeLabel = templateConfig.showBadge
-      ? badgeLabel
-      : `Bloc personnalisé #${index + 1}`;
-
-    return (
-      <section
-        key={section.id}
-        className="fibclot-section fibclot-section--custom"
-        data-showcase-section={section.type || 'custom'}
-      >
-        <div className="fibclot-section__header">
-          {templateConfig.showAccent && (
-            <p className="fibclot-eyebrow">{renderTextWithLinks(section.accent || 'Section additionnelle')}</p>
-          )}
-          <h2 className="fibclot-title" style={{ fontSize: '2rem' }}>
-            {renderTextWithLinks(section.title || 'Section personnalisée')}
-          </h2>
-          {templateConfig.showBadge && (
-            <span className="fibclot-badge">{renderTextWithLinks(headerBadgeLabel)}</span>
-          )}
-        </div>
-        {templateConfig.showSubtitle && section.subtitle && (
-          <p className="fibclot-subtitle">{renderTextWithLinks(section.subtitle)}</p>
-        )}
-        {templateConfig.showDescription && section.description && (
-          <p className="fibclot-subtitle">{renderTextWithLinks(section.description)}</p>
-        )}
-        {templateConfig.showColumns && activeColumns.length > 0 && (
-          <div
-            className="fibclot-grid"
-            style={{ gridTemplateColumns: `repeat(${Math.min(columnCount, activeColumns.length)}, minmax(0, 1fr))` }}
-          >
-            {activeColumns.map((column, columnIndex) => (
-              <div key={`${section.id}-column-${columnIndex}`} className="fibclot-card">
-                <p className="fibclot-subtitle">{renderTextWithLinks(column)}</p>
-              </div>
-            ))}
-          </div>
-        )}
-        {templateConfig.showDocument && section.documentUrl && (
-          <div className="fibclot-document">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <p className="fibclot-card__title">Visionneuse documentaire</p>
-                <p className="fibclot-subtitle">
-                  Source SharePoint • {section.documentType?.toUpperCase() || 'DOC'}
-                </p>
-              </div>
-              <a
-                href={section.documentUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="fibclot-subtitle"
-              >
-                Ouvrir dans un nouvel onglet
-              </a>
-            </div>
-            {['jpg', 'png'].includes(section.documentType) ? (
-              <img
-                src={section.documentUrl}
-                alt={`Document ${section.title || 'section personnalisée'}`}
-                className="fibclot-document__media"
-                loading="lazy"
-                decoding="async"
-              />
-            ) : (
-              <iframe
-                title={`Document ${section.title || 'section personnalisée'}`}
-                src={resolveDocumentEmbedSrc(section.documentUrl, section.documentType)}
-                className="fibclot-document__media"
-                loading="lazy"
-              />
-            )}
-          </div>
-        )}
-        {templateConfig.showItems && Array.isArray(section.items) && section.items.length > 0 && (
-          <ul className="fibclot-list">
-            {section.items.map((item, itemIndex) => (
-              <li key={`${section.id}-item-${itemIndex}`}>{renderTextWithLinks(item)}</li>
-            ))}
-          </ul>
-        )}
-      </section>
-    );
-  }, []);
-
   const orderedSections = useMemo(() => {
     const sections = [];
     sectionOrder.forEach((sectionId, index) => {
@@ -4222,9 +3817,7 @@ export const ProjectShowcase = ({
         ? renderCustomSectionDeezer
         : isEditorialTheme
           ? renderCustomSectionEditorial
-          : isFibclotTheme
-            ? renderCustomSectionFibclot
-            : renderCustomSection;
+          : renderCustomSection;
       if (customSectionMap.has(sectionId)) {
         const renderedCustom = activeRenderCustomSection(customSectionMap.get(sectionId), index);
         if (renderedCustom) {
@@ -4238,9 +3831,7 @@ export const ProjectShowcase = ({
           ? renderDeezerSection
           : isEditorialTheme
             ? renderEditorialSection
-            : isFibclotTheme
-              ? renderFibclotSection
-              : renderBaseSection
+            : renderBaseSection
       )(sectionId, index);
       if (rendered) {
         sections.push(rendered);
@@ -4252,15 +3843,12 @@ export const ProjectShowcase = ({
     customSectionMap,
     isDeezerTheme,
     isEditorialTheme,
-    isFibclotTheme,
     renderBaseSection,
     renderCustomSection,
     renderCustomSectionDeezer,
     renderCustomSectionEditorial,
-    renderCustomSectionFibclot,
     renderDeezerSection,
     renderEditorialSection,
-    renderFibclotSection,
     sectionOrder,
     shouldDisplaySection
   ]);
@@ -4393,9 +3981,7 @@ export const ProjectShowcase = ({
     ? 'deezer-sections'
     : isEditorialTheme
       ? 'editorial-sections'
-      : isFibclotTheme
-        ? 'fibclot-sections'
-        : 'aurora-sections';
+      : 'aurora-sections';
 
   const previewContent = shouldShowPreview ? (
     <div className={previewClassName} data-tour-id="showcase-preview">
@@ -5583,16 +5169,12 @@ export const ProjectShowcase = ({
     ? 'deezer-shell'
     : isEditorialTheme
       ? 'editorial-shell'
-      : isFibclotTheme
-        ? 'fibclot-shell'
-        : 'aurora-shell';
+      : 'aurora-shell';
   const shellStandaloneClassName = isDeezerTheme
     ? 'deezer-shell--standalone'
     : isEditorialTheme
       ? 'editorial-shell--standalone'
-      : isFibclotTheme
-        ? 'fibclot-shell--standalone'
-        : 'aurora-shell--standalone';
+      : 'aurora-shell--standalone';
 
   if (renderInStandalone) {
     return (
