@@ -42,7 +42,7 @@ import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.272';
+const APP_VERSION = 'v1.0.271';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -812,7 +812,6 @@ export const App = () => {
     ensureStylesheetLoaded('./src/styles/project-showcase-theme-aurora.css');
     ensureStylesheetLoaded('./src/styles/project-showcase-theme-deezer.css');
     ensureStylesheetLoaded('./src/styles/project-showcase-theme-editorial.css');
-    ensureStylesheetLoaded('./src/styles/project-showcase-theme-fibclot.css');
   }, [ensureStylesheetLoaded, showcaseProjectContext]);
 
   useEffect(() => {
