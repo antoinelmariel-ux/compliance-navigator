@@ -811,6 +811,7 @@ export const App = () => {
     ensureStylesheetLoaded('./src/styles/project-showcase.css');
     ensureStylesheetLoaded('./src/styles/project-showcase-theme-aurora.css');
     ensureStylesheetLoaded('./src/styles/project-showcase-theme-deezer.css');
+    ensureStylesheetLoaded('./src/styles/project-showcase-theme-editorial.css');
   }, [ensureStylesheetLoaded, showcaseProjectContext]);
 
   useEffect(() => {

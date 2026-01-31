@@ -3,6 +3,7 @@ export const initialShowcaseThemes = [
     id: 'universel',
     label: 'Universel',
     description: 'Palette actuelle de la vitrine, équilibrée entre bleu profond et reflets cyan.',
+    layout: 'aurora',
     aliases: ['Universel'],
     palette: {
       backgroundStart: '#020309',
@@ -53,6 +54,7 @@ export const initialShowcaseThemes = [
     id: 'deezer',
     label: 'Deezer',
     description: 'Univers sombre et vibrant inspiré des plateformes musicales, avec néons et pulsations.',
+    layout: 'deezer',
     aliases: ['Deezer', 'Music'],
     palette: {
       backgroundStart: '#06060a',
@@ -103,6 +105,7 @@ export const initialShowcaseThemes = [
     id: 'cevenfacta',
     label: 'Cevenfacta',
     description: 'Palette Cevenfacta basée sur les tons charbon, ardoise et orange signature.',
+    layout: 'editorial',
     aliases: ['Cevenfacta', 'SevenFacta', 'Cevens'],
     palette: {
       backgroundStart: '#121110',
@@ -153,6 +156,7 @@ export const initialShowcaseThemes = [
     id: 'iqymune',
     label: 'IqYmune',
     description: 'Palette QBD/IqYmune violette avec accents rose et cyan.',
+    layout: 'editorial',
     aliases: ['IqYmune', 'IQYMUNE', 'QBD'],
     palette: {
       backgroundStart: '#1a1430',
