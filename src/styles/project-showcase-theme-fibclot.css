@@ -1,0 +1,222 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
+
+[data-showcase-layout="fibclot"] {
+  font-family: 'Manrope', system-ui, sans-serif;
+  color: var(--showcase-ink-strong, #1f2a21);
+  background: var(--showcase-bg-start, #f5f6ed);
+}
+
+[data-showcase-layout="fibclot"] .fibclot-shell {
+  position: relative;
+  min-height: 100vh;
+  padding: 5.5rem clamp(1.5rem, 6vw, 6rem) 4.5rem;
+  background:
+    radial-gradient(circle at 20% 20%, var(--showcase-glow-primary, rgba(164, 176, 100, 0.22)), transparent 55%),
+    radial-gradient(circle at 80% 10%, var(--showcase-glow-secondary, rgba(45, 183, 194, 0.18)), transparent 50%),
+    linear-gradient(170deg, var(--showcase-bg-start, #f5f6ed) 0%, var(--showcase-bg-mid, #e2e6ce) 55%, var(--showcase-bg-end, #d4ddba) 100%);
+  overflow: hidden;
+}
+
+[data-showcase-layout="fibclot"] .fibclot-shell--standalone {
+  padding-top: 6.5rem;
+}
+
+[data-showcase-layout="fibclot"] .fibclot-sections {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3.5rem;
+}
+
+[data-showcase-layout="fibclot"] .fibclot-section {
+  padding: 2.5rem clamp(1.5rem, 4vw, 3.5rem);
+  border-radius: 28px;
+  background: var(--showcase-surface-panel-soft, rgba(255, 255, 255, 0.9));
+  border: 1px solid var(--showcase-border-light, rgba(164, 176, 100, 0.35));
+  box-shadow: 0 20px 45px rgba(43, 49, 33, 0.12);
+}
+
+[data-showcase-layout="fibclot"] .fibclot-section--hero {
+  background: var(--showcase-hero-gradient, linear-gradient(135deg, #f9f9f0, #e9edda));
+  border-color: rgba(164, 176, 100, 0.4);
+}
+
+[data-showcase-layout="fibclot"] .fibclot-section--notice {
+  background: linear-gradient(140deg, rgba(255, 248, 214, 0.9), rgba(255, 255, 255, 0.95));
+  border-color: rgba(250, 158, 39, 0.35);
+}
+
+[data-showcase-layout="fibclot"] .fibclot-eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.35em;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--showcase-accent-secondary, #2db7c2);
+}
+
+[data-showcase-layout="fibclot"] .fibclot-title {
+  font-family: 'Fraunces', serif;
+  font-size: clamp(2.3rem, 4vw, 3.4rem);
+  margin-top: 0.6rem;
+  color: var(--showcase-ink-strong, #1f2a21);
+}
+
+[data-showcase-layout="fibclot"] .fibclot-subtitle {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--showcase-ink-muted, #5b6551);
+}
+
+[data-showcase-layout="fibclot"] .fibclot-hero {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 2.5rem;
+  align-items: center;
+}
+
+[data-showcase-layout="fibclot"] .fibclot-hero__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+[data-showcase-layout="fibclot"] .fibclot-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.85rem 1.8rem;
+  border-radius: 999px;
+  border: none;
+  font-weight: 700;
+  background: var(--showcase-cta-gradient, linear-gradient(120deg, #7f9026, #2db7c2));
+  color: var(--showcase-cta-text, #fdfdf7);
+  box-shadow: 0 14px 30px rgba(45, 183, 194, 0.25);
+}
+
+[data-showcase-layout="fibclot"] .fibclot-metric-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+[data-showcase-layout="fibclot"] .fibclot-metric-card {
+  padding: 1.25rem 1.5rem;
+  border-radius: 20px;
+  background: var(--showcase-surface-light, #ffffff);
+  border: 1px solid rgba(164, 176, 100, 0.25);
+  box-shadow: 0 12px 25px rgba(43, 49, 33, 0.08);
+}
+
+[data-showcase-layout="fibclot"] .fibclot-metric-label {
+  font-size: 0.65rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--showcase-accent-primary, #7f9026);
+}
+
+[data-showcase-layout="fibclot"] .fibclot-metric-value {
+  font-size: 1.7rem;
+  font-weight: 700;
+  margin: 0.4rem 0;
+  color: var(--showcase-ink-strong, #1f2a21);
+}
+
+[data-showcase-layout="fibclot"] .fibclot-grid {
+  display: grid;
+  gap: 1.2rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+[data-showcase-layout="fibclot"] .fibclot-card {
+  padding: 1.4rem;
+  border-radius: 20px;
+  background: var(--showcase-surface-light, #ffffff);
+  border: 1px solid rgba(164, 176, 100, 0.2);
+  box-shadow: 0 14px 28px rgba(43, 49, 33, 0.08);
+}
+
+[data-showcase-layout="fibclot"] .fibclot-card__title {
+  font-weight: 700;
+  margin-bottom: 0.6rem;
+  color: var(--showcase-ink-strong, #1f2a21);
+}
+
+[data-showcase-layout="fibclot"] .fibclot-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding-left: 1.1rem;
+}
+
+[data-showcase-layout="fibclot"] .fibclot-list li {
+  list-style: square;
+  color: var(--showcase-ink-muted, #5b6551);
+}
+
+[data-showcase-layout="fibclot"] .fibclot-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-weight: 700;
+  background: rgba(205, 23, 25, 0.12);
+  color: #a41315;
+}
+
+[data-showcase-layout="fibclot"] .fibclot-alert {
+  border-color: rgba(205, 23, 25, 0.45);
+  box-shadow: 0 16px 30px rgba(205, 23, 25, 0.12);
+}
+
+[data-showcase-layout="fibclot"] .fibclot-timeline {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+[data-showcase-layout="fibclot"] .fibclot-timeline-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.9rem;
+  align-items: start;
+}
+
+[data-showcase-layout="fibclot"] .fibclot-timeline-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  margin-top: 0.3rem;
+  background: var(--showcase-accent-secondary, #2db7c2);
+  box-shadow: 0 0 0 6px rgba(45, 183, 194, 0.12);
+}
+
+[data-showcase-layout="fibclot"] .fibclot-section__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1.6rem;
+}
+
+[data-showcase-layout="fibclot"] .fibclot-section--custom {
+  border-style: dashed;
+}
+
+[data-showcase-layout="fibclot"] .fibclot-document {
+  margin-top: 1.5rem;
+  border-radius: 20px;
+  border: 1px solid rgba(164, 176, 100, 0.25);
+  background: var(--showcase-surface-light, #ffffff);
+  padding: 1.25rem;
+}
+
+[data-showcase-layout="fibclot"] .fibclot-document__media {
+  width: 100%;
+  height: 320px;
+  margin-top: 1rem;
+  border-radius: 16px;
+  border: 1px solid rgba(164, 176, 100, 0.2);
+}
