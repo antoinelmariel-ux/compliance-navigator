@@ -1544,6 +1544,7 @@ export const ProjectShowcase = ({
     selectedTheme?.layout || (showcaseThemeId === 'deezer' ? 'deezer' : 'aurora');
   const isDeezerTheme = showcaseLayout === 'deezer';
   const isEditorialTheme = showcaseLayout === 'editorial';
+  const isFibclotTheme = showcaseLayout === 'fibclot';
   const showcaseThemeVariables = useMemo(
     () => buildThemeVariables(selectedTheme || FALLBACK_SHOWCASE_THEME),
     [selectedTheme]
@@ -3120,6 +3121,323 @@ export const ProjectShowcase = ({
     safeProjectName
   ]);
 
+  const renderFibclotSection = useCallback((sectionId, index) => {
+    if (!shouldDisplaySection(sectionId)) {
+      return null;
+    }
+
+    switch (sectionId) {
+      case 'notice':
+        if (hideNotice || !hasIncompleteAnswers) {
+          return null;
+        }
+        return (
+          <section key={`${sectionId}-${index}`} className="fibclot-section fibclot-section--notice" data-showcase-section="notice">
+            <div className="fibclot-alert">
+              En attente de l’ensemble des informations sur le projet pour une évaluation complète.
+            </div>
+          </section>
+        );
+      case 'hero':
+        return (
+          <section
+            key={`${sectionId}-${index}`}
+            className="fibclot-section fibclot-section--hero"
+            data-showcase-section="hero"
+            data-tour-id="showcase-hero"
+          >
+            <div className="fibclot-hero">
+              <div className="fibclot-hero__intro">
+                <span className="fibclot-eyebrow">Synthèse Fibclot</span>
+                <h1 className={`fibclot-hero__title ${missingInfoClass(safeProjectName)}`}>{safeProjectName}</h1>
+                {hasText(slogan) && (
+                  <p className={`fibclot-hero__subtitle ${missingInfoClass(slogan)}`}>
+                    {renderTextWithLinks(slogan)}
+                  </p>
+                )}
+                <div className="fibclot-hero__actions">
+                  <button type="button" className="fibclot-cta">Explorer le dossier</button>
+                  <span className="fibclot-hero__tag">Fibclot strategic view</span>
+                </div>
+              </div>
+              {heroHighlights.length > 0 && (
+                <div className="fibclot-hero__stats">
+                  {heroHighlights.map((highlight) => (
+                    <div key={highlight.id} className="fibclot-kpi">
+                      <p className="fibclot-kpi__label">{highlight.label}</p>
+                      <p className={`fibclot-kpi__value ${missingInfoClass(highlight.value)}`}>
+                        {highlight.value}
+                      </p>
+                      <p className="fibclot-kpi__caption">{highlight.caption}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        );
+      case 'problem':
+        return (
+          <section key={`${sectionId}-${index}`} className="fibclot-section" data-showcase-section="problem">
+            <div className="fibclot-section__header">
+              <span className="fibclot-eyebrow">Tensions</span>
+              <h2 className="fibclot-section__title">Les frictions qui justifient l’initiative</h2>
+            </div>
+            {problemPainPoints.length > 0 && (
+              <div className="fibclot-fragments">
+                {problemPainPoints.map((point, pointIndex) => (
+                  <div key={`${point}-${pointIndex}`} className="fibclot-fragment">
+                    <span className="fibclot-fragment__marker" />
+                    <p className="fibclot-fragment__text">{renderTextWithLinks(point)}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        );
+      case 'solution':
+        return (
+          <section key={`${sectionId}-${index}`} className="fibclot-section" data-showcase-section="solution">
+            <div className="fibclot-section__header">
+              <span className="fibclot-eyebrow">Plan d’action</span>
+              <h2 className="fibclot-section__title">Architecture de la réponse Fibclot</h2>
+            </div>
+            <div className="fibclot-solution">
+              {hasText(solutionDescription) && (
+                <div className="fibclot-card fibclot-card--wide">
+                  <h3 className="fibclot-card__title">En clair</h3>
+                  <p className={`fibclot-card__text ${missingInfoClass(solutionDescription)}`}>
+                    {renderTextWithLinks(solutionDescription)}
+                  </p>
+                </div>
+              )}
+              {solutionBenefits.length > 0 && (
+                <div className="fibclot-card">
+                  <h3 className="fibclot-card__title">Bénéfices clefs</h3>
+                  <ul className="fibclot-list">
+                    {solutionBenefits.map((benefit, benefitIndex) => (
+                      <li key={`${benefit}-${benefitIndex}`}>{renderTextWithLinks(benefit)}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {hasText(solutionComparison) && (
+                <div className="fibclot-card fibclot-card--accent">
+                  <h3 className="fibclot-card__title">Différenciation</h3>
+                  <p className={`fibclot-card__text ${missingInfoClass(solutionComparison)}`}>
+                    {renderTextWithLinks(solutionComparison)}
+                  </p>
+                </div>
+              )}
+            </div>
+          </section>
+        );
+      case 'innovation':
+        if (!hasText(innovationProcess) && !hasText(visionStatement)) {
+          return null;
+        }
+        return (
+          <section key={`${sectionId}-${index}`} className="fibclot-section" data-showcase-section="innovation">
+            <div className="fibclot-section__header">
+              <span className="fibclot-eyebrow">Impact & valeur</span>
+              <h2 className="fibclot-section__title">Créer l’écart avec méthode</h2>
+            </div>
+            <div className="fibclot-impact">
+              {hasText(innovationProcess) && (
+                <div className="fibclot-impact__panel">
+                  <p className="fibclot-impact__label">Processus & expérimentation</p>
+                  <p className={`fibclot-impact__text ${missingInfoClass(innovationProcess)}`}>
+                    {renderTextWithLinks(innovationProcess)}
+                  </p>
+                </div>
+              )}
+              {visionStatementEntries.length > 0 && (
+                <div className="fibclot-impact__panel fibclot-impact__panel--list">
+                  <p className="fibclot-impact__label">Indicateurs de valeur</p>
+                  <ul className="fibclot-list">
+                    {visionStatementEntries.map((entry, entryIndex) => (
+                      <li key={`${entry}-${entryIndex}`}>{renderTextWithLinks(entry)}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {hasText(budgetEstimate) && (
+                <div className="fibclot-impact__metric" data-tour-id="showcase-budget">
+                  <p className="fibclot-impact__label">Budget estimé</p>
+                  <p className={`fibclot-impact__value ${missingInfoClass(budgetEstimate)}`}>
+                    {formattedBudgetEstimate} K€
+                  </p>
+                  <p className="fibclot-impact__caption">Projection sur 12 mois.</p>
+                </div>
+              )}
+            </div>
+          </section>
+        );
+      case 'team':
+        if (!hasText(teamLead) && !hasText(teamLeadTeam) && teamCoreMembers.length === 0) {
+          return null;
+        }
+        return (
+          <section key={`${sectionId}-${index}`} className="fibclot-section" data-showcase-section="team">
+            <div className="fibclot-section__header">
+              <span className="fibclot-eyebrow">Équipe & alliances</span>
+              <h2 className="fibclot-section__title">Les forces mobilisées</h2>
+            </div>
+            <div className="fibclot-team">
+              {hasText(teamLead) && (
+                <div className="fibclot-team__lead">
+                  <p className="fibclot-team__label">Pilotage</p>
+                  <h3 className={`fibclot-team__name ${missingInfoClass(teamLead)}`}>{teamLead}</h3>
+                  {hasText(teamLeadTeam) && (
+                    <p className={`fibclot-team__role ${missingInfoClass(teamLeadTeam)}`}>{teamLeadTeam}</p>
+                  )}
+                </div>
+              )}
+              {teamMemberCards.length > 0 && (
+                <div className="fibclot-team__grid">
+                  {teamMemberCards.map((member) => (
+                    <div key={member.id} className="fibclot-team__card">
+                      <div className="fibclot-team__avatar" aria-hidden="true">{member.initials}</div>
+                      <div>
+                        <p className="fibclot-team__member">{member.name}</p>
+                        {member.details && (
+                          <p className="fibclot-team__details">{member.details}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        );
+      case 'timeline':
+        if (!hasTimelineSection) {
+          return null;
+        }
+        return (
+          <section
+            key={`${sectionId}-${index}`}
+            className="fibclot-section"
+            data-showcase-section="timeline"
+            data-tour-id="showcase-roadmap"
+          >
+            <div className="fibclot-section__header">
+              <span className="fibclot-eyebrow">Feuille de route</span>
+              <h2 className="fibclot-section__title">Les jalons à sécuriser</h2>
+            </div>
+            {runway && (
+              <p className="fibclot-runway">
+                {runway.isOverdue ? (
+                  <>Le lancement prévu le {runway.launchLabel} a déjà eu lieu.</>
+                ) : runway.isToday ? (
+                  <>Dernière ligne droite : lancement aujourd'hui ({runway.launchLabel}).</>
+                ) : (
+                  <>Compte à rebours : {runway.weeksLabel} ({runway.daysLabel}) avant le lancement prévu le {runway.launchLabel}.</>
+                )}
+              </p>
+            )}
+            {hasTimelineSummaries && (
+              <div className="fibclot-alert-grid">
+                {timelineSummariesToDisplay.map((summary, summaryIndex) => {
+                  const summaryRuleLabel = summary?.alert?.ruleName || summary?.ruleName;
+                  const alertTitle = summary?.alert?.title;
+                  const summaryClassName = summary.satisfied
+                    ? 'fibclot-alert-card fibclot-alert-card--ok'
+                    : 'fibclot-alert-card fibclot-alert-card--alert';
+
+                  return (
+                    <div key={summary.id || `timeline-summary-${summaryIndex}`} className={summaryClassName}>
+                      {summaryRuleLabel && (
+                        <p className="fibclot-alert-card__label">{renderTextWithLinks(summaryRuleLabel)}</p>
+                      )}
+                      {alertTitle && (
+                        <p className="fibclot-alert-card__title">{renderTextWithLinks(alertTitle)}</p>
+                      )}
+                      {summary.satisfied && (
+                        <p className="fibclot-alert-card__value">{summary.weeks} semaines ({summary.days} jours)</p>
+                      )}
+                      {summary.alert?.requirementSummary && (
+                        <p className="fibclot-alert-card__text">{renderTextWithLinks(summary.alert.requirementSummary)}</p>
+                      )}
+                      {summary.alert?.statusMessage && (
+                        <p className="fibclot-alert-card__text">{renderTextWithLinks(summary.alert.statusMessage)}</p>
+                      )}
+                      {summary.alert?.teamLabel && (
+                        <p className="fibclot-alert-card__caption">Équipe référente : {summary.alert.teamLabel}</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {hasVigilanceAlerts && (
+              <div className="fibclot-alert-grid">
+                {unmatchedVigilanceAlerts.map((alert) => (
+                  <div key={alert.id} className="fibclot-alert-card fibclot-alert-card--alert">
+                    <p className="fibclot-alert-card__label">{alert.ruleName}</p>
+                    <p className="fibclot-alert-card__title">{renderTextWithLinks(alert.title)}</p>
+                    {alert.requirementSummary && (
+                      <p className="fibclot-alert-card__text">{alert.requirementSummary}</p>
+                    )}
+                    {alert.statusMessage && (
+                      <p className="fibclot-alert-card__text">{alert.statusMessage}</p>
+                    )}
+                    {alert.teamLabel && (
+                      <p className="fibclot-alert-card__caption">Équipe référente : {alert.teamLabel}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            {hasTimelineEntries && (
+              <ul className="fibclot-timeline">
+                {timelineEntries.map((entry, entryIndex) => (
+                  <li key={entry.id || `timeline-entry-${entryIndex}`} className="fibclot-timeline__item">
+                    <span className="fibclot-timeline__dot" />
+                    <div>
+                      <p className="fibclot-timeline__label">{entry.label}</p>
+                      {entry.description && (
+                        <p className="fibclot-timeline__caption">{renderTextWithLinks(entry.description)}</p>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        );
+      default:
+        return null;
+    }
+  }, [
+    formattedBudgetEstimate,
+    hasIncompleteAnswers,
+    hasText,
+    hasTimelineEntries,
+    hasTimelineSection,
+    hasTimelineSummaries,
+    heroHighlights,
+    innovationProcess,
+    problemPainPoints,
+    runway,
+    shouldDisplaySection,
+    solutionBenefits,
+    solutionComparison,
+    solutionDescription,
+    teamCoreMembers,
+    teamLead,
+    teamLeadTeam,
+    teamMemberCards,
+    timelineEntries,
+    timelineSummariesToDisplay,
+    unmatchedVigilanceAlerts,
+    visionStatement,
+    visionStatementEntries,
+    slogan,
+    safeProjectName
+  ]);
+
   const renderBaseSection = useCallback((sectionId, index) => {
     if (!shouldDisplaySection(sectionId)) {
       return null;
@@ -3622,6 +3940,99 @@ export const ProjectShowcase = ({
     );
   }, []);
 
+  const renderCustomSectionFibclot = useCallback((section, index) => {
+    if (!section) {
+      return null;
+    }
+
+    const templateConfig = resolveTemplateConfig(section.type);
+    const columnCount = resolveCustomSectionColumnCount(section.columnCount, section.columns);
+    const columns = normalizeCustomSectionColumns(section.columns, columnCount);
+    const activeColumns = columns.filter(column => column.trim().length > 0);
+
+    const badgeLabel = section.accent || 'Badge';
+    const headerBadgeLabel = templateConfig.showBadge
+      ? badgeLabel
+      : `Bloc personnalisé #${index + 1}`;
+
+    return (
+      <section
+        key={section.id}
+        className="fibclot-section fibclot-section--custom"
+        data-showcase-section={section.type || 'custom'}
+      >
+        <div className="fibclot-section__header">
+          {templateConfig.showAccent && (
+            <span className="fibclot-eyebrow">{renderTextWithLinks(section.accent || 'Section additionnelle')}</span>
+          )}
+          <h2 className="fibclot-section__title">{renderTextWithLinks(section.title || 'Section personnalisée')}</h2>
+          {templateConfig.showBadge && (
+            <span className="fibclot-badge">{renderTextWithLinks(headerBadgeLabel)}</span>
+          )}
+        </div>
+        {templateConfig.showSubtitle && section.subtitle && (
+          <p className="fibclot-subtitle">{renderTextWithLinks(section.subtitle)}</p>
+        )}
+        {templateConfig.showDescription && section.description && (
+          <p className="fibclot-card__text">{renderTextWithLinks(section.description)}</p>
+        )}
+        {templateConfig.showColumns && activeColumns.length > 0 && (
+          <div
+            className="fibclot-columns"
+            style={{ gridTemplateColumns: `repeat(${Math.min(columnCount, activeColumns.length)}, minmax(0, 1fr))` }}
+          >
+            {activeColumns.map((column, columnIndex) => (
+              <div key={`${section.id}-column-${columnIndex}`} className="fibclot-card">
+                <p className="fibclot-card__text">{renderTextWithLinks(column)}</p>
+              </div>
+            ))}
+          </div>
+        )}
+        {templateConfig.showDocument && section.documentUrl && (
+          <div className="fibclot-card fibclot-card--document">
+            <div className="fibclot-document__header">
+              <div>
+                <p className="fibclot-card__title">Visionneuse documentaire</p>
+                <p className="fibclot-card__caption">Source SharePoint • {section.documentType?.toUpperCase() || 'DOC'}</p>
+              </div>
+              <a
+                href={section.documentUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="fibclot-link"
+              >
+                Ouvrir dans un nouvel onglet
+              </a>
+            </div>
+            {['jpg', 'png'].includes(section.documentType) ? (
+              <img
+                src={section.documentUrl}
+                alt={`Document ${section.title || 'section personnalisée'}`}
+                className="fibclot-document__media"
+                loading="lazy"
+                decoding="async"
+              />
+            ) : (
+              <iframe
+                title={`Document ${section.title || 'section personnalisée'}`}
+                src={resolveDocumentEmbedSrc(section.documentUrl, section.documentType)}
+                className="fibclot-document__media"
+                loading="lazy"
+              />
+            )}
+          </div>
+        )}
+        {templateConfig.showItems && Array.isArray(section.items) && section.items.length > 0 && (
+          <ul className="fibclot-list fibclot-list--stacked">
+            {section.items.map((item, itemIndex) => (
+              <li key={`${section.id}-item-${itemIndex}`}>{renderTextWithLinks(item)}</li>
+            ))}
+          </ul>
+        )}
+      </section>
+    );
+  }, []);
+
   const renderCustomSectionDeezer = useCallback((section, index) => {
     if (!section) {
       return null;
@@ -3817,7 +4228,9 @@ export const ProjectShowcase = ({
         ? renderCustomSectionDeezer
         : isEditorialTheme
           ? renderCustomSectionEditorial
-          : renderCustomSection;
+          : isFibclotTheme
+            ? renderCustomSectionFibclot
+            : renderCustomSection;
       if (customSectionMap.has(sectionId)) {
         const renderedCustom = activeRenderCustomSection(customSectionMap.get(sectionId), index);
         if (renderedCustom) {
@@ -3831,7 +4244,9 @@ export const ProjectShowcase = ({
           ? renderDeezerSection
           : isEditorialTheme
             ? renderEditorialSection
-            : renderBaseSection
+            : isFibclotTheme
+              ? renderFibclotSection
+              : renderBaseSection
       )(sectionId, index);
       if (rendered) {
         sections.push(rendered);
@@ -3843,12 +4258,15 @@ export const ProjectShowcase = ({
     customSectionMap,
     isDeezerTheme,
     isEditorialTheme,
+    isFibclotTheme,
     renderBaseSection,
     renderCustomSection,
+    renderCustomSectionFibclot,
     renderCustomSectionDeezer,
     renderCustomSectionEditorial,
     renderDeezerSection,
     renderEditorialSection,
+    renderFibclotSection,
     sectionOrder,
     shouldDisplaySection
   ]);
@@ -3981,7 +4399,9 @@ export const ProjectShowcase = ({
     ? 'deezer-sections'
     : isEditorialTheme
       ? 'editorial-sections'
-      : 'aurora-sections';
+      : isFibclotTheme
+        ? 'fibclot-sections'
+        : 'aurora-sections';
 
   const previewContent = shouldShowPreview ? (
     <div className={previewClassName} data-tour-id="showcase-preview">
@@ -5169,12 +5589,16 @@ export const ProjectShowcase = ({
     ? 'deezer-shell'
     : isEditorialTheme
       ? 'editorial-shell'
-      : 'aurora-shell';
+      : isFibclotTheme
+        ? 'fibclot-shell'
+        : 'aurora-shell';
   const shellStandaloneClassName = isDeezerTheme
     ? 'deezer-shell--standalone'
     : isEditorialTheme
       ? 'editorial-shell--standalone'
-      : 'aurora-shell--standalone';
+      : isFibclotTheme
+        ? 'fibclot-shell--standalone'
+        : 'aurora-shell--standalone';
 
   if (renderInStandalone) {
     return (
