@@ -42,7 +42,7 @@ import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.273';
+const APP_VERSION = 'v1.0.274';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
