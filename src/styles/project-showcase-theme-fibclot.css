@@ -36,9 +36,9 @@
 }
 
 [data-showcase-layout="fibclot"] .fibclot-shell--standalone {
-  border-radius: 32px;
-  border: 1px solid var(--showcase-border-light);
-  box-shadow: 0 40px 120px rgba(55, 65, 81, 0.2);
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
 }
 
 [data-showcase-layout="fibclot"] .fibclot-sections {
@@ -52,11 +52,22 @@
 
 [data-showcase-layout="fibclot"] .fibclot-section {
   position: relative;
-  border-radius: 28px;
+  border-radius: 0;
   border: 1px solid var(--showcase-border-light);
-  background: var(--showcase-panel-soft-gradient);
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.08));
   padding: 28px;
-  box-shadow: 0 20px 60px rgba(55, 65, 81, 0.12);
+  box-shadow: none;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 18px) 100%, 0 100%);
+}
+
+[data-showcase-layout="fibclot"] .fibclot-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 80px;
+  height: 4px;
+  background: linear-gradient(90deg, var(--showcase-accent-primary), transparent);
 }
 
 [data-showcase-layout="fibclot"] .fibclot-section--notice {
@@ -67,14 +78,15 @@
   background: var(--showcase-hero-gradient);
   border: none;
   color: var(--showcase-text-strong);
-  box-shadow: 0 30px 90px rgba(31, 41, 55, 0.25);
+  box-shadow: none;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 28px) 100%, 0 100%);
 }
 
 [data-showcase-layout="fibclot"] .fibclot-alert {
   font-weight: 600;
   color: var(--showcase-status-warn-text);
   background: rgba(255, 255, 255, 0.65);
-  border-radius: 20px;
+  border-radius: 0;
   padding: 16px 20px;
 }
 
@@ -130,38 +142,45 @@
 
 [data-showcase-layout="fibclot"] .fibclot-cta {
   border: none;
-  border-radius: 999px;
+  border-radius: 0;
   padding: 12px 22px;
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
   color: var(--showcase-cta-text);
   background: var(--showcase-cta-gradient);
-  box-shadow: 0 18px 40px var(--showcase-shadow-soft);
+  box-shadow: none;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
   cursor: pointer;
 }
 
 [data-showcase-layout="fibclot"] .fibclot-hero__tag {
   padding: 8px 14px;
-  border-radius: 999px;
+  border-radius: 0;
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--showcase-text-soft);
   background: rgba(255, 255, 255, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.4);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
 }
 
 [data-showcase-layout="fibclot"] .fibclot-hero__stats {
   display: grid;
   gap: 14px;
   background: rgba(255, 255, 255, 0.12);
-  border-radius: 24px;
+  border-radius: 0;
   padding: 20px;
   border: 1px solid rgba(255, 255, 255, 0.3);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 18px) 100%, 0 100%);
 }
 
 [data-showcase-layout="fibclot"] .fibclot-kpi {
-  border-radius: 18px;
+  border-radius: 0;
   padding: 14px 16px;
   background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
 }
 
 [data-showcase-layout="fibclot"] .fibclot-kpi__label {
@@ -193,18 +212,20 @@
   gap: 14px;
   align-items: flex-start;
   padding: 14px 16px;
-  border-radius: 18px;
-  background: var(--showcase-surface-panel-soft);
+  border-radius: 0;
+  background: transparent;
   border: 1px solid var(--showcase-border-light);
+  border-left: 4px solid var(--showcase-accent-secondary);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
 }
 
 [data-showcase-layout="fibclot"] .fibclot-fragment__marker {
   height: 12px;
   width: 12px;
-  border-radius: 4px;
+  border-radius: 0;
   margin-top: 6px;
   background: var(--showcase-accent-secondary);
-  box-shadow: 0 0 0 4px rgba(45, 183, 194, 0.2);
+  box-shadow: none;
 }
 
 [data-showcase-layout="fibclot"] .fibclot-fragment__text {
@@ -218,10 +239,12 @@
 }
 
 [data-showcase-layout="fibclot"] .fibclot-card {
-  border-radius: 20px;
+  border-radius: 0;
   padding: 18px 20px;
-  background: var(--showcase-surface-panel);
+  background: transparent;
   border: 1px solid var(--showcase-border-light);
+  border-left: 4px solid var(--showcase-accent-primary);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
 }
 
 [data-showcase-layout="fibclot"] .fibclot-card--wide {
@@ -229,7 +252,7 @@
 }
 
 [data-showcase-layout="fibclot"] .fibclot-card--accent {
-  background: linear-gradient(140deg, rgba(250, 157, 39, 0.2), rgba(127, 144, 38, 0.18));
+  background: linear-gradient(140deg, rgba(250, 157, 39, 0.18), rgba(127, 144, 38, 0.14));
 }
 
 [data-showcase-layout="fibclot"] .fibclot-card__title {
@@ -273,14 +296,16 @@
 }
 
 [data-showcase-layout="fibclot"] .fibclot-impact__panel {
-  border-radius: 22px;
+  border-radius: 0;
   padding: 18px 20px;
-  background: var(--showcase-panel-light-gradient);
+  background: transparent;
   border: 1px solid var(--showcase-border-light);
+  border-left: 4px solid var(--showcase-accent-primary);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 16px) 100%, 0 100%);
 }
 
 [data-showcase-layout="fibclot"] .fibclot-impact__panel--list {
-  background: var(--showcase-panel-soft-gradient);
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05));
 }
 
 [data-showcase-layout="fibclot"] .fibclot-impact__label {
@@ -298,11 +323,12 @@
 }
 
 [data-showcase-layout="fibclot"] .fibclot-impact__metric {
-  border-radius: 22px;
+  border-radius: 0;
   padding: 20px;
   background: var(--showcase-cta-gradient);
   color: var(--showcase-cta-text);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  border: none;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 18px) 100%, 0 100%);
 }
 
 [data-showcase-layout="fibclot"] .fibclot-impact__value {
@@ -323,10 +349,12 @@
 }
 
 [data-showcase-layout="fibclot"] .fibclot-team__lead {
-  border-radius: 20px;
+  border-radius: 0;
   padding: 18px 20px;
-  background: var(--showcase-panel-strong-gradient);
+  background: transparent;
   border: 1px solid var(--showcase-border-light);
+  border-left: 4px solid var(--showcase-accent-secondary);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 16px) 100%, 0 100%);
 }
 
 [data-showcase-layout="fibclot"] .fibclot-team__label {
@@ -357,21 +385,24 @@
   gap: 12px;
   align-items: center;
   padding: 12px 14px;
-  border-radius: 16px;
-  background: var(--showcase-surface-panel-soft);
+  border-radius: 0;
+  background: transparent;
   border: 1px solid var(--showcase-border-light);
+  border-left: 3px solid var(--showcase-accent-primary);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
 }
 
 [data-showcase-layout="fibclot"] .fibclot-team__avatar {
   height: 40px;
   width: 40px;
-  border-radius: 14px;
+  border-radius: 0;
   background: var(--showcase-cta-gradient);
   color: var(--showcase-cta-text);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
 }
 
 [data-showcase-layout="fibclot"] .fibclot-team__member {
@@ -397,10 +428,12 @@
 }
 
 [data-showcase-layout="fibclot"] .fibclot-alert-card {
-  border-radius: 18px;
+  border-radius: 0;
   padding: 16px 18px;
   border: 1px solid var(--showcase-border-light);
-  background: var(--showcase-surface-panel);
+  background: transparent;
+  border-left: 4px solid var(--showcase-accent-secondary);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 14px) 100%, 0 100%);
 }
 
 [data-showcase-layout="fibclot"] .fibclot-alert-card--ok {
@@ -455,10 +488,10 @@
 [data-showcase-layout="fibclot"] .fibclot-timeline__dot {
   width: 10px;
   height: 10px;
-  border-radius: 4px;
+  border-radius: 0;
   margin-top: 6px;
   background: var(--showcase-accent-primary);
-  box-shadow: 0 0 0 4px rgba(127, 144, 38, 0.2);
+  box-shadow: none;
 }
 
 [data-showcase-layout="fibclot"] .fibclot-timeline__label {
@@ -474,11 +507,12 @@
 [data-showcase-layout="fibclot"] .fibclot-badge {
   align-self: flex-start;
   padding: 6px 12px;
-  border-radius: 999px;
+  border-radius: 0;
   background: rgba(127, 144, 38, 0.18);
   color: var(--showcase-accent-primary);
   font-size: 0.8rem;
   font-weight: 600;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
 }
 
 [data-showcase-layout="fibclot"] .fibclot-subtitle {
@@ -514,7 +548,7 @@
   width: 100%;
   min-height: 220px;
   height: 260px;
-  border-radius: 16px;
+  border-radius: 0;
   border: 1px solid var(--showcase-border-light);
 }
 
