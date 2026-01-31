@@ -3157,7 +3157,6 @@ export const ProjectShowcase = ({
                 )}
                 <div className="fibclot-hero__actions">
                   <button type="button" className="fibclot-cta">Explorer le dossier</button>
-                  <span className="fibclot-hero__tag">Fibclot strategic view</span>
                 </div>
               </div>
               {heroHighlights.length > 0 && (

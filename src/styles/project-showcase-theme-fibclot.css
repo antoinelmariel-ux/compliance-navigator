@@ -154,17 +154,6 @@
   cursor: pointer;
 }
 
-[data-showcase-layout="fibclot"] .fibclot-hero__tag {
-  padding: 8px 14px;
-  border-radius: 0;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--showcase-text-soft);
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
-}
-
 [data-showcase-layout="fibclot"] .fibclot-hero__stats {
   display: grid;
   gap: 14px;
