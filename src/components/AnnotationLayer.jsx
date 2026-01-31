@@ -50,6 +50,7 @@ export const AnnotationLayer = ({
   isEditing = false,
   hideToolbar = false,
   notes = [],
+  canCloseNotes = false,
   activeContextId = '',
   projectName = '',
   autoFocusNoteId = null,
@@ -58,10 +59,12 @@ export const AnnotationLayer = ({
   onRequestLoad,
   onExit,
   onNoteChange,
-  onNoteRemove,
+  onNoteClose,
+  onNoteReply,
   onAutoFocusComplete
 }) => {
   const [, setLayoutVersion] = useState(0);
+  const [replyDrafts, setReplyDrafts] = useState({});
   const visibleNotes = useMemo(
     () => notes.filter(note => note && note.contextId === activeContextId),
     [activeContextId, notes]
@@ -182,6 +185,48 @@ export const AnnotationLayer = ({
     };
   };
 
+  const formatTimestamp = (value) => {
+    if (!value) {
+      return '';
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.valueOf())) {
+      return '';
+    }
+
+    try {
+      return date.toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
+    } catch (error) {
+      return date.toISOString();
+    }
+  };
+
+  const handleReplyDraftChange = (noteId, value) => {
+    setReplyDrafts(prev => ({
+      ...prev,
+      [noteId]: value
+    }));
+  };
+
+  const handleReplySubmit = (noteId) => {
+    const draft = replyDrafts[noteId];
+    if (!draft || typeof onNoteReply !== 'function') {
+      return;
+    }
+
+    const trimmed = draft.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    onNoteReply(noteId, trimmed);
+    setReplyDrafts(prev => ({
+      ...prev,
+      [noteId]: ''
+    }));
+  };
+
   if (!isActive) {
     return null;
   }
@@ -250,27 +295,37 @@ export const AnnotationLayer = ({
           const position = computeNotePosition(note);
           const label = note.sourceId && note.sourceId !== 'session' ? note.sourceId : `#${index + 1}`;
           const paletteKey = getFeedbackPaletteKey(note, sourcePalette);
+          const isClosed = note?.status === 'closed';
+          const replies = Array.isArray(note?.replies) ? note.replies : [];
 
           return (
             <div
               key={note.id}
-              className="annotation-sticky feedback-note"
+              className={`annotation-sticky feedback-note${isClosed ? ' feedback-note--closed' : ''}`}
               style={{ left: `${position.left}px`, top: `${position.top}px` }}
               data-annotation-ui="true"
               data-feedback-source-color={paletteKey}
             >
               <div className="feedback-note-header">
-                <span className="feedback-note-number">{label}</span>
-                {onNoteRemove ? (
-                  <button
-                    type="button"
-                    onClick={() => onNoteRemove(note.id)}
-                    className="feedback-note-delete"
-                    aria-label="Supprimer le sticky note"
-                  >
-                    <Close className="h-4 w-4" />
-                  </button>
-                ) : null}
+                <div className="feedback-note-heading">
+                  <span className="feedback-note-number">{label}</span>
+                  {isClosed ? (
+                    <span className="feedback-note-status">Clôturé</span>
+                  ) : null}
+                </div>
+                <div className="feedback-note-actions">
+                  {canCloseNotes && !isClosed && typeof onNoteClose === 'function' ? (
+                    <button
+                      type="button"
+                      onClick={() => onNoteClose(note.id)}
+                      className="feedback-note-close"
+                      aria-label="Clôturer le sticky note"
+                    >
+                      <Close className="h-4 w-4" />
+                      <span>Clôturer</span>
+                    </button>
+                  ) : null}
+                </div>
               </div>
               <textarea
                 value={note.text || ''}
@@ -279,8 +334,52 @@ export const AnnotationLayer = ({
                 className="feedback-note-text"
                 rows={4}
                 placeholder="Ajoutez votre remarque ici..."
+                readOnly={isClosed}
                 data-annotation-ui="true"
               />
+              {isClosed ? (
+                <p className="feedback-note-closed-meta" data-annotation-ui="true">
+                  {note.closedBy ? `Clôturé par ${note.closedBy}` : 'Clôturé'}
+                  {note.closedAt ? ` · ${formatTimestamp(note.closedAt)}` : ''}
+                </p>
+              ) : null}
+              {replies.length > 0 ? (
+                <div className="feedback-note-replies" data-annotation-ui="true">
+                  {replies.map((reply) => {
+                    const timestamp = formatTimestamp(reply?.createdAt);
+                    return (
+                      <div key={reply?.id || `${note.id}-${reply?.createdAt}`} className="feedback-note-reply">
+                        <div className="feedback-note-reply__meta">
+                          <span>{reply?.author || 'Réponse'}</span>
+                          {timestamp ? <span>· {timestamp}</span> : null}
+                        </div>
+                        <p className="feedback-note-reply__text">{reply?.text}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : null}
+              {!isClosed && typeof onNoteReply === 'function' ? (
+                <div className="feedback-note-reply-form" data-annotation-ui="true">
+                  <textarea
+                    value={replyDrafts[note.id] || ''}
+                    onChange={(event) => handleReplyDraftChange(note.id, event.target.value)}
+                    className="feedback-note-reply-input"
+                    rows={2}
+                    placeholder="Répondre..."
+                    data-annotation-ui="true"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleReplySubmit(note.id)}
+                    className="feedback-note-reply-submit"
+                    disabled={!replyDrafts[note.id] || replyDrafts[note.id].trim().length === 0}
+                    data-annotation-ui="true"
+                  >
+                    Répondre
+                  </button>
+                </div>
+              ) : null}
             </div>
           );
         })}

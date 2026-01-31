@@ -42,7 +42,7 @@ import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.272';
+const APP_VERSION = 'v1.0.273';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -1246,6 +1246,8 @@ const updateProjectFilters = useCallback((updater) => {
         sectionX: 0.25,
         sectionY: 0.2,
         text: '💡 À montrer en mode Light pour aller droit au message.',
+        status: 'open',
+        replies: [],
         color,
         contextId,
         projectId,
@@ -1260,6 +1262,8 @@ const updateProjectFilters = useCallback((updater) => {
         sectionX: 0.65,
         sectionY: 0.4,
         text: 'Ajouter une capture ici pour illustrer la solution.',
+        status: 'open',
+        replies: [],
         color,
         contextId,
         projectId,
@@ -1274,6 +1278,8 @@ const updateProjectFilters = useCallback((updater) => {
         sectionX: 0.35,
         sectionY: 0.2,
         text: 'Timeline OK, prévoir une date de revue en plus.',
+        status: 'open',
+        replies: [],
         color,
         contextId,
         projectId,
@@ -2015,6 +2021,26 @@ const updateProjectFilters = useCallback((updater) => {
   }, [activeProject, answers, questions]);
 
   const activeShowcaseProjectId = showcaseProjectContext?.projectId || null;
+  const activeShowcaseProject = useMemo(
+    () => projects.find(project => project?.id === activeShowcaseProjectId) || null,
+    [activeShowcaseProjectId, projects]
+  );
+  const canCloseAnnotationNotes = useMemo(() => {
+    if (!activeShowcaseProject) {
+      return false;
+    }
+
+    const ownerEmail = normalizeEmail(activeShowcaseProject.ownerEmail || '');
+    const sharedWith = Array.isArray(activeShowcaseProject.sharedWith)
+      ? activeShowcaseProject.sharedWith
+      : [];
+    const sharedMatches = sharedWith.some(entry => normalizeEmail(entry) === currentUserEmail);
+
+    return (
+      Boolean(currentUserEmail)
+      && (ownerEmail === currentUserEmail || sharedMatches || isAdminMode)
+    );
+  }, [activeShowcaseProject, currentUserEmail, isAdminMode]);
 
   const activeAnnotationContextKey = useMemo(
     () => buildAnnotationContextKey({
@@ -2138,6 +2164,8 @@ const updateProjectFilters = useCallback((updater) => {
         sectionX: sectionX ?? x,
         sectionY: sectionY ?? y,
         text: '',
+        status: 'open',
+        replies: [],
         color,
         contextId: activeAnnotationContextKey,
         projectId: showcaseProjectContext.projectId || 'unknown',
@@ -2159,14 +2187,63 @@ const updateProjectFilters = useCallback((updater) => {
   const handleAnnotationTextChange = useCallback((noteId, text) => {
     setAnnotationNotes(prevNotes => prevNotes.map(note => (
       note?.id === noteId
-        ? { ...note, text }
+        ? (note.status === 'closed' ? note : { ...note, text })
         : note
     )));
   }, []);
 
-  const handleRemoveAnnotationNote = useCallback((noteId) => {
-    setAnnotationNotes(prevNotes => prevNotes.filter(note => note?.id !== noteId));
-  }, []);
+  const handleCloseAnnotationNote = useCallback((noteId) => {
+    setAnnotationNotes(prevNotes => prevNotes.map(note => {
+      if (!note || note.id !== noteId) {
+        return note;
+      }
+
+      if (note.status === 'closed') {
+        return note;
+      }
+
+      return {
+        ...note,
+        status: 'closed',
+        closedAt: new Date().toISOString(),
+        closedBy: currentUserDisplayName || 'Utilisateur'
+      };
+    }));
+  }, [currentUserDisplayName]);
+
+  const handleAddAnnotationReply = useCallback((noteId, replyText) => {
+    if (!replyText) {
+      return;
+    }
+
+    const trimmed = replyText.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    const reply = {
+      id: createAnnotationId(),
+      text: trimmed,
+      author: currentUserDisplayName || 'Utilisateur',
+      createdAt: new Date().toISOString()
+    };
+
+    setAnnotationNotes(prevNotes => prevNotes.map(note => {
+      if (!note || note.id !== noteId) {
+        return note;
+      }
+
+      if (note.status === 'closed') {
+        return note;
+      }
+
+      const existingReplies = Array.isArray(note.replies) ? note.replies : [];
+      return {
+        ...note,
+        replies: [...existingReplies, reply]
+      };
+    }));
+  }, [currentUserDisplayName]);
 
   const handleToggleAnnotationMode = useCallback(() => {
     setIsAnnotationModeEnabled(prev => {
@@ -2253,6 +2330,16 @@ const updateProjectFilters = useCallback((updater) => {
         const importedNotes = rawNotes.map(rawNote => {
           const normalizedX = clamp01(rawNote?.x ?? 0);
           const normalizedY = clamp01(rawNote?.y ?? 0);
+          const normalizedReplies = Array.isArray(rawNote?.replies)
+            ? rawNote.replies
+                .filter(reply => reply && typeof reply.text === 'string' && reply.text.trim().length > 0)
+                .map(reply => ({
+                  id: reply.id || createAnnotationId(),
+                  text: reply.text.trim(),
+                  author: typeof reply.author === 'string' ? reply.author : '',
+                  createdAt: reply.createdAt || null
+                }))
+            : [];
 
           return {
             id: rawNote?.id || createAnnotationId(),
@@ -2262,6 +2349,10 @@ const updateProjectFilters = useCallback((updater) => {
             sectionX: clamp01(rawNote?.sectionX ?? normalizedX),
             sectionY: clamp01(rawNote?.sectionY ?? normalizedY),
             text: typeof rawNote?.text === 'string' ? rawNote.text : '',
+            status: rawNote?.status === 'closed' ? 'closed' : 'open',
+            closedAt: rawNote?.closedAt || null,
+            closedBy: typeof rawNote?.closedBy === 'string' ? rawNote.closedBy : null,
+            replies: normalizedReplies,
             color: sourceColor,
             contextId: rawNote?.contextId || activeAnnotationContextKey,
             projectId: rawNote?.projectId || showcaseProjectContext?.projectId || 'unknown',
@@ -3754,12 +3845,14 @@ const updateProjectFilters = useCallback((updater) => {
         projectName={showcaseProjectContext?.projectName || ''}
         autoFocusNoteId={autoFocusAnnotationId}
         onAutoFocusComplete={() => setAutoFocusAnnotationId(null)}
+        canCloseNotes={canCloseAnnotationNotes}
         onTogglePause={handleToggleAnnotationPause}
         onRequestSave={handleSaveAnnotationNotes}
         onRequestLoad={handleRequestAnnotationFile}
         onExit={handleToggleAnnotationMode}
         onNoteChange={handleAnnotationTextChange}
-        onNoteRemove={handleRemoveAnnotationNote}
+        onNoteClose={handleCloseAnnotationNote}
+        onNoteReply={handleAddAnnotationReply}
       />
 
       <input
