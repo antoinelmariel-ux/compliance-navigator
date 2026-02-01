@@ -42,7 +42,7 @@ import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.274';
+const APP_VERSION = 'v1.0.275';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -810,6 +810,7 @@ export const App = () => {
 
     ensureStylesheetLoaded('./src/styles/project-showcase.css');
     ensureStylesheetLoaded('./src/styles/project-showcase-theme-aurora.css');
+    ensureStylesheetLoaded('./src/styles/project-showcase-theme-mirage.css');
     ensureStylesheetLoaded('./src/styles/project-showcase-theme-deezer.css');
     ensureStylesheetLoaded('./src/styles/project-showcase-theme-editorial.css');
     ensureStylesheetLoaded('./src/styles/project-showcase-theme-fibclot.css');
