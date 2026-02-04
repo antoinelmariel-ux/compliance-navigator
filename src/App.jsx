@@ -18,6 +18,7 @@ import { initialInspirationProjects } from './data/inspirationProjects.js';
 import { initialOnboardingTourConfig } from './data/onboardingTour.js';
 import { initialValidationCommitteeConfig } from './data/validationCommitteeConfig.js';
 import { initialAdminEmails } from './data/adminEmails.js';
+import { initialDistribState } from './data/distrib/initialDistribState.js';
 import { loadPersistedState, persistState } from './utils/storage.js';
 import { shouldShowQuestion } from './utils/questions.js';
 import { analyzeAnswers } from './utils/rules.js';
@@ -42,8 +43,17 @@ import {
 import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
 import currentUser from './data/graph-current-user.json';
+import { DistribHome } from './components/distrib/DistribHome.jsx';
+import { CountryIntelligence } from './components/distrib/CountryIntelligence.jsx';
+import { DistributorPipeline } from './components/distrib/DistributorPipeline.jsx';
+import { DistributorEvaluation } from './components/distrib/DistributorEvaluation.jsx';
+import { ContractBriefing } from './components/distrib/ContractBriefing.jsx';
+import { ContractAmendments } from './components/distrib/ContractAmendments.jsx';
+import { ContractOverview } from './components/distrib/ContractOverview.jsx';
+import { DistributorAudit } from './components/distrib/DistributorAudit.jsx';
+import { CountryCoverage } from './components/distrib/CountryCoverage.jsx';
 
-const APP_VERSION = 'v1.0.276';
+const APP_VERSION = 'v1.0.277';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -610,6 +620,7 @@ export const App = () => {
   const [analysis, setAnalysis] = useState(null);
   const [projects, setProjects] = useState(buildInitialProjectsState);
   const projectsRef = useRef(projects);
+  const [distribState, setDistribState] = useState(() => cloneDeep(initialDistribState));
   const [inspirationProjects, setInspirationProjects] = useState(buildInitialInspirationProjectsState);
   const [onboardingTourConfig, setOnboardingTourConfig] = useState(buildInitialOnboardingConfig);
   const [activeInspirationId, setActiveInspirationId] = useState(null);
@@ -4267,23 +4278,68 @@ const updateProjectFilters = useCallback((updater) => {
             tourContext={tourContext}
           />
         ) : screen === 'distrib-home' ? (
-          <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-6 py-10">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-500">
-              Distrib Navigator
-            </p>
-            <h2 className="text-2xl font-semibold text-gray-900">Parcours distrib en construction</h2>
-            <p className="text-sm text-gray-500">
-              Le nouveau flux Distrib Navigator arrive bientôt. Revenez au Project Navigator pour
-              accéder aux fonctionnalités actuelles.
-            </p>
-            <button
-              type="button"
-              onClick={() => setScreen('home')}
-              className="inline-flex w-fit items-center rounded-full border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm transition hover:border-blue-300 hover:text-blue-800"
-            >
-              Retourner au Project Navigator
-            </button>
-          </div>
+          <DistribHome
+            distribState={distribState}
+            activeScreen={screen}
+            onNavigate={setScreen}
+            onBackToGateway={() => setScreen('gateway')}
+          />
+        ) : screen === 'distrib-country-intelligence' ? (
+          <CountryIntelligence
+            distribState={distribState}
+            activeScreen={screen}
+            onNavigate={setScreen}
+            onBackToGateway={() => setScreen('gateway')}
+          />
+        ) : screen === 'distrib-pipeline' ? (
+          <DistributorPipeline
+            distribState={distribState}
+            activeScreen={screen}
+            onNavigate={setScreen}
+            onBackToGateway={() => setScreen('gateway')}
+          />
+        ) : screen === 'distrib-evaluation' ? (
+          <DistributorEvaluation
+            distribState={distribState}
+            activeScreen={screen}
+            onNavigate={setScreen}
+            onBackToGateway={() => setScreen('gateway')}
+          />
+        ) : screen === 'distrib-contract-briefing' ? (
+          <ContractBriefing
+            distribState={distribState}
+            activeScreen={screen}
+            onNavigate={setScreen}
+            onBackToGateway={() => setScreen('gateway')}
+          />
+        ) : screen === 'distrib-contract-amendments' ? (
+          <ContractAmendments
+            distribState={distribState}
+            activeScreen={screen}
+            onNavigate={setScreen}
+            onBackToGateway={() => setScreen('gateway')}
+          />
+        ) : screen === 'distrib-contract-overview' ? (
+          <ContractOverview
+            distribState={distribState}
+            activeScreen={screen}
+            onNavigate={setScreen}
+            onBackToGateway={() => setScreen('gateway')}
+          />
+        ) : screen === 'distrib-audit' ? (
+          <DistributorAudit
+            distribState={distribState}
+            activeScreen={screen}
+            onNavigate={setScreen}
+            onBackToGateway={() => setScreen('gateway')}
+          />
+        ) : screen === 'distrib-country-coverage' ? (
+          <CountryCoverage
+            distribState={distribState}
+            activeScreen={screen}
+            onNavigate={setScreen}
+            onBackToGateway={() => setScreen('gateway')}
+          />
         ) : screen === 'inspiration-form' ? (
           <InspirationForm
             formConfig={inspirationFormFields}
