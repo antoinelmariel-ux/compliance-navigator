@@ -37,6 +37,20 @@ const normalizeMilestoneDrafts = (value) => {
   }));
 };
 
+const resolveOptionValue = (option) => {
+  if (option && typeof option === 'object') {
+    return typeof option.value !== 'undefined' ? option.value : option.label;
+  }
+  return option;
+};
+
+const resolveOptionLabel = (option) => {
+  if (option && typeof option === 'object') {
+    return typeof option.label !== 'undefined' ? option.label : option.value;
+  }
+  return option;
+};
+
 const isMilestoneDraftEmpty = (entry) => {
   const date = typeof entry?.date === 'string' ? entry.date.trim() : '';
   const description = typeof entry?.description === 'string' ? entry.description.trim() : '';
@@ -387,7 +401,9 @@ export const QuestionnaireScreen = ({
           <fieldset className="space-y-3 mb-8" aria-describedby={currentIndex === 0 ? instructionsId : undefined}>
             <legend className="sr-only">{currentQuestion.question}</legend>
             {currentQuestion.options.map((option, idx) => {
-              const isSelected = answers[currentQuestion.id] === option;
+              const optionValue = resolveOptionValue(option);
+              const optionLabel = resolveOptionLabel(option);
+              const isSelected = answers[currentQuestion.id] === optionValue;
               const optionId = `${currentQuestion.id}-option-${idx}`;
 
               return (
@@ -405,12 +421,12 @@ export const QuestionnaireScreen = ({
                       type="radio"
                       id={optionId}
                       name={currentQuestion.id}
-                      value={option}
+                      value={optionValue}
                       checked={isSelected}
-                      onChange={() => onAnswer(currentQuestion.id, option)}
+                      onChange={() => onAnswer(currentQuestion.id, optionValue)}
                       className="w-5 h-5 text-blue-600 border-gray-300 focus:ring-blue-500 hv-focus-ring"
                     />
-                    <span className="ml-3 font-medium text-sm sm:text-base">{option}</span>
+                    <span className="ml-3 font-medium text-sm sm:text-base">{optionLabel}</span>
                   </div>
                   {isSelected && <CheckCircle className="w-5 h-5 text-blue-600 self-end sm:self-auto" />}
                 </label>
@@ -422,17 +438,19 @@ export const QuestionnaireScreen = ({
         return (
           <div className="space-y-3 mb-8">
             {currentQuestion.options.map((option, idx) => {
-              const isSelected = multiSelection.includes(option);
+              const optionValue = resolveOptionValue(option);
+              const optionLabel = resolveOptionLabel(option);
+              const isSelected = multiSelection.includes(optionValue);
               const optionId = `${currentQuestion.id}-multi-option-${idx}`;
 
               const toggleOption = () => {
                 if (isSelected) {
                   onAnswer(
                     currentQuestion.id,
-                    multiSelection.filter(item => item !== option)
+                    multiSelection.filter(item => item !== optionValue)
                   );
                 } else {
-                  onAnswer(currentQuestion.id, [...multiSelection, option]);
+                  onAnswer(currentQuestion.id, [...multiSelection, optionValue]);
                 }
               };
 
@@ -454,7 +472,7 @@ export const QuestionnaireScreen = ({
                       id={optionId}
                       className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 hv-focus-ring"
                     />
-                    <span className="ml-3 font-medium text-sm sm:text-base">{option}</span>
+                    <span className="ml-3 font-medium text-sm sm:text-base">{optionLabel}</span>
                   </div>
                   {isSelected && <CheckCircle className="w-5 h-5 text-blue-600 self-end sm:self-auto" />}
                 </label>

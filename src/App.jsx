@@ -42,7 +42,7 @@ import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.276';
+const APP_VERSION = 'v1.0.277';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -1957,6 +1957,34 @@ const updateProjectFilters = useCallback((updater) => {
     [questions, answers]
   );
 
+  const partnerProspectOptions = useMemo(() => {
+    const baseOption = ['Aucun prospect (saisie manuelle)'];
+    const entries = inspirationProjects
+      .filter(project => project && typeof project.id === 'string' && project.id.trim().length > 0)
+      .map((project) => {
+        const contactName = typeof project.contactName === 'string' ? project.contactName.trim() : '';
+        const email = typeof project.email === 'string' ? project.email.trim() : '';
+        const labelBase = contactName || 'Prospect sans nom';
+        return email ? `${labelBase} · ${email}` : labelBase;
+      });
+
+    return [...baseOption, ...entries];
+  }, [inspirationProjects]);
+
+  const partnerProspectMap = useMemo(() => {
+    const map = new Map();
+    inspirationProjects.forEach((project) => {
+      if (project && typeof project.id === 'string') {
+        const contactName = typeof project.contactName === 'string' ? project.contactName.trim() : '';
+        const email = typeof project.email === 'string' ? project.email.trim() : '';
+        const labelBase = contactName || 'Prospect sans nom';
+        const label = email ? `${labelBase} · ${email}` : labelBase;
+        map.set(label, project);
+      }
+    });
+    return map;
+  }, [inspirationProjects]);
+
   const unansweredMandatoryQuestions = useMemo(
     () =>
       activeQuestions.filter(question => question.required && !isAnswerProvided(answers[question.id])),
@@ -1989,6 +2017,33 @@ const updateProjectFilters = useCallback((updater) => {
 
     return Array.from(new Set(sanitized));
   }, [questions]);
+
+  useEffect(() => {
+    setQuestions((prevQuestions) => {
+      let didChange = false;
+      const nextQuestions = prevQuestions.map((question) => {
+        if (!question || question.id !== 'partnerProspectId') {
+          return question;
+        }
+
+        const existingOptions = Array.isArray(question.options) ? question.options : [];
+        const nextOptionsJson = JSON.stringify(partnerProspectOptions);
+        const existingOptionsJson = JSON.stringify(existingOptions);
+
+        if (existingOptionsJson === nextOptionsJson) {
+          return question;
+        }
+
+        didChange = true;
+        return {
+          ...question,
+          options: partnerProspectOptions
+        };
+      });
+
+      return didChange ? nextQuestions : prevQuestions;
+    });
+  }, [partnerProspectOptions, setQuestions]);
 
   useEffect(() => {
     if (!isHydrated) return;
@@ -2426,6 +2481,29 @@ const updateProjectFilters = useCallback((updater) => {
     : '';
 
   const handleAnswer = useCallback((questionId, answer) => {
+    if (questionId === 'partnerProspectId') {
+      if (!isActiveProjectEditable) {
+        return;
+      }
+
+      if (answer === 'Aucun prospect (saisie manuelle)' || !partnerProspectMap.has(answer)) {
+        handleUpdateAnswers({ [questionId]: answer });
+        return;
+      }
+
+      const prospect = partnerProspectMap.get(answer);
+      handleUpdateAnswers({
+        [questionId]: answer,
+        contactName: prospect?.contactName,
+        email: prospect?.email,
+        website: prospect?.website,
+        role: prospect?.role,
+        countries: prospect?.countries,
+        situation: prospect?.situation
+      });
+      return;
+    }
+
     let answerChanged = false;
     let nextAnswersSnapshot = null;
 
@@ -2555,8 +2633,10 @@ const updateProjectFilters = useCallback((updater) => {
     activeProjectId,
     analyzeAnswers,
     extractProjectName,
+    handleUpdateAnswers,
     isActiveProjectEditable,
     isAdminMode,
+    partnerProspectMap,
     questions,
     riskLevelRules,
     riskWeights,
