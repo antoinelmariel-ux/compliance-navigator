@@ -4,6 +4,8 @@ import { SynthesisReport } from './components/SynthesisReport.jsx';
 import { HomeScreen } from './components/HomeScreen.jsx';
 import { InspirationForm } from './components/InspirationForm.jsx';
 import { InspirationDetail } from './components/InspirationDetail.jsx';
+import { PartnerComparisonGallery } from './components/PartnerComparisonGallery.jsx';
+import { PartnerComparisonDetail } from './components/PartnerComparisonDetail.jsx';
 import { AnnotationLayer } from './components/AnnotationLayer.jsx';
 import { CheckCircle, Link, Lock, MessageSquare, Settings, Sparkles } from './components/icons.js';
 import { MandatoryQuestionsSummary } from './components/MandatoryQuestionsSummary.jsx';
@@ -42,7 +44,7 @@ import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.277';
+const APP_VERSION = 'v1.0.278';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -636,6 +638,10 @@ export const App = () => {
   const [inspirationFilters, setInspirationFilters] = useState(() => createDefaultInspirationFiltersConfig());
   const [inspirationFormFields, setInspirationFormFields] = useState(() => createDefaultInspirationFormConfig());
   const [homeView, setHomeView] = useState('platform');
+  const [partnerCompareSelection, setPartnerCompareSelection] = useState([]);
+  const [partnerCompareSort, setPartnerCompareSort] = useState('name');
+  const [partnerComparePreferredId, setPartnerComparePreferredId] = useState('');
+  const [partnerCompareComment, setPartnerCompareComment] = useState('');
   const [isHydrated, setIsHydrated] = useState(false);
   const [validationCommitteeConfig, setValidationCommitteeConfig] = useState(buildInitialValidationCommitteeConfig);
   const [adminEmails, setAdminEmails] = useState(buildInitialAdminEmailsState);
@@ -1985,6 +1991,46 @@ const updateProjectFilters = useCallback((updater) => {
     return map;
   }, [inspirationProjects]);
 
+  const selectedPartners = useMemo(() => {
+    if (!Array.isArray(partnerCompareSelection) || partnerCompareSelection.length === 0) {
+      return [];
+    }
+
+    const projectMap = new Map(
+      inspirationProjects
+        .filter((project) => project && typeof project.id === 'string')
+        .map((project) => [project.id, project])
+    );
+
+    return partnerCompareSelection
+      .map((id) => projectMap.get(id))
+      .filter(Boolean);
+  }, [inspirationProjects, partnerCompareSelection]);
+
+  useEffect(() => {
+    if (!Array.isArray(partnerCompareSelection) || partnerCompareSelection.length === 0) {
+      if (partnerComparePreferredId) {
+        setPartnerComparePreferredId('');
+      }
+      return;
+    }
+
+    const availableIds = new Set(
+      inspirationProjects
+        .filter((project) => project && typeof project.id === 'string')
+        .map((project) => project.id)
+    );
+    const nextSelection = partnerCompareSelection.filter((id) => availableIds.has(id));
+
+    if (nextSelection.length !== partnerCompareSelection.length) {
+      setPartnerCompareSelection(nextSelection);
+    }
+
+    if (partnerComparePreferredId && !availableIds.has(partnerComparePreferredId)) {
+      setPartnerComparePreferredId('');
+    }
+  }, [inspirationProjects, partnerComparePreferredId, partnerCompareSelection]);
+
   const unansweredMandatoryQuestions = useMemo(
     () =>
       activeQuestions.filter(question => question.required && !isAnswerProvided(answers[question.id])),
@@ -2975,6 +3021,32 @@ const updateProjectFilters = useCallback((updater) => {
     }
     setActiveInspirationId(projectId);
     setScreen('inspiration-detail');
+  }, []);
+
+  const handleOpenPartnerComparison = useCallback(() => {
+    setScreen('partner-compare-gallery');
+  }, []);
+
+  const handlePartnerSelectionChange = useCallback((selection = []) => {
+    const sanitized = Array.isArray(selection)
+      ? selection.filter((id) => typeof id === 'string' && id.trim().length > 0)
+      : [];
+    setPartnerCompareSelection(sanitized);
+    if (partnerComparePreferredId && !sanitized.includes(partnerComparePreferredId)) {
+      setPartnerComparePreferredId('');
+    }
+  }, [partnerComparePreferredId]);
+
+  const handlePartnerCompare = useCallback(() => {
+    setScreen('partner-compare-detail');
+  }, []);
+
+  const handlePartnerCompareBackToSelection = useCallback(() => {
+    setScreen('partner-compare-gallery');
+  }, []);
+
+  const handlePartnerCompareExit = useCallback(() => {
+    setScreen('home');
   }, []);
 
   const handleUpdateInspirationProject = useCallback((projectId, updates) => {
@@ -4332,13 +4404,32 @@ const updateProjectFilters = useCallback((updater) => {
             onStartInspirationProject={handleStartInspirationProject}
             onOpenInspirationProject={handleOpenInspirationProject}
             onStartNewProject={handleCreateNewProject}
+            onOpenPartnerComparison={handleOpenPartnerComparison}
             onOpenProject={handleOpenProject}
             onDeleteProject={handleDeleteProject}
             onShowProjectShowcase={handleShowProjectShowcase}
-            onImportProject={handleImportProject}
             onDuplicateProject={handleDuplicateProject}
             isAdminMode={isAdminMode}
             tourContext={tourContext}
+          />
+        ) : screen === 'partner-compare-gallery' ? (
+          <PartnerComparisonGallery
+            partners={inspirationProjects}
+            selectedPartnerIds={partnerCompareSelection}
+            sortKey={partnerCompareSort}
+            onSortChange={setPartnerCompareSort}
+            onSelectionChange={handlePartnerSelectionChange}
+            onCompare={handlePartnerCompare}
+            onBack={handlePartnerCompareExit}
+          />
+        ) : screen === 'partner-compare-detail' ? (
+          <PartnerComparisonDetail
+            partners={selectedPartners}
+            preferredPartnerId={partnerComparePreferredId}
+            comment={partnerCompareComment}
+            onPreferredPartnerChange={setPartnerComparePreferredId}
+            onCommentChange={setPartnerCompareComment}
+            onBack={handlePartnerCompareBackToSelection}
           />
         ) : screen === 'inspiration-form' ? (
           <InspirationForm

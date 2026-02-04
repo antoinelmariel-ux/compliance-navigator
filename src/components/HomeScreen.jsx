@@ -11,7 +11,6 @@ import {
   AlertTriangle,
   Edit,
   Save,
-  Upload,
   Copy,
   Trash2,
   Close,
@@ -227,10 +226,10 @@ export const HomeScreen = ({
   onStartInspirationProject,
   onOpenInspirationProject,
   onStartNewProject,
+  onOpenPartnerComparison,
   onOpenProject,
   onDeleteProject,
   onShowProjectShowcase,
-  onImportProject,
   onDuplicateProject,
   isAdminMode = false,
   tourContext = null,
@@ -256,7 +255,6 @@ export const HomeScreen = ({
   const [inspirationFiltersState, setInspirationFiltersState] = useState(() =>
     buildInitialFiltersState(normalizedInspirationFilters)
   );
-  const fileInputRef = useRef(null);
   const [deleteDialogState, setDeleteDialogState] = useState(() => ({
     isOpen: false,
     project: null
@@ -941,23 +939,6 @@ export const HomeScreen = ({
     setInspirationFiltersState(buildInitialFiltersState(normalizedInspirationFilters));
   };
 
-  const handleTriggerImport = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
-  };
-
-  const handleFileChange = (event) => {
-    const file = event?.target?.files?.[0];
-    if (file && typeof onImportProject === 'function') {
-      onImportProject(file);
-    }
-
-    if (event?.target) {
-      event.target.value = '';
-    }
-  };
-
   const renderProjectCard = (project) => {
     const complexity = project.analysis?.complexity;
     const risksCount = project.analysis?.risks?.length ?? 0;
@@ -1201,26 +1182,17 @@ export const HomeScreen = ({
                 </button>
                 <button
                   type="button"
-                  onClick={handleTriggerImport}
+                  onClick={onOpenPartnerComparison}
                   className="inline-flex items-center justify-center gap-3 px-5 py-3 text-base font-semibold text-blue-600 bg-white hover:bg-blue-50 rounded-xl border border-blue-200 transition-all hv-button hv-focus-ring"
                   data-tour-id="home-import-project"
                 >
-                  <Upload className="w-5 h-5" aria-hidden="true" />
+                  <Users className="w-5 h-5" aria-hidden="true" />
                   <span className="flex flex-col leading-tight text-left">
-                    <span>Charger</span>
-                    <span>un projet</span>
+                    <span>Comparer</span>
+                    <span>les partenaires</span>
                   </span>
                 </button>
               </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="application/json"
-                onChange={handleFileChange}
-                className="hidden"
-                tabIndex={-1}
-                aria-hidden="true"
-              />
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm text-gray-600">
               <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 hv-surface" role="listitem">
