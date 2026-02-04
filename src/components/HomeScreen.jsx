@@ -14,7 +14,6 @@ import {
   Copy,
   Trash2,
   Close,
-  Sparkles,
   FileText
 } from './icons.js';
 import { VirtualizedList } from './VirtualizedList.jsx';
@@ -231,7 +230,6 @@ export const HomeScreen = ({
   onOpenPartnerComparison,
   onOpenProject,
   onDeleteProject,
-  onShowProjectShowcase,
   onDuplicateProject,
   isAdminMode = false,
   tourContext = null,
@@ -1097,15 +1095,6 @@ export const HomeScreen = ({
             >
               <Eye className="w-4 h-4" aria-hidden="true" />
               <span>Consulter la synthèse</span>
-            </button>
-          )}
-          {onShowProjectShowcase && (
-            <button
-              type="button"
-              onClick={() => onShowProjectShowcase(project.id)}
-              className="inline-flex items-center px-4 py-2 bg-white border border-blue-200 text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition-all hv-button hv-focus-ring"
-            >
-              <Sparkles className="w-4 h-4 mr-2" /> Vitrine du projet
             </button>
           )}
         </div>
