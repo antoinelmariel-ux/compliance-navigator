@@ -56,6 +56,12 @@ const normalizeInspirationFieldValues = (value) => {
   return [];
 };
 
+const PROSPECT_SITUATION_STYLES = {
+  'Identifié': 'border-orange-200 bg-orange-100 text-orange-700',
+  'En prise de contact': 'border-rose-200 bg-rose-100 text-rose-700',
+  'En relation': 'border-blue-200 bg-blue-100 text-blue-700'
+};
+
 const DEFAULT_SELECT_FILTER_VALUE = 'all';
 const DEFAULT_TEXT_FILTER_VALUE = '';
 
@@ -1130,45 +1136,65 @@ export const HomeScreen = ({
     );
   };
 
-  const renderInspirationCard = (project) => (
-    <article
-      key={project.id}
-      className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all hv-surface"
-      role="listitem"
-      aria-label={`Projet inspirant ${project.title || 'sans titre'}`}
-    >
-      <div className="space-y-3">
-        <div>
-          <h3 className="text-xl font-semibold text-gray-900">{project.title || 'Projet sans titre'}</h3>
-          <p className="text-sm text-gray-500">{project.labName || 'Laboratoire non renseigné'}</p>
+  const renderInspirationCard = (project) => {
+    const countries = Array.isArray(project.countries) ? project.countries : [];
+    const situationLabel = project.situation || 'Situation non renseignée';
+    const situationStyle = PROSPECT_SITUATION_STYLES[project.situation] || 'border-gray-200 bg-gray-100 text-gray-600';
+
+    return (
+      <article
+        key={project.id}
+        className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all hv-surface"
+        role="listitem"
+        aria-label={`Prospect ${project.partnerName || 'sans nom'}`}
+      >
+        <div className="space-y-3">
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">
+                  {project.partnerName || 'Prospect sans nom'}
+                </h3>
+                <p className="text-sm text-gray-500">{project.role || 'Rôle non renseigné'}</p>
+              </div>
+              <span
+                className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${situationStyle}`}
+              >
+                {situationLabel}
+              </span>
+            </div>
+          </div>
+          <div className="flex items-start gap-2 text-sm text-gray-600">
+            <Compass className="w-4 h-4 mt-0.5" />
+            {countries.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {countries.map((country) => (
+                  <span
+                    key={country}
+                    className="rounded-full border border-gray-200 bg-gray-50 px-2 py-1 text-xs font-medium text-gray-700"
+                  >
+                    {country}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <span>Pays non renseigné</span>
+            )}
+          </div>
         </div>
-        <dl className="grid grid-cols-1 gap-2 text-sm text-gray-600">
-          <div className="flex items-center gap-2">
-            <Compass className="w-4 h-4" />
-            <span>{project.country || 'Pays non renseigné'}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Target className="w-4 h-4" />
-            <span>{project.target || 'Cible non renseignée'}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4" />
-            <span>{project.therapeuticArea || 'Aire thérapeutique non renseignée'}</span>
-          </div>
-        </dl>
-      </div>
-      <div className="mt-5 flex flex-wrap gap-3">
-        <button
-          type="button"
-          onClick={() => onOpenInspirationProject?.(project.id)}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all hv-button bg-blue-600 text-white hover:bg-blue-700 hv-button-primary"
-        >
-          <Eye className="w-4 h-4" aria-hidden="true" />
-          <span>Fiche complète</span>
-        </button>
-      </div>
-    </article>
-  );
+        <div className="mt-5 flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={() => onOpenInspirationProject?.(project.id)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all hv-button bg-blue-600 text-white hover:bg-blue-700 hv-button-primary"
+          >
+            <Eye className="w-4 h-4" aria-hidden="true" />
+            <span>Voir la fiche</span>
+          </button>
+        </div>
+      </article>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 px-4 py-8 sm:px-8 hv-background">
@@ -1253,11 +1279,11 @@ export const HomeScreen = ({
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h2 id="projects-heading" className="text-2xl font-bold text-gray-900">
-                {homeView === 'inspiration' ? 'Projets inspirants' : 'Vos projets enregistrés'}
+                {homeView === 'inspiration' ? 'Prospects' : 'Vos projets enregistrés'}
               </h2>
               <p className="text-sm text-gray-600">
                 {homeView === 'inspiration'
-                  ? 'Découvrez les initiatives d’autres laboratoires et gérez vos projets inspirants.'
+                  ? 'Suivez les distributeurs pharmaceutiques potentiels et centralisez les informations clés.'
                   : 'Accédez aux brouillons et aux synthèses finalisées pour les reprendre à tout moment.'}
               </p>
             </div>
@@ -1287,7 +1313,7 @@ export const HomeScreen = ({
                       : 'text-blue-700 hover:bg-blue-100'
                   }`}
                 >
-                  Inspiration
+                  Prospects
                 </button>
               </div>
               {homeView === 'inspiration' ? (
@@ -1297,7 +1323,7 @@ export const HomeScreen = ({
                   className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
                 >
                   <Plus className="w-4 h-4" aria-hidden="true" />
-                  Ajouter un projet inspirant
+                  Ajouter un prospect
                 </button>
               ) : (
                 <span className="inline-flex items-center text-sm font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded-full px-3 py-1">
@@ -1492,14 +1518,14 @@ export const HomeScreen = ({
 
           {homeView === 'inspiration' && !hasInspirationProjects && (
             <div className="bg-white border border-dashed border-blue-200 rounded-3xl p-8 text-center text-gray-600 hv-surface" role="status" aria-live="polite">
-              <p className="text-lg font-medium text-gray-800">Aucun projet inspirant enregistré.</p>
-              <p className="mt-2">Ajoutez des exemples pour nourrir vos réflexions.</p>
+              <p className="text-lg font-medium text-gray-800">Aucun prospect enregistré.</p>
+              <p className="mt-2">Ajoutez un distributeur potentiel pour démarrer le suivi.</p>
               <button
                 type="button"
                 onClick={onStartInspirationProject}
                 className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-all hv-button hv-button-primary"
               >
-                <Plus className="w-4 h-4 mr-2" /> Créer un projet inspirant
+                <Plus className="w-4 h-4 mr-2" /> Créer un prospect
               </button>
             </div>
           )}
@@ -1510,11 +1536,11 @@ export const HomeScreen = ({
                 <div
                   className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hv-surface space-y-4"
                   role="region"
-                  aria-label="Filtres des projets inspirants"
+                  aria-label="Filtres des prospects"
                 >
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-700">
-                      Filtres Inspiration
+                      Filtres prospects
                     </h3>
                     <button
                       type="button"
