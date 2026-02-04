@@ -46,9 +46,10 @@ import {
 } from './utils/inspirationConfig.js';
 import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
+import { DISTRIBUTOR_SITUATION_IDS, resolveDistributorSituationId } from './utils/distributor.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.279';
+const APP_VERSION = 'v1.0.280';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -2039,6 +2040,12 @@ const updateProjectFilters = useCallback((updater) => {
     () => projects.find(project => project.id === activeProjectId) || null,
     [projects, activeProjectId]
   );
+  const activeDistributorSituationId = useMemo(() => {
+    if (!isDistribNavigator) {
+      return null;
+    }
+    return resolveDistributorSituationId(activeProject);
+  }, [activeProject, isDistribNavigator]);
   const activeInspirationProject = useMemo(
     () => inspirationProjects.find(project => project.id === activeInspirationId) || null,
     [inspirationProjects, activeInspirationId]
@@ -4375,6 +4382,17 @@ const updateProjectFilters = useCallback((updater) => {
             isReturnToSynthesisRequested={returnToSynthesisAfterEdit}
             tourContext={tourContext}
             onFinish={navigateToSynthesis}
+            prospectOptions={
+              isDistribNavigator && activeDistributorSituationId === DISTRIBUTOR_SITUATION_IDS.evaluation
+                ? inspirationProjects
+                : []
+            }
+            linkedProspectId={answers.linkedProspectId || ''}
+            onLinkProspect={
+              isDistribNavigator && activeDistributorSituationId === DISTRIBUTOR_SITUATION_IDS.evaluation
+                ? (value) => handleAnswer('linkedProspectId', value)
+                : undefined
+            }
           />
         ) : screen === 'mandatory-summary' ? (
           <MandatoryQuestionsSummaryComponent
