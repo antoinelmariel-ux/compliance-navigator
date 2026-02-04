@@ -9,7 +9,8 @@ import {
   Save,
   Mail,
   Info,
-  Edit
+  Edit,
+  Plus
 } from './icons.js';
 import { formatAnswer } from '../utils/questions.js';
 import { computeRankingRecommendations, normalizeRankingConfig } from '../utils/ranking.js';
@@ -105,6 +106,12 @@ const COMMENT_STATUS_OPTIONS = [
     label: 'Refusé',
     badgeClass: 'bg-red-100 text-red-800 border-red-200'
   }
+];
+const AUDIT_ACTION_KEY = '__distributor_audit_action__';
+const ACTION_PLAN_STATUS_OPTIONS = [
+  { value: 'not_started', label: 'Non démarré' },
+  { value: 'in_progress', label: 'En cours' },
+  { value: 'completed', label: 'Finalisé' }
 ];
 
 const formatWeeksValue = (weeks) => {
@@ -217,6 +224,52 @@ const normalizeComplianceComments = (value) => {
     teams: {},
     committees: {},
     legacy: ''
+  };
+};
+
+const createActionPlanId = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+
+  return `action-plan-${Date.now()}-${Math.round(Math.random() * 100000)}`;
+};
+
+const normalizeActionPlanStatus = (value) =>
+  ACTION_PLAN_STATUS_OPTIONS.some((option) => option.value === value) ? value : 'not_started';
+
+const normalizeAuditActionData = (value) => {
+  const audit = value && typeof value === 'object' && !Array.isArray(value) ? value.audit : null;
+  const auditDocumentName = typeof audit?.documentName === 'string' ? audit.documentName : '';
+  const auditKeyPoints = typeof audit?.keyPoints === 'string' ? audit.keyPoints : '';
+  const rawPlans = Array.isArray(value?.actionPlans) ? value.actionPlans : [];
+  const actionPlans = rawPlans
+    .map((plan, index) => {
+      if (!plan || typeof plan !== 'object') {
+        return null;
+      }
+
+      const id = typeof plan.id === 'string' && plan.id.trim().length > 0
+        ? plan.id.trim()
+        : `action-plan-${index}`;
+
+      return {
+        id,
+        title: typeof plan.title === 'string' ? plan.title : '',
+        description: typeof plan.description === 'string' ? plan.description : '',
+        dueDate: typeof plan.dueDate === 'string' ? plan.dueDate : '',
+        status: normalizeActionPlanStatus(plan.status),
+        owner: typeof plan.owner === 'string' ? plan.owner : ''
+      };
+    })
+    .filter(Boolean);
+
+  return {
+    audit: {
+      documentName: auditDocumentName,
+      keyPoints: auditKeyPoints
+    },
+    actionPlans
   };
 };
 
@@ -774,6 +827,7 @@ export const DistribSynthesisReport = ({
   const [complianceReplyDrafts, setComplianceReplyDrafts] = useState({});
   const [shareMemberDraft, setShareMemberDraft] = useState('');
   const [shareMemberFeedback, setShareMemberFeedback] = useState('');
+  const auditFileInputRef = useRef(null);
   useEffect(() => {
     if (!tourContext?.isActive) {
       return;
@@ -807,6 +861,10 @@ export const DistribSynthesisReport = ({
     () => normalizeComplianceComments(answers?.[COMPLIANCE_COMMENTS_KEY]),
     [answers]
   );
+  const auditActionData = useMemo(
+    () => normalizeAuditActionData(answers?.[AUDIT_ACTION_KEY]),
+    [answers]
+  );
   const [complianceCommentDrafts, setComplianceCommentDrafts] = useState(() =>
     buildComplianceCommentDrafts(complianceComments, relevantTeams, [])
   );
@@ -814,6 +872,17 @@ export const DistribSynthesisReport = ({
   const updateComplianceComments =
     typeof onUpdateComplianceComments === 'function' ? onUpdateComplianceComments : onUpdateAnswers;
   const canSaveComplianceComment = typeof updateComplianceComments === 'function';
+  const canEditAuditAction = typeof onUpdateAnswers === 'function' && isProjectEditable;
+  const updateAuditActionData = useCallback(
+    (nextData) => {
+      if (typeof onUpdateAnswers !== 'function') {
+        return;
+      }
+
+      onUpdateAnswers({ [AUDIT_ACTION_KEY]: nextData });
+    },
+    [onUpdateAnswers]
+  );
   const currentUserEmail = useMemo(
     () => normalizeEmail(currentUser?.mail || currentUser?.userPrincipalName || ''),
     [currentUser]
@@ -897,6 +966,88 @@ export const DistribSynthesisReport = ({
   const projectStatusClasses = normalizedProjectStatus
     ? statusClassMap[normalizedProjectStatus] || 'bg-gray-100 text-gray-700 border border-gray-200'
     : '';
+  const inputBaseClass =
+    'w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200 disabled:bg-gray-50 disabled:text-gray-500';
+
+  const handleAuditFileChange = useCallback(
+    (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) {
+        return;
+      }
+
+      updateAuditActionData({
+        ...auditActionData,
+        audit: {
+          ...auditActionData.audit,
+          documentName: file.name
+        }
+      });
+
+      event.target.value = '';
+    },
+    [auditActionData, updateAuditActionData]
+  );
+
+  const handleAuditFileClear = useCallback(() => {
+    updateAuditActionData({
+      ...auditActionData,
+      audit: {
+        ...auditActionData.audit,
+        documentName: ''
+      }
+    });
+  }, [auditActionData, updateAuditActionData]);
+
+  const handleAuditKeyPointsChange = useCallback(
+    (event) => {
+      updateAuditActionData({
+        ...auditActionData,
+        audit: {
+          ...auditActionData.audit,
+          keyPoints: event.target.value
+        }
+      });
+    },
+    [auditActionData, updateAuditActionData]
+  );
+
+  const handleAddActionPlan = useCallback(() => {
+    const nextPlan = {
+      id: createActionPlanId(),
+      title: '',
+      description: '',
+      dueDate: '',
+      status: ACTION_PLAN_STATUS_OPTIONS[0].value,
+      owner: ''
+    };
+
+    updateAuditActionData({
+      ...auditActionData,
+      actionPlans: [...auditActionData.actionPlans, nextPlan]
+    });
+  }, [auditActionData, updateAuditActionData]);
+
+  const handleActionPlanChange = useCallback(
+    (planId, field, value) => {
+      const nextPlans = auditActionData.actionPlans.map((plan) => {
+        if (plan.id !== planId) {
+          return plan;
+        }
+
+        return {
+          ...plan,
+          [field]: value
+        };
+      });
+
+      updateAuditActionData({
+        ...auditActionData,
+        actionPlans: nextPlans
+      });
+    },
+    [auditActionData, updateAuditActionData]
+  );
 
   const priorityColors = {
     'A particulièrement anticiper': 'bg-red-100 text-red-800 border-red-300',
@@ -1979,6 +2130,194 @@ export const DistribSynthesisReport = ({
               </section>
             )}
           </div>
+
+          <section className="mt-8" aria-labelledby="audit-action-heading">
+            <div className="rounded-xl border border-gray-200 bg-white p-6 hv-surface space-y-6">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center">
+                  <FileText className="w-6 h-6 mr-2 text-blue-600" />
+                  <h2 id="audit-action-heading" className="text-2xl font-bold text-gray-800">
+                    Audit et plan d’action
+                  </h2>
+                </div>
+                {canEditAuditAction && (
+                  <button
+                    type="button"
+                    onClick={handleAddActionPlan}
+                    className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors hv-button hv-button-primary"
+                  >
+                    <Plus className="h-4 w-4" aria-hidden="true" />
+                    Ajouter un plan d’action
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                <div className="rounded-xl border border-dashed border-gray-200 p-4 text-sm text-gray-600">
+                  <p className="text-sm font-semibold text-gray-800">Document d’audit</p>
+                  {auditActionData.audit.documentName ? (
+                    <div className="mt-2 flex flex-col gap-2">
+                      <span className="text-sm font-medium text-gray-900">
+                        {auditActionData.audit.documentName}
+                      </span>
+                      {canEditAuditAction && (
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => auditFileInputRef.current?.click()}
+                            className="inline-flex items-center justify-center rounded-lg border border-blue-200 px-3 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-50"
+                          >
+                            Remplacer
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleAuditFileClear}
+                            className="inline-flex items-center justify-center rounded-lg border border-gray-200 px-3 py-1 text-xs font-semibold text-gray-600 hover:bg-gray-50"
+                          >
+                            Retirer
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-sm text-gray-500">Aucun document attaché.</p>
+                  )}
+                  {canEditAuditAction && (
+                    <button
+                      type="button"
+                      onClick={() => auditFileInputRef.current?.click()}
+                      className="mt-3 inline-flex items-center justify-center rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                    >
+                      Attacher un document
+                    </button>
+                  )}
+                  <input
+                    ref={auditFileInputRef}
+                    type="file"
+                    onChange={handleAuditFileChange}
+                    className="hidden"
+                    tabIndex={-1}
+                    aria-hidden="true"
+                  />
+                </div>
+                <div className="lg:col-span-2">
+                  <label htmlFor="audit-key-points" className="block text-sm font-semibold text-gray-700">
+                    Points clefs de l’audit
+                  </label>
+                  <textarea
+                    id="audit-key-points"
+                    rows={5}
+                    value={auditActionData.audit.keyPoints}
+                    onChange={handleAuditKeyPointsChange}
+                    className={`${inputBaseClass} mt-2`}
+                    placeholder="Listez les constats principaux et recommandations."
+                    disabled={!canEditAuditAction}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-semibold text-gray-800">Plans d’action</h3>
+                  {!canEditAuditAction && auditActionData.actionPlans.length === 0 && (
+                    <span className="text-xs text-gray-500">Aucun plan d’action enregistré.</span>
+                  )}
+                </div>
+                <div className="overflow-hidden rounded-xl border border-gray-200">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200 text-left text-sm">
+                      <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
+                        <tr>
+                          <th scope="col" className="px-4 py-3 font-semibold">Intitulé</th>
+                          <th scope="col" className="px-4 py-3 font-semibold">Description</th>
+                          <th scope="col" className="px-4 py-3 font-semibold">Date limite</th>
+                          <th scope="col" className="px-4 py-3 font-semibold">État</th>
+                          <th scope="col" className="px-4 py-3 font-semibold">Propriétaire</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200 bg-white">
+                        {auditActionData.actionPlans.length > 0 ? (
+                          auditActionData.actionPlans.map((plan) => (
+                            <tr key={plan.id} className="align-top">
+                              <td className="px-4 py-3">
+                                <input
+                                  type="text"
+                                  value={plan.title}
+                                  onChange={(event) =>
+                                    handleActionPlanChange(plan.id, 'title', event.target.value)
+                                  }
+                                  className={inputBaseClass}
+                                  placeholder="Intitulé"
+                                  disabled={!canEditAuditAction}
+                                />
+                              </td>
+                              <td className="px-4 py-3">
+                                <textarea
+                                  rows={2}
+                                  value={plan.description}
+                                  onChange={(event) =>
+                                    handleActionPlanChange(plan.id, 'description', event.target.value)
+                                  }
+                                  className={inputBaseClass}
+                                  placeholder="Décrivez l’action attendue"
+                                  disabled={!canEditAuditAction}
+                                />
+                              </td>
+                              <td className="px-4 py-3">
+                                <input
+                                  type="date"
+                                  value={plan.dueDate}
+                                  onChange={(event) =>
+                                    handleActionPlanChange(plan.id, 'dueDate', event.target.value)
+                                  }
+                                  className={inputBaseClass}
+                                  disabled={!canEditAuditAction}
+                                />
+                              </td>
+                              <td className="px-4 py-3">
+                                <select
+                                  value={plan.status}
+                                  onChange={(event) =>
+                                    handleActionPlanChange(plan.id, 'status', event.target.value)
+                                  }
+                                  className={inputBaseClass}
+                                  disabled={!canEditAuditAction}
+                                >
+                                  {ACTION_PLAN_STATUS_OPTIONS.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                      {option.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </td>
+                              <td className="px-4 py-3">
+                                <input
+                                  type="text"
+                                  value={plan.owner}
+                                  onChange={(event) =>
+                                    handleActionPlanChange(plan.id, 'owner', event.target.value)
+                                  }
+                                  className={inputBaseClass}
+                                  placeholder="Responsable"
+                                  disabled={!canEditAuditAction}
+                                />
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={5} className="px-4 py-6 text-center text-sm text-gray-500">
+                              Ajoutez un premier plan d’action pour suivre les actions prioritaires.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
 
           {shouldShowComplianceCommentsSection && (
             <section className="mt-8" aria-labelledby="compliance-comments-heading">
