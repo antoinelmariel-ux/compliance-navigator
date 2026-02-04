@@ -1,43 +1,61 @@
 const DEFAULT_INSPIRATION_FILTERS = {
   fields: [
     {
-      id: 'labName',
-      label: 'Nom du labo',
-      type: 'select',
+      id: 'contactName',
+      label: 'Nom du contact',
+      type: 'text',
       enabled: true,
-      sourceQuestionId: 'labName'
+      sourceQuestionId: 'contactName'
     },
     {
-      id: 'target',
-      label: 'Cible du projet',
+      id: 'role',
+      label: 'Rôle',
       type: 'select',
       enabled: true,
-      options: ['PS', 'Patient', 'GP'],
-      sourceQuestionId: 'target'
+      options: [
+        'Directeur commercial',
+        'Directrice commerciale',
+        'Responsable affaires réglementaires',
+        'Responsable logistique',
+        'Responsable qualité',
+        'Directeur général'
+      ],
+      sourceQuestionId: 'role'
     },
     {
-      id: 'typology',
-      label: 'Typologie',
-      type: 'select',
-      enabled: true,
-      options: ['Digital', 'Print'],
-      sourceQuestionId: 'typology'
-    },
-    {
-      id: 'therapeuticArea',
-      label: 'Aire thérapeutique',
-      type: 'select',
-      enabled: true,
-      options: ['Immunologie', 'Hémostase', 'Soins intensifs'],
-      sourceQuestionId: 'therapeuticArea'
-    },
-    {
-      id: 'country',
+      id: 'countries',
       label: 'Pays',
       type: 'select',
       enabled: true,
-      options: ['France', 'Europe', 'États-Unis', 'Autre'],
-      sourceQuestionId: 'country'
+      options: [
+        'Allemagne',
+        'Arabie saoudite',
+        'Belgique',
+        'Brésil',
+        'Canada',
+        'Espagne',
+        'États-Unis',
+        'Finlande',
+        'France',
+        'Italie',
+        'Luxembourg',
+        'Maroc',
+        'Mexique',
+        'Norvège',
+        'Portugal',
+        'Royaume-Uni',
+        'Singapour',
+        'Suède'
+      ],
+      sourceQuestionId: 'countries'
+    },
+    {
+      id: 'situation',
+      label: 'Situation',
+      type: 'select',
+      enabled: true,
+      options: ['Identifié', 'En prise de contact', 'En relation'],
+      sourceQuestionId: 'situation'
     }
   ]
 };
@@ -45,75 +63,74 @@ const DEFAULT_INSPIRATION_FILTERS = {
 const DEFAULT_INSPIRATION_FORM_FIELDS = {
   fields: [
     {
-      id: 'title',
-      label: 'Titre du projet',
+      id: 'contactName',
+      label: 'Nom du contact',
       type: 'text',
       required: true,
       enabled: true
     },
     {
-      id: 'labName',
-      label: 'Nom du laboratoire / association',
-      type: 'text',
-      required: true,
-      enabled: true
-    },
-    {
-      id: 'target',
-      label: 'Cible du projet',
-      type: 'select',
+      id: 'email',
+      label: 'Email',
+      type: 'email',
       required: true,
       enabled: true,
-      options: ['PS', 'Patient', 'GP']
+      placeholder: 'contact@distributeur.com'
     },
     {
-      id: 'typology',
-      label: 'Typologie',
-      type: 'select',
-      required: true,
-      enabled: true,
-      options: ['Digital', 'Print']
-    },
-    {
-      id: 'therapeuticArea',
-      label: 'Aire thérapeutique',
-      type: 'select',
-      required: true,
-      enabled: true,
-      options: ['Immunologie', 'Hémostase', 'Soins intensifs']
-    },
-    {
-      id: 'country',
-      label: 'Pays',
-      type: 'select',
-      required: true,
-      enabled: true,
-      options: ['France', 'Europe', 'États-Unis', 'Autre']
-    },
-    {
-      id: 'description',
-      label: 'Description du projet',
-      type: 'long_text',
-      required: false,
-      enabled: true
-    },
-    {
-      id: 'link',
-      label: 'Lien utile',
+      id: 'website',
+      label: 'Site internet',
       type: 'url',
       required: false,
-      enabled: true
+      enabled: true,
+      placeholder: 'https://...'
     },
     {
-      id: 'documents',
-      label: 'Documents',
-      type: 'documents',
-      required: false,
-      enabled: true
+      id: 'role',
+      label: 'Rôle',
+      type: 'text',
+      required: true,
+      enabled: true,
+      placeholder: 'Directeur commercial'
+    },
+    {
+      id: 'countries',
+      label: 'Pays',
+      type: 'multi_select',
+      required: true,
+      enabled: true,
+      options: [
+        'Allemagne',
+        'Arabie saoudite',
+        'Belgique',
+        'Brésil',
+        'Canada',
+        'Espagne',
+        'États-Unis',
+        'Finlande',
+        'France',
+        'Italie',
+        'Luxembourg',
+        'Maroc',
+        'Mexique',
+        'Norvège',
+        'Portugal',
+        'Royaume-Uni',
+        'Singapour',
+        'Suède'
+      ]
+    },
+    {
+      id: 'situation',
+      label: 'Situation',
+      type: 'select',
+      required: true,
+      enabled: true,
+      options: ['Identifié', 'En prise de contact', 'En relation']
     },
     {
       id: 'review',
-      label: 'Avis sur le projet',
+      label: 'Avis',
       type: 'long_text',
       required: false,
       enabled: true

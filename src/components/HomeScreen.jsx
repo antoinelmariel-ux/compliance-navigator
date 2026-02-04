@@ -246,8 +246,8 @@ export const HomeScreen = ({
   );
   const currentUserFirstName = getSafeString(currentUser?.givenName).trim();
   const heroHeadline = currentUserFirstName.length > 0
-    ? `${currentUserFirstName}, anticipez les besoins compliance de vos projets en quelques minutes`
-    : 'Anticipez les besoins compliance de vos projets en quelques minutes';
+    ? `${currentUserFirstName}, pilotez votre développement international en quelques étapes`
+    : 'Pilotez votre développement international en quelques étapes';
   const [filtersState, setFiltersState] = useState(() => buildInitialFiltersState(normalizedFilters));
   const normalizedInspirationFilters = useMemo(
     () => normalizeInspirationFiltersConfig(inspirationFilters),
@@ -1135,25 +1135,25 @@ export const HomeScreen = ({
       key={project.id}
       className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all hv-surface"
       role="listitem"
-      aria-label={`Projet inspirant ${project.title || 'sans titre'}`}
+      aria-label={`Prospect ${project.contactName || 'sans nom'}`}
     >
       <div className="space-y-3">
         <div>
-          <h3 className="text-xl font-semibold text-gray-900">{project.title || 'Projet sans titre'}</h3>
-          <p className="text-sm text-gray-500">{project.labName || 'Laboratoire non renseigné'}</p>
+          <h3 className="text-xl font-semibold text-gray-900">
+            {project.contactName || 'Partenaire non renseigné'}
+          </h3>
+          <p className="text-sm text-gray-500">{project.role || 'Rôle non renseigné'}</p>
         </div>
         <dl className="grid grid-cols-1 gap-2 text-sm text-gray-600">
           <div className="flex items-center gap-2">
             <Compass className="w-4 h-4" />
-            <span>{project.country || 'Pays non renseigné'}</span>
+            <span>
+              {normalizeInspirationFieldValues(project.countries).join(', ') || 'Pays non renseignés'}
+            </span>
           </div>
           <div className="flex items-center gap-2">
-            <Target className="w-4 h-4" />
-            <span>{project.target || 'Cible non renseignée'}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4" />
-            <span>{project.therapeuticArea || 'Aire thérapeutique non renseignée'}</span>
+            <CheckCircle className="w-4 h-4" />
+            <span>{project.situation || 'Situation non renseignée'}</span>
           </div>
         </dl>
       </div>
@@ -1177,13 +1177,14 @@ export const HomeScreen = ({
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div className="space-y-4">
               <span className="inline-flex items-center px-3 py-1 text-sm font-semibold text-blue-700 bg-blue-100 rounded-full border border-blue-200">
-                <Target className="w-4 h-4 mr-2" /> Votre copilote compliance
+                <Target className="w-4 h-4 mr-2" /> Votre copilote développement international
               </span>
               <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 leading-tight">
                 {heroHeadline}
               </h1>
               <p className="text-lg text-gray-600 leading-relaxed max-w-2xl">
-                Project Navigator vous guide pas à pas pour qualifier votre initiative, identifier les interlocuteurs à mobiliser et sécuriser vos délais réglementaires.
+                Distrib Navigator accompagne les Area Managers pour identifier les enjeux pays, sélectionner des
+                distributeurs partenaires, accélérer la contractualisation et suivre les plans d'action après audit.
               </p>
               <div className="flex flex-col sm:flex-row gap-3" role="group" aria-label="Actions principales">
                 <button
@@ -1224,34 +1225,34 @@ export const HomeScreen = ({
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 text-sm text-gray-600">
               <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 hv-surface" role="listitem">
                 <p className="font-semibold text-gray-800 flex items-center">
-                  <Rocket className="w-5 h-5 mr-2" /> Démarrez simplement
+                  <Rocket className="w-5 h-5 mr-2" /> Cartographiez les enjeux pays
                 </p>
                 <p className="mt-2 leading-relaxed">
-                  Un questionnaire dynamique pour cadrer votre projet et qualifier les impacts compliance.
+                  Identifiez rapidement les contraintes locales et les priorités pour chaque marché cible.
                 </p>
               </div>
               <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 hv-surface" role="listitem">
                 <p className="font-semibold text-gray-800 flex items-center">
-                  <Compass className="w-5 h-5 mr-2" /> Visualisez la feuille de route
+                  <Compass className="w-5 h-5 mr-2" /> Sélectionnez les bons partenaires
                 </p>
                 <p className="mt-2 leading-relaxed">
-                  Une synthèse claire avec le niveau de complexité, les équipes à mobiliser et les délais recommandés.
+                  Centralisez les distributeurs potentiels et pilotez leur qualification étape par étape.
                 </p>
               </div>
               <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 hv-surface" role="listitem">
                 <p className="font-semibold text-gray-800 flex items-center">
-                  <Users className="w-5 h-5 mr-2" /> Collaborez efficacement
+                  <Users className="w-5 h-5 mr-2" /> Facilitez la contractualisation
                 </p>
                 <p className="mt-2 leading-relaxed">
-                  Partagez la synthèse avec les parties prenantes pour sécuriser vos points de passage.
+                  Suivez les échanges internes pour sécuriser les décisions et aligner les parties prenantes.
                 </p>
               </div>
               <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 hv-surface" role="listitem">
                 <p className="font-semibold text-gray-800 flex items-center">
-                  <Calendar className="w-5 h-5 mr-2" /> Gardez une trace
+                  <Calendar className="w-5 h-5 mr-2" /> Pilotez la relation post-audit
                 </p>
                 <p className="mt-2 leading-relaxed">
-                  Retrouvez à tout moment les projets déjà soumis et mettez-les à jour si nécessaire.
+                  Gardez un historique des audits et des plans d'action pour maintenir la performance des partenaires.
                 </p>
               </div>
             </div>
@@ -1262,11 +1263,11 @@ export const HomeScreen = ({
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h2 id="projects-heading" className="text-2xl font-bold text-gray-900">
-                {homeView === 'inspiration' ? 'Projets inspirants' : 'Vos projets enregistrés'}
+                {homeView === 'inspiration' ? 'Prospects' : 'Vos projets enregistrés'}
               </h2>
               <p className="text-sm text-gray-600">
                 {homeView === 'inspiration'
-                  ? 'Découvrez les initiatives d’autres laboratoires et gérez vos projets inspirants.'
+                  ? 'Retrouvez les partenaires potentiels que vous prospectez pour développer votre activité à l’international.'
                   : 'Accédez aux brouillons et aux synthèses finalisées pour les reprendre à tout moment.'}
               </p>
             </div>
@@ -1296,7 +1297,7 @@ export const HomeScreen = ({
                       : 'text-blue-700 hover:bg-blue-100'
                   }`}
                 >
-                  Inspiration
+                  Prospects
                 </button>
               </div>
               {homeView === 'inspiration' ? (
@@ -1306,7 +1307,7 @@ export const HomeScreen = ({
                   className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
                 >
                   <Plus className="w-4 h-4" aria-hidden="true" />
-                  Ajouter un projet inspirant
+                  Ajouter un prospect
                 </button>
               ) : (
                 <span className="inline-flex items-center text-sm font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded-full px-3 py-1">
@@ -1501,14 +1502,14 @@ export const HomeScreen = ({
 
           {homeView === 'inspiration' && !hasInspirationProjects && (
             <div className="bg-white border border-dashed border-blue-200 rounded-3xl p-8 text-center text-gray-600 hv-surface" role="status" aria-live="polite">
-              <p className="text-lg font-medium text-gray-800">Aucun projet inspirant enregistré.</p>
-              <p className="mt-2">Ajoutez des exemples pour nourrir vos réflexions.</p>
+              <p className="text-lg font-medium text-gray-800">Aucun prospect enregistré.</p>
+              <p className="mt-2">Ajoutez des partenaires potentiels pour structurer votre prospection.</p>
               <button
                 type="button"
                 onClick={onStartInspirationProject}
                 className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-all hv-button hv-button-primary"
               >
-                <Plus className="w-4 h-4 mr-2" /> Créer un projet inspirant
+                <Plus className="w-4 h-4 mr-2" /> Créer un prospect
               </button>
             </div>
           )}
@@ -1519,11 +1520,11 @@ export const HomeScreen = ({
                 <div
                   className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hv-surface space-y-4"
                   role="region"
-                  aria-label="Filtres des projets inspirants"
+                  aria-label="Filtres des prospects"
                 >
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-700">
-                      Filtres Inspiration
+                      Filtres Prospects
                     </h3>
                     <button
                       type="button"
@@ -1627,7 +1628,7 @@ export const HomeScreen = ({
                   role="status"
                   aria-live="polite"
                 >
-                  <p className="text-lg font-medium text-gray-800">Aucun projet ne correspond à vos filtres.</p>
+                  <p className="text-lg font-medium text-gray-800">Aucun prospect ne correspond à vos filtres.</p>
                   <p className="mt-2">Ajustez vos critères ou réinitialisez les filtres.</p>
                   {hasActiveInspirationFilters && (
                     <button
