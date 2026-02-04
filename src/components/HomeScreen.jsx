@@ -60,7 +60,7 @@ const normalizeInspirationFieldValues = (value) => {
 
 const DEFAULT_SELECT_FILTER_VALUE = 'all';
 const DEFAULT_TEXT_FILTER_VALUE = '';
-const WORLD_MAP_URL = './src/data/world map.svg';
+const WORLD_MAP_URL = './src/data/world-map.svg';
 
 const ICP_SCORE_KEY = 'CPI 2024 score';
 
@@ -293,6 +293,10 @@ export const HomeScreen = ({
   const previouslyFocusedElementRef = useRef(null);
   const mapObjectRef = useRef(null);
   const mapClickHandlerRef = useRef(null);
+  const mapInteractionRef = useRef({ cleanup: null });
+  const mapBaseViewBoxRef = useRef(null);
+  const mapViewBoxRef = useRef(null);
+  const mapZoomRef = useRef(1);
 
   const defaultCountry = countryVisionData[0];
   const [selectedCountryId, setSelectedCountryId] = useState(defaultCountry?.id || '');
@@ -351,9 +355,53 @@ export const HomeScreen = ({
       return;
     }
 
+    if (mapInteractionRef.current.cleanup) {
+      mapInteractionRef.current.cleanup();
+      mapInteractionRef.current.cleanup = null;
+    }
+
     if (mapClickHandlerRef.current) {
       svgElement.removeEventListener('click', mapClickHandlerRef.current);
     }
+
+    const getBaseViewBox = () => {
+      const rawViewBox = svgElement.getAttribute('viewBox');
+      if (rawViewBox) {
+        const parts = rawViewBox.split(/\s+|,/).map(Number).filter(Number.isFinite);
+        if (parts.length === 4) {
+          return parts;
+        }
+      }
+
+      const width = Number(svgElement.getAttribute('width'));
+      const height = Number(svgElement.getAttribute('height'));
+
+      if (Number.isFinite(width) && Number.isFinite(height)) {
+        return [0, 0, width, height];
+      }
+
+      try {
+        const bbox = svgElement.getBBox();
+        return [bbox.x, bbox.y, bbox.width, bbox.height];
+      } catch (error) {
+        return null;
+      }
+    };
+
+    const baseViewBox = getBaseViewBox();
+    if (!baseViewBox) {
+      return;
+    }
+
+    const applyViewBox = (nextViewBox) => {
+      const serialized = nextViewBox.map(value => value.toFixed(4)).join(' ');
+      svgElement.setAttribute('viewBox', serialized);
+      mapViewBoxRef.current = nextViewBox;
+    };
+
+    mapBaseViewBoxRef.current = baseViewBox;
+    mapZoomRef.current = 1;
+    applyViewBox(baseViewBox.slice());
 
     const clickHandler = (event) => {
       const path = event.target?.closest?.('path');
@@ -367,10 +415,116 @@ export const HomeScreen = ({
 
     mapClickHandlerRef.current = clickHandler;
     svgElement.addEventListener('click', clickHandler);
+    svgElement.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    svgElement.style.width = '100%';
+    svgElement.style.height = '100%';
+    svgElement.style.display = 'block';
+    svgElement.style.cursor = 'grab';
+    svgElement.style.userSelect = 'none';
+    svgElement.style.touchAction = 'none';
+
+    const panState = {
+      isPanning: false,
+      startX: 0,
+      startY: 0,
+      startViewBox: null
+    };
+
+    const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+    const handleWheel = (event) => {
+      event.preventDefault();
+      if (!mapBaseViewBoxRef.current || !mapViewBoxRef.current) {
+        return;
+      }
+
+      const baseBox = mapBaseViewBoxRef.current;
+      const currentBox = mapViewBoxRef.current;
+      const rect = svgElement.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) {
+        return;
+      }
+
+      const direction = event.deltaY > 0 ? 1 : -1;
+      const zoomStep = direction > 0 ? 1.1 : 0.9;
+      const minZoom = 1;
+      const maxZoom = 6;
+      const nextZoom = clamp(mapZoomRef.current * zoomStep, minZoom, maxZoom);
+
+      const zoomRatio = nextZoom / mapZoomRef.current;
+      if (zoomRatio === 1) {
+        return;
+      }
+
+      const offsetX = (event.clientX - rect.left) / rect.width;
+      const offsetY = (event.clientY - rect.top) / rect.height;
+      const nextWidth = baseBox[2] / nextZoom;
+      const nextHeight = baseBox[3] / nextZoom;
+      const focusX = currentBox[0] + currentBox[2] * offsetX;
+      const focusY = currentBox[1] + currentBox[3] * offsetY;
+
+      const nextX = focusX - nextWidth * offsetX;
+      const nextY = focusY - nextHeight * offsetY;
+
+      mapZoomRef.current = nextZoom;
+      applyViewBox([nextX, nextY, nextWidth, nextHeight]);
+    };
+
+    const handleMouseDown = (event) => {
+      if (event.button !== 0 || !mapViewBoxRef.current) {
+        return;
+      }
+      panState.isPanning = true;
+      panState.startX = event.clientX;
+      panState.startY = event.clientY;
+      panState.startViewBox = mapViewBoxRef.current.slice();
+      svgElement.style.cursor = 'grabbing';
+    };
+
+    const handleMouseMove = (event) => {
+      if (!panState.isPanning || !panState.startViewBox) {
+        return;
+      }
+      const rect = svgElement.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) {
+        return;
+      }
+      const dx = ((event.clientX - panState.startX) / rect.width) * panState.startViewBox[2];
+      const dy = ((event.clientY - panState.startY) / rect.height) * panState.startViewBox[3];
+      applyViewBox([
+        panState.startViewBox[0] - dx,
+        panState.startViewBox[1] - dy,
+        panState.startViewBox[2],
+        panState.startViewBox[3]
+      ]);
+    };
+
+    const handleMouseUp = () => {
+      if (panState.isPanning) {
+        panState.isPanning = false;
+        panState.startViewBox = null;
+        svgElement.style.cursor = 'grab';
+      }
+    };
+
+    svgElement.addEventListener('wheel', handleWheel, { passive: false });
+    svgElement.addEventListener('mousedown', handleMouseDown);
+    svgElement.addEventListener('mousemove', handleMouseMove);
+    svgElement.addEventListener('mouseup', handleMouseUp);
+    svgElement.addEventListener('mouseleave', handleMouseUp);
+
     svgElement.querySelectorAll('path').forEach((path) => {
       path.style.cursor = 'pointer';
       path.style.transition = 'fill 0.2s ease, stroke 0.2s ease';
     });
+
+    mapInteractionRef.current.cleanup = () => {
+      svgElement.removeEventListener('wheel', handleWheel);
+      svgElement.removeEventListener('mousedown', handleMouseDown);
+      svgElement.removeEventListener('mousemove', handleMouseMove);
+      svgElement.removeEventListener('mouseup', handleMouseUp);
+      svgElement.removeEventListener('mouseleave', handleMouseUp);
+    };
   }, [handleCountrySelect]);
 
   useEffect(() => {
@@ -396,6 +550,10 @@ export const HomeScreen = ({
     const svgElement = svgDocument?.querySelector('svg');
     if (svgElement && mapClickHandlerRef.current) {
       svgElement.removeEventListener('click', mapClickHandlerRef.current);
+    }
+    if (mapInteractionRef.current.cleanup) {
+      mapInteractionRef.current.cleanup();
+      mapInteractionRef.current.cleanup = null;
     }
   }, []);
 
@@ -1482,7 +1640,7 @@ export const HomeScreen = ({
                       target="_blank"
                       rel="noreferrer"
                     >
-                      Voir la fiche partenaire
+                      Voir le contrat
                     </a>
                   </div>
                 </div>
