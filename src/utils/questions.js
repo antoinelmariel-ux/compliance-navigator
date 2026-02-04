@@ -19,6 +19,35 @@ const normalizeAnswerForComparison = (answer) => {
   return answer;
 };
 
+const resolveOptionValue = (option) => {
+  if (option && typeof option === 'object') {
+    return typeof option.value !== 'undefined' ? option.value : option.label;
+  }
+  return option;
+};
+
+const resolveOptionLabel = (option) => {
+  if (option && typeof option === 'object') {
+    return typeof option.label !== 'undefined' ? option.label : option.value;
+  }
+  return option;
+};
+
+const buildOptionLabelMap = (question) => {
+  const options = Array.isArray(question?.options) ? question.options : [];
+  const map = new Map();
+
+  options.forEach((option) => {
+    const value = resolveOptionValue(option);
+    const label = resolveOptionLabel(option);
+    if (typeof value !== 'undefined') {
+      map.set(value, label);
+    }
+  });
+
+  return map;
+};
+
 const toNumber = (value) => {
   if (value === null || value === undefined || value === '') {
     return null;
@@ -167,7 +196,10 @@ export const formatAnswer = (question, answer) => {
   }
 
   if (questionType === 'multi_choice' && Array.isArray(answer)) {
-    return answer.join(', ');
+    const optionLabels = buildOptionLabelMap(question);
+    return answer
+      .map((entry) => optionLabels.get(entry) ?? entry)
+      .join(', ');
   }
 
   if (questionType === 'ranking') {
@@ -180,6 +212,13 @@ export const formatAnswer = (question, answer) => {
   if (questionType === 'file' && answer && typeof answer === 'object') {
     const size = typeof answer.size === 'number' ? ` (${Math.round(answer.size / 1024)} Ko)` : '';
     return `${answer.name || 'Fichier joint'}${size}`;
+  }
+
+  if (questionType === 'choice') {
+    const optionLabels = buildOptionLabelMap(question);
+    if (optionLabels.size > 0 && optionLabels.has(answer)) {
+      return optionLabels.get(answer);
+    }
   }
 
   return Array.isArray(answer) ? answer.join(', ') : String(answer);

@@ -2,17 +2,17 @@ export const initialQuestions = [
   {
     "id": "projectName",
     "type": "text",
-    "question": "Quel est le nom du projet ?",
+    "question": "Quel est le nom du partenaire ?",
     "options": [],
     "required": true,
     "conditions": [],
     "conditionLogic": "all",
     "guidance": {
-      "objective": "Nommer clairement l'initiative pour qu'elle soit mémorisée dès les premières secondes.",
-      "details": "Le nom affiché dans la vitrine du projet sert de repère pour toutes les équipes qui contribuent au pitch.",
+      "objective": "Identifier clairement le partenaire pour structurer les échanges dès les premières secondes.",
+      "details": "Le nom affiché dans la synthèse sert de repère pour toutes les équipes qui contribuent au dossier.",
       "tips": [
-        "Renseignez le nom officiel ou celui que vous souhaitez tester auprès des parties prenantes.",
-        "Si un nom de code interne existe, ajoutez-le entre parenthèses pour faciliter le suivi."
+        "Renseignez le nom officiel ou celui utilisé dans vos échanges internes.",
+        "Si un acronyme existe, ajoutez-le entre parenthèses pour faciliter le suivi."
       ]
     },
     "showcase": {
@@ -21,6 +21,134 @@ export const initialQuestions = [
       ],
       "usage": "Titre principal affiché dans la vitrine du projet."
     }
+  },
+  {
+    "id": "partnerProspectId",
+    "type": "choice",
+    "question": "Souhaitez-vous sélectionner un prospect existant ?",
+    "options": [
+      "Aucun prospect (saisie manuelle)"
+    ],
+    "required": false,
+    "conditions": [],
+    "conditionLogic": "all",
+    "guidance": {
+      "objective": "Réutiliser les informations déjà collectées lors de la prospection.",
+      "details": "Si vous sélectionnez un prospect, les champs suivants seront pré-remplis automatiquement.",
+      "tips": [
+        "Choisissez un prospect pour gagner du temps.",
+        "Laissez ce champ sur « saisie manuelle » si vous ne souhaitez pas réutiliser de données existantes."
+      ]
+    },
+    "placeholder": "",
+    "conditionGroups": []
+  },
+  {
+    "id": "contactName",
+    "type": "text",
+    "question": "Nom du contact",
+    "options": [],
+    "required": true,
+    "conditions": [],
+    "conditionLogic": "all",
+    "placeholder": "Prénom Nom",
+    "conditionGroups": []
+  },
+  {
+    "id": "email",
+    "type": "text",
+    "question": "Email",
+    "options": [],
+    "required": true,
+    "conditions": [],
+    "conditionLogic": "all",
+    "placeholder": "contact@partenaire.com",
+    "conditionGroups": []
+  },
+  {
+    "id": "website",
+    "type": "url",
+    "question": "Site internet",
+    "options": [],
+    "required": false,
+    "conditions": [],
+    "conditionLogic": "all",
+    "placeholder": "https://...",
+    "conditionGroups": []
+  },
+  {
+    "id": "role",
+    "type": "text",
+    "question": "Rôle",
+    "options": [],
+    "required": true,
+    "conditions": [],
+    "conditionLogic": "all",
+    "placeholder": "Directeur commercial",
+    "conditionGroups": []
+  },
+  {
+    "id": "countries",
+    "type": "multi_choice",
+    "question": "Pays",
+    "options": [
+      "Allemagne",
+      "Arabie saoudite",
+      "Belgique",
+      "Brésil",
+      "Canada",
+      "Espagne",
+      "États-Unis",
+      "Finlande",
+      "France",
+      "Italie",
+      "Luxembourg",
+      "Maroc",
+      "Mexique",
+      "Norvège",
+      "Portugal",
+      "Royaume-Uni",
+      "Singapour",
+      "Suède"
+    ],
+    "required": true,
+    "conditions": [],
+    "conditionLogic": "all",
+    "conditionGroups": []
+  },
+  {
+    "id": "situation",
+    "type": "choice",
+    "question": "Situation",
+    "options": [
+      "Identifié",
+      "En prise de contact",
+      "En relation"
+    ],
+    "required": true,
+    "conditions": [],
+    "conditionLogic": "all",
+    "conditionGroups": []
+  },
+  {
+    "id": "qertResult",
+    "type": "file",
+    "question": "Insérer le résultat du QERT",
+    "options": [],
+    "required": false,
+    "conditions": [],
+    "conditionLogic": "all",
+    "conditionGroups": []
+  },
+  {
+    "id": "antiCorruptionProgram",
+    "type": "file",
+    "question": "Inserer les éléments du programme anti-corruption",
+    "options": [],
+    "required": false,
+    "conditions": [],
+    "conditionLogic": "all",
+    "conditionGroups": []
   },
   {
     "id": "teamLead",

@@ -1196,7 +1196,7 @@ export const HomeScreen = ({
                   <Plus className="w-5 h-5" aria-hidden="true" />
                   <span className="flex flex-col leading-tight text-left">
                     <span>Créer un nouveau</span>
-                    <span>projet</span>
+                    <span>partenaire</span>
                   </span>
                 </button>
                 <button
@@ -1327,7 +1327,7 @@ export const HomeScreen = ({
                 onClick={onStartNewProject}
                 className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-all hv-button hv-button-primary"
               >
-                <Plus className="w-4 h-4 mr-2" /> Créer un projet
+                <Plus className="w-4 h-4 mr-2" /> Créer un nouveau partenaire
               </button>
             </div>
           )}
