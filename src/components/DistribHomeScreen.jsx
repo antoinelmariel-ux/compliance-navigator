@@ -21,6 +21,7 @@ import {
   getDistributorSituationLabel,
   resolveDistributorSituationId
 } from '../utils/distributor.js';
+import cpiData from '../data/ICP 2024.json';
 
 const formatDate = (isoDate) => {
   if (!isoDate) {
@@ -56,6 +57,60 @@ const normalizeInspirationFieldValues = (value) => {
   }
 
   return [];
+};
+
+const normalizeCountryName = (value) => {
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[’']/g, '')
+    .replace(/[^a-zA-Z0-9\s-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+};
+
+const resolveContractEndDate = (project) => {
+  const candidates = [
+    project?.contractEndDate,
+    project?.answers?.contractEndDate,
+    project?.contractEnd,
+    project?.answers?.contractEnd,
+    project?.answers?.contractEndAt
+  ];
+
+  for (let index = 0; index < candidates.length; index += 1) {
+    const candidate = candidates[index];
+    if (typeof candidate === 'string' && candidate.trim().length > 0) {
+      return candidate.trim();
+    }
+  }
+
+  return '';
+};
+
+const getCorruptionRiskLabel = (score) => {
+  if (!Number.isFinite(score)) {
+    return 'Indice ICP indisponible';
+  }
+
+  if (score >= 80) {
+    return 'Risque de corruption faible';
+  }
+
+  if (score >= 60) {
+    return 'Risque de corruption modéré';
+  }
+
+  if (score >= 40) {
+    return 'Risque de corruption élevé';
+  }
+
+  return 'Risque de corruption critique';
 };
 
 const DEFAULT_SELECT_FILTER_VALUE = 'all';
@@ -218,6 +273,7 @@ export const DistribHomeScreen = ({
   teamLeadOptions = [],
   inspirationProjects = [],
   inspirationFilters,
+  countryProfiles = [],
   homeView = 'platform',
   navigatorLabel = 'Project Navigator',
   onHomeViewChange,
@@ -259,6 +315,8 @@ export const DistribHomeScreen = ({
     buildInitialFiltersState(normalizedInspirationFilters)
   );
   const fileInputRef = useRef(null);
+  const countryReviewRef = useRef(null);
+  const mapContainerRef = useRef(null);
   const [deleteDialogState, setDeleteDialogState] = useState(() => ({
     isOpen: false,
     project: null
@@ -266,6 +324,13 @@ export const DistribHomeScreen = ({
   const deleteCancelButtonRef = useRef(null);
   const deleteConfirmButtonRef = useRef(null);
   const previouslyFocusedElementRef = useRef(null);
+  const [selectedCountry, setSelectedCountry] = useState(null);
+  const [worldMapMarkup, setWorldMapMarkup] = useState('');
+
+  const worldMapUrl = useMemo(
+    () => new URL('../data/world map.svg', import.meta.url).href,
+    []
+  );
 
   const accessibleProjects = useMemo(() => {
     if (!Array.isArray(projects)) {
@@ -288,6 +353,32 @@ export const DistribHomeScreen = ({
       return ownerEmail === currentUserEmail || isShared;
     });
   }, [projects, isAdminMode, currentUserEmail]);
+
+  const countryProfileLookup = useMemo(() => {
+    const map = new Map();
+    const entries = Array.isArray(countryProfiles) ? countryProfiles : [];
+    entries.forEach((profile) => {
+      if (profile?.iso2) {
+        map.set(profile.iso2.toUpperCase(), profile);
+      }
+      if (profile?.name) {
+        map.set(normalizeCountryName(profile.name), profile);
+      }
+    });
+    return map;
+  }, [countryProfiles]);
+
+  const cpiLookup = useMemo(() => {
+    const map = new Map();
+    (Array.isArray(cpiData) ? cpiData : []).forEach((entry) => {
+      const name = normalizeCountryName(entry?.['Country / Territory']);
+      const rawScore = Number.parseFloat(entry?.['CPI 2024 score']);
+      if (name) {
+        map.set(name, Number.isFinite(rawScore) ? rawScore : null);
+      }
+    });
+    return map;
+  }, []);
 
   useEffect(() => {
     const projectIds = new Set(accessibleProjects.map((project) => project.id));
@@ -339,6 +430,33 @@ export const DistribHomeScreen = ({
     }
   }, [tourContext]);
 
+  useEffect(() => {
+    let isActive = true;
+
+    const loadMap = async () => {
+      try {
+        const response = await fetch(worldMapUrl);
+        if (!response.ok) {
+          throw new Error('Chargement de la carte impossible.');
+        }
+        const markup = await response.text();
+        if (isActive) {
+          setWorldMapMarkup(markup);
+        }
+      } catch (error) {
+        if (isActive) {
+          setWorldMapMarkup('');
+        }
+      }
+    };
+
+    loadMap();
+
+    return () => {
+      isActive = false;
+    };
+  }, [worldMapUrl]);
+
   const handleRequestProjectDeletion = useCallback((project) => {
     if (!project || !project.id || typeof onDeleteProject !== 'function') {
       return;
@@ -355,6 +473,40 @@ export const DistribHomeScreen = ({
       project
     });
   }, [onDeleteProject]);
+
+  const handleScrollToCountryReview = useCallback(() => {
+    if (countryReviewRef.current && typeof countryReviewRef.current.scrollIntoView === 'function') {
+      countryReviewRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, []);
+
+  const handleMapSelect = useCallback((event) => {
+    const target = event?.target;
+    if (!target || target.tagName?.toLowerCase() !== 'path') {
+      return;
+    }
+
+    const name = target.getAttribute('name') || target.getAttribute('data-name') || '';
+    const id = target.getAttribute('id') || '';
+    setSelectedCountry({
+      id,
+      name
+    });
+  }, []);
+
+  const handleMapKeyDown = useCallback((event) => {
+    if (event.key !== 'Enter' && event.key !== ' ') {
+      return;
+    }
+
+    const target = event?.target;
+    if (!target || target.tagName?.toLowerCase() !== 'path') {
+      return;
+    }
+
+    event.preventDefault();
+    handleMapSelect(event);
+  }, [handleMapSelect]);
 
   const handleConfirmDeleteProject = useCallback(() => {
     if (!deleteDialogState.project || typeof onDeleteProject !== 'function') {
@@ -439,6 +591,41 @@ export const DistribHomeScreen = ({
   }, [deleteDialogState.isOpen, handleCancelDeleteProject]);
 
   useEffect(() => {
+    const container = mapContainerRef.current;
+    if (!container) {
+      return;
+    }
+
+    const svg = container.querySelector('svg');
+    if (!svg) {
+      return;
+    }
+
+    svg.setAttribute('role', 'img');
+    svg.setAttribute('aria-label', 'Carte mondiale des pays');
+    svg.style.width = '100%';
+    svg.style.height = 'auto';
+
+    const selectedKey = normalizeCountryName(selectedCountry?.name || '');
+
+    svg.querySelectorAll('path').forEach((path) => {
+      const name = path.getAttribute('name') || path.getAttribute('data-name') || '';
+      const normalizedName = normalizeCountryName(name);
+      const isSelected = selectedKey && normalizedName === selectedKey;
+      const isContract = normalizedName && contractCountryKeys.has(normalizedName);
+
+      path.style.fill = isSelected ? '#1d4ed8' : isContract ? '#2563eb' : '#e5e7eb';
+      path.style.cursor = 'pointer';
+      path.setAttribute('tabindex', '0');
+      path.setAttribute('role', 'button');
+      path.setAttribute(
+        'aria-label',
+        name ? `Voir la fiche ${name}` : 'Voir la fiche pays'
+      );
+    });
+  }, [contractCountryKeys, selectedCountry, worldMapMarkup]);
+
+  useEffect(() => {
     setInspirationFiltersState(prevState => {
       const initialState = buildInitialFiltersState(normalizedInspirationFilters);
       const nextState = { ...prevState };
@@ -499,6 +686,71 @@ export const DistribHomeScreen = ({
 
     return Array.from(countries).sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }));
   }, [accessibleProjects]);
+
+  const contractCountryKeys = useMemo(() => {
+    const keys = new Set();
+    accessibleProjects.forEach((project) => {
+      if (resolveDistributorSituationId(project) !== DISTRIBUTOR_SITUATION_IDS.underContract) {
+        return;
+      }
+      normalizeDistributorCountries(project).forEach((country) => {
+        const normalized = normalizeCountryName(country);
+        if (normalized) {
+          keys.add(normalized);
+        }
+      });
+    });
+    return keys;
+  }, [accessibleProjects]);
+
+  const selectedCountryProfile = useMemo(() => {
+    if (!selectedCountry) {
+      return null;
+    }
+
+    const isoMatch = selectedCountry.id ? countryProfileLookup.get(selectedCountry.id.toUpperCase()) : null;
+    if (isoMatch) {
+      return isoMatch;
+    }
+
+    const nameKey = normalizeCountryName(selectedCountry.name || '');
+    if (!nameKey) {
+      return null;
+    }
+
+    return countryProfileLookup.get(nameKey) || null;
+  }, [countryProfileLookup, selectedCountry]);
+
+  const selectedCountryCorruptionScore = useMemo(() => {
+    if (!selectedCountry) {
+      return null;
+    }
+    const nameKey = normalizeCountryName(selectedCountry.name || selectedCountryProfile?.name || '');
+    if (!nameKey) {
+      return null;
+    }
+    return cpiLookup.get(nameKey) ?? null;
+  }, [cpiLookup, selectedCountry, selectedCountryProfile]);
+
+  const selectedCountryContractProjects = useMemo(() => {
+    if (!selectedCountry) {
+      return [];
+    }
+
+    const nameKey = normalizeCountryName(selectedCountry.name || selectedCountryProfile?.name || '');
+    if (!nameKey) {
+      return [];
+    }
+
+    return accessibleProjects.filter((project) => {
+      if (resolveDistributorSituationId(project) !== DISTRIBUTOR_SITUATION_IDS.underContract) {
+        return false;
+      }
+      return normalizeDistributorCountries(project).some(
+        (country) => normalizeCountryName(country) === nameKey
+      );
+    });
+  }, [accessibleProjects, selectedCountry, selectedCountryProfile]);
 
   const inspirationFilterOptions = useMemo(() => {
     const fields = Array.isArray(normalizedInspirationFilters.fields) ? normalizedInspirationFilters.fields : [];
@@ -1188,6 +1440,7 @@ export const DistribHomeScreen = ({
                   <button
                     key={label}
                     type="button"
+                    onClick={label === 'Revue des pays' ? handleScrollToCountryReview : undefined}
                     className="inline-flex items-center justify-center gap-3 px-5 py-3 text-base font-semibold text-blue-600 bg-white hover:bg-blue-50 rounded-xl border border-blue-200 transition-all hv-button hv-focus-ring"
                   >
                     <span className="leading-tight text-left">{label}</span>
@@ -1240,6 +1493,152 @@ export const DistribHomeScreen = ({
             </div>
           </div>
         </header>
+
+        <section
+          ref={countryReviewRef}
+          id="country-review"
+          aria-labelledby="country-review-heading"
+          className="space-y-6"
+        >
+          <div>
+            <h2 id="country-review-heading" className="text-2xl font-bold text-gray-900">
+              Revue des pays
+            </h2>
+            <p className="text-sm text-gray-600">
+              Cliquez sur un pays pour consulter les informations clefs et les contrats en cours.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-6">
+            <div className="bg-white border border-gray-200 rounded-3xl p-4 shadow-sm hv-surface">
+              <div className="flex flex-wrap items-center justify-between gap-3 pb-4">
+                <p className="text-sm font-semibold text-gray-700">
+                  Carte mondiale des pays
+                </p>
+                <div className="flex flex-wrap items-center gap-3 text-xs text-gray-600">
+                  <span className="inline-flex items-center gap-2">
+                    <span className="h-3 w-3 rounded-full bg-blue-600" aria-hidden="true" />
+                    Contrat en cours
+                  </span>
+                  <span className="inline-flex items-center gap-2">
+                    <span className="h-3 w-3 rounded-full bg-blue-700" aria-hidden="true" />
+                    Pays sélectionné
+                  </span>
+                </div>
+              </div>
+              {worldMapMarkup ? (
+                <div
+                  ref={mapContainerRef}
+                  onClick={handleMapSelect}
+                  onKeyDown={handleMapKeyDown}
+                  className="w-full overflow-hidden rounded-2xl border border-gray-100 bg-gray-50 p-2"
+                  dangerouslySetInnerHTML={{ __html: worldMapMarkup }}
+                />
+              ) : (
+                <div className="rounded-2xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500">
+                  Chargement de la carte en cours...
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-3xl p-6 shadow-sm hv-surface space-y-6">
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Informations clés
+                </p>
+                <h3 className="text-xl font-semibold text-gray-900">
+                  {selectedCountryProfile?.name || selectedCountry?.name || 'Sélectionnez un pays'}
+                </h3>
+                <p className="text-xs text-gray-500">
+                  Ces informations sont gérées dans le backoffice.
+                </p>
+              </div>
+
+              {!selectedCountry ? (
+                <div className="rounded-2xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500">
+                  Sélectionnez un pays sur la carte pour afficher la fiche détaillée.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Situation géopolitique
+                    </p>
+                    <p className="mt-2 text-sm text-gray-700">
+                      {selectedCountryProfile?.geopoliticalSituation || 'Information non renseignée.'}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Risque de corruption (ICP 2024)
+                    </p>
+                    <p className="mt-2 text-sm text-gray-700">
+                      {Number.isFinite(selectedCountryCorruptionScore)
+                        ? `Indice ICP 2024 : ${selectedCountryCorruptionScore}/100 · ${getCorruptionRiskLabel(
+                          selectedCountryCorruptionScore
+                        )}`
+                        : 'Indice ICP indisponible pour ce pays.'}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Sanctions économiques
+                    </p>
+                    <p className="mt-2 text-sm text-gray-700">
+                      {selectedCountryProfile?.economicSanctions || 'Information non renseignée.'}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Réglementation pharmaceutique clef
+                    </p>
+                    <p className="mt-2 text-sm text-gray-700">
+                      {selectedCountryProfile?.pharmaRegulation || 'Information non renseignée.'}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4 space-y-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+                      Contrats en cours
+                    </p>
+                    {selectedCountryContractProjects.length > 0 ? (
+                      <ul className="space-y-3">
+                        {selectedCountryContractProjects.map((project) => {
+                          const endDate = resolveContractEndDate(project);
+                          return (
+                            <li
+                              key={project.id}
+                              className="rounded-xl border border-blue-100 bg-white p-3 text-sm text-gray-700"
+                            >
+                              <p className="font-semibold text-gray-900">
+                                {getDistributorName(project)}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                Fin de contrat : {endDate ? formatDate(endDate) : 'Date inconnue'}
+                              </p>
+                              {typeof onOpenProject === 'function' && project?.id && (
+                                <button
+                                  type="button"
+                                  onClick={() => onOpenProject(project.id)}
+                                  className="mt-2 inline-flex items-center gap-2 text-xs font-semibold text-blue-700 hover:text-blue-800"
+                                >
+                                  Voir la fiche du distributeur
+                                </button>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-blue-700">
+                        Aucun contrat en cours dans ce pays.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
 
         <section aria-labelledby="projects-heading" className="space-y-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">

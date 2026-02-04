@@ -23,6 +23,7 @@ import { initialInspirationProjects } from './data/inspirationProjects.js';
 import { initialOnboardingTourConfig } from './data/onboardingTour.js';
 import { initialValidationCommitteeConfig } from './data/validationCommitteeConfig.js';
 import { initialAdminEmails } from './data/adminEmails.js';
+import { initialCountryProfiles } from './data/countryProfiles.js';
 import { loadPersistedState, persistState } from './utils/storage.js';
 import { shouldShowQuestion } from './utils/questions.js';
 import { analyzeAnswers } from './utils/rules.js';
@@ -49,7 +50,7 @@ import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.
 import { DISTRIBUTOR_SITUATION_IDS, resolveDistributorSituationId } from './utils/distributor.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.282';
+const APP_VERSION = 'v1.0.283';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -587,6 +588,16 @@ const buildInitialAdminEmailsState = () => {
   return cloneDeep(initialAdminEmails);
 };
 
+const buildInitialCountryProfilesState = () => {
+  const savedState = loadPersistedState();
+
+  if (savedState?.countryProfiles) {
+    return cloneDeep(savedState.countryProfiles);
+  }
+
+  return cloneDeep(initialCountryProfiles);
+};
+
 const isOnboardingProject = (project) => {
   if (!project || typeof project !== 'object') {
     return false;
@@ -653,6 +664,7 @@ export const App = () => {
   const [isHydrated, setIsHydrated] = useState(false);
   const [validationCommitteeConfig, setValidationCommitteeConfig] = useState(buildInitialValidationCommitteeConfig);
   const [adminEmails, setAdminEmails] = useState(buildInitialAdminEmailsState);
+  const [countryProfiles, setCountryProfiles] = useState(buildInitialCountryProfilesState);
   const [isBackOfficeUnlocked, setIsBackOfficeUnlocked] = useState(false);
   const [backOfficeAuthError, setBackOfficeAuthError] = useState(null);
   const [isBackOfficePromptOpen, setIsBackOfficePromptOpen] = useState(false);
@@ -1940,6 +1952,7 @@ const updateProjectFilters = useCallback((updater) => {
         onboardingTourConfig: normalizedOnboardingConfig,
         validationCommitteeConfig: normalizeValidationCommitteeConfig(validationCommitteeConfig),
         adminEmails,
+        countryProfiles,
         homeView,
         activeInspirationId
       });
@@ -1973,6 +1986,7 @@ const updateProjectFilters = useCallback((updater) => {
     normalizedOnboardingConfig,
     validationCommitteeConfig,
     adminEmails,
+    countryProfiles,
     homeView,
     activeInspirationId,
     isHydrated,
@@ -4317,6 +4331,8 @@ const updateProjectFilters = useCallback((updater) => {
               setValidationCommitteeConfig={setValidationCommitteeConfig}
               adminEmails={adminEmails}
               setAdminEmails={setAdminEmails}
+              countryProfiles={countryProfiles}
+              setCountryProfiles={setCountryProfiles}
             />
           </Suspense>
         ) : screen === 'home' ? (
@@ -4326,6 +4342,7 @@ const updateProjectFilters = useCallback((updater) => {
             teamLeadOptions={teamLeadTeamOptions}
             inspirationProjects={inspirationProjects}
             inspirationFilters={inspirationFilters}
+            countryProfiles={countryProfiles}
             currentUser={currentUser}
             homeView={homeView}
             navigatorLabel={navigatorLabel}
