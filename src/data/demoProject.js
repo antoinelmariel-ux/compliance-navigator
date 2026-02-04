@@ -8,6 +8,30 @@ const COMPLIANCE_COMMENTS_KEY = '__compliance_team_comments__';
 
 const demoProjectAnswers = {
   projectName: 'Plasma 360',
+  distributorSituation: 'Sous contrat',
+  countries: ['France', 'Belgique', 'Suisse'],
+  contractSummary: {
+    countries: ['France', 'Belgique', 'Suisse'],
+    role: {
+      summary: 'Distribution exclusive des spécialités hospitalières LFB, avec obligations de stockage sécurisé.',
+      clause:
+        'Le distributeur s’engage à assurer la distribution exclusive des spécialités hospitalières LFB dans les pays listés, ' +
+        'à respecter les procédures de stockage sécurisé et à maintenir une traçabilité complète des lots. Le distributeur ' +
+        'doit signaler tout incident de distribution dans un délai de 48 heures.'
+    },
+    liability: {
+      summary: 'Responsabilité plafonnée au montant annuel facturé, sauf faute lourde.',
+      clause:
+        'La responsabilité globale du distributeur est limitée au montant total facturé sur les 12 derniers mois. ' +
+        'Cette limitation ne s’applique pas en cas de faute lourde, de manquement délibéré ou de non-respect des obligations légales.'
+    },
+    audit: {
+      summary: 'Audit annuel programmé avec préavis de 30 jours.',
+      clause:
+        'LFB peut réaliser un audit annuel des installations du distributeur avec un préavis écrit de 30 jours. ' +
+        'Le distributeur garantit l’accès aux locaux, aux procédures qualité et aux registres de traçabilité.'
+    }
+  },
   showcaseTheme: 'Universel',
   projectSlogan: 'Du don à la vie : découvrez comment chaque goutte de plasma devient un traitement vital',
   targetAudience: ['Grand public', 'Patients', 'Professionnels de santé'],

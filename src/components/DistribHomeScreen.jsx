@@ -4,21 +4,23 @@ import {
   Target,
   Rocket,
   Compass,
-  Users,
   Calendar,
   CheckCircle,
   Eye,
-  AlertTriangle,
   Edit,
-  Save,
-  Copy,
+  Users,
   Trash2,
   Close,
   Sparkles
 } from './icons.js';
 import { VirtualizedList } from './VirtualizedList.jsx';
-import { normalizeProjectFilterConfig } from '../utils/projectFilters.js';
 import { normalizeInspirationFiltersConfig } from '../utils/inspirationConfig.js';
+import {
+  DISTRIBUTOR_SITUATION_IDS,
+  DISTRIBUTOR_SITUATION_OPTIONS,
+  getDistributorSituationLabel,
+  resolveDistributorSituationId
+} from '../utils/distributor.js';
 
 const formatDate = (isoDate) => {
   if (!isoDate) {
@@ -59,70 +61,6 @@ const normalizeInspirationFieldValues = (value) => {
 const DEFAULT_SELECT_FILTER_VALUE = 'all';
 const DEFAULT_TEXT_FILTER_VALUE = '';
 
-const PROJECT_FILTER_VALUE_EXTRACTORS = {
-  projectName: (project) => {
-    if (!project) {
-      return '';
-    }
-
-    const directName = getSafeString(project.projectName);
-    if (directName.trim().length > 0) {
-      return directName;
-    }
-
-    return getSafeString(project.answers?.projectName);
-  },
-  teamLead: (project) => getSafeString(project?.answers?.teamLead),
-  teamLeadTeam: (project) => getSafeString(project?.answers?.teamLeadTeam)
-};
-
-const formatAnswerValue = (value) => {
-  if (Array.isArray(value)) {
-    return value.map((item) => (item == null ? '' : String(item))).filter(Boolean).join(', ');
-  }
-
-  if (value == null) {
-    return '';
-  }
-
-  return String(value);
-};
-
-const getProjectFilterValue = (field, project) => {
-  if (!field || !project) {
-    return '';
-  }
-
-  const extractor = PROJECT_FILTER_VALUE_EXTRACTORS[field.id];
-  if (typeof extractor === 'function') {
-    const extracted = extractor(project);
-    if (typeof extracted === 'string' && extracted.trim().length > 0) {
-      return extracted;
-    }
-  }
-
-  const sourceId = typeof field.sourceQuestionId === 'string' && field.sourceQuestionId.trim().length > 0
-    ? field.sourceQuestionId
-    : field.id;
-
-  const answerValue = project?.answers?.[sourceId];
-  if (typeof answerValue === 'string') {
-    return answerValue;
-  }
-
-  const formattedAnswer = formatAnswerValue(answerValue);
-  if (formattedAnswer.trim().length > 0) {
-    return formattedAnswer;
-  }
-
-  const directValue = project[sourceId];
-  if (typeof directValue === 'string') {
-    return directValue;
-  }
-
-  return formatAnswerValue(directValue);
-};
-
 const getProjectTimestamp = (project) => {
   if (!project) {
     return 0;
@@ -143,6 +81,55 @@ const getProjectTimestamp = (project) => {
   }
 
   return 0;
+};
+
+const getDistributorName = (project) => {
+  const directName = getSafeString(project?.projectName).trim();
+  if (directName.length > 0) {
+    return directName;
+  }
+
+  const answerName = getSafeString(project?.answers?.projectName).trim();
+  if (answerName.length > 0) {
+    return answerName;
+  }
+
+  return 'Distributeur sans nom';
+};
+
+const normalizeDistributorCountries = (project) => {
+  const candidates = [
+    project?.countries,
+    project?.answers?.countries,
+    project?.answers?.country,
+    project?.country
+  ];
+
+  for (let index = 0; index < candidates.length; index += 1) {
+    const value = candidates[index];
+    if (Array.isArray(value)) {
+      const sanitized = value
+        .map((item) => (typeof item === 'string' ? item.trim() : ''))
+        .filter(Boolean);
+      if (sanitized.length > 0) {
+        return sanitized;
+      }
+    }
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return [value.trim()];
+    }
+  }
+
+  return [];
+};
+
+const buildContractSummary = (project) => {
+  const summary = project?.contractSummary || project?.answers?.contractSummary;
+  if (summary && typeof summary === 'object') {
+    return summary;
+  }
+
+  return null;
 };
 
 const buildInitialFiltersState = (config) => {
@@ -182,12 +169,6 @@ const SORT_LABELS = {
   asc: 'Les plus anciens en premier'
 };
 
-const complexityColors = {
-  Faible: 'text-green-600',
-  Modérée: 'text-yellow-600',
-  Élevée: 'text-red-600'
-};
-
 const prospectSituationStyles = {
   'Identifié': {
     label: 'Identifié',
@@ -206,31 +187,19 @@ const prospectSituationStyles = {
   }
 };
 
-const statusStyles = {
-  draft: {
-    label: 'Brouillon en cours',
-    className: 'bg-yellow-50 border-yellow-200 text-yellow-600'
+const distributorSituationStyles = {
+  [DISTRIBUTOR_SITUATION_IDS.evaluation]: {
+    className: 'border-blue-200 bg-blue-50 text-blue-700',
+    dotClassName: 'bg-blue-500'
   },
-  submitted: {
-    label: 'Synthèse finalisée',
-    className: 'bg-emerald-50 border-emerald-200 text-emerald-600'
+  [DISTRIBUTOR_SITUATION_IDS.contractReview]: {
+    className: 'border-amber-200 bg-amber-50 text-amber-700',
+    dotClassName: 'bg-amber-500'
+  },
+  [DISTRIBUTOR_SITUATION_IDS.underContract]: {
+    className: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    dotClassName: 'bg-emerald-500'
   }
-};
-
-const computeRemainingQuestions = (project) => {
-  if (!project || typeof project.totalQuestions !== 'number' || project.totalQuestions <= 0) {
-    return null;
-  }
-
-  const answeredCountRaw =
-    typeof project.answeredQuestions === 'number'
-      ? project.answeredQuestions
-      : Math.max((project.lastQuestionIndex ?? 0) + 1, 0);
-
-  const answeredCount = Math.min(answeredCountRaw, project.totalQuestions);
-  const remainingCount = Math.max(project.totalQuestions - answeredCount, 0);
-
-  return remainingCount;
 };
 
 export const DistribHomeScreen = ({
@@ -254,19 +223,20 @@ export const DistribHomeScreen = ({
   tourContext = null,
   currentUser = null
 }) => {
-  const normalizedFilters = useMemo(
-    () => normalizeProjectFilterConfig(projectFilters),
-    [projectFilters]
-  );
   const currentUserEmail = useMemo(
     () => normalizeEmail(currentUser?.mail || currentUser?.userPrincipalName || ''),
     [currentUser]
   );
   const currentUserFirstName = getSafeString(currentUser?.givenName).trim();
   const heroHeadline = currentUserFirstName.length > 0
-    ? `${currentUserFirstName}, anticipez les besoins compliance de vos projets en quelques minutes`
-    : 'Anticipez les besoins compliance de vos projets en quelques minutes';
-  const [filtersState, setFiltersState] = useState(() => buildInitialFiltersState(normalizedFilters));
+    ? `${currentUserFirstName}, pilotez vos distributeurs pharmaceutiques en quelques minutes`
+    : 'Pilotez vos distributeurs pharmaceutiques en quelques minutes';
+  const [distributorFiltersState, setDistributorFiltersState] = useState(() => ({
+    name: DEFAULT_TEXT_FILTER_VALUE,
+    country: DEFAULT_SELECT_FILTER_VALUE,
+    situation: DEFAULT_SELECT_FILTER_VALUE,
+    sortOrder: 'desc'
+  }));
   const normalizedInspirationFilters = useMemo(
     () => normalizeInspirationFiltersConfig(inspirationFilters),
     [inspirationFilters]
@@ -441,78 +411,6 @@ export const DistribHomeScreen = ({
   }, [deleteDialogState.isOpen, handleCancelDeleteProject]);
 
   useEffect(() => {
-    setFiltersState(prevState => {
-      const initialState = buildInitialFiltersState(normalizedFilters);
-      const nextState = { ...prevState };
-      let changed = false;
-
-      if (typeof prevState.sortOrder === 'undefined') {
-        nextState.sortOrder = initialState.sortOrder;
-        changed = true;
-      }
-      if (typeof prevState.sortOrderDefault === 'undefined') {
-        nextState.sortOrderDefault = initialState.sortOrderDefault;
-        changed = true;
-      }
-
-      if (prevState.sortOrder === prevState.sortOrderDefault) {
-        if (prevState.sortOrder !== initialState.sortOrder) {
-          nextState.sortOrder = initialState.sortOrder;
-          changed = true;
-        }
-      }
-      if (prevState.sortOrderDefault !== initialState.sortOrderDefault) {
-        nextState.sortOrderDefault = initialState.sortOrderDefault;
-        changed = true;
-      }
-
-      normalizedFilters.fields.forEach((field) => {
-        if (!field || field.id === 'dateOrder') {
-          return;
-        }
-
-        if (field.type === 'select') {
-          if (!(field.id in prevState)) {
-            nextState[field.id] = DEFAULT_SELECT_FILTER_VALUE;
-            changed = true;
-          }
-          if (!field.enabled && nextState[field.id] !== DEFAULT_SELECT_FILTER_VALUE) {
-            nextState[field.id] = DEFAULT_SELECT_FILTER_VALUE;
-            changed = true;
-          }
-        } else {
-          if (!(field.id in prevState)) {
-            nextState[field.id] = '';
-            changed = true;
-          }
-          if (!field.enabled && nextState[field.id] !== '') {
-            nextState[field.id] = '';
-            changed = true;
-          }
-        }
-      });
-
-      Object.keys(nextState).forEach((key) => {
-        if (key === 'sortOrder' || key === 'sortOrderDefault') {
-          return;
-        }
-
-        const stillExists = normalizedFilters.fields.some((field) => field && field.id === key);
-        if (!stillExists) {
-          delete nextState[key];
-          changed = true;
-        }
-      });
-
-      if (!changed) {
-        return prevState;
-      }
-
-      return nextState;
-    });
-  }, [normalizedFilters]);
-
-  useEffect(() => {
     setInspirationFiltersState(prevState => {
       const initialState = buildInitialFiltersState(normalizedInspirationFilters);
       const nextState = { ...prevState };
@@ -560,47 +458,19 @@ export const DistribHomeScreen = ({
     });
   }, [normalizedInspirationFilters]);
 
-  const selectFilterOptions = useMemo(() => {
-    const fields = Array.isArray(normalizedFilters.fields) ? normalizedFilters.fields : [];
-    const map = new Map();
+  const distributorCountryOptions = useMemo(() => {
+    const countries = new Set();
 
-    fields.forEach((field) => {
-      if (!field || field.type !== 'select') {
-        return;
-      }
-
-      const options = new Set();
-
-      if (field.id === 'teamLeadTeam' && Array.isArray(teamLeadOptions)) {
-        teamLeadOptions.forEach((option) => {
-          const label = getSafeString(option).trim();
-          if (label.length > 0) {
-            options.add(label);
-          }
-        });
-      }
-
-      if (Array.isArray(field.options)) {
-        field.options.forEach((option) => {
-          const label = getSafeString(option).trim();
-          if (label.length > 0) {
-            options.add(label);
-          }
-        });
-      }
-
-      accessibleProjects.forEach((project) => {
-        const value = getProjectFilterValue(field, project).trim();
-        if (value.length > 0) {
-          options.add(value);
+    accessibleProjects.forEach((project) => {
+      normalizeDistributorCountries(project).forEach((country) => {
+        if (country.length > 0) {
+          countries.add(country);
         }
       });
-
-      map.set(field.id, Array.from(options).sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' })));
     });
 
-    return map;
-  }, [accessibleProjects, normalizedFilters.fields, teamLeadOptions]);
+    return Array.from(countries).sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }));
+  }, [accessibleProjects]);
 
   const inspirationFilterOptions = useMemo(() => {
     const fields = Array.isArray(normalizedInspirationFilters.fields) ? normalizedInspirationFilters.fields : [];
@@ -642,34 +512,28 @@ export const DistribHomeScreen = ({
       return [];
     }
 
-    const activeFields = Array.isArray(normalizedFilters.fields) ? normalizedFilters.fields : [];
+    const nameQuery = distributorFiltersState.name.trim().toLowerCase();
+    const selectedCountry = distributorFiltersState.country;
+    const selectedSituation = distributorFiltersState.situation;
 
     const selection = accessibleProjects.filter((project) => {
-      for (let index = 0; index < activeFields.length; index += 1) {
-        const field = activeFields[index];
-        if (!field || !field.enabled || field.id === 'dateOrder') {
-          continue;
+      if (nameQuery.length > 0) {
+        const name = getDistributorName(project).toLowerCase();
+        if (!name.includes(nameQuery)) {
+          return false;
         }
+      }
 
-        const value = filtersState[field.id];
-
-        if (field.type === 'select') {
-          if (value && value !== DEFAULT_SELECT_FILTER_VALUE) {
-            const projectValue = getProjectFilterValue(field, project);
-            if (projectValue !== value) {
-              return false;
-            }
-          }
-          continue;
+      if (selectedCountry && selectedCountry !== DEFAULT_SELECT_FILTER_VALUE) {
+        const countries = normalizeDistributorCountries(project);
+        if (!countries.includes(selectedCountry)) {
+          return false;
         }
+      }
 
-        const query = typeof value === 'string' ? value.trim().toLowerCase() : '';
-        if (query.length === 0) {
-          continue;
-        }
-
-        const projectValue = getProjectFilterValue(field, project);
-        if (projectValue.toLowerCase().indexOf(query) === -1) {
+      if (selectedSituation && selectedSituation !== DEFAULT_SELECT_FILTER_VALUE) {
+        const situationId = resolveDistributorSituationId(project);
+        if (situationId !== selectedSituation) {
           return false;
         }
       }
@@ -677,25 +541,16 @@ export const DistribHomeScreen = ({
       return true;
     });
 
-    const sortField = activeFields.find((field) => field && field.id === 'dateOrder');
-    const selectedOrder = filtersState.sortOrder || sortField?.defaultValue || 'desc';
-    const direction = selectedOrder === 'asc' ? 'asc' : 'desc';
+    const direction = distributorFiltersState.sortOrder === 'asc' ? 'asc' : 'desc';
 
     return selection.slice().sort((a, b) => {
-      const statusA = a?.status === 'draft' ? 0 : 1;
-      const statusB = b?.status === 'draft' ? 0 : 1;
-
-      if (statusA !== statusB) {
-        return statusA - statusB;
-      }
-
       const timeA = getProjectTimestamp(a);
       const timeB = getProjectTimestamp(b);
       const diff = timeA - timeB;
 
       return direction === 'asc' ? diff : -diff;
     });
-  }, [accessibleProjects, normalizedFilters, filtersState]);
+  }, [accessibleProjects, distributorFiltersState]);
 
   const filteredInspirationProjects = useMemo(() => {
     if (!Array.isArray(inspirationProjects)) {
@@ -739,6 +594,65 @@ export const DistribHomeScreen = ({
       return true;
     });
   }, [inspirationProjects, normalizedInspirationFilters.fields, inspirationFiltersState]);
+
+  const prospectNameById = useMemo(() => {
+    const map = new Map();
+    inspirationProjects.forEach((project) => {
+      if (project?.id) {
+        map.set(project.id, project.partnerName || 'Prospect');
+      }
+    });
+    return map;
+  }, [inspirationProjects]);
+
+  const [activeContractProjectId, setActiveContractProjectId] = useState(null);
+  const [expandedContractSections, setExpandedContractSections] = useState({});
+
+  useEffect(() => {
+    setExpandedContractSections({});
+  }, [activeContractProjectId]);
+
+  const activeContractProject = useMemo(
+    () => accessibleProjects.find((project) => project.id === activeContractProjectId) || null,
+    [accessibleProjects, activeContractProjectId]
+  );
+  const activeContractSummary = useMemo(
+    () => (activeContractProject ? buildContractSummary(activeContractProject) : null),
+    [activeContractProject]
+  );
+  const contractCountries = useMemo(() => {
+    if (activeContractSummary?.countries) {
+      return activeContractSummary.countries;
+    }
+    return activeContractProject ? normalizeDistributorCountries(activeContractProject) : [];
+  }, [activeContractProject, activeContractSummary]);
+  const contractSections = useMemo(() => ([
+    {
+      id: 'role',
+      title: 'Rôle et responsabilité',
+      summary: activeContractSummary?.role?.summary,
+      clause: activeContractSummary?.role?.clause
+    },
+    {
+      id: 'liability',
+      title: 'Limites de responsabilité',
+      summary: activeContractSummary?.liability?.summary,
+      clause: activeContractSummary?.liability?.clause
+    },
+    {
+      id: 'audit',
+      title: 'Audit',
+      summary: activeContractSummary?.audit?.summary,
+      clause: activeContractSummary?.audit?.clause
+    }
+  ]), [activeContractSummary]);
+
+  const handleToggleContractSection = useCallback((sectionId) => {
+    setExpandedContractSections((prev) => ({
+      ...prev,
+      [sectionId]: !prev[sectionId]
+    }));
+  }, []);
   const projectRows = useMemo(() => {
     const rows = [];
     for (let index = 0; index < filteredProjects.length; index += 2) {
@@ -757,47 +671,14 @@ export const DistribHomeScreen = ({
       return '';
     }
 
-    const directName = getSafeString(deleteDialogState.project.projectName);
-    if (directName.trim().length > 0) {
-      return directName;
-    }
-
-    const answerName = getSafeString(deleteDialogState.project.answers?.projectName);
-    if (answerName.trim().length > 0) {
-      return answerName;
-    }
-
-    return 'Projet sans nom';
+    return getDistributorName(deleteDialogState.project);
   }, [deleteDialogState.project]);
 
-  const hasActiveFilters = useMemo(() => {
-    const fields = Array.isArray(normalizedFilters.fields) ? normalizedFilters.fields : [];
-
-    for (let index = 0; index < fields.length; index += 1) {
-      const field = fields[index];
-      if (!field || !field.enabled) {
-        continue;
-      }
-
-      if (field.id === 'dateOrder') {
-        if (filtersState.sortOrder !== filtersState.sortOrderDefault) {
-          return true;
-        }
-        continue;
-      }
-
-      const value = filtersState[field.id];
-      if (field.type === 'select') {
-        if (value && value !== DEFAULT_SELECT_FILTER_VALUE) {
-          return true;
-        }
-      } else if (typeof value === 'string' && value.trim().length > 0) {
-        return true;
-      }
-    }
-
-    return false;
-  }, [normalizedFilters, filtersState]);
+  const hasActiveFilters = useMemo(() => (
+    distributorFiltersState.name.trim().length > 0 ||
+    distributorFiltersState.country !== DEFAULT_SELECT_FILTER_VALUE ||
+    distributorFiltersState.situation !== DEFAULT_SELECT_FILTER_VALUE
+  ), [distributorFiltersState]);
 
   const hasActiveInspirationFilters = useMemo(() => {
     const fields = Array.isArray(normalizedInspirationFilters.fields)
@@ -825,40 +706,18 @@ export const DistribHomeScreen = ({
 
   const displayedProjectsCount = filteredProjects.length;
   const totalProjectsCount = accessibleProjects.length;
-  const sortFilterConfig = Array.isArray(normalizedFilters.fields)
-    ? normalizedFilters.fields.find(field => field && field.id === 'dateOrder')
-    : null;
-  const enabledFilterFields = Array.isArray(normalizedFilters.fields)
-    ? normalizedFilters.fields.filter(field => field && field.enabled && field.id !== 'dateOrder')
-    : [];
-  const shouldShowFiltersCard = hasProjects && (enabledFilterFields.length > 0 || (sortFilterConfig && sortFilterConfig.enabled));
-  const currentSortOrder = filtersState.sortOrder || sortFilterConfig?.defaultValue || 'desc';
+  const shouldShowFiltersCard = hasProjects;
+  const currentSortOrder = distributorFiltersState.sortOrder || 'desc';
   const inspirationFilterFields = Array.isArray(normalizedInspirationFilters.fields)
     ? normalizedInspirationFilters.fields.filter((field) => field && field.enabled)
     : [];
   const shouldShowInspirationFiltersCard = hasInspirationProjects && inspirationFilterFields.length > 0;
 
   const handleClearProjectFilter = useCallback((target) => {
-    setFiltersState((prev) => {
-      const next = { ...prev };
-
-      if (target.type === 'sort') {
-        const defaultValue = prev.sortOrderDefault || 'desc';
-        if (prev.sortOrder === defaultValue) {
-          return prev;
-        }
-        next.sortOrder = defaultValue;
-        return next;
-      }
-
-      if (target.type === 'select') {
-        next[target.id] = DEFAULT_SELECT_FILTER_VALUE;
-      } else {
-        next[target.id] = DEFAULT_TEXT_FILTER_VALUE;
-      }
-
-      return next;
-    });
+    setDistributorFiltersState((prev) => ({
+      ...prev,
+      [target]: target === 'name' ? DEFAULT_TEXT_FILTER_VALUE : DEFAULT_SELECT_FILTER_VALUE
+    }));
   }, []);
 
   const handleClearInspirationFilter = useCallback((target) => {
@@ -878,47 +737,36 @@ export const DistribHomeScreen = ({
   const activeProjectFilterChips = useMemo(() => {
     const chips = [];
 
-    enabledFilterFields.forEach((field) => {
-      const rawValue = filtersState[field.id];
-      if (field.type === 'select') {
-        if (rawValue && rawValue !== DEFAULT_SELECT_FILTER_VALUE) {
-          chips.push({
-            id: field.id,
-            label: field.label || 'Filtre',
-            value: String(rawValue),
-            onClear: () => handleClearProjectFilter({ id: field.id, type: 'select' })
-          });
-        }
-        return;
-      }
-
-      const trimmed = typeof rawValue === 'string' ? rawValue.trim() : '';
-      if (trimmed.length > 0) {
-        chips.push({
-          id: field.id,
-          label: field.label || 'Filtre',
-          value: trimmed,
-          onClear: () => handleClearProjectFilter({ id: field.id, type: 'text' })
-        });
-      }
-    });
-
-    if (sortFilterConfig?.enabled && filtersState.sortOrder !== filtersState.sortOrderDefault) {
+    if (distributorFiltersState.name.trim().length > 0) {
       chips.push({
-        id: 'sortOrder',
-        label: sortFilterConfig.label || 'Tri',
-        value: SORT_LABELS[filtersState.sortOrder] || filtersState.sortOrder,
-        onClear: () => handleClearProjectFilter({ id: 'sortOrder', type: 'sort' })
+        id: 'name',
+        label: 'Nom',
+        value: distributorFiltersState.name.trim(),
+        onClear: () => handleClearProjectFilter('name')
+      });
+    }
+
+    if (distributorFiltersState.country !== DEFAULT_SELECT_FILTER_VALUE) {
+      chips.push({
+        id: 'country',
+        label: 'Pays',
+        value: distributorFiltersState.country,
+        onClear: () => handleClearProjectFilter('country')
+      });
+    }
+
+    if (distributorFiltersState.situation !== DEFAULT_SELECT_FILTER_VALUE) {
+      const label = getDistributorSituationLabel(distributorFiltersState.situation);
+      chips.push({
+        id: 'situation',
+        label: 'Situation',
+        value: label,
+        onClear: () => handleClearProjectFilter('situation')
       });
     }
 
     return chips;
-  }, [
-    enabledFilterFields,
-    filtersState,
-    sortFilterConfig,
-    handleClearProjectFilter
-  ]);
+  }, [distributorFiltersState, handleClearProjectFilter]);
 
   const activeInspirationFilterChips = useMemo(() => {
     const chips = [];
@@ -952,7 +800,12 @@ export const DistribHomeScreen = ({
   }, [inspirationFilterFields, inspirationFiltersState, handleClearInspirationFilter]);
 
   const handleResetFilters = () => {
-    setFiltersState(buildInitialFiltersState(normalizedFilters));
+    setDistributorFiltersState({
+      name: DEFAULT_TEXT_FILTER_VALUE,
+      country: DEFAULT_SELECT_FILTER_VALUE,
+      situation: DEFAULT_SELECT_FILTER_VALUE,
+      sortOrder: 'desc'
+    });
   };
 
   const handleResetInspirationFilters = () => {
@@ -977,82 +830,58 @@ export const DistribHomeScreen = ({
   };
 
   const renderProjectCard = (project) => {
-    const complexity = project.analysis?.complexity;
-    const risksCount = project.analysis?.risks?.length ?? 0;
-    const projectStatus = statusStyles[project.status] || statusStyles.submitted;
-    const remainingQuestions = computeRemainingQuestions(project);
-    const isDraft = project.status === 'draft';
-    const adminCanEditSubmitted = isAdminMode && !isDraft;
-    const leadName = getSafeString(project?.answers?.teamLead).trim();
-    const leadTeam = getSafeString(project?.answers?.teamLeadTeam).trim();
-    const leadDisplay = leadName.length > 0
-      ? `${leadName}${leadTeam.length > 0 ? ` (${leadTeam})` : ''}`
-      : leadTeam.length > 0
-        ? `(${leadTeam})`
-        : 'Lead du projet non renseigné';
-    const projectTypeRaw = project?.answers?.ProjectType;
-    const projectType = Array.isArray(projectTypeRaw)
-      ? projectTypeRaw
-          .map(item => (typeof item === 'string' ? item.trim() : ''))
-          .filter(item => item.length > 0)
-          .join(', ')
-      : getSafeString(projectTypeRaw).trim();
-    const projectTypeDisplay = projectType.length > 0
-      ? projectType
-      : 'Type de projet non renseigné';
+    const distributorName = getDistributorName(project);
+    const situationId = resolveDistributorSituationId(project);
+    const situationLabel = getDistributorSituationLabel(situationId);
+    const situationStyle = distributorSituationStyles[situationId] || distributorSituationStyles.evaluation;
+    const countries = normalizeDistributorCountries(project);
+    const linkedProspectId = project?.answers?.linkedProspectId;
+    const linkedProspectName = linkedProspectId ? prospectNameById.get(linkedProspectId) : null;
+    const contractSummary = buildContractSummary(project);
+    const hasContractSummary =
+      situationId === DISTRIBUTOR_SITUATION_IDS.underContract && contractSummary;
+    const isEvaluation = situationId === DISTRIBUTOR_SITUATION_IDS.evaluation;
+    const isContractReview = situationId === DISTRIBUTOR_SITUATION_IDS.contractReview;
+    const canDelete = isEvaluation && typeof onDeleteProject === 'function';
 
     return (
       <article
         key={project.id}
         className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all hv-surface"
         role="listitem"
-        aria-label={`Projet ${project.projectName || 'sans nom'}`}
+        aria-label={`Distributeur ${distributorName}`}
       >
         <div className="flex items-start justify-between gap-4">
           <div>
             <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2 flex-wrap">
-              <span>{project.projectName || 'Projet sans nom'}</span>
+              <span>{distributorName}</span>
               {project.isDemo && (
                 <span className="inline-flex items-center px-2 py-0.5 text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded-full">
-                  Projet démo
+                  Distributeur démo
                 </span>
               )}
             </h3>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-gray-500 mt-1 flex items-center gap-2">
+              <Calendar className="w-4 h-4" aria-hidden="true" />
               Dernière mise à jour : {formatDate(project.lastUpdated || project.submittedAt)}
             </p>
           </div>
           <div className="flex items-start gap-3">
             <div className="flex flex-col items-end gap-2">
               <span
-                className={`px-3 py-1 text-xs font-semibold rounded-full border hv-badge ${projectStatus.className}`.trim()}
+                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold ${situationStyle.className}`}
               >
-                {projectStatus.label}
+                <span className={`h-2 w-2 rounded-full ${situationStyle.dotClassName}`} aria-hidden="true" />
+                {situationLabel}
               </span>
-              {complexity && (
-                <span className={`px-3 py-1 text-xs font-semibold rounded-full border hv-badge ${complexityColors[complexity] || 'text-blue-600'}`}>
-                  {complexity}
-                </span>
-              )}
             </div>
-            {typeof onDuplicateProject === 'function' && (
-              <button
-                type="button"
-                onClick={() => onDuplicateProject(project.id)}
-                className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors hv-button hv-focus-ring"
-                aria-label={`Dupliquer le projet ${project.projectName || 'sans nom'}`}
-                title="Dupliquer le projet"
-              >
-                <Copy className="w-4 h-4" aria-hidden="true" />
-              </button>
-            )}
-            {isDraft && typeof onDeleteProject === 'function' && (
+            {canDelete && (
               <button
                 type="button"
                 onClick={() => handleRequestProjectDeletion(project)}
                 className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors hv-button hv-focus-ring"
-                aria-label={`Supprimer le projet ${project.projectName || 'sans nom'}`}
-                title="Supprimer le projet"
+                aria-label={`Supprimer le distributeur ${distributorName}`}
+                title="Supprimer le distributeur"
               >
                 <Trash2 className="w-4 h-4" aria-hidden="true" />
               </button>
@@ -1062,85 +891,88 @@ export const DistribHomeScreen = ({
 
         <dl className="mt-4 grid grid-cols-1 gap-3 text-sm text-gray-600">
           <div className="flex items-center gap-2">
-            <Users className="w-4 h-4" />
-            <span className="font-medium text-gray-700">{leadDisplay}</span>
-          </div>
-          <div className="flex items-center gap-2">
             <Target className="w-4 h-4" />
-            <span>{projectTypeDisplay}</span>
+            {countries.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {countries.map((country) => (
+                  <span
+                    key={country}
+                    className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700"
+                  >
+                    {country}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <span>Pays non renseigné</span>
+            )}
           </div>
-          {remainingQuestions !== null && (
+          {linkedProspectName && (
             <div className="flex items-center gap-2">
-              <Save className="w-4 h-4" />
-              <span>
-                {remainingQuestions === 0
-                  ? 'Aucune question restante'
-                  : `${remainingQuestions} question${remainingQuestions > 1 ? 's' : ''} restante${remainingQuestions > 1 ? 's' : ''}`}
-              </span>
+              <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Prospect lié</span>
+              <span className="font-medium text-gray-700">{linkedProspectName}</span>
             </div>
           )}
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4" />
-            <span>{risksCount} risque{risksCount > 1 ? 's' : ''} identifié{risksCount > 1 ? 's' : ''}</span>
-          </div>
         </dl>
 
         <div className="mt-6 flex flex-wrap gap-3">
-          <button
-            type="button"
-            onClick={() => {
-              if (isDraft) {
-                onOpenProject(project.id);
-                return;
-              }
-
-              if (adminCanEditSubmitted) {
-                onOpenProject(project.id, { view: 'questionnaire' });
-                return;
-              }
-
-              onOpenProject(project.id);
-            }}
-            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all hv-button ${
-              isDraft || adminCanEditSubmitted
-                ? 'hv-button-draft text-white'
-                : 'bg-blue-600 text-white hover:bg-blue-700 hv-button-primary'
-            }`}
-          >
-            {isDraft ? (
-              <>
+          {isEvaluation && (
+            <>
+              <button
+                type="button"
+                onClick={() => onOpenProject(project.id, { view: 'questionnaire' })}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all hv-button hv-button-draft text-white"
+              >
                 <Edit className="w-4 h-4" aria-hidden="true" />
-                <span>Continuer l'édition</span>
-              </>
-            ) : adminCanEditSubmitted ? (
-              <>
-                <Edit className="w-4 h-4" aria-hidden="true" />
-                <span>Modifier le projet</span>
-              </>
-            ) : (
-              <>
+                <span>Questionnaire</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onOpenProject(project.id, { view: 'synthesis' })}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all hv-button bg-blue-600 text-white hover:bg-blue-700 hv-button-primary"
+              >
                 <Eye className="w-4 h-4" aria-hidden="true" />
-                <span>Consulter la synthèse</span>
-              </>
-            )}
-          </button>
-          {adminCanEditSubmitted && (
+                <span>Synthèse</span>
+              </button>
+            </>
+          )}
+          {isContractReview && (
+            <>
+              <button
+                type="button"
+                onClick={() => onOpenProject(project.id, { view: 'questionnaire' })}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all hv-button bg-blue-600 text-white hover:bg-blue-700 hv-button-primary"
+              >
+                <Edit className="w-4 h-4" aria-hidden="true" />
+                <span>Questionnaire</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onOpenProject(project.id, { view: 'synthesis' })}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all hv-button bg-white border border-blue-200 text-blue-600 hover:bg-blue-50"
+              >
+                <Eye className="w-4 h-4" aria-hidden="true" />
+                <span>Synthèse</span>
+              </button>
+              {onShowProjectShowcase && (
+                <button
+                  type="button"
+                  onClick={() => onShowProjectShowcase(project.id)}
+                  className="inline-flex items-center px-4 py-2 bg-white border border-blue-200 text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition-all hv-button hv-focus-ring"
+                >
+                  <Sparkles className="w-4 h-4 mr-2" /> Vitrine
+                </button>
+              )}
+            </>
+          )}
+          {hasContractSummary && (
             <button
               type="button"
-              onClick={() => onOpenProject(project.id, { view: 'synthesis' })}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all hv-button bg-blue-600 text-white hover:bg-blue-700 hv-button-primary"
+              onClick={() => setActiveContractProjectId(project.id)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all hv-button bg-emerald-600 text-white hover:bg-emerald-700"
             >
               <Eye className="w-4 h-4" aria-hidden="true" />
-              <span>Consulter la synthèse</span>
-            </button>
-          )}
-          {onShowProjectShowcase && (
-            <button
-              type="button"
-              onClick={() => onShowProjectShowcase(project.id)}
-              className="inline-flex items-center px-4 py-2 bg-white border border-blue-200 text-blue-600 rounded-lg font-semibold hover:bg-blue-50 transition-all hv-button hv-focus-ring"
-            >
-              <Sparkles className="w-4 h-4 mr-2" /> Vitrine du projet
+              <span>Fiche contrat</span>
             </button>
           )}
         </div>
@@ -1224,7 +1056,7 @@ export const DistribHomeScreen = ({
                 {heroHeadline}
               </h1>
               <p className="text-lg text-gray-600 leading-relaxed max-w-2xl">
-                {navigatorLabel} vous guide pas à pas pour qualifier votre initiative, identifier les interlocuteurs à mobiliser et sécuriser vos délais réglementaires.
+                {navigatorLabel} vous guide pas à pas pour qualifier vos distributeurs, suivre les obligations contractuelles et sécuriser vos délais réglementaires.
               </p>
               <div className="flex flex-wrap gap-3" role="group" aria-label="Actions principales">
                 {[
@@ -1259,7 +1091,7 @@ export const DistribHomeScreen = ({
                   <Rocket className="w-5 h-5 mr-2" /> Démarrez simplement
                 </p>
                 <p className="mt-2 leading-relaxed">
-                  Un questionnaire dynamique pour cadrer votre projet et qualifier les impacts compliance.
+                  Un questionnaire dynamique pour cadrer le distributeur et qualifier les impacts compliance.
                 </p>
               </div>
               <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 hv-surface" role="listitem">
@@ -1267,7 +1099,7 @@ export const DistribHomeScreen = ({
                   <Compass className="w-5 h-5 mr-2" /> Visualisez la feuille de route
                 </p>
                 <p className="mt-2 leading-relaxed">
-                  Une synthèse claire avec le niveau de complexité, les équipes à mobiliser et les délais recommandés.
+                  Une synthèse claire avec les obligations, les équipes à mobiliser et les délais recommandés.
                 </p>
               </div>
               <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 hv-surface" role="listitem">
@@ -1283,7 +1115,7 @@ export const DistribHomeScreen = ({
                   <Calendar className="w-5 h-5 mr-2" /> Gardez une trace
                 </p>
                 <p className="mt-2 leading-relaxed">
-                  Retrouvez à tout moment les projets déjà soumis et mettez-les à jour si nécessaire.
+                  Retrouvez à tout moment les distributeurs déjà évalués et mettez-les à jour si nécessaire.
                 </p>
               </div>
             </div>
@@ -1294,19 +1126,19 @@ export const DistribHomeScreen = ({
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h2 id="projects-heading" className="text-2xl font-bold text-gray-900">
-                {homeView === 'inspiration' ? 'Prospects' : 'Vos projets enregistrés'}
+                {homeView === 'inspiration' ? 'Prospects' : 'Distributeurs pharmaceutiques'}
               </h2>
               <p className="text-sm text-gray-600">
                 {homeView === 'inspiration'
                   ? 'Suivez les distributeurs pharmaceutiques potentiels avec lesquels collaborer.'
-                  : 'Accédez aux brouillons et aux synthèses finalisées pour les reprendre à tout moment.'}
+                  : 'Pilotez les évaluations, revues contractuelles et suivis sous contrat.'}
               </p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <div
                 className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 p-1"
                 role="group"
-                aria-label="Sélection du bloc projet"
+                aria-label="Sélection du bloc distributeur"
               >
                 <button
                   type="button"
@@ -1317,7 +1149,7 @@ export const DistribHomeScreen = ({
                       : 'text-blue-700 hover:bg-blue-100'
                   }`}
                 >
-                  Projets LFB
+                  Distributeurs
                 </button>
                 <button
                   type="button"
@@ -1342,7 +1174,7 @@ export const DistribHomeScreen = ({
                 </button>
               ) : (
                 <span className="inline-flex items-center text-sm font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded-full px-3 py-1">
-                  <CheckCircle className="w-4 h-4 mr-2" /> {displayedProjectsCount} projet{displayedProjectsCount > 1 ? 's' : ''}
+                  <CheckCircle className="w-4 h-4 mr-2" /> {displayedProjectsCount} distributeur{displayedProjectsCount > 1 ? 's' : ''}
                   {hasActiveFilters ? ` sur ${totalProjectsCount}` : ''}
                 </span>
               )}
@@ -1351,14 +1183,14 @@ export const DistribHomeScreen = ({
 
           {homeView !== 'inspiration' && !hasProjects && (
             <div className="bg-white border border-dashed border-blue-200 rounded-3xl p-8 text-center text-gray-600 hv-surface" role="status" aria-live="polite">
-              <p className="text-lg font-medium text-gray-800">Aucun projet enregistré pour le moment.</p>
-              <p className="mt-2">Lancez-vous dès maintenant pour préparer votre première synthèse compliance.</p>
+              <p className="text-lg font-medium text-gray-800">Aucun distributeur enregistré pour le moment.</p>
+              <p className="mt-2">Lancez-vous dès maintenant pour démarrer une évaluation distributeur.</p>
               <button
                 type="button"
                 onClick={onStartNewProject}
                 className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-all hv-button hv-button-primary"
               >
-                <Plus className="w-4 h-4 mr-2" /> Créer un projet
+                <Plus className="w-4 h-4 mr-2" /> Créer un distributeur
               </button>
             </div>
           )}
@@ -1369,12 +1201,12 @@ export const DistribHomeScreen = ({
                 <div
                   className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hv-surface space-y-4"
                   role="region"
-                  aria-label="Filtres des projets"
+                  aria-label="Filtres des distributeurs"
                   data-tour-id="home-filters"
                 >
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-700">
-                      Filtres disponibles
+                      Filtres distributeurs
                     </h3>
                     <button
                       type="button"
@@ -1414,75 +1246,78 @@ export const DistribHomeScreen = ({
                     </div>
                   )}
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    {enabledFilterFields.map((field) => {
-                      const fieldId = `project-filter-${field.id}`;
-
-                      if (field.type === 'select') {
-                        const value = filtersState[field.id] || DEFAULT_SELECT_FILTER_VALUE;
-                        const optionLabel = field.emptyOptionLabel || 'Toutes les valeurs';
-                        const options = selectFilterOptions.get(field.id) || [];
-                        return (
-                          <div key={field.id} className="flex flex-col gap-2 text-sm text-gray-700">
-                            <label htmlFor={fieldId} className="font-semibold text-gray-700">
-                              {field.label}
-                            </label>
-                            <select
-                              id={fieldId}
-                              value={value}
-                              onChange={(event) =>
-                                setFiltersState(prev => ({ ...prev, [field.id]: event.target.value }))
-                              }
-                              className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                            >
-                              <option value={DEFAULT_SELECT_FILTER_VALUE}>{optionLabel}</option>
-                              {options.map(option => (
-                                <option key={option} value={option}>
-                                  {option}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        );
-                      }
-
-                      const value = typeof filtersState[field.id] === 'string' ? filtersState[field.id] : '';
-                      return (
-                        <label key={field.id} htmlFor={fieldId} className="flex flex-col gap-2 text-sm text-gray-700">
-                          <span className="font-semibold text-gray-700">{field.label}</span>
-                          <input
-                            id={fieldId}
-                            type="text"
-                            value={value}
-                            onChange={(event) =>
-                              setFiltersState(prev => ({ ...prev, [field.id]: event.target.value }))
-                            }
-                            className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                            placeholder="Rechercher..."
-                          />
-                        </label>
-                      );
-                    })}
-                    {sortFilterConfig && sortFilterConfig.enabled && (
-                      <div className="flex flex-col gap-2 text-sm text-gray-700">
-                        <label htmlFor="project-sort-order" className="font-semibold text-gray-700">
-                          {sortFilterConfig.label}
-                        </label>
-                        <select
-                          id="project-sort-order"
-                          value={currentSortOrder}
-                          onChange={(event) =>
-                            setFiltersState(prev => ({
-                              ...prev,
-                              sortOrder: event.target.value === 'asc' ? 'asc' : 'desc'
-                            }))
-                          }
-                          className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                        >
-                          <option value="desc">{SORT_LABELS.desc}</option>
-                          <option value="asc">{SORT_LABELS.asc}</option>
-                        </select>
-                      </div>
-                    )}
+                    <label htmlFor="distributor-filter-name" className="flex flex-col gap-2 text-sm text-gray-700">
+                      <span className="font-semibold text-gray-700">Nom du distributeur</span>
+                      <input
+                        id="distributor-filter-name"
+                        type="text"
+                        value={distributorFiltersState.name}
+                        onChange={(event) =>
+                          setDistributorFiltersState((prev) => ({ ...prev, name: event.target.value }))
+                        }
+                        className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                        placeholder="Rechercher..."
+                      />
+                    </label>
+                    <div className="flex flex-col gap-2 text-sm text-gray-700">
+                      <label htmlFor="distributor-filter-country" className="font-semibold text-gray-700">
+                        Pays
+                      </label>
+                      <select
+                        id="distributor-filter-country"
+                        value={distributorFiltersState.country}
+                        onChange={(event) =>
+                          setDistributorFiltersState((prev) => ({ ...prev, country: event.target.value }))
+                        }
+                        className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                      >
+                        <option value={DEFAULT_SELECT_FILTER_VALUE}>Tous les pays</option>
+                        {distributorCountryOptions.map((country) => (
+                          <option key={country} value={country}>
+                            {country}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-2 text-sm text-gray-700">
+                      <label htmlFor="distributor-filter-situation" className="font-semibold text-gray-700">
+                        Situation
+                      </label>
+                      <select
+                        id="distributor-filter-situation"
+                        value={distributorFiltersState.situation}
+                        onChange={(event) =>
+                          setDistributorFiltersState((prev) => ({ ...prev, situation: event.target.value }))
+                        }
+                        className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                      >
+                        <option value={DEFAULT_SELECT_FILTER_VALUE}>Toutes les situations</option>
+                        {DISTRIBUTOR_SITUATION_OPTIONS.map((option) => (
+                          <option key={option.id} value={option.id}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-2 text-sm text-gray-700">
+                      <label htmlFor="distributor-sort-order" className="font-semibold text-gray-700">
+                        Ordre d'affichage
+                      </label>
+                      <select
+                        id="distributor-sort-order"
+                        value={currentSortOrder}
+                        onChange={(event) =>
+                          setDistributorFiltersState((prev) => ({
+                            ...prev,
+                            sortOrder: event.target.value === 'asc' ? 'asc' : 'desc'
+                          }))
+                        }
+                        className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                      >
+                        <option value="desc">{SORT_LABELS.desc}</option>
+                        <option value="asc">{SORT_LABELS.asc}</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1515,8 +1350,8 @@ export const DistribHomeScreen = ({
                   role="status"
                   aria-live="polite"
                 >
-                  <p className="text-lg font-medium text-gray-800">Aucun projet ne correspond à vos filtres.</p>
-                  <p className="mt-2">Ajustez vos critères ou réinitialisez les filtres pour afficher tous les projets.</p>
+                  <p className="text-lg font-medium text-gray-800">Aucun distributeur ne correspond à vos filtres.</p>
+                  <p className="mt-2">Ajustez vos critères ou réinitialisez les filtres pour afficher tous les distributeurs.</p>
                   {hasActiveFilters && (
                     <button
                       type="button"
@@ -1676,6 +1511,96 @@ export const DistribHomeScreen = ({
           )}
         </section>
       </div>
+      {activeContractProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
+          <div
+            className="absolute inset-0 bg-gray-900 bg-opacity-60"
+            aria-hidden="true"
+            onClick={() => setActiveContractProjectId(null)}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="contract-summary-title"
+            className="relative z-10 w-full max-w-3xl rounded-3xl bg-white p-6 shadow-2xl focus:outline-none hv-surface"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 id="contract-summary-title" className="text-2xl font-semibold text-gray-900">
+                  Fiche contrat · {getDistributorName(activeContractProject)}
+                </h2>
+                <p className="mt-1 text-sm text-gray-600">
+                  Synthèse des clauses clés pour le distributeur sous contrat.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveContractProjectId(null)}
+                className="inline-flex items-center justify-center rounded-full border border-gray-200 p-2 text-gray-500 hover:bg-gray-100"
+                aria-label="Fermer la fiche contrat"
+              >
+                <Close className="h-4 w-4" aria-hidden="true" />
+              </button>
+            </div>
+
+            {!activeContractSummary ? (
+              <div className="mt-6 rounded-2xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500">
+                Aucun résumé contractuel n’est encore renseigné pour ce distributeur.
+              </div>
+            ) : (
+              <div className="mt-6 space-y-6">
+                <section>
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+                    Pays concernés
+                  </h3>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {contractCountries.length > 0 ? (
+                      contractCountries.map((country) => (
+                        <span
+                          key={country}
+                          className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700"
+                        >
+                          {country}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-sm text-gray-500">Pays non renseigné</span>
+                    )}
+                  </div>
+                </section>
+
+                <section className="space-y-3">
+                  {contractSections.map((section) => (
+                    <div key={section.id} className="rounded-2xl border border-gray-200 p-4">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleContractSection(section.id)}
+                        className="flex w-full items-start justify-between gap-3 text-left"
+                        aria-expanded={Boolean(expandedContractSections[section.id])}
+                      >
+                        <div>
+                          <h4 className="text-base font-semibold text-gray-900">{section.title}</h4>
+                          <p className="mt-1 text-sm text-gray-600">
+                            {section.summary || 'Résumé en cours de rédaction.'}
+                          </p>
+                        </div>
+                        <span className="mt-1 inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 text-gray-500">
+                          {expandedContractSections[section.id] ? '-' : '+'}
+                        </span>
+                      </button>
+                      {expandedContractSections[section.id] && (
+                        <div className="mt-3 rounded-xl bg-gray-50 p-4 text-sm text-gray-700">
+                          {section.clause || 'Clause détaillée non renseignée.'}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </section>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       {deleteDialogState.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
           <div
@@ -1696,11 +1621,11 @@ export const DistribHomeScreen = ({
               </div>
               <div>
                 <h2 id="delete-project-dialog-title" className="text-xl font-semibold text-gray-900">
-                  Supprimer le projet ?
+                  Supprimer le distributeur ?
                 </h2>
                 <p id="delete-project-dialog-description" className="mt-2 text-sm text-gray-600">
-                  Vous êtes sur le point de supprimer « {pendingDeletionProjectName || 'Projet sans nom'} ». Cette action est
-                  définitive et le projet ne pourra pas être restauré.
+                  Vous êtes sur le point de supprimer « {pendingDeletionProjectName || 'Distributeur sans nom'} ». Cette action est
+                  définitive et le distributeur ne pourra pas être restauré.
                 </p>
               </div>
             </div>

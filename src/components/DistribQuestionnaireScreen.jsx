@@ -26,6 +26,8 @@ const OPERATOR_LABELS = {
   gte: 'est supérieur ou égal à'
 };
 
+const LINKED_PROSPECT_ID_KEY = 'linkedProspectId';
+
 const normalizeMilestoneDrafts = (value) => {
   if (!Array.isArray(value)) {
     return [];
@@ -99,7 +101,10 @@ export const DistribQuestionnaireScreen = ({
   tourContext = null,
   onReturnToSynthesis,
   isReturnToSynthesisRequested = false,
-  onFinish
+  onFinish,
+  prospectOptions = [],
+  linkedProspectId = '',
+  onLinkProspect
 }) => {
   const currentQuestion = questions[currentIndex];
   const questionBank = allQuestions || questions;
@@ -133,6 +138,39 @@ export const DistribQuestionnaireScreen = ({
       ignored
     };
   }, [currentAnswer, rankingConfig]);
+  const normalizedProspects = useMemo(() => {
+    if (!Array.isArray(prospectOptions)) {
+      return [];
+    }
+    return prospectOptions
+      .map((option) => {
+        if (!option) {
+          return null;
+        }
+        if (typeof option === 'string') {
+          return { id: option, label: option };
+        }
+        const id = option.id || option.value;
+        const label = option.label || option.name || option.partnerName;
+        if (!id || !label) {
+          return null;
+        }
+        return { id, label };
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.label.localeCompare(b.label, 'fr', { sensitivity: 'base' }));
+  }, [prospectOptions]);
+  const shouldShowProspectLink = currentIndex === 0 && normalizedProspects.length > 0;
+  const handleProspectChange = (event) => {
+    const value = event.target.value;
+    if (typeof onLinkProspect === 'function') {
+      onLinkProspect(value || '');
+      return;
+    }
+    if (typeof onAnswer === 'function') {
+      onAnswer(LINKED_PROSPECT_ID_KEY, value || '');
+    }
+  };
   const [showGuidance, setShowGuidance] = useState(false);
   const [milestoneDrafts, setMilestoneDrafts] = useState(() => normalizeMilestoneDrafts(currentAnswer));
   const milestoneQuestionIdRef = useRef(questionType === 'milestone_list' ? currentQuestion.id : null);
@@ -834,6 +872,29 @@ export const DistribQuestionnaireScreen = ({
                   En savoir plus sur vos données et vos droits
                 </a>
               </p>
+            )}
+            {shouldShowProspectLink && (
+              <div className="mt-5 rounded-xl border border-blue-100 bg-blue-50/60 p-4 text-sm text-gray-700">
+                <label htmlFor="prospect-link" className="block text-xs font-semibold uppercase tracking-wide text-blue-700">
+                  Lier ce distributeur à un prospect
+                </label>
+                <select
+                  id="prospect-link"
+                  value={linkedProspectId || ''}
+                  onChange={handleProspectChange}
+                  className="mt-2 w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                >
+                  <option value="">Aucun prospect lié</option>
+                  {normalizedProspects.map((prospect) => (
+                    <option key={prospect.id} value={prospect.id}>
+                      {prospect.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-2 text-xs text-blue-700/80">
+                  Le lien apparaîtra dans la fiche distributeur pour faciliter le suivi.
+                </p>
+              </div>
             )}
           </div>
 
