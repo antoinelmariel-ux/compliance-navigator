@@ -14,7 +14,9 @@ import {
   Copy,
   Trash2,
   Close,
-  FileText
+  FileText,
+  Sparkles,
+  Clipboard
 } from './icons.js';
 import { VirtualizedList } from './VirtualizedList.jsx';
 import { normalizeProjectFilterConfig } from '../utils/projectFilters.js';
@@ -56,6 +58,28 @@ const normalizeInspirationFieldValues = (value) => {
   }
 
   return [];
+};
+
+const buildProspectLabel = (project) => {
+  if (!project) {
+    return 'Prospect sans nom';
+  }
+
+  const companyName = getSafeString(project.companyName).trim();
+  const contactName = getSafeString(project.contactName).trim();
+  const email = getSafeString(project.email).trim();
+  const labelBase = companyName || contactName || 'Prospect sans nom';
+  const labelParts = [labelBase];
+
+  if (contactName && contactName !== labelBase) {
+    labelParts.push(contactName);
+  }
+
+  if (email) {
+    labelParts.push(email);
+  }
+
+  return labelParts.join(' · ');
 };
 
 const DEFAULT_SELECT_FILTER_VALUE = 'all';
@@ -250,8 +274,9 @@ export const HomeScreen = ({
   teamLeadOptions = [],
   inspirationProjects = [],
   inspirationFilters,
-  homeView = 'platform',
+  homeView = 'partners',
   onHomeViewChange,
+  selectedPartnerIds = [],
   onStartInspirationProject,
   onOpenInspirationProject,
   onStartNewProject,
@@ -333,6 +358,35 @@ export const HomeScreen = ({
     ? icpScoreByIso3.get(selectedCountry.iso3)
     : undefined;
   const selectedCorruptionRisk = getCorruptionRiskLabel(selectedCpiScore);
+  const contractEntries = useMemo(
+    () =>
+      countryVisionData
+        .filter((entry) => entry?.contract)
+        .map((entry) => ({
+          countryName: entry.name,
+          partnerName: entry.contract.partnerName,
+          endDate: entry.contract.endDate,
+          partnerUrl: entry.contract.partnerUrl
+        })),
+    []
+  );
+  const selectedPartnerLabels = useMemo(() => {
+    if (!Array.isArray(selectedPartnerIds) || selectedPartnerIds.length === 0) {
+      return new Set();
+    }
+
+    const selectedIdSet = new Set(selectedPartnerIds);
+    const labels = new Set();
+
+    inspirationProjects.forEach((project) => {
+      if (!project || !selectedIdSet.has(project.id)) {
+        return;
+      }
+      labels.add(buildProspectLabel(project));
+    });
+
+    return labels;
+  }, [inspirationProjects, selectedPartnerIds]);
 
   const handleCountrySelect = useCallback((countryId, label) => {
     if (!countryId) {
@@ -1004,6 +1058,7 @@ export const HomeScreen = ({
   const hasFilteredProjects = filteredProjects.length > 0;
   const hasInspirationProjects = inspirationProjects.length > 0;
   const hasFilteredInspirationProjects = filteredInspirationProjects.length > 0;
+  const hasContracts = contractEntries.length > 0;
   const pendingDeletionProjectName = useMemo(() => {
     if (!deleteDialogState.project) {
       return '';
@@ -1077,6 +1132,9 @@ export const HomeScreen = ({
 
   const displayedProjectsCount = filteredProjects.length;
   const totalProjectsCount = accessibleProjects.length;
+  const displayedProspectsCount = filteredInspirationProjects.length;
+  const totalProspectsCount = inspirationProjects.length;
+  const totalContractsCount = contractEntries.length;
   const sortFilterConfig = Array.isArray(normalizedFilters.fields)
     ? normalizedFilters.fields.find(field => field && field.id === 'dateOrder')
     : null;
@@ -1417,6 +1475,133 @@ export const HomeScreen = ({
     </article>
   );
 
+  const getPartnerCardInfo = (project) => {
+    const answers = project?.answers || {};
+    return {
+      name: getSafeString(project?.projectName || answers.projectName),
+      contactName: getSafeString(answers.contactName),
+      role: getSafeString(answers.role),
+      countries: normalizeInspirationFieldValues(answers.countries),
+      situation: getSafeString(answers.situation),
+      prospectLabel: getSafeString(answers.partnerProspectId)
+    };
+  };
+
+  const renderPartnerCard = (project) => {
+    const info = getPartnerCardInfo(project);
+    const isCompared = info.prospectLabel && selectedPartnerLabels.has(info.prospectLabel);
+
+    return (
+      <article
+        key={project.id}
+        className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all hv-surface"
+        role="listitem"
+        aria-label={`Partenaire ${info.name || info.contactName || 'sans nom'}`}
+      >
+        <div className="space-y-3">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900">
+                {info.name || 'Entreprise non renseignée'}
+              </h3>
+              <p className="text-sm text-gray-500">
+                {info.contactName || 'Contact non renseigné'}
+              </p>
+              <p className="text-sm text-gray-500">{info.role || 'Rôle non renseigné'}</p>
+            </div>
+            {isCompared && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                <Sparkles className="h-3 w-3" aria-hidden="true" />
+                Comparatif
+              </span>
+            )}
+          </div>
+          <dl className="grid grid-cols-1 gap-2 text-sm text-gray-600">
+            <div className="flex items-center gap-2">
+              <Compass className="w-4 h-4" />
+              <span>{info.countries.join(', ') || 'Pays non renseignés'}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-4 h-4" />
+              <span>{info.situation || 'Situation non renseignée'}</span>
+            </div>
+          </dl>
+        </div>
+        <div className="mt-5 flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={() => onOpenProject?.(project.id, { view: 'synthesis' })}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all hv-button bg-blue-600 text-white hover:bg-blue-700 hv-button-primary"
+          >
+            <Eye className="w-4 h-4" aria-hidden="true" />
+            <span>Consulter la synthèse</span>
+          </button>
+        </div>
+      </article>
+    );
+  };
+
+  const handleOpenContractActions = (partnerUrl) => {
+    if (!partnerUrl || typeof window === 'undefined') {
+      return;
+    }
+    window.open(`${partnerUrl}#plans-actions`, '_blank', 'noopener,noreferrer');
+  };
+
+  const renderContractCard = (contract, index) => (
+    <article
+      key={`${contract.partnerName}-${index}`}
+      className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all hv-surface"
+      role="listitem"
+      aria-label={`Contrat ${contract.partnerName}`}
+    >
+      <div className="space-y-3">
+        <div>
+          <h3 className="text-xl font-semibold text-gray-900">
+            {contract.partnerName || 'Partenaire non renseigné'}
+          </h3>
+          <p className="text-sm text-gray-500">
+            {contract.countryName || 'Pays non renseigné'}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <Calendar className="w-4 h-4" aria-hidden="true" />
+          <span>Fin de contrat : {formatDate(contract.endDate)}</span>
+        </div>
+      </div>
+      <div className="mt-5 flex flex-wrap gap-3">
+        <a
+          href={contract.partnerUrl}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all hv-button bg-blue-600 text-white hover:bg-blue-700 hv-button-primary"
+          target="_blank"
+          rel="noreferrer"
+        >
+          <FileText className="w-4 h-4" aria-hidden="true" />
+          <span>Voir le contrat</span>
+        </a>
+        <button
+          type="button"
+          onClick={() => handleOpenContractActions(contract.partnerUrl)}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all hv-button border border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+        >
+          <Clipboard className="w-4 h-4" aria-hidden="true" />
+          <span>Plans d'action</span>
+        </button>
+      </div>
+    </article>
+  );
+
+  const homeViewTitle = homeView === 'prospects'
+    ? 'Prospects'
+    : homeView === 'contracts'
+      ? 'Contrats'
+      : 'Partenaires';
+  const homeViewDescription = homeView === 'prospects'
+    ? 'Retrouvez les partenaires potentiels que vous prospectez pour développer votre activité à l’international.'
+    : homeView === 'contracts'
+      ? 'Suivez les contrats en cours, leurs échéances et les plans d’actions associés.'
+      : 'Accédez aux partenaires qualifiés et à la synthèse de leurs dossiers.';
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 px-4 py-8 sm:px-8 hv-background">
       <div className="max-w-6xl mx-auto space-y-12">
@@ -1653,36 +1838,45 @@ export const HomeScreen = ({
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h2 id="projects-heading" className="text-2xl font-bold text-gray-900">
-                {homeView === 'inspiration' ? 'Prospects' : 'Vos projets enregistrés'}
+                {homeViewTitle}
               </h2>
               <p className="text-sm text-gray-600">
-                {homeView === 'inspiration'
-                  ? 'Retrouvez les partenaires potentiels que vous prospectez pour développer votre activité à l’international.'
-                  : 'Accédez aux brouillons et aux synthèses finalisées pour les reprendre à tout moment.'}
+                {homeViewDescription}
               </p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <div
                 className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 p-1"
                 role="group"
-                aria-label="Sélection du bloc projet"
+                aria-label="Sélection du bloc principal"
               >
                 <button
                   type="button"
-                  onClick={() => onHomeViewChange?.('platform')}
+                  onClick={() => onHomeViewChange?.('contracts')}
                   className={`rounded-full px-4 py-2 text-xs font-semibold transition-colors ${
-                    homeView !== 'inspiration'
+                    homeView === 'contracts'
                       ? 'bg-blue-600 text-white'
                       : 'text-blue-700 hover:bg-blue-100'
                   }`}
                 >
-                  Projets LFB
+                  Contrats
                 </button>
                 <button
                   type="button"
-                  onClick={() => onHomeViewChange?.('inspiration')}
+                  onClick={() => onHomeViewChange?.('partners')}
                   className={`rounded-full px-4 py-2 text-xs font-semibold transition-colors ${
-                    homeView === 'inspiration'
+                    homeView === 'partners'
+                      ? 'bg-blue-600 text-white'
+                      : 'text-blue-700 hover:bg-blue-100'
+                  }`}
+                >
+                  Partenaires
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onHomeViewChange?.('prospects')}
+                  className={`rounded-full px-4 py-2 text-xs font-semibold transition-colors ${
+                    homeView === 'prospects'
                       ? 'bg-blue-600 text-white'
                       : 'text-blue-700 hover:bg-blue-100'
                   }`}
@@ -1690,7 +1884,7 @@ export const HomeScreen = ({
                   Prospects
                 </button>
               </div>
-              {homeView === 'inspiration' ? (
+              {homeView === 'prospects' ? (
                 <button
                   type="button"
                   onClick={onStartInspirationProject}
@@ -1699,19 +1893,34 @@ export const HomeScreen = ({
                   <Plus className="w-4 h-4" aria-hidden="true" />
                   Ajouter un prospect
                 </button>
+              ) : homeView === 'contracts' ? (
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="inline-flex items-center text-sm font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1">
+                    <FileText className="w-4 h-4 mr-2" aria-hidden="true" />
+                    {totalContractsCount} contrat{totalContractsCount > 1 ? 's' : ''}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={onStartNewContract}
+                    className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                  >
+                    <Plus className="w-4 h-4" aria-hidden="true" />
+                    Nouveau contrat
+                  </button>
+                </div>
               ) : (
                 <span className="inline-flex items-center text-sm font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded-full px-3 py-1">
-                  <CheckCircle className="w-4 h-4 mr-2" /> {displayedProjectsCount} projet{displayedProjectsCount > 1 ? 's' : ''}
+                  <CheckCircle className="w-4 h-4 mr-2" /> {displayedProjectsCount} partenaire{displayedProjectsCount > 1 ? 's' : ''}
                   {hasActiveFilters ? ` sur ${totalProjectsCount}` : ''}
                 </span>
               )}
             </div>
           </div>
 
-          {homeView !== 'inspiration' && !hasProjects && (
+          {homeView === 'partners' && !hasProjects && (
             <div className="bg-white border border-dashed border-blue-200 rounded-3xl p-8 text-center text-gray-600 hv-surface" role="status" aria-live="polite">
-              <p className="text-lg font-medium text-gray-800">Aucun projet enregistré pour le moment.</p>
-              <p className="mt-2">Lancez-vous dès maintenant pour préparer votre première synthèse compliance.</p>
+              <p className="text-lg font-medium text-gray-800">Aucun partenaire enregistré pour le moment.</p>
+              <p className="mt-2">Créez un partenaire pour démarrer une synthèse compliance.</p>
               <button
                 type="button"
                 onClick={onStartNewProject}
@@ -1722,18 +1931,18 @@ export const HomeScreen = ({
             </div>
           )}
 
-          {homeView !== 'inspiration' && hasProjects && (
+          {homeView === 'partners' && hasProjects && (
             <>
               {shouldShowFiltersCard && (
                 <div
                   className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hv-surface space-y-4"
                   role="region"
-                  aria-label="Filtres des projets"
+                  aria-label="Filtres des partenaires"
                   data-tour-id="home-filters"
                 >
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-700">
-                      Filtres disponibles
+                      Filtres partenaires
                     </h3>
                     <button
                       type="button"
@@ -1858,14 +2067,14 @@ export const HomeScreen = ({
                     renderItem={(row) => (
                       <div className="pb-6">
                         <div className="flex flex-col md:flex-row gap-6">
-                          {row.map(project => renderProjectCard(project))}
+                          {row.map(project => renderPartnerCard(project))}
                         </div>
                       </div>
                     )}
                   />
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6" role="list">
-                    {filteredProjects.map(project => renderProjectCard(project))}
+                    {filteredProjects.map(project => renderPartnerCard(project))}
                   </div>
                 )
               ) : (
@@ -1874,8 +2083,8 @@ export const HomeScreen = ({
                   role="status"
                   aria-live="polite"
                 >
-                  <p className="text-lg font-medium text-gray-800">Aucun projet ne correspond à vos filtres.</p>
-                  <p className="mt-2">Ajustez vos critères ou réinitialisez les filtres pour afficher tous les projets.</p>
+                  <p className="text-lg font-medium text-gray-800">Aucun partenaire ne correspond à vos filtres.</p>
+                  <p className="mt-2">Ajustez vos critères ou réinitialisez les filtres pour afficher tous les partenaires.</p>
                   {hasActiveFilters && (
                     <button
                       type="button"
@@ -1890,7 +2099,7 @@ export const HomeScreen = ({
             </>
           )}
 
-          {homeView === 'inspiration' && !hasInspirationProjects && (
+          {homeView === 'prospects' && !hasInspirationProjects && (
             <div className="bg-white border border-dashed border-blue-200 rounded-3xl p-8 text-center text-gray-600 hv-surface" role="status" aria-live="polite">
               <p className="text-lg font-medium text-gray-800">Aucun prospect enregistré.</p>
               <p className="mt-2">Ajoutez des partenaires potentiels pour structurer votre prospection.</p>
@@ -1904,7 +2113,7 @@ export const HomeScreen = ({
             </div>
           )}
 
-          {homeView === 'inspiration' && hasInspirationProjects && (
+          {homeView === 'prospects' && hasInspirationProjects && (
             <>
               {shouldShowInspirationFiltersCard && (
                 <div
@@ -2032,6 +2241,26 @@ export const HomeScreen = ({
                 </div>
               )}
             </>
+          )}
+
+          {homeView === 'contracts' && !hasContracts && (
+            <div className="bg-white border border-dashed border-emerald-200 rounded-3xl p-8 text-center text-gray-600 hv-surface" role="status" aria-live="polite">
+              <p className="text-lg font-medium text-gray-800">Aucun contrat enregistré.</p>
+              <p className="mt-2">Lancez un nouveau contrat pour suivre les échéances et les plans d'action.</p>
+              <button
+                type="button"
+                onClick={onStartNewContract}
+                className="mt-4 inline-flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-semibold transition-all hv-button hv-button-primary"
+              >
+                <Plus className="w-4 h-4 mr-2" /> Créer un contrat
+              </button>
+            </div>
+          )}
+
+          {homeView === 'contracts' && hasContracts && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6" role="list">
+              {contractEntries.map((contract, index) => renderContractCard(contract, index))}
+            </div>
           )}
         </section>
       </div>
