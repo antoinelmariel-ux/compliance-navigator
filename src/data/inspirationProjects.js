@@ -1,6 +1,7 @@
 export const initialInspirationProjects = [
   {
     id: 'prospect-medexis',
+    companyName: 'Medexis',
     contactName: 'Claire Dumont',
     email: 'claire.dumont@medexis.eu',
     website: 'https://www.medexis.eu',
@@ -15,6 +16,7 @@ export const initialInspirationProjects = [
   },
   {
     id: 'prospect-sunridge',
+    companyName: 'Sunridge Distribution',
     contactName: 'Miguel Alvarez',
     email: 'miguel.alvarez@sunridge-distribution.com',
     website: 'https://www.sunridge-distribution.com',
@@ -29,6 +31,7 @@ export const initialInspirationProjects = [
   },
   {
     id: 'prospect-northbridge',
+    companyName: 'Northbridge Pharma',
     contactName: 'Sofia Eriksson',
     email: 'sofia.eriksson@northbridge-pharma.se',
     website: 'https://www.northbridge-pharma.se',

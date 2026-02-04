@@ -16,9 +16,18 @@ const normalizeInspirationFieldValues = (value) => {
   return [];
 };
 
-const getPartnerLabel = (partner) => {
+const getPartnerCompanyLabel = (partner) => {
+  const name = typeof partner?.companyName === 'string' ? partner.companyName.trim() : '';
+  if (name) {
+    return name;
+  }
+  const fallback = typeof partner?.contactName === 'string' ? partner.contactName.trim() : '';
+  return fallback || 'Entreprise non renseignée';
+};
+
+const getPartnerContactLabel = (partner) => {
   const name = typeof partner?.contactName === 'string' ? partner.contactName.trim() : '';
-  return name || 'Partenaire non renseigné';
+  return name || 'Contact non renseigné';
 };
 
 const getPartnerCountryLabel = (partner) => {
@@ -51,7 +60,8 @@ export const PartnerComparisonDetail = ({
 }) => {
   const rows = useMemo(
     () => [
-      { label: 'Nom du partenaire', value: getPartnerLabel },
+      { label: 'Entreprise', value: getPartnerCompanyLabel },
+      { label: 'Contact', value: getPartnerContactLabel },
       { label: 'Rôle', value: getPartnerRoleLabel },
       { label: 'Pays', value: getPartnerCountryLabel },
       { label: 'Situation', value: getPartnerSituationLabel },
@@ -131,7 +141,7 @@ export const PartnerComparisonDetail = ({
                       onChange={() => onPreferredPartnerChange?.(partner.id)}
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500"
                     />
-                    {getPartnerLabel(partner)}
+                    {getPartnerCompanyLabel(partner)}
                   </label>
                 ))}
               </div>
@@ -163,7 +173,7 @@ export const PartnerComparisonDetail = ({
                       key={partner.id}
                       className="rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-700"
                     >
-                      {getPartnerLabel(partner)}
+                      {getPartnerCompanyLabel(partner)}
                     </div>
                   ))}
                   {rows.map((row) => (

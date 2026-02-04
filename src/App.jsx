@@ -44,7 +44,7 @@ import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.278';
+const APP_VERSION = 'v1.0.279';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -1968,10 +1968,18 @@ const updateProjectFilters = useCallback((updater) => {
     const entries = inspirationProjects
       .filter(project => project && typeof project.id === 'string' && project.id.trim().length > 0)
       .map((project) => {
+        const companyName = typeof project.companyName === 'string' ? project.companyName.trim() : '';
         const contactName = typeof project.contactName === 'string' ? project.contactName.trim() : '';
         const email = typeof project.email === 'string' ? project.email.trim() : '';
-        const labelBase = contactName || 'Prospect sans nom';
-        return email ? `${labelBase} · ${email}` : labelBase;
+        const labelBase = companyName || contactName || 'Prospect sans nom';
+        const labelParts = [labelBase];
+        if (contactName && contactName !== labelBase) {
+          labelParts.push(contactName);
+        }
+        if (email) {
+          labelParts.push(email);
+        }
+        return labelParts.join(' · ');
       });
 
     return [...baseOption, ...entries];
@@ -1981,10 +1989,18 @@ const updateProjectFilters = useCallback((updater) => {
     const map = new Map();
     inspirationProjects.forEach((project) => {
       if (project && typeof project.id === 'string') {
+        const companyName = typeof project.companyName === 'string' ? project.companyName.trim() : '';
         const contactName = typeof project.contactName === 'string' ? project.contactName.trim() : '';
         const email = typeof project.email === 'string' ? project.email.trim() : '';
-        const labelBase = contactName || 'Prospect sans nom';
-        const label = email ? `${labelBase} · ${email}` : labelBase;
+        const labelBase = companyName || contactName || 'Prospect sans nom';
+        const labelParts = [labelBase];
+        if (contactName && contactName !== labelBase) {
+          labelParts.push(contactName);
+        }
+        if (email) {
+          labelParts.push(email);
+        }
+        const label = labelParts.join(' · ');
         map.set(label, project);
       }
     });
@@ -2030,6 +2046,53 @@ const updateProjectFilters = useCallback((updater) => {
       setPartnerComparePreferredId('');
     }
   }, [inspirationProjects, partnerComparePreferredId, partnerCompareSelection]);
+
+  useEffect(() => {
+    const rationale = typeof partnerCompareComment === 'string' ? partnerCompareComment.trim() : '';
+    if (!partnerComparePreferredId || rationale.length === 0) {
+      return;
+    }
+
+    const comparedPartnerIds = Array.isArray(partnerCompareSelection)
+      ? partnerCompareSelection.filter((id) => id && id !== partnerComparePreferredId)
+      : [];
+
+    if (comparedPartnerIds.length === 0) {
+      return;
+    }
+
+    setInspirationProjects((prev) => {
+      let updated = false;
+      const normalizedCompared = comparedPartnerIds.slice().sort();
+      const next = (Array.isArray(prev) ? prev : []).map((project) => {
+        if (!project || project.id !== partnerComparePreferredId) {
+          return project;
+        }
+
+        const existing = project?.comparisonPreference;
+        const sameCompared = Array.isArray(existing?.comparedPartnerIds)
+          && existing.comparedPartnerIds.slice().sort().join('|') === normalizedCompared.join('|');
+        const sameRationale = typeof existing?.rationale === 'string'
+          && existing.rationale === rationale;
+
+        if (sameCompared && sameRationale) {
+          return project;
+        }
+
+        updated = true;
+        return {
+          ...project,
+          comparisonPreference: {
+            comparedPartnerIds: normalizedCompared,
+            rationale,
+            selectedAt: new Date().toISOString()
+          }
+        };
+      });
+
+      return updated ? next : prev;
+    });
+  }, [partnerCompareComment, partnerComparePreferredId, partnerCompareSelection]);
 
   const unansweredMandatoryQuestions = useMemo(
     () =>
@@ -2540,6 +2603,7 @@ const updateProjectFilters = useCallback((updater) => {
       const prospect = partnerProspectMap.get(answer);
       handleUpdateAnswers({
         [questionId]: answer,
+        projectName: prospect?.companyName,
         contactName: prospect?.contactName,
         email: prospect?.email,
         website: prospect?.website,

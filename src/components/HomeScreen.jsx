@@ -1116,13 +1116,16 @@ export const HomeScreen = ({
       key={project.id}
       className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all hv-surface"
       role="listitem"
-      aria-label={`Prospect ${project.contactName || 'sans nom'}`}
+      aria-label={`Prospect ${project.companyName || project.contactName || 'sans nom'}`}
     >
       <div className="space-y-3">
         <div>
           <h3 className="text-xl font-semibold text-gray-900">
-            {project.contactName || 'Partenaire non renseigné'}
+            {project.companyName || 'Entreprise non renseignée'}
           </h3>
+          <p className="text-sm text-gray-500">
+            {project.contactName || 'Contact non renseigné'}
+          </p>
           <p className="text-sm text-gray-500">{project.role || 'Rôle non renseigné'}</p>
         </div>
         <dl className="grid grid-cols-1 gap-2 text-sm text-gray-600">

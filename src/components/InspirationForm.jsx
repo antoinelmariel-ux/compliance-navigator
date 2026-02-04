@@ -336,7 +336,7 @@ export const InspirationForm = ({
                 if (field.id === 'contactName') {
                   const placeholder = typeof field.placeholder === 'string' && field.placeholder.trim() !== ''
                     ? field.placeholder.trim()
-                    : 'Nom du contact';
+                    : 'Prénom Nom';
 
                   return (
                     <label key={field.id} className="flex flex-col gap-2 text-sm font-medium text-gray-700">
