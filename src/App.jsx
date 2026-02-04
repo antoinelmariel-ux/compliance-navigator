@@ -42,7 +42,7 @@ import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.275';
+const APP_VERSION = 'v1.0.276';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -604,6 +604,7 @@ const sanitizeRestoredProjects = (projects) => {
 export const App = () => {
   const [mode, setMode] = useState('user');
   const [screen, setScreen] = useState('home');
+  const [navigatorVariant, setNavigatorVariant] = useState(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [analysis, setAnalysis] = useState(null);
@@ -674,6 +675,12 @@ export const App = () => {
     () => !!currentUserEmail && normalizedAdminEmails.includes(currentUserEmail),
     [currentUserEmail, normalizedAdminEmails]
   );
+  const isNavigatorSelected = navigatorVariant !== null;
+  const navigatorLabel = navigatorVariant === 'distrib' ? 'Distrib Navigator' : 'Project Navigator';
+  const handleSelectNavigator = useCallback((variant) => {
+    setNavigatorVariant(variant);
+    setScreen('home');
+  }, []);
   const backOfficePromptResolverRef = useRef(null);
   const [adminView, setAdminView] = useState('home');
   const showcaseShareInputRef = useRef(null);
@@ -3876,7 +3883,7 @@ const updateProjectFilters = useCallback((updater) => {
                 <CheckCircle className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-gray-800 sm:text-xl">Project Navigator</h1>
+                <h1 className="text-lg font-bold text-gray-800 sm:text-xl">{navigatorLabel}</h1>
                 <p className="text-xs text-gray-500">Outil d'aide à la décision</p>
               </div>
             </div>
@@ -3886,7 +3893,7 @@ const updateProjectFilters = useCallback((updater) => {
               role="group"
               aria-label="Sélection du mode d'utilisation"
             >
-              {screen === 'showcase' && (
+              {isNavigatorSelected && screen === 'showcase' && (
                 <>
                   <button
                     type="button"
@@ -3917,7 +3924,7 @@ const updateProjectFilters = useCallback((updater) => {
                   </button>
                 </>
               )}
-              {mode === 'user' && screen === 'showcase' && showcaseProjectContext && (
+              {isNavigatorSelected && mode === 'user' && screen === 'showcase' && showcaseProjectContext && (
                 <button
                   type="button"
                   onClick={handleReturnToComplianceReport}
@@ -3929,7 +3936,7 @@ const updateProjectFilters = useCallback((updater) => {
                   Synthèse
                 </button>
               )}
-              {mode === 'user' && (
+              {isNavigatorSelected && mode === 'user' && (
                 <>
                   <button
                     type="button"
@@ -3964,14 +3971,14 @@ const updateProjectFilters = useCallback((updater) => {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button text-white bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 hover:from-pink-600 hover:via-red-600 hover:to-yellow-600 focus-visible:ring-pink-400 hv-focus-ring"
-                    aria-label="Partagez votre avis sur Project Navigator (nouvelle fenêtre)"
+                    aria-label={`Partagez votre avis sur ${navigatorLabel} (nouvelle fenêtre)`}
                   >
                     <Sparkles className="text-lg sm:text-xl" aria-hidden="true" />
                     <span>Partagez votre avis</span>
                   </a>
                 </>
               )}
-              {mode === 'admin' && (
+              {isNavigatorSelected && mode === 'admin' && (
                 <button
                   type="button"
                   onClick={handleReturnToProjectMode}
@@ -3986,7 +3993,7 @@ const updateProjectFilters = useCallback((updater) => {
                   Mode Chef de Projet
                 </button>
               )}
-              {!isAdminMode && (
+              {isNavigatorSelected && !isAdminMode && (
                 <button
                   type="button"
                   onClick={handleActivateAdminOnHome}
@@ -4003,7 +4010,7 @@ const updateProjectFilters = useCallback((updater) => {
                   <span className="sr-only">Mode Administrateur (Accueil)</span>
                 </button>
               )}
-              {isAdminMode && (
+              {isNavigatorSelected && isAdminMode && (
                 <button
                   type="button"
                   onClick={handleBackOfficeClick}
@@ -4020,7 +4027,7 @@ const updateProjectFilters = useCallback((updater) => {
                   <Settings className="text-lg sm:text-xl" aria-hidden="true" />
                 </button>
               )}
-              {backOfficeAuthError && (
+              {isNavigatorSelected && backOfficeAuthError && (
                 <p className="w-full text-sm text-red-600 sm:w-auto" role="alert">
                   {backOfficeAuthError}
                 </p>
@@ -4195,7 +4202,49 @@ const updateProjectFilters = useCallback((updater) => {
       )}
 
       <main id="main-content" tabIndex="-1" className="focus:outline-none hv-background">
-        {!isHydrated ? (
+        {!isNavigatorSelected ? (
+          <div className="flex min-h-[60vh] items-center justify-center px-4 py-10">
+            <div className="w-full max-w-3xl rounded-3xl border border-blue-100 bg-white p-8 shadow-xl hv-surface">
+              <div className="space-y-3 text-center">
+                <span className="inline-flex items-center justify-center rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-700">
+                  Nouvelle entrée
+                </span>
+                <h2 className="text-2xl font-semibold text-gray-900 sm:text-3xl">
+                  Choisissez votre module
+                </h2>
+                <p className="text-sm text-gray-600 sm:text-base">
+                  Sélectionnez l’espace qui correspond à votre besoin. Pour l’instant, les deux modules
+                  partagent les mêmes fonctionnalités.
+                </p>
+              </div>
+              <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => handleSelectNavigator('project')}
+                  className="flex h-full flex-col gap-2 rounded-2xl border border-gray-200 bg-white px-6 py-5 text-left shadow-sm transition hover:border-blue-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                >
+                  <span className="text-lg font-semibold text-gray-900">Project Navigator</span>
+                  <span className="text-sm text-gray-600">
+                    L’environnement historique pour préparer vos projets.
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSelectNavigator('distrib')}
+                  className="flex h-full flex-col gap-2 rounded-2xl border border-gray-200 bg-white px-6 py-5 text-left shadow-sm transition hover:border-blue-300 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                >
+                  <span className="text-lg font-semibold text-gray-900">Distrib Navigator</span>
+                  <span className="text-sm text-gray-600">
+                    Une entrée alternative, alignée sur les usages distribution.
+                  </span>
+                </button>
+              </div>
+              <p className="mt-5 text-center text-xs text-gray-500">
+                Vous pourrez changer de module en rechargeant l’application.
+              </p>
+            </div>
+          </div>
+        ) : !isHydrated ? (
           <div className="flex min-h-[60vh] items-center justify-center">
             <LoadingFallback
               label="Chargement de l’accueil…"
@@ -4248,6 +4297,7 @@ const updateProjectFilters = useCallback((updater) => {
             inspirationFilters={inspirationFilters}
             currentUser={currentUser}
             homeView={homeView}
+            navigatorLabel={navigatorLabel}
             onHomeViewChange={setHomeView}
             onStartInspirationProject={handleStartInspirationProject}
             onOpenInspirationProject={handleOpenInspirationProject}
@@ -4419,7 +4469,7 @@ const updateProjectFilters = useCallback((updater) => {
 
     <footer className="bg-white border-t border-gray-200 mt-10" aria-label="Pied de page">
       <p className="text-xs text-gray-400 text-center py-4">
-        Project Navigator · Version {APP_VERSION} ·{' '}
+        {navigatorLabel} · Version {APP_VERSION} ·{' '}
         <a
           href="./mentions-legales.html"
           target="_blank"
