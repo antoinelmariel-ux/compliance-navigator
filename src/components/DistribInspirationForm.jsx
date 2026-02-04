@@ -67,10 +67,10 @@ export const DistribInspirationForm = ({
   const [formState, setFormState] = useState(() => buildInitialFormState(normalizedConfig));
   const [errors, setErrors] = useState({});
 
-  const labSuggestions = useMemo(() => {
+  const partnerSuggestions = useMemo(() => {
     const suggestions = new Set();
     existingProjects.forEach((project) => {
-      const name = typeof project?.labName === 'string' ? project.labName.trim() : '';
+      const name = typeof project?.partnerName === 'string' ? project.partnerName.trim() : '';
       if (name.length > 0) {
         suggestions.add(name);
       }
@@ -246,11 +246,11 @@ export const DistribInspirationForm = ({
         <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-wide text-blue-600">
-              Nouvel exemple inspirant
+              Nouveau prospect
             </p>
-            <h1 className="text-3xl font-bold text-gray-900">Questionnaire projet inspiration</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Fiche prospect</h1>
             <p className="mt-2 text-sm text-gray-600">
-              Documentez un projet inspirant issu d'un autre laboratoire afin d'enrichir la base d'exemples.
+              Documentez les distributeurs pharmaceutiques potentiels avec lesquels collaborer.
             </p>
           </div>
           <button
@@ -328,24 +328,36 @@ export const DistribInspirationForm = ({
                           </option>
                         ))}
                       </select>
+                      {selectedValues.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {selectedValues.map((value) => (
+                            <span
+                              key={value}
+                              className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700"
+                            >
+                              {value}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                       {errors[field.id] && <span className="text-xs text-red-600">{errors[field.id]}</span>}
                     </label>
                   );
                 }
 
-                if (field.id === 'labName') {
+                if (field.id === 'partnerName') {
                   const placeholder = typeof field.placeholder === 'string' && field.placeholder.trim() !== ''
                     ? field.placeholder.trim()
-                    : 'Nom du laboratoire';
+                    : 'Nom du partenaire';
 
                   return (
                     <label key={field.id} className="flex flex-col gap-2 text-sm font-medium text-gray-700">
                       <span>{renderFieldLabel(field)}</span>
                       <input
                         type="text"
-                        list="inspiration-labs"
-                        value={formState.labName}
-                        onChange={(event) => updateField('labName', event.target.value)}
+                        list="prospect-partners"
+                        value={formState.partnerName}
+                        onChange={(event) => updateField('partnerName', event.target.value)}
                         className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                         placeholder={placeholder}
                       />
@@ -354,11 +366,13 @@ export const DistribInspirationForm = ({
                   );
                 }
 
-                const inputType = field.type === 'url' ? 'url' : 'text';
+                const inputType = field.type === 'url' ? 'url' : field.type === 'email' ? 'email' : 'text';
                 const inputPlaceholder = typeof field.placeholder === 'string' && field.placeholder.trim() !== ''
                   ? field.placeholder.trim()
                   : field.type === 'url'
                     ? 'https://...'
+                    : field.type === 'email'
+                      ? 'contact@partenaire.com'
                     : '';
 
                 return (
@@ -383,19 +397,19 @@ export const DistribInspirationForm = ({
               <label key={field.id} className="flex flex-col gap-2 text-sm font-medium text-gray-700">
                 <span>{renderFieldLabel(field)}</span>
                 <RichTextEditor
-                  id={`inspiration-${field.id}`}
-                  value={formState[field.id] || ''}
-                  onChange={(value) => updateField(field.id, value)}
-                  ariaLabel={`${field.label} (édition riche)`}
-                  placeholder={
-                    typeof field.placeholder === 'string' && field.placeholder.trim() !== ''
-                      ? field.placeholder.trim()
-                      : field.id === 'review'
-                        ? 'Ajoutez votre avis détaillé sur ce projet inspirant...'
-                        : 'Saisir une description détaillée...'
-                  }
-                  compact
-                />
+                      id={`prospect-${field.id}`}
+                      value={formState[field.id] || ''}
+                      onChange={(value) => updateField(field.id, value)}
+                      ariaLabel={`${field.label} (édition riche)`}
+                      placeholder={
+                        typeof field.placeholder === 'string' && field.placeholder.trim() !== ''
+                          ? field.placeholder.trim()
+                          : field.id === 'review'
+                            ? 'Ajoutez votre avis détaillé sur ce prospect...'
+                            : 'Saisir une description détaillée...'
+                      }
+                      compact
+                    />
                 {errors[field.id] && <span className="text-xs text-red-600">{errors[field.id]}</span>}
               </label>
             ))}
@@ -457,8 +471,8 @@ export const DistribInspirationForm = ({
               </div>
             ))}
 
-          <datalist id="inspiration-labs">
-            {labSuggestions.map((suggestion) => (
+          <datalist id="prospect-partners">
+            {partnerSuggestions.map((suggestion) => (
               <option key={suggestion} value={suggestion} />
             ))}
           </datalist>
@@ -476,7 +490,7 @@ export const DistribInspirationForm = ({
               className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
             >
               <Save className="h-4 w-4" aria-hidden="true" />
-              Enregistrer le projet
+              Enregistrer le prospect
             </button>
           </div>
         </form>
