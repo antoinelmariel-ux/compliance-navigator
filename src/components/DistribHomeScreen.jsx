@@ -61,6 +61,16 @@ const normalizeInspirationFieldValues = (value) => {
 const DEFAULT_SELECT_FILTER_VALUE = 'all';
 const DEFAULT_TEXT_FILTER_VALUE = '';
 
+const formatPercent = (value) => `${Math.round(value)}%`;
+
+const formatRiskScore = (value) => {
+  if (!Number.isFinite(value)) {
+    return '—';
+  }
+
+  return Number(value).toLocaleString('fr-FR', { maximumFractionDigits: 1 });
+};
+
 const getProjectTimestamp = (project) => {
   if (!project) {
     return 0;
@@ -231,6 +241,10 @@ export const DistribHomeScreen = ({
   const heroHeadline = currentUserFirstName.length > 0
     ? `${currentUserFirstName}, pilotez vos distributeurs pharmaceutiques en quelques minutes`
     : 'Pilotez vos distributeurs pharmaceutiques en quelques minutes';
+  const [comparisonSelection, setComparisonSelection] = useState(() => new Set());
+  const [isComparisonValidated, setIsComparisonValidated] = useState(false);
+  const [finalSelectionId, setFinalSelectionId] = useState('');
+  const [selectionRationales, setSelectionRationales] = useState({});
   const [distributorFiltersState, setDistributorFiltersState] = useState(() => ({
     name: DEFAULT_TEXT_FILTER_VALUE,
     country: DEFAULT_SELECT_FILTER_VALUE,
@@ -274,6 +288,20 @@ export const DistribHomeScreen = ({
       return ownerEmail === currentUserEmail || isShared;
     });
   }, [projects, isAdminMode, currentUserEmail]);
+
+  useEffect(() => {
+    const projectIds = new Set(accessibleProjects.map((project) => project.id));
+    setComparisonSelection((prev) => {
+      const next = new Set([...prev].filter((id) => projectIds.has(id)));
+      return next;
+    });
+  }, [accessibleProjects]);
+
+  useEffect(() => {
+    if (finalSelectionId && !comparisonSelection.has(finalSelectionId)) {
+      setFinalSelectionId('');
+    }
+  }, [comparisonSelection, finalSelectionId]);
 
   const closeDeleteDialog = useCallback(() => {
     setDeleteDialogState({ isOpen: false, project: null });
@@ -551,6 +579,82 @@ export const DistribHomeScreen = ({
       return direction === 'asc' ? diff : -diff;
     });
   }, [accessibleProjects, distributorFiltersState]);
+
+  const selectedProjects = useMemo(
+    () => accessibleProjects.filter((project) => comparisonSelection.has(project.id)),
+    [accessibleProjects, comparisonSelection]
+  );
+
+  const selectedProjectsCount = selectedProjects.length;
+
+  const canValidateComparison = selectedProjectsCount >= 2;
+
+  const handleToggleProjectSelection = useCallback((projectId) => {
+    if (!projectId) {
+      return;
+    }
+
+    setComparisonSelection((prev) => {
+      const next = new Set(prev);
+      if (next.has(projectId)) {
+        next.delete(projectId);
+      } else {
+        next.add(projectId);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleSelectAllFilteredProjects = useCallback(() => {
+    setComparisonSelection((prev) => {
+      const next = new Set(prev);
+      filteredProjects.forEach((project) => {
+        if (project?.id) {
+          next.add(project.id);
+        }
+      });
+      return next;
+    });
+  }, [filteredProjects]);
+
+  const handleClearComparisonSelection = useCallback(() => {
+    setComparisonSelection(new Set());
+    setIsComparisonValidated(false);
+    setFinalSelectionId('');
+  }, []);
+
+  const handleValidateComparisonSelection = useCallback(() => {
+    if (!canValidateComparison) {
+      return;
+    }
+    setIsComparisonValidated(true);
+    if (!finalSelectionId && selectedProjects[0]?.id) {
+      setFinalSelectionId(selectedProjects[0].id);
+    }
+  }, [canValidateComparison, finalSelectionId, selectedProjects]);
+
+  const handleRationaleChange = useCallback((projectId, value) => {
+    setSelectionRationales((prev) => ({
+      ...prev,
+      [projectId]: value
+    }));
+  }, []);
+
+  const getCompletionSummary = (project) => {
+    const total = Number.isFinite(project?.totalQuestions) ? project.totalQuestions : 0;
+    const answered = Number.isFinite(project?.answeredQuestions) ? project.answeredQuestions : 0;
+
+    if (total <= 0) {
+      return null;
+    }
+
+    const percent = Math.min(100, Math.max(0, (answered / total) * 100));
+    return {
+      total,
+      answered,
+      percent
+    };
+  };
 
   const filteredInspirationProjects = useMemo(() => {
     if (!Array.isArray(inspirationProjects)) {
@@ -843,11 +947,16 @@ export const DistribHomeScreen = ({
     const isEvaluation = situationId === DISTRIBUTOR_SITUATION_IDS.evaluation;
     const isContractReview = situationId === DISTRIBUTOR_SITUATION_IDS.contractReview;
     const canDelete = isEvaluation && typeof onDeleteProject === 'function';
+    const isSelectedForComparison = comparisonSelection.has(project.id);
 
     return (
       <article
         key={project.id}
-        className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all hv-surface"
+        className={`bg-white border rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all hv-surface ${
+          isSelectedForComparison
+            ? 'border-blue-300 ring-2 ring-blue-100'
+            : 'border-gray-200'
+        }`}
         role="listitem"
         aria-label={`Distributeur ${distributorName}`}
       >
@@ -874,6 +983,16 @@ export const DistribHomeScreen = ({
                 <span className={`h-2 w-2 rounded-full ${situationStyle.dotClassName}`} aria-hidden="true" />
                 {situationLabel}
               </span>
+              <label className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-600">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                  checked={isSelectedForComparison}
+                  onChange={() => handleToggleProjectSelection(project.id)}
+                  aria-label={`Sélectionner ${distributorName} pour la comparaison`}
+                />
+                Comparer
+              </label>
             </div>
             {canDelete && (
               <button
@@ -1317,6 +1436,214 @@ export const DistribHomeScreen = ({
                         <option value="desc">{SORT_LABELS.desc}</option>
                         <option value="asc">{SORT_LABELS.asc}</option>
                       </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div
+                className="bg-white border border-blue-100 rounded-2xl p-5 shadow-sm hv-surface space-y-4"
+                role="region"
+                aria-label="Comparaison et sélection"
+              >
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Comparaison et sélection</h3>
+                    <p className="text-sm text-gray-600">
+                      Sélectionnez les distributeurs à comparer, puis validez pour afficher la synthèse
+                      comparative des éléments d’évaluation.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSelectAllFilteredProjects}
+                      className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-100"
+                    >
+                      Tout sélectionner
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleClearComparisonSelection}
+                      className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50"
+                    >
+                      Réinitialiser
+                    </button>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                    {selectedProjectsCount} distributeur{selectedProjectsCount > 1 ? 's' : ''} sélectionné{selectedProjectsCount > 1 ? 's' : ''}
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={handleValidateComparisonSelection}
+                      className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+                        canValidateComparison
+                          ? 'bg-blue-600 text-white hover:bg-blue-700'
+                          : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      }`}
+                      disabled={!canValidateComparison}
+                    >
+                      Valider la sélection
+                    </button>
+                    {isComparisonValidated && (
+                      <button
+                        type="button"
+                        onClick={() => setIsComparisonValidated(false)}
+                        className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50"
+                      >
+                        Modifier la sélection
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <p className="text-xs text-gray-500">
+                  Astuce : utilisez les filtres pour retrouver rapidement vos distributeurs et affiner la liste.
+                </p>
+              </div>
+
+              {isComparisonValidated && selectedProjects.length > 0 && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                    {selectedProjects.map((project) => {
+                      const distributorName = getDistributorName(project);
+                      const situationId = resolveDistributorSituationId(project);
+                      const situationLabel = getDistributorSituationLabel(situationId);
+                      const situationStyle =
+                        distributorSituationStyles[situationId] || distributorSituationStyles.evaluation;
+                      const countries = normalizeDistributorCountries(project);
+                      const completion = getCompletionSummary(project);
+                      const riskScore = project?.analysis?.riskScore;
+                      const riskCount = Array.isArray(project?.analysis?.risks)
+                        ? project.analysis.risks.length
+                        : 0;
+                      const complexity = project?.analysis?.complexity || 'Non évaluée';
+
+                      return (
+                        <article
+                          key={`comparison-${project.id}`}
+                          className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hv-surface"
+                        >
+                          <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                              <h4 className="text-xl font-semibold text-gray-900">{distributorName}</h4>
+                              <p className="text-sm text-gray-500">
+                                Dernière mise à jour : {formatDate(project.lastUpdated || project.submittedAt)}
+                              </p>
+                            </div>
+                            <span
+                              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold ${situationStyle.className}`}
+                            >
+                              <span
+                                className={`h-2 w-2 rounded-full ${situationStyle.dotClassName}`}
+                                aria-hidden="true"
+                              />
+                              {situationLabel}
+                            </span>
+                          </header>
+                          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div className="rounded-xl border border-blue-100 bg-blue-50 p-3">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
+                                Avancement questionnaire
+                              </p>
+                              <p className="mt-1 text-lg font-semibold text-blue-900">
+                                {completion
+                                  ? `${completion.answered}/${completion.total} (${formatPercent(completion.percent)})`
+                                  : 'Non renseigné'}
+                              </p>
+                            </div>
+                            <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-3">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700">
+                                Score de risque
+                              </p>
+                              <p className="mt-1 text-lg font-semibold text-indigo-900">
+                                {formatRiskScore(riskScore)}
+                              </p>
+                            </div>
+                            <div className="rounded-xl border border-amber-100 bg-amber-50 p-3">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">
+                                Complexité compliance
+                              </p>
+                              <p className="mt-1 text-lg font-semibold text-amber-900">{complexity}</p>
+                            </div>
+                            <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+                                Risques identifiés
+                              </p>
+                              <p className="mt-1 text-lg font-semibold text-emerald-900">{riskCount}</p>
+                            </div>
+                          </div>
+                          <div className="mt-4">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Pays couverts</p>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {countries.length > 0 ? (
+                                countries.map((country) => (
+                                  <span
+                                    key={`${project.id}-${country}`}
+                                    className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700"
+                                  >
+                                    {country}
+                                  </span>
+                                ))
+                              ) : (
+                                <span className="text-sm text-gray-500">Pays non renseigné</span>
+                              )}
+                            </div>
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+
+                  <div className="rounded-2xl border border-blue-100 bg-blue-50/60 p-6 shadow-sm hv-surface">
+                    <div className="flex flex-col gap-3">
+                      <h4 className="text-lg font-semibold text-gray-900">Sélection finale du distributeur</h4>
+                      <p className="text-sm text-gray-600">
+                        Choisissez le distributeur retenu et documentez le rationnel de votre décision.
+                      </p>
+                    </div>
+                    <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+                      <div className="space-y-3">
+                        {selectedProjects.map((project) => {
+                          const distributorName = getDistributorName(project);
+                          return (
+                            <label
+                              key={`final-choice-${project.id}`}
+                              className="flex items-center gap-3 rounded-xl border border-blue-200 bg-white p-3 text-sm font-medium text-gray-700"
+                            >
+                              <input
+                                type="radio"
+                                name="final-distributor-choice"
+                                className="h-4 w-4 text-blue-600"
+                                checked={finalSelectionId === project.id}
+                                onChange={() => setFinalSelectionId(project.id)}
+                              />
+                              <span>{distributorName}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                      <div className="space-y-2">
+                        <label htmlFor="distributor-selection-rationale" className="text-sm font-semibold text-gray-700">
+                          Rationnel (texte libre)
+                        </label>
+                        <textarea
+                          id="distributor-selection-rationale"
+                          rows={6}
+                          value={selectionRationales[finalSelectionId] || ''}
+                          onChange={(event) => handleRationaleChange(finalSelectionId, event.target.value)}
+                          className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                          placeholder="Expliquez les raisons de votre choix, les éléments différenciants et les conditions éventuelles."
+                          disabled={!finalSelectionId}
+                        />
+                        {!finalSelectionId && (
+                          <p className="text-xs text-gray-500">
+                            Sélectionnez un distributeur pour saisir votre rationnel.
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
