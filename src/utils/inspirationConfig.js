@@ -1,67 +1,43 @@
-const COUNTRY_OPTIONS = [
-  'France',
-  'Belgique',
-  'Suisse',
-  'Allemagne',
-  'Espagne',
-  'Italie',
-  'Portugal',
-  'Pays-Bas',
-  'Royaume-Uni',
-  'Irlande',
-  'Suède',
-  'Norvège',
-  'Danemark',
-  'États-Unis',
-  'Canada',
-  'Mexique',
-  'Brésil',
-  'Chili',
-  'Argentine',
-  'Maroc',
-  'Algérie',
-  'Tunisie',
-  'Égypte',
-  'Afrique du Sud',
-  'Inde',
-  'Chine',
-  'Japon',
-  'Corée du Sud',
-  'Australie',
-  'Nouvelle-Zélande'
-];
-
 const DEFAULT_INSPIRATION_FILTERS = {
   fields: [
     {
-      id: 'partnerName',
-      label: 'Nom du partenaire',
+      id: 'labName',
+      label: 'Nom du labo',
       type: 'select',
       enabled: true,
-      sourceQuestionId: 'partnerName'
+      sourceQuestionId: 'labName'
     },
     {
-      id: 'role',
-      label: 'Rôle',
+      id: 'target',
+      label: 'Cible du projet',
       type: 'select',
       enabled: true,
-      sourceQuestionId: 'role'
+      options: ['PS', 'Patient', 'GP'],
+      sourceQuestionId: 'target'
     },
     {
-      id: 'countries',
+      id: 'typology',
+      label: 'Typologie',
+      type: 'select',
+      enabled: true,
+      options: ['Digital', 'Print'],
+      sourceQuestionId: 'typology'
+    },
+    {
+      id: 'therapeuticArea',
+      label: 'Aire thérapeutique',
+      type: 'select',
+      enabled: true,
+      options: ['Immunologie', 'Hémostase', 'Soins intensifs'],
+      sourceQuestionId: 'therapeuticArea'
+    },
+    {
+      id: 'country',
       label: 'Pays',
       type: 'select',
       enabled: true,
-      options: COUNTRY_OPTIONS,
-      sourceQuestionId: 'countries'
-    },
-    {
-      id: 'situation',
-      label: 'Situation',
-      type: 'select',
-      enabled: true,
-      options: ['Identifié', 'En prise de contact', 'En relation'],
-      sourceQuestionId: 'situation'
+      options: ['France', 'Europe', 'États-Unis', 'Autre'],
+      sourceQuestionId: 'country'
     }
   ]
 };
@@ -69,65 +45,78 @@ const DEFAULT_INSPIRATION_FILTERS = {
 const DEFAULT_INSPIRATION_FORM_FIELDS = {
   fields: [
     {
-      id: 'partnerName',
-      label: 'Nom du partenaire',
+      id: 'title',
+      label: 'Titre du projet',
       type: 'text',
       required: true,
       enabled: true
     },
     {
-      id: 'contactName',
-      label: 'Nom du contact',
+      id: 'labName',
+      label: 'Nom du laboratoire / association',
       type: 'text',
+      required: true,
+      enabled: true
+    },
+    {
+      id: 'target',
+      label: 'Cible du projet',
+      type: 'select',
+      required: true,
+      enabled: true,
+      options: ['PS', 'Patient', 'GP']
+    },
+    {
+      id: 'typology',
+      label: 'Typologie',
+      type: 'select',
+      required: true,
+      enabled: true,
+      options: ['Digital', 'Print']
+    },
+    {
+      id: 'therapeuticArea',
+      label: 'Aire thérapeutique',
+      type: 'select',
+      required: true,
+      enabled: true,
+      options: ['Immunologie', 'Hémostase', 'Soins intensifs']
+    },
+    {
+      id: 'country',
+      label: 'Pays',
+      type: 'select',
+      required: true,
+      enabled: true,
+      options: ['France', 'Europe', 'États-Unis', 'Autre']
+    },
+    {
+      id: 'description',
+      label: 'Description du projet',
+      type: 'long_text',
       required: false,
       enabled: true
     },
     {
-      id: 'email',
-      label: 'Email',
-      type: 'email',
-      required: false,
-      enabled: true,
-      placeholder: 'nom@exemple.com'
-    },
-    {
-      id: 'website',
-      label: 'Site internet',
+      id: 'link',
+      label: 'Lien utile',
       type: 'url',
       required: false,
       enabled: true
     },
     {
-      id: 'role',
-      label: 'Rôle',
-      type: 'text',
+      id: 'documents',
+      label: 'Documents',
+      type: 'documents',
       required: false,
       enabled: true
     },
     {
-      id: 'countries',
-      label: 'Pays',
-      type: 'multi_select',
-      required: false,
-      enabled: true,
-      options: COUNTRY_OPTIONS
-    },
-    {
-      id: 'situation',
-      label: 'Situation',
-      type: 'select',
-      required: false,
-      enabled: true,
-      options: ['Identifié', 'En prise de contact', 'En relation'],
-      placeholder: 'Sélectionner une situation'
-    },
-    {
       id: 'review',
-      label: 'Avis',
+      label: 'Avis sur le projet',
       type: 'long_text',
       required: false,
-      enabled: true,
-      placeholder: 'Notes, impressions ou points d’attention.'
+      enabled: true
     }
   ]
 };

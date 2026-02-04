@@ -67,10 +67,10 @@ export const InspirationForm = ({
   const [formState, setFormState] = useState(() => buildInitialFormState(normalizedConfig));
   const [errors, setErrors] = useState({});
 
-  const partnerSuggestions = useMemo(() => {
+  const labSuggestions = useMemo(() => {
     const suggestions = new Set();
     existingProjects.forEach((project) => {
-      const name = typeof project?.partnerName === 'string' ? project.partnerName.trim() : '';
+      const name = typeof project?.labName === 'string' ? project.labName.trim() : '';
       if (name.length > 0) {
         suggestions.add(name);
       }
@@ -246,11 +246,11 @@ export const InspirationForm = ({
         <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-wide text-blue-600">
-              Nouveau prospect
+              Nouvel exemple inspirant
             </p>
-            <h1 className="text-3xl font-bold text-gray-900">Fiche prospect</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Questionnaire projet inspiration</h1>
             <p className="mt-2 text-sm text-gray-600">
-              Renseignez un distributeur pharmaceutique potentiel et centralisez vos informations de contact.
+              Documentez un projet inspirant issu d'un autre laboratoire afin d'enrichir la base d'exemples.
             </p>
           </div>
           <button
@@ -268,7 +268,7 @@ export const InspirationForm = ({
           className="space-y-6 rounded-3xl border border-gray-200 bg-white p-6 shadow-lg"
         >
           <p className="text-xs italic text-gray-400">
-            Le LFB traite les données recueillies pour organiser le suivi des prospects distributeurs.{' '}
+            Le LFB traite les données recueillies pour gérer les projets à soumettre aux équipes compliance.{' '}
             <a
               href="./mentions-legales.html"
               target="_blank"
@@ -333,24 +333,39 @@ export const InspirationForm = ({
                   );
                 }
 
-                const inputType = field.type === 'url'
-                  ? 'url'
-                  : field.type === 'email'
-                    ? 'email'
-                    : 'text';
+                if (field.id === 'labName') {
+                  const placeholder = typeof field.placeholder === 'string' && field.placeholder.trim() !== ''
+                    ? field.placeholder.trim()
+                    : 'Nom du laboratoire';
+
+                  return (
+                    <label key={field.id} className="flex flex-col gap-2 text-sm font-medium text-gray-700">
+                      <span>{renderFieldLabel(field)}</span>
+                      <input
+                        type="text"
+                        list="inspiration-labs"
+                        value={formState.labName}
+                        onChange={(event) => updateField('labName', event.target.value)}
+                        className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                        placeholder={placeholder}
+                      />
+                      {errors[field.id] && <span className="text-xs text-red-600">{errors[field.id]}</span>}
+                    </label>
+                  );
+                }
+
+                const inputType = field.type === 'url' ? 'url' : 'text';
                 const inputPlaceholder = typeof field.placeholder === 'string' && field.placeholder.trim() !== ''
                   ? field.placeholder.trim()
                   : field.type === 'url'
                     ? 'https://...'
                     : '';
-                const dataListId = field.id === 'partnerName' ? 'prospect-partners' : undefined;
 
                 return (
                   <label key={field.id} className="flex flex-col gap-2 text-sm font-medium text-gray-700">
                     <span>{renderFieldLabel(field)}</span>
                     <input
                       type={inputType}
-                      list={dataListId}
                       value={formState[field.id] || ''}
                       onChange={(event) => updateField(field.id, event.target.value)}
                       className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
@@ -376,7 +391,7 @@ export const InspirationForm = ({
                     typeof field.placeholder === 'string' && field.placeholder.trim() !== ''
                       ? field.placeholder.trim()
                       : field.id === 'review'
-                        ? 'Ajoutez votre avis détaillé sur ce prospect...'
+                        ? 'Ajoutez votre avis détaillé sur ce projet inspirant...'
                         : 'Saisir une description détaillée...'
                   }
                   compact
@@ -442,8 +457,8 @@ export const InspirationForm = ({
               </div>
             ))}
 
-          <datalist id="prospect-partners">
-            {partnerSuggestions.map((suggestion) => (
+          <datalist id="inspiration-labs">
+            {labSuggestions.map((suggestion) => (
               <option key={suggestion} value={suggestion} />
             ))}
           </datalist>
@@ -461,7 +476,7 @@ export const InspirationForm = ({
               className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
             >
               <Save className="h-4 w-4" aria-hidden="true" />
-              Enregistrer le prospect
+              Enregistrer le projet
             </button>
           </div>
         </form>
