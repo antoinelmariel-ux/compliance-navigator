@@ -513,7 +513,9 @@ export const BackOffice = ({
   validationCommitteeConfig,
   setValidationCommitteeConfig,
   adminEmails,
-  setAdminEmails
+  setAdminEmails,
+  countryProfiles,
+  setCountryProfiles
 }) => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [editingRule, setEditingRule] = useState(null);
@@ -554,6 +556,8 @@ export const BackOffice = ({
     () => normalizeValidationCommitteeConfig(validationCommitteeConfig),
     [validationCommitteeConfig]
   );
+  const safeCountryProfiles = Array.isArray(countryProfiles) ? countryProfiles : [];
+  const countryProfilesCount = safeCountryProfiles.length;
   const dateQuestions = useMemo(
     () => (Array.isArray(questions) ? questions.filter((question) => question?.type === 'date') : []),
     [questions]
@@ -2791,6 +2795,62 @@ export const BackOffice = ({
     return getNextId(items, fallbackPrefix);
   };
 
+  const createEmptyCountryProfile = (items = []) => ({
+    id: getNextId(items, 'country_'),
+    iso2: '',
+    name: '',
+    geopoliticalSituation: '',
+    economicSanctions: '',
+    pharmaRegulation: ''
+  });
+
+  const addCountryProfile = () => {
+    if (typeof setCountryProfiles !== 'function') {
+      return;
+    }
+
+    setCountryProfiles((prev) => {
+      const safePrev = Array.isArray(prev) ? prev : [];
+      return [...safePrev, createEmptyCountryProfile(safePrev)];
+    });
+  };
+
+  const updateCountryProfileField = (index, field, value) => {
+    if (typeof setCountryProfiles !== 'function') {
+      return;
+    }
+
+    setCountryProfiles((prev) => {
+      if (!Array.isArray(prev)) {
+        return prev;
+      }
+
+      return prev.map((entry, entryIndex) => {
+        if (entryIndex !== index) {
+          return entry;
+        }
+        return {
+          ...entry,
+          [field]: value
+        };
+      });
+    });
+  };
+
+  const deleteCountryProfile = (profileId, index) => {
+    if (typeof setCountryProfiles !== 'function') {
+      return;
+    }
+
+    setCountryProfiles((prev) => {
+      if (!Array.isArray(prev)) {
+        return prev;
+      }
+
+      return prev.filter((entry, entryIndex) => entry?.id !== profileId && entryIndex !== index);
+    });
+  };
+
   const addRiskLevelRule = () => {
     if (typeof setRiskLevelRules !== 'function') {
       return;
@@ -3113,6 +3173,11 @@ export const BackOffice = ({
       id: 'teams',
       label: `Équipes (${teams.length})`,
       panelId: 'backoffice-tabpanel-teams'
+    },
+    {
+      id: 'countries',
+      label: `Revue pays (${countryProfilesCount})`,
+      panelId: 'backoffice-tabpanel-countries'
     }
   ];
 
@@ -6870,6 +6935,125 @@ export const BackOffice = ({
                   </article>
                 ))}
               </div>
+            </section>
+          )}
+
+          {activeTab === 'countries' && (
+            <section
+              id="backoffice-tabpanel-countries"
+              role="tabpanel"
+              aria-labelledby="backoffice-tab-countries"
+              className="space-y-4"
+            >
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-800">Revue pays</h2>
+                  <p className="text-sm text-gray-600">
+                    Documentez la situation géopolitique, les sanctions et la réglementation pharmaceutique par pays.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={addCountryProfile}
+                  className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg shadow-sm hover:bg-blue-700 hv-button hv-button-primary w-full sm:w-auto text-sm sm:text-base"
+                >
+                  <Plus className="w-5 h-5 mr-2" />
+                  Ajouter un pays
+                </button>
+              </div>
+
+              {safeCountryProfiles.length === 0 ? (
+                <div className="border border-dashed border-gray-300 rounded-xl p-6 text-center text-gray-500">
+                  Aucun pays n'est encore renseigné.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {safeCountryProfiles.map((profile, index) => {
+                    const profileId = profile?.id || `country-${index + 1}`;
+                    return (
+                      <article key={profileId} className="border border-gray-200 rounded-xl p-6 bg-white shadow-sm hv-surface">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-4">
+                          <div className="flex-1">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                              Fiche {profileId}
+                            </p>
+                            <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <label className="text-sm font-medium text-gray-700">
+                                Code ISO2
+                                <input
+                                  type="text"
+                                  value={profile?.iso2 || ''}
+                                  onChange={(event) =>
+                                    updateCountryProfileField(index, 'iso2', event.target.value.toUpperCase())
+                                  }
+                                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm hv-focus-ring"
+                                  placeholder="FR"
+                                />
+                              </label>
+                              <label className="text-sm font-medium text-gray-700">
+                                Nom du pays
+                                <input
+                                  type="text"
+                                  value={profile?.name || ''}
+                                  onChange={(event) =>
+                                    updateCountryProfileField(index, 'name', event.target.value)
+                                  }
+                                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm hv-focus-ring"
+                                  placeholder="France"
+                                />
+                              </label>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => deleteCountryProfile(profileId, index)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded hv-button"
+                            aria-label={`Supprimer la fiche ${profile?.name || profileId}`}
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
+
+                        <div className="space-y-3">
+                          <label className="block text-sm font-medium text-gray-700">
+                            Situation géopolitique
+                            <textarea
+                              rows={3}
+                              value={profile?.geopoliticalSituation || ''}
+                              onChange={(event) =>
+                                updateCountryProfileField(index, 'geopoliticalSituation', event.target.value)
+                              }
+                              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm hv-focus-ring"
+                            />
+                          </label>
+                          <label className="block text-sm font-medium text-gray-700">
+                            Sanctions économiques
+                            <textarea
+                              rows={3}
+                              value={profile?.economicSanctions || ''}
+                              onChange={(event) =>
+                                updateCountryProfileField(index, 'economicSanctions', event.target.value)
+                              }
+                              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm hv-focus-ring"
+                            />
+                          </label>
+                          <label className="block text-sm font-medium text-gray-700">
+                            Réglementation pharmaceutique clef
+                            <textarea
+                              rows={3}
+                              value={profile?.pharmaRegulation || ''}
+                              onChange={(event) =>
+                                updateCountryProfileField(index, 'pharmaRegulation', event.target.value)
+                              }
+                              className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm hv-focus-ring"
+                            />
+                          </label>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
             </section>
           )}
         </div>
