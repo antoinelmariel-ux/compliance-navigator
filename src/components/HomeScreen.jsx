@@ -223,6 +223,7 @@ export const HomeScreen = ({
   inspirationProjects = [],
   inspirationFilters,
   homeView = 'platform',
+  navigatorLabel = 'Project Navigator',
   onHomeViewChange,
   onStartInspirationProject,
   onOpenInspirationProject,
@@ -1183,7 +1184,7 @@ export const HomeScreen = ({
                 {heroHeadline}
               </h1>
               <p className="text-lg text-gray-600 leading-relaxed max-w-2xl">
-                Project Navigator vous guide pas à pas pour qualifier votre initiative, identifier les interlocuteurs à mobiliser et sécuriser vos délais réglementaires.
+                {navigatorLabel} vous guide pas à pas pour qualifier votre initiative, identifier les interlocuteurs à mobiliser et sécuriser vos délais réglementaires.
               </p>
               <div className="flex flex-col sm:flex-row gap-3" role="group" aria-label="Actions principales">
                 <button
