@@ -4,7 +4,6 @@ import {
   Users,
   AlertTriangle,
   Send,
-  Sparkles,
   CheckCircle,
   Save,
   Mail,
@@ -14,7 +13,6 @@ import {
 import { formatAnswer } from '../utils/questions.js';
 import { computeRankingRecommendations, normalizeRankingConfig } from '../utils/ranking.js';
 import { renderTextWithLinks } from '../utils/linkify.js';
-import { ProjectShowcase } from './ProjectShowcase.jsx';
 import { extractProjectName } from '../utils/projects.js';
 import {
   buildProjectExport,
@@ -745,7 +743,6 @@ export const SynthesisReport = ({
   projectStatus,
   projectId,
   projectName: providedProjectName,
-  onOpenProjectShowcase,
   isProjectEditable = true,
   onRestart,
   onBack,
@@ -765,8 +762,6 @@ export const SynthesisReport = ({
   hasIncompleteAnswers = false,
   validationCommitteeConfig = null
 }) => {
-  const [isShowcaseFallbackOpen, setIsShowcaseFallbackOpen] = useState(false);
-  const showcaseFallbackRef = useRef(null);
   const [attachmentReminder, setAttachmentReminder] = useState(null);
   const reminderCloseButtonRef = useRef(null);
   const complianceCommentFeedbackTimeoutRef = useRef(null);
@@ -974,35 +969,6 @@ export const SynthesisReport = ({
     typeof providedProjectName === 'string' && providedProjectName.trim().length > 0
       ? providedProjectName.trim()
       : extractedProjectName;
-
-  const scrollShowcaseIntoView = useCallback(() => {
-    const node = showcaseFallbackRef.current;
-
-    if (node) {
-      if (typeof node.scrollIntoView === 'function') {
-        node.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        return;
-      }
-    }
-
-    if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }, [showcaseFallbackRef]);
-
-  useEffect(() => {
-    if (!isShowcaseFallbackOpen) {
-      return;
-    }
-
-    if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
-      window.requestAnimationFrame(() => {
-        scrollShowcaseIntoView();
-      });
-    } else {
-      scrollShowcaseIntoView();
-    }
-  }, [isShowcaseFallbackOpen, scrollShowcaseIntoView]);
 
   useEffect(() => {
     if (!attachmentReminder) {
@@ -1290,47 +1256,6 @@ export const SynthesisReport = ({
     onRemoveProjectMember(email);
   }, [onRemoveProjectMember]);
 
-  const handleOpenShowcase = useCallback(() => {
-    if (typeof onOpenProjectShowcase === 'function') {
-      onOpenProjectShowcase({
-        projectId,
-        projectName: effectiveProjectName,
-        status: projectStatus,
-        answers,
-        analysis,
-        relevantTeams,
-        questions,
-        timelineDetails
-      });
-      return;
-    }
-
-    setIsShowcaseFallbackOpen(true);
-
-    if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
-      window.requestAnimationFrame(() => {
-        scrollShowcaseIntoView();
-      });
-    } else {
-      scrollShowcaseIntoView();
-    }
-  }, [
-    analysis,
-    answers,
-    effectiveProjectName,
-    onOpenProjectShowcase,
-    projectId,
-    projectStatus,
-    questions,
-    relevantTeams,
-    scrollShowcaseIntoView,
-    timelineDetails
-  ]);
-
-  const handleCloseShowcase = useCallback(() => {
-    setIsShowcaseFallbackOpen(false);
-  }, []);
-
   const handleDismissAttachmentReminder = useCallback(() => {
     setAttachmentReminder(null);
   }, []);
@@ -1546,15 +1471,6 @@ export const SynthesisReport = ({
               >
                 <Send className="w-4 h-4 mr-2" />
                 Soumettre par e-mail
-              </button>
-              <button
-                type="button"
-                onClick={handleOpenShowcase}
-                className="px-4 py-2 bg-white border border-blue-200 text-blue-600 hover:bg-blue-50 rounded-lg font-medium transition-all flex items-center justify-center hv-button hv-focus-ring w-full sm:w-auto text-sm sm:text-base"
-                data-tour-id="synthesis-showcase"
-              >
-                <Sparkles className="w-4 h-4 mr-2" />
-                Vitrine du projet
               </button>
             </div>
           </div>
@@ -2409,20 +2325,6 @@ export const SynthesisReport = ({
           )}
         </div>
       </div>
-      {isShowcaseFallbackOpen && (
-        <div ref={showcaseFallbackRef}>
-          <ProjectShowcase
-            projectName={effectiveProjectName}
-            onClose={handleCloseShowcase}
-            analysis={analysis}
-            relevantTeams={relevantTeams}
-            questions={questions}
-            answers={answers}
-            timelineDetails={timelineDetails}
-            onUpdateAnswers={onUpdateAnswers}
-          />
-        </div>
-      )}
       {attachmentReminder && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 bg-black bg-opacity-50"

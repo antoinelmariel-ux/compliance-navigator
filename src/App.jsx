@@ -45,7 +45,7 @@ import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.280';
+const APP_VERSION = 'v1.0.281';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -3681,23 +3681,6 @@ const updateProjectFilters = useCallback((updater) => {
     openProjectShowcase({ projectId: pendingProjectId });
   }, [isHydrated, openProjectShowcase, projects]);
 
-  const handleShowProjectShowcase = useCallback((projectId) => {
-    if (!projectId) {
-      return;
-    }
-
-    openProjectShowcase({ projectId });
-  }, [openProjectShowcase]);
-
-  const handleOpenActiveProjectShowcase = useCallback((payload = {}) => {
-    const projectId = payload?.projectId || activeProjectId || null;
-
-    openProjectShowcase({
-      ...payload,
-      projectId
-    });
-  }, [activeProjectId, openProjectShowcase]);
-
   const handleCloseProjectShowcase = useCallback(() => {
     setShowcaseProjectContext(null);
     setShowcaseDisplayMode('full');
@@ -4578,7 +4561,6 @@ const updateProjectFilters = useCallback((updater) => {
             onOpenPartnerComparison={handleOpenPartnerComparison}
             onOpenProject={handleOpenProject}
             onDeleteProject={handleDeleteProject}
-            onShowProjectShowcase={handleShowProjectShowcase}
             onDuplicateProject={handleDuplicateProject}
             isAdminMode={isAdminMode}
             tourContext={tourContext}
@@ -4675,7 +4657,6 @@ const updateProjectFilters = useCallback((updater) => {
               projectStatus={activeProject?.status || null}
               projectId={activeProjectId}
               projectName={activeProjectName}
-              onOpenProjectShowcase={handleOpenActiveProjectShowcase}
               isProjectEditable={isActiveProjectEditable}
               onRestart={handleRestart}
               onBack={isActiveProjectEditable ? handleBackToQuestionnaire : undefined}
