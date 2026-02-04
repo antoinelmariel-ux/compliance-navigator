@@ -19,6 +19,8 @@ import {
 import { VirtualizedList } from './VirtualizedList.jsx';
 import { normalizeProjectFilterConfig } from '../utils/projectFilters.js';
 import { normalizeInspirationFiltersConfig } from '../utils/inspirationConfig.js';
+import icpScores from '../data/ICP 2024.json';
+import { countryVisionData } from '../data/countryVision.js';
 
 const formatDate = (isoDate) => {
   if (!isoDate) {
@@ -58,6 +60,33 @@ const normalizeInspirationFieldValues = (value) => {
 
 const DEFAULT_SELECT_FILTER_VALUE = 'all';
 const DEFAULT_TEXT_FILTER_VALUE = '';
+const WORLD_MAP_URL = './src/data/world map.svg';
+
+const ICP_SCORE_KEY = 'CPI 2024 score';
+
+const icpScoreByIso3 = new Map(
+  icpScores.map((entry) => [entry.ISO3, Number(entry[ICP_SCORE_KEY])])
+);
+
+const getCorruptionRiskLabel = (score) => {
+  if (!Number.isFinite(score)) {
+    return 'Indice non disponible';
+  }
+
+  if (score >= 70) {
+    return 'Faible';
+  }
+
+  if (score >= 50) {
+    return 'Modéré';
+  }
+
+  if (score >= 30) {
+    return 'Élevé';
+  }
+
+  return 'Très élevé';
+};
 
 const PROJECT_FILTER_VALUE_EXTRACTORS = {
   projectName: (project) => {
@@ -262,6 +291,12 @@ export const HomeScreen = ({
   const deleteCancelButtonRef = useRef(null);
   const deleteConfirmButtonRef = useRef(null);
   const previouslyFocusedElementRef = useRef(null);
+  const mapObjectRef = useRef(null);
+  const mapClickHandlerRef = useRef(null);
+
+  const defaultCountry = countryVisionData[0];
+  const [selectedCountryId, setSelectedCountryId] = useState(defaultCountry?.id || '');
+  const [selectedCountryLabel, setSelectedCountryLabel] = useState(defaultCountry?.name || '');
 
   const accessibleProjects = useMemo(() => {
     if (!Array.isArray(projects)) {
@@ -284,6 +319,85 @@ export const HomeScreen = ({
       return ownerEmail === currentUserEmail || isShared;
     });
   }, [projects, isAdminMode, currentUserEmail]);
+
+  const selectedCountry = useMemo(
+    () => countryVisionData.find((entry) => entry.id === selectedCountryId),
+    [selectedCountryId]
+  );
+  const selectedCountryName = selectedCountry?.name || selectedCountryLabel || 'Pays sélectionné';
+  const selectedCpiScore = selectedCountry?.iso3
+    ? icpScoreByIso3.get(selectedCountry.iso3)
+    : undefined;
+  const selectedCorruptionRisk = getCorruptionRiskLabel(selectedCpiScore);
+
+  const handleCountrySelect = useCallback((countryId, label) => {
+    if (!countryId) {
+      return;
+    }
+    setSelectedCountryId(countryId);
+    if (label) {
+      setSelectedCountryLabel(label);
+    }
+  }, []);
+
+  const handleMapObjectLoad = useCallback(() => {
+    const svgDocument = mapObjectRef.current?.contentDocument;
+    if (!svgDocument) {
+      return;
+    }
+
+    const svgElement = svgDocument.querySelector('svg');
+    if (!svgElement) {
+      return;
+    }
+
+    if (mapClickHandlerRef.current) {
+      svgElement.removeEventListener('click', mapClickHandlerRef.current);
+    }
+
+    const clickHandler = (event) => {
+      const path = event.target?.closest?.('path');
+      if (!path) {
+        return;
+      }
+      const countryId = path.getAttribute('id');
+      const countryName = path.getAttribute('name');
+      handleCountrySelect(countryId, countryName);
+    };
+
+    mapClickHandlerRef.current = clickHandler;
+    svgElement.addEventListener('click', clickHandler);
+    svgElement.querySelectorAll('path').forEach((path) => {
+      path.style.cursor = 'pointer';
+      path.style.transition = 'fill 0.2s ease, stroke 0.2s ease';
+    });
+  }, [handleCountrySelect]);
+
+  useEffect(() => {
+    const svgDocument = mapObjectRef.current?.contentDocument;
+    if (!svgDocument) {
+      return;
+    }
+    svgDocument.querySelectorAll('path').forEach((path) => {
+      if (path.getAttribute('id') === selectedCountryId) {
+        path.style.fill = '#60a5fa';
+        path.style.stroke = '#1d4ed8';
+        path.style.strokeWidth = '0.6';
+      } else {
+        path.style.fill = '';
+        path.style.stroke = '';
+        path.style.strokeWidth = '';
+      }
+    });
+  }, [selectedCountryId]);
+
+  useEffect(() => () => {
+    const svgDocument = mapObjectRef.current?.contentDocument;
+    const svgElement = svgDocument?.querySelector('svg');
+    if (svgElement && mapClickHandlerRef.current) {
+      svgElement.removeEventListener('click', mapClickHandlerRef.current);
+    }
+  }, []);
 
   const closeDeleteDialog = useCallback(() => {
     setDeleteDialogState({ isOpen: false, project: null });
@@ -1164,6 +1278,20 @@ export const HomeScreen = ({
               <div className="flex flex-col sm:flex-row gap-3" role="group" aria-label="Actions principales">
                 <button
                   type="button"
+                  onClick={() => {
+                    const section = document.getElementById('vision-pays');
+                    section?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
+                  className="inline-flex items-center justify-center gap-3 px-5 py-3 text-base font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md transition-all hv-button hv-button-primary"
+                >
+                  <Compass className="w-5 h-5" aria-hidden="true" />
+                  <span className="flex flex-col leading-tight text-left">
+                    <span>Vision</span>
+                    <span>pays</span>
+                  </span>
+                </button>
+                <button
+                  type="button"
                   onClick={onStartNewProject}
                   className="inline-flex items-center justify-center gap-3 px-5 py-3 text-base font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md transition-all hv-button hv-button-primary"
                   data-tour-id="home-create-project"
@@ -1235,6 +1363,133 @@ export const HomeScreen = ({
             </div>
           </div>
         </header>
+
+        <section
+          id="vision-pays"
+          aria-labelledby="vision-pays-title"
+          className="bg-white border border-blue-100 rounded-3xl shadow-xl p-6 sm:p-10 hv-surface space-y-8"
+        >
+          <div className="flex flex-col gap-3">
+            <span className="inline-flex items-center px-3 py-1 text-xs font-semibold text-indigo-700 bg-indigo-100 rounded-full border border-indigo-200">
+              Vision pays
+            </span>
+            <h2 id="vision-pays-title" className="text-2xl sm:text-3xl font-bold text-gray-900">
+              Cartographie mondiale des enjeux pays
+            </h2>
+            <p className="text-sm text-gray-600 max-w-3xl">
+              Cliquez sur un pays pour afficher les informations clés : contexte géopolitique, sanctions économiques,
+              réglementation pharmaceutique et risque de corruption basé sur l’indice de perception de la corruption
+              (ICP 2024).
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)]">
+            <div className="space-y-4">
+              <div className="rounded-3xl border border-blue-100 bg-white shadow-sm overflow-hidden">
+                <object
+                  ref={mapObjectRef}
+                  data={WORLD_MAP_URL}
+                  type="image/svg+xml"
+                  className="w-full h-[360px] sm:h-[520px] md:h-[620px]"
+                  aria-label="Carte du monde interactive"
+                  onLoad={handleMapObjectLoad}
+                >
+                  Votre navigateur ne prend pas en charge l’affichage de la carte.
+                </object>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {countryVisionData.map((country) => (
+                  <button
+                    key={country.id}
+                    type="button"
+                    onClick={() => handleCountrySelect(country.id, country.name)}
+                    className={`rounded-full px-4 py-2 text-xs font-semibold transition-colors border ${
+                      selectedCountryId === country.id
+                        ? 'bg-indigo-600 text-white border-indigo-600'
+                        : 'bg-white text-indigo-700 border-indigo-200 hover:bg-indigo-50'
+                    }`}
+                  >
+                    {country.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-5">
+              <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-5">
+                <p className="text-xs font-semibold uppercase tracking-wide text-indigo-600">
+                  Pays sélectionné
+                </p>
+                <h3 className="text-xl font-bold text-gray-900 mt-2">{selectedCountryName}</h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Cliquez sur la carte pour mettre à jour la fiche.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Situation géopolitique
+                  </p>
+                  <p className="text-sm text-gray-700 mt-1">
+                    {selectedCountry?.geopolitical || 'Aucune donnée disponible pour ce pays.'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Risque de corruption
+                  </p>
+                  <p className="text-sm text-gray-700 mt-1">
+                    {Number.isFinite(selectedCpiScore)
+                      ? `Indice ICP 2024 : ${selectedCpiScore}/100 · Risque ${selectedCorruptionRisk.toLowerCase()}`
+                      : selectedCorruptionRisk}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Sanctions économiques
+                  </p>
+                  <p className="text-sm text-gray-700 mt-1">
+                    {selectedCountry?.sanctions || 'Aucune donnée disponible pour ce pays.'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Réglementation pharmaceutique clef
+                  </p>
+                  <p className="text-sm text-gray-700 mt-1">
+                    {selectedCountry?.pharma || 'Aucune donnée disponible pour ce pays.'}
+                  </p>
+                </div>
+              </div>
+
+              {selectedCountry?.contract && (
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 space-y-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+                    Contrat en cours
+                  </p>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">
+                      {selectedCountry.contract.partnerName}
+                    </p>
+                    <p className="text-sm text-gray-700">
+                      Fin de contrat :{' '}
+                      {formatDate(selectedCountry.contract.endDate)}
+                    </p>
+                    <a
+                      href={selectedCountry.contract.partnerUrl}
+                      className="text-sm font-semibold text-emerald-700 underline hover:text-emerald-800"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Voir la fiche partenaire
+                    </a>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
 
         <section aria-labelledby="projects-heading" className="space-y-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
