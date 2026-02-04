@@ -4,6 +4,7 @@ import { SynthesisReport } from './components/SynthesisReport.jsx';
 import { HomeScreen } from './components/HomeScreen.jsx';
 import { InspirationForm } from './components/InspirationForm.jsx';
 import { InspirationDetail } from './components/InspirationDetail.jsx';
+import { ContractSynthesis } from './components/ContractSynthesis.jsx';
 import { PartnerComparisonGallery } from './components/PartnerComparisonGallery.jsx';
 import { PartnerComparisonDetail } from './components/PartnerComparisonDetail.jsx';
 import { AnnotationLayer } from './components/AnnotationLayer.jsx';
@@ -45,7 +46,7 @@ import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.281';
+const APP_VERSION = 'v1.0.282';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -3150,7 +3151,7 @@ const updateProjectFilters = useCallback((updater) => {
     }
 
     setContractValidationError(null);
-    setScreen('home');
+    setScreen('contract-synthesis');
   }, [contractAnswers, contractQuestionIndex, contractQuestions]);
 
   const handleContractBack = useCallback(() => {
@@ -3166,7 +3167,7 @@ const updateProjectFilters = useCallback((updater) => {
 
   const handleContractFinish = useCallback(() => {
     setContractValidationError(null);
-    setScreen('home');
+    setScreen('contract-synthesis');
   }, []);
 
   const handleStartInspirationProject = useCallback(() => {
@@ -4639,6 +4640,11 @@ const updateProjectFilters = useCallback((updater) => {
             validationError={contractValidationError}
             finishLabel="Terminer le brief"
             onFinish={handleContractFinish}
+          />
+        ) : screen === 'contract-synthesis' ? (
+          <ContractSynthesis
+            answers={contractAnswers}
+            onBack={() => setScreen('home')}
           />
         ) : screen === 'mandatory-summary' ? (
           <MandatoryQuestionsSummary
