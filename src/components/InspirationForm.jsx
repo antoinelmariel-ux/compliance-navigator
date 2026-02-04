@@ -67,10 +67,10 @@ export const InspirationForm = ({
   const [formState, setFormState] = useState(() => buildInitialFormState(normalizedConfig));
   const [errors, setErrors] = useState({});
 
-  const labSuggestions = useMemo(() => {
+  const contactSuggestions = useMemo(() => {
     const suggestions = new Set();
     existingProjects.forEach((project) => {
-      const name = typeof project?.labName === 'string' ? project.labName.trim() : '';
+      const name = typeof project?.contactName === 'string' ? project.contactName.trim() : '';
       if (name.length > 0) {
         suggestions.add(name);
       }
@@ -246,11 +246,11 @@ export const InspirationForm = ({
         <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-wide text-blue-600">
-              Nouvel exemple inspirant
+              Nouveau prospect
             </p>
-            <h1 className="text-3xl font-bold text-gray-900">Questionnaire projet inspiration</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Fiche prospect</h1>
             <p className="mt-2 text-sm text-gray-600">
-              Documentez un projet inspirant issu d'un autre laboratoire afin d'enrichir la base d'exemples.
+              Documentez les partenaires potentiels afin de structurer votre prospection internationale.
             </p>
           </div>
           <button
@@ -268,7 +268,7 @@ export const InspirationForm = ({
           className="space-y-6 rounded-3xl border border-gray-200 bg-white p-6 shadow-lg"
         >
           <p className="text-xs italic text-gray-400">
-            Le LFB traite les données recueillies pour gérer les projets à soumettre aux équipes compliance.{' '}
+            Distrib Navigator traite les données recueillies pour suivre vos prospects à l'international.{' '}
             <a
               href="./mentions-legales.html"
               target="_blank"
@@ -333,19 +333,19 @@ export const InspirationForm = ({
                   );
                 }
 
-                if (field.id === 'labName') {
+                if (field.id === 'contactName') {
                   const placeholder = typeof field.placeholder === 'string' && field.placeholder.trim() !== ''
                     ? field.placeholder.trim()
-                    : 'Nom du laboratoire';
+                    : 'Nom du contact';
 
                   return (
                     <label key={field.id} className="flex flex-col gap-2 text-sm font-medium text-gray-700">
                       <span>{renderFieldLabel(field)}</span>
                       <input
                         type="text"
-                        list="inspiration-labs"
-                        value={formState.labName}
-                        onChange={(event) => updateField('labName', event.target.value)}
+                        list="prospect-contacts"
+                        value={formState.contactName}
+                        onChange={(event) => updateField('contactName', event.target.value)}
                         className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                         placeholder={placeholder}
                       />
@@ -354,11 +354,17 @@ export const InspirationForm = ({
                   );
                 }
 
-                const inputType = field.type === 'url' ? 'url' : 'text';
+                const inputType = field.type === 'url'
+                  ? 'url'
+                  : field.type === 'email'
+                    ? 'email'
+                    : 'text';
                 const inputPlaceholder = typeof field.placeholder === 'string' && field.placeholder.trim() !== ''
                   ? field.placeholder.trim()
                   : field.type === 'url'
                     ? 'https://...'
+                    : field.type === 'email'
+                      ? 'contact@distributeur.com'
                     : '';
 
                 return (
@@ -389,11 +395,11 @@ export const InspirationForm = ({
                   ariaLabel={`${field.label} (édition riche)`}
                   placeholder={
                     typeof field.placeholder === 'string' && field.placeholder.trim() !== ''
-                      ? field.placeholder.trim()
-                      : field.id === 'review'
-                        ? 'Ajoutez votre avis détaillé sur ce projet inspirant...'
-                        : 'Saisir une description détaillée...'
-                  }
+                        ? field.placeholder.trim()
+                        : field.id === 'review'
+                        ? 'Ajoutez votre avis détaillé sur ce partenaire potentiel...'
+                        : 'Saisir un commentaire détaillé...'
+                    }
                   compact
                 />
                 {errors[field.id] && <span className="text-xs text-red-600">{errors[field.id]}</span>}
@@ -457,8 +463,8 @@ export const InspirationForm = ({
               </div>
             ))}
 
-          <datalist id="inspiration-labs">
-            {labSuggestions.map((suggestion) => (
+          <datalist id="prospect-contacts">
+            {contactSuggestions.map((suggestion) => (
               <option key={suggestion} value={suggestion} />
             ))}
           </datalist>
@@ -476,7 +482,7 @@ export const InspirationForm = ({
               className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
             >
               <Save className="h-4 w-4" aria-hidden="true" />
-              Enregistrer le projet
+              Enregistrer le prospect
             </button>
           </div>
         </form>

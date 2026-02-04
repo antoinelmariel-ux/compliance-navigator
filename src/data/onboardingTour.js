@@ -11,7 +11,7 @@ export const initialOnboardingTourConfig = {
     {
       "id": "welcome",
       "target": "#tour-onboarding-anchor",
-      "title": "Bienvenue sur Project Navigator",
+      "title": "Bienvenue sur Distrib Navigator",
       "content": "Découvrons ensemble comment cadrer votre projet pas à pas.",
       "placement": "",
       "showDefaultButtons": false,

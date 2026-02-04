@@ -1,7 +1,7 @@
-# Documentation technique — Project Navigator
+# Documentation technique — Distrib Navigator
 
 ## Description de la solution
-Project Navigator est une application React autonome (sans serveur) qui guide les équipes projets et compliance via un questionnaire dynamique, calcule un niveau de risque, et génère une synthèse exploitable. L’outil fonctionne localement, sans API externe, avec des données statiques embarquées et un mécanisme d’export JSON pour l’archivage.
+Distrib Navigator est une application React autonome (sans serveur) qui guide les équipes projets et compliance via un questionnaire dynamique, calcule un niveau de risque, et génère une synthèse exploitable. L’outil fonctionne localement, sans API externe, avec des données statiques embarquées et un mécanisme d’export JSON pour l’archivage.
 
 ## Architecture générale
 ```mermaid

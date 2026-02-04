@@ -1,6 +1,6 @@
-# Project Navigator — Principales fonctionnalités
+# Distrib Navigator — Principales fonctionnalités
 
-Project Navigator aide les équipes projets et compliance à qualifier rapidement les enjeux réglementaires. Voici les fonctionnalités clés offertes par l'outil :
+Distrib Navigator aide les équipes projets et compliance à qualifier rapidement les enjeux réglementaires. Voici les fonctionnalités clés offertes par l'outil :
 
 - **Questionnaire adaptatif** : les questions affichées s'ajustent automatiquement selon les réponses pour ne couvrir que les exigences pertinentes (données personnelles, zone géographique, partenaires, etc.).
 - **Évaluation de risque en temps réel** : chaque réponse alimente un scoring global qui met en évidence la criticité du projet et recommande des actions prioritaires.

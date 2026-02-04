@@ -197,7 +197,7 @@ export const InspirationDetail = ({
     if (field.type === 'long_text') {
       const fallback = field.id === 'review'
         ? 'Ajoutez un avis détaillé...'
-        : 'Saisissez une description détaillée...';
+        : 'Saisissez un commentaire détaillé...';
       return (
         <div className="mt-2">
           <RichTextEditor
@@ -258,8 +258,19 @@ export const InspirationDetail = ({
       );
     }
 
-    const inputType = field.type === 'url' ? 'url' : 'text';
-    const placeholder = resolvePlaceholder(field, field.type === 'url' ? 'https://...' : '');
+    const inputType = field.type === 'url'
+      ? 'url'
+      : field.type === 'email'
+        ? 'email'
+        : 'text';
+    const placeholder = resolvePlaceholder(
+      field,
+      field.type === 'url'
+        ? 'https://...'
+        : field.type === 'email'
+          ? 'contact@distributeur.com'
+          : ''
+    );
 
     return (
       <input
@@ -335,6 +346,20 @@ export const InspirationDetail = ({
       );
     }
 
+    if (field.type === 'email') {
+      return value ? (
+        <a
+          href={`mailto:${value}`}
+          className="mt-2 inline-flex items-center gap-2 text-sm text-blue-600 hover:underline"
+        >
+          <LinkIcon className="h-4 w-4" aria-hidden="true" />
+          {value}
+        </a>
+      ) : (
+        <p className="mt-2 text-sm text-gray-700">Non renseigné</p>
+      );
+    }
+
     return <p className="mt-2 text-sm text-gray-700">{formatValue(value)}</p>;
   };
 
@@ -346,10 +371,12 @@ export const InspirationDetail = ({
         <header className="rounded-3xl border border-gray-200 bg-white p-6 shadow-lg">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-wide text-blue-600">Fiche projet inspirant</p>
-              <h1 className="text-3xl font-bold text-gray-900">{project.title}</h1>
+              <p className="text-sm font-semibold uppercase tracking-wide text-blue-600">Fiche prospect</p>
+              <h1 className="text-3xl font-bold text-gray-900">
+                {project.contactName || 'Contact non renseigné'}
+              </h1>
               <p className="mt-1 text-sm text-gray-500">
-                {project.labName} · {project.country}
+                {project.role || 'Rôle non renseigné'} · {formatValue(project.countries)}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
