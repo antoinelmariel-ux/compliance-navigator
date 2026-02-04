@@ -46,7 +46,7 @@ import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.283';
+const APP_VERSION = 'v1.0.284';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
