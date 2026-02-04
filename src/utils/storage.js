@@ -3,11 +3,19 @@ export const STORAGE_KEY = 'complianceNavigatorState';
 const ENABLE_PERSISTENCE = false;
 
 export const loadPersistedState = () => {
-  if (
-    !ENABLE_PERSISTENCE ||
-    typeof window === 'undefined' ||
-    !window.localStorage
-  ) {
+  if (!ENABLE_PERSISTENCE || typeof window === 'undefined') {
+    return null;
+  }
+
+  let hasStorage = false;
+  try {
+    hasStorage = Boolean(window.localStorage);
+  } catch (error) {
+    console.warn("Impossible d'accéder au stockage local :", error);
+    return null;
+  }
+
+  if (!hasStorage) {
     return null;
   }
 
@@ -24,11 +32,19 @@ export const loadPersistedState = () => {
 };
 
 export const persistState = (state) => {
-  if (
-    !ENABLE_PERSISTENCE ||
-    typeof window === 'undefined' ||
-    !window.localStorage
-  ) {
+  if (!ENABLE_PERSISTENCE || typeof window === 'undefined') {
+    return;
+  }
+
+  let hasStorage = false;
+  try {
+    hasStorage = Boolean(window.localStorage);
+  } catch (error) {
+    console.warn("Impossible d'accéder au stockage local :", error);
+    return;
+  }
+
+  if (!hasStorage) {
     return;
   }
 
