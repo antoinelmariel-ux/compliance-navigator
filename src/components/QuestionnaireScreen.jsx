@@ -110,6 +110,7 @@ export const QuestionnaireScreen = ({
   saveFeedback,
   onDismissSaveFeedback,
   validationError,
+  finishLabel,
   tourContext = null,
   onReturnToSynthesis,
   isReturnToSynthesisRequested = false,
@@ -155,6 +156,9 @@ export const QuestionnaireScreen = ({
   const guidancePanelId = `guidance-${currentQuestion.id}`;
   const progressLabelId = `progress-label-${currentQuestion.id}`;
   const hasValidationError = validationError?.questionId === currentQuestion.id;
+  const finalCtaLabel = typeof finishLabel === 'string' && finishLabel.trim().length > 0
+    ? finishLabel.trim()
+    : 'Voir la synthèse';
   const hasSaveFeedback = Boolean(saveFeedback?.message);
   const isSaveSuccess = saveFeedback?.status === 'success';
   const relatedQuestionEntries = useMemo(() => {
@@ -396,6 +400,42 @@ export const QuestionnaireScreen = ({
             </p>
           </div>
         );
+      case 'searchable_select': {
+        const options = Array.isArray(currentQuestion.options) ? currentQuestion.options : [];
+        const listId = `${currentQuestion.id}-search-options`;
+        const inputId = `${currentQuestion.id}-search-input`;
+        const placeholder =
+          typeof currentQuestion.placeholder === 'string' && currentQuestion.placeholder.trim().length > 0
+            ? currentQuestion.placeholder
+            : 'Rechercher dans la liste';
+
+        return (
+          <div className="mb-8" data-tour-id="question-main-content">
+            <label className="block text-sm sm:text-base font-medium text-gray-700 mb-3" htmlFor={inputId}>
+              Sélectionnez un distributeur
+            </label>
+            <input
+              type="search"
+              id={inputId}
+              list={listId}
+              value={typeof currentAnswer === 'string' ? currentAnswer : ''}
+              onChange={(event) => onAnswer(currentQuestion.id, event.target.value)}
+              placeholder={placeholder}
+              aria-describedby={currentIndex === 0 ? instructionsId : undefined}
+              className="w-full px-4 py-2.5 sm:py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent hv-focus-ring"
+            />
+            <datalist id={listId}>
+              {options.map((option, idx) => {
+                const optionLabel = resolveOptionLabel(option);
+                return <option key={`${currentQuestion.id}-search-option-${idx}`} value={optionLabel} />;
+              })}
+            </datalist>
+            <p className="text-xs text-gray-500 mt-2">
+              Commencez à saisir le nom pour filtrer la liste déroulante.
+            </p>
+          </div>
+        );
+      }
       case 'choice':
         return (
           <fieldset className="space-y-3 mb-8" aria-describedby={currentIndex === 0 ? instructionsId : undefined}>
@@ -1104,7 +1144,7 @@ export const QuestionnaireScreen = ({
                 onClick={isReturnToSynthesisRequested ? handleLinkedQuestionNext : onNext}
                 className="flex items-center justify-center px-6 py-3 rounded-lg font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all hv-button hv-button-primary w-full sm:w-auto text-sm sm:text-base"
               >
-                {currentIndex === questions.length - 1 ? 'Voir la synthèse' : 'Suivant'}
+                {currentIndex === questions.length - 1 ? finalCtaLabel : 'Suivant'}
                 <ChevronRight className="w-5 h-5 ml-2" />
               </button>
             )}

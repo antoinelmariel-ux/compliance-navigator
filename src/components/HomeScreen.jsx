@@ -14,7 +14,8 @@ import {
   Copy,
   Trash2,
   Close,
-  Sparkles
+  Sparkles,
+  FileText
 } from './icons.js';
 import { VirtualizedList } from './VirtualizedList.jsx';
 import { normalizeProjectFilterConfig } from '../utils/projectFilters.js';
@@ -226,6 +227,7 @@ export const HomeScreen = ({
   onStartInspirationProject,
   onOpenInspirationProject,
   onStartNewProject,
+  onStartNewContract,
   onOpenPartnerComparison,
   onOpenProject,
   onDeleteProject,
@@ -1193,6 +1195,17 @@ export const HomeScreen = ({
                   <span className="flex flex-col leading-tight text-left">
                     <span>Comparer</span>
                     <span>les partenaires</span>
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={onStartNewContract}
+                  className="inline-flex items-center justify-center gap-3 px-5 py-3 text-base font-semibold text-emerald-700 bg-white hover:bg-emerald-50 rounded-xl border border-emerald-200 transition-all hv-button hv-focus-ring"
+                >
+                  <FileText className="w-5 h-5" aria-hidden="true" />
+                  <span className="flex flex-col leading-tight text-left">
+                    <span>Nouveau</span>
+                    <span>contrat</span>
                   </span>
                 </button>
               </div>
