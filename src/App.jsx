@@ -46,7 +46,20 @@ import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.285';
+const APP_VERSION = 'v1.0.286';
+
+const normalizeHomeView = (value) => {
+  if (value === 'platform') {
+    return 'partners';
+  }
+  if (value === 'inspiration') {
+    return 'prospects';
+  }
+  if (value === 'contracts' || value === 'partners' || value === 'prospects') {
+    return value;
+  }
+  return 'partners';
+};
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -670,7 +683,7 @@ export const App = () => {
   const [projectFilters, setProjectFiltersState] = useState(() => createDefaultProjectFiltersConfig());
   const [inspirationFilters, setInspirationFilters] = useState(() => createDefaultInspirationFiltersConfig());
   const [inspirationFormFields, setInspirationFormFields] = useState(() => createDefaultInspirationFormConfig());
-  const [homeView, setHomeView] = useState('platform');
+  const [homeView, setHomeView] = useState(() => normalizeHomeView('partners'));
   const [partnerCompareSelection, setPartnerCompareSelection] = useState([]);
   const [partnerCompareSort, setPartnerCompareSort] = useState('name');
   const [partnerComparePreferredId, setPartnerComparePreferredId] = useState('');
@@ -1166,7 +1179,7 @@ const updateProjectFilters = useCallback((updater) => {
     }
     if (typeof savedState.activeProjectId === 'string') setActiveProjectId(savedState.activeProjectId);
     if (typeof savedState.activeInspirationId === 'string') setActiveInspirationId(savedState.activeInspirationId);
-    if (typeof savedState.homeView === 'string') setHomeView(savedState.homeView);
+    if (typeof savedState.homeView === 'string') setHomeView(normalizeHomeView(savedState.homeView));
     if (Array.isArray(savedState.questions)) {
       setQuestions(restoreShowcaseQuestions(savedState.questions));
     }
@@ -3182,7 +3195,7 @@ const updateProjectFilters = useCallback((updater) => {
       teamLead: currentUserDisplayName || ''
     };
     setInspirationProjects((prev) => [project, ...(Array.isArray(prev) ? prev : [])]);
-    setHomeView('inspiration');
+    setHomeView('prospects');
     setScreen('home');
   }, [currentUserDisplayName, currentUserEmail]);
 
@@ -4555,6 +4568,7 @@ const updateProjectFilters = useCallback((updater) => {
             currentUser={currentUser}
             homeView={homeView}
             onHomeViewChange={setHomeView}
+            selectedPartnerIds={partnerCompareSelection}
             onStartInspirationProject={handleStartInspirationProject}
             onOpenInspirationProject={handleOpenInspirationProject}
             onStartNewProject={handleCreateNewProject}
@@ -4592,7 +4606,7 @@ const updateProjectFilters = useCallback((updater) => {
             onSubmit={handleSaveInspirationProject}
             onCancel={() => {
               setScreen('home');
-              setHomeView('inspiration');
+              setHomeView('prospects');
             }}
           />
         ) : screen === 'inspiration-detail' ? (
@@ -4601,7 +4615,7 @@ const updateProjectFilters = useCallback((updater) => {
             formConfig={inspirationFormFields}
             onBack={() => {
               setScreen('home');
-              setHomeView('inspiration');
+              setHomeView('prospects');
             }}
             onUpdate={handleUpdateInspirationProject}
             onExport={handleExportInspirationProject}
