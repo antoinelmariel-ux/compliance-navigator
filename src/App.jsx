@@ -2,8 +2,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspens
 import { QuestionnaireScreen } from './components/QuestionnaireScreen.jsx';
 import { SynthesisReport } from './components/SynthesisReport.jsx';
 import { HomeScreen } from './components/HomeScreen.jsx';
-import { ModuleEntryScreen } from './components/ModuleEntryScreen.jsx';
-import { DistribHomeScreen } from './components/DistribHomeScreen.jsx';
 import { InspirationForm } from './components/InspirationForm.jsx';
 import { InspirationDetail } from './components/InspirationDetail.jsx';
 import { AnnotationLayer } from './components/AnnotationLayer.jsx';
@@ -44,7 +42,7 @@ import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.276';
+const APP_VERSION = 'v1.0.275';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -605,8 +603,7 @@ const sanitizeRestoredProjects = (projects) => {
 
 export const App = () => {
   const [mode, setMode] = useState('user');
-  const [activeModule, setActiveModule] = useState('project');
-  const [screen, setScreen] = useState('entry');
+  const [screen, setScreen] = useState('home');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [analysis, setAnalysis] = useState(null);
@@ -676,14 +673,6 @@ export const App = () => {
   const isCurrentUserAdmin = useMemo(
     () => !!currentUserEmail && normalizedAdminEmails.includes(currentUserEmail),
     [currentUserEmail, normalizedAdminEmails]
-  );
-  const goToModuleHome = useCallback(
-    (module) => {
-      const nextModule = module || activeModule;
-      setActiveModule(nextModule);
-      setScreen(nextModule === 'distrib' ? 'distrib-home' : 'home');
-    },
-    [activeModule]
   );
   const backOfficePromptResolverRef = useRef(null);
   const [adminView, setAdminView] = useState('home');
@@ -1384,7 +1373,7 @@ const updateProjectFilters = useCallback((updater) => {
     if (!snapshot) {
       setMode('user');
       setAdminView('home');
-      goToModuleHome('project');
+      setScreen('home');
       setAnswers({});
       setAnalysis(null);
       setProjects(buildInitialProjectsState());
@@ -1591,7 +1580,7 @@ const updateProjectFilters = useCallback((updater) => {
     switch (stepId) {
       case 'welcome':
       case 'create-project': {
-        goToModuleHome('project');
+        setScreen('home');
         setShowcaseProjectContext(null);
         setActiveProjectId(null);
         setValidationError(null);
@@ -1683,7 +1672,7 @@ const updateProjectFilters = useCallback((updater) => {
       case 'project-import':
       case 'project-filters': {
         setShowcaseProjectContext(null);
-        goToModuleHome('project');
+        setScreen('home');
         setActiveProjectId(null);
         setValidationError(null);
         setSaveFeedback(null);
@@ -1763,7 +1752,7 @@ const updateProjectFilters = useCallback((updater) => {
     setOnboardingStepId(null);
     setMode('user');
     setAdminView('home');
-    goToModuleHome('project');
+    setScreen('home');
     setShowcaseProjectContext(null);
     setActiveProjectId(null);
     setAnswers({});
@@ -2870,8 +2859,8 @@ const updateProjectFilters = useCallback((updater) => {
 
     setMode('admin');
     setAdminView('home');
-    goToModuleHome('project');
-  }, [requestAdminAccess, setMode, goToModuleHome]);
+    setScreen('home');
+  }, [requestAdminAccess, setMode, setScreen]);
 
   const handleReturnToProjectMode = useCallback(() => {
     setMode('user');
@@ -2897,8 +2886,8 @@ const updateProjectFilters = useCallback((updater) => {
     };
     setInspirationProjects((prev) => [project, ...(Array.isArray(prev) ? prev : [])]);
     setHomeView('inspiration');
-    goToModuleHome('project');
-  }, [currentUserDisplayName, currentUserEmail, goToModuleHome]);
+    setScreen('home');
+  }, [currentUserDisplayName, currentUserEmail]);
 
   const handleOpenInspirationProject = useCallback((projectId) => {
     if (!projectId) {
@@ -3396,7 +3385,7 @@ const updateProjectFilters = useCallback((updater) => {
     if (previousScreenRef.current) {
       setScreen(previousScreenRef.current);
     } else {
-      goToModuleHome('project');
+      setScreen('home');
     }
     previousScreenRef.current = null;
   }, []);
@@ -3656,9 +3645,9 @@ const updateProjectFilters = useCallback((updater) => {
     const entry = handleSaveProject({ ...payload, status: 'submitted' });
     if (entry) {
       setValidationError(null);
-      goToModuleHome('project');
+      setScreen('home');
     }
-  }, [handleSaveProject, unansweredMandatoryQuestions, goToModuleHome]);
+  }, [handleSaveProject, unansweredMandatoryQuestions]);
 
   const handleSaveDraft = useCallback((payload = {}) => {
     const { lastQuestionIndex: payloadLastQuestionIndex, ...otherPayload } = payload || {};
@@ -3844,8 +3833,6 @@ const updateProjectFilters = useCallback((updater) => {
     setShowcaseShareFeedback('Raccourci téléchargé.');
   }, [showcaseProjectId, showcaseShareUrl]);
 
-  const footerLabel = activeModule === 'distrib' ? 'Distrib Navigator' : 'Project Navigator';
-
   return (
     <div className={`min-h-screen ${annotationOffsetClass}`}>
       <AnnotationLayer
@@ -3942,7 +3929,7 @@ const updateProjectFilters = useCallback((updater) => {
                   Synthèse
                 </button>
               )}
-              {mode === 'user' && activeModule === 'project' && (
+              {mode === 'user' && (
                 <>
                   <button
                     type="button"
@@ -3961,10 +3948,10 @@ const updateProjectFilters = useCallback((updater) => {
                     <Sparkles className="text-lg sm:text-xl" aria-hidden="true" />
                     <span>Guide interactif</span>
                   </button>
-                  {activeModule === 'project' && screen !== 'home' && (
+                  {screen !== 'home' && (
                     <button
                       type="button"
-                      onClick={() => goToModuleHome('project')}
+                      onClick={() => setScreen('home')}
                       className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium text-sm sm:text-base transition-all hv-button bg-gray-100 text-gray-700 hover:bg-gray-200`}
                       aria-pressed={false}
                       aria-label="Retourner à l'accueil des projets"
@@ -4252,11 +4239,6 @@ const updateProjectFilters = useCallback((updater) => {
               setAdminEmails={setAdminEmails}
             />
           </Suspense>
-        ) : screen === 'entry' ? (
-          <ModuleEntryScreen
-            onSelectProject={() => goToModuleHome('project')}
-            onSelectDistrib={() => goToModuleHome('distrib')}
-          />
         ) : screen === 'home' ? (
           <HomeScreen
             projects={projects}
@@ -4284,7 +4266,7 @@ const updateProjectFilters = useCallback((updater) => {
             existingProjects={inspirationProjects}
             onSubmit={handleSaveInspirationProject}
             onCancel={() => {
-              goToModuleHome('project');
+              setScreen('home');
               setHomeView('inspiration');
             }}
           />
@@ -4293,14 +4275,12 @@ const updateProjectFilters = useCallback((updater) => {
             project={activeInspirationProject}
             formConfig={inspirationFormFields}
             onBack={() => {
-              goToModuleHome('project');
+              setScreen('home');
               setHomeView('inspiration');
             }}
             onUpdate={handleUpdateInspirationProject}
             onExport={handleExportInspirationProject}
           />
-        ) : screen === 'distrib-home' ? (
-          <DistribHomeScreen />
         ) : screen === 'questionnaire' ? (
           <QuestionnaireScreen
             questions={activeQuestions}
@@ -4439,7 +4419,7 @@ const updateProjectFilters = useCallback((updater) => {
 
     <footer className="bg-white border-t border-gray-200 mt-10" aria-label="Pied de page">
       <p className="text-xs text-gray-400 text-center py-4">
-        {footerLabel} · Version {APP_VERSION} ·{' '}
+        Project Navigator · Version {APP_VERSION} ·{' '}
         <a
           href="./mentions-legales.html"
           target="_blank"
