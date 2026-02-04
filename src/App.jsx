@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspens
 import { QuestionnaireScreen } from './components/QuestionnaireScreen.jsx';
 import { SynthesisReport } from './components/SynthesisReport.jsx';
 import { HomeScreen } from './components/HomeScreen.jsx';
+import { GatewayScreen } from './components/GatewayScreen.jsx';
 import { InspirationForm } from './components/InspirationForm.jsx';
 import { InspirationDetail } from './components/InspirationDetail.jsx';
 import { AnnotationLayer } from './components/AnnotationLayer.jsx';
@@ -42,7 +43,7 @@ import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.275';
+const APP_VERSION = 'v1.0.276';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -603,7 +604,7 @@ const sanitizeRestoredProjects = (projects) => {
 
 export const App = () => {
   const [mode, setMode] = useState('user');
-  const [screen, setScreen] = useState('home');
+  const [screen, setScreen] = useState('gateway');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [analysis, setAnalysis] = useState(null);
@@ -4239,6 +4240,11 @@ const updateProjectFilters = useCallback((updater) => {
               setAdminEmails={setAdminEmails}
             />
           </Suspense>
+        ) : screen === 'gateway' ? (
+          <GatewayScreen
+            onSelectProjectNavigator={() => setScreen('home')}
+            onSelectDistribNavigator={() => setScreen('distrib-home')}
+          />
         ) : screen === 'home' ? (
           <HomeScreen
             projects={projects}
@@ -4260,6 +4266,24 @@ const updateProjectFilters = useCallback((updater) => {
             isAdminMode={isAdminMode}
             tourContext={tourContext}
           />
+        ) : screen === 'distrib-home' ? (
+          <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-6 py-10">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-500">
+              Distrib Navigator
+            </p>
+            <h2 className="text-2xl font-semibold text-gray-900">Parcours distrib en construction</h2>
+            <p className="text-sm text-gray-500">
+              Le nouveau flux Distrib Navigator arrive bientôt. Revenez au Project Navigator pour
+              accéder aux fonctionnalités actuelles.
+            </p>
+            <button
+              type="button"
+              onClick={() => setScreen('home')}
+              className="inline-flex w-fit items-center rounded-full border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm transition hover:border-blue-300 hover:text-blue-800"
+            >
+              Retourner au Project Navigator
+            </button>
+          </div>
         ) : screen === 'inspiration-form' ? (
           <InspirationForm
             formConfig={inspirationFormFields}
