@@ -2,11 +2,17 @@ import React, { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspens
 import { QuestionnaireScreen } from './components/QuestionnaireScreen.jsx';
 import { SynthesisReport } from './components/SynthesisReport.jsx';
 import { HomeScreen } from './components/HomeScreen.jsx';
+import { DistribQuestionnaireScreen } from './components/DistribQuestionnaireScreen.jsx';
+import { DistribSynthesisReport } from './components/DistribSynthesisReport.jsx';
+import { DistribHomeScreen } from './components/DistribHomeScreen.jsx';
 import { InspirationForm } from './components/InspirationForm.jsx';
 import { InspirationDetail } from './components/InspirationDetail.jsx';
+import { DistribInspirationForm } from './components/DistribInspirationForm.jsx';
+import { DistribInspirationDetail } from './components/DistribInspirationDetail.jsx';
 import { AnnotationLayer } from './components/AnnotationLayer.jsx';
 import { CheckCircle, Link, Lock, MessageSquare, Settings, Sparkles } from './components/icons.js';
 import { MandatoryQuestionsSummary } from './components/MandatoryQuestionsSummary.jsx';
+import { DistribMandatoryQuestionsSummary } from './components/DistribMandatoryQuestionsSummary.jsx';
 import { initialQuestions } from './data/questions.js';
 import { initialRules } from './data/rules.js';
 import { initialRiskLevelRules } from './data/riskLevelRules.js';
@@ -42,7 +48,7 @@ import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.276';
+const APP_VERSION = 'v1.0.277';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -75,6 +81,12 @@ const LazyBackOffice = lazy(() =>
 const LazyProjectShowcase = lazy(() =>
   Promise.resolve().then(() => ({
     default: loadModule('./src/components/ProjectShowcase.jsx').ProjectShowcase
+  }))
+);
+
+const LazyDistribShowcase = lazy(() =>
+  Promise.resolve().then(() => ({
+    default: loadModule('./src/components/DistribProjectShowcase.jsx').DistribProjectShowcase
   }))
 );
 
@@ -676,7 +688,19 @@ export const App = () => {
     [currentUserEmail, normalizedAdminEmails]
   );
   const isNavigatorSelected = navigatorVariant !== null;
+  const isDistribNavigator = navigatorVariant === 'distrib';
   const navigatorLabel = navigatorVariant === 'distrib' ? 'Distrib Navigator' : 'Project Navigator';
+  const HomeScreenComponent = isDistribNavigator ? DistribHomeScreen : HomeScreen;
+  const InspirationFormComponent = isDistribNavigator ? DistribInspirationForm : InspirationForm;
+  const InspirationDetailComponent = isDistribNavigator ? DistribInspirationDetail : InspirationDetail;
+  const QuestionnaireScreenComponent = isDistribNavigator
+    ? DistribQuestionnaireScreen
+    : QuestionnaireScreen;
+  const MandatoryQuestionsSummaryComponent = isDistribNavigator
+    ? DistribMandatoryQuestionsSummary
+    : MandatoryQuestionsSummary;
+  const SynthesisReportComponent = isDistribNavigator ? DistribSynthesisReport : SynthesisReport;
+  const LazyShowcaseComponent = isDistribNavigator ? LazyDistribShowcase : LazyProjectShowcase;
   const handleSelectNavigator = useCallback((variant) => {
     setNavigatorVariant(variant);
     setScreen('home');
@@ -4289,7 +4313,7 @@ const updateProjectFilters = useCallback((updater) => {
             />
           </Suspense>
         ) : screen === 'home' ? (
-          <HomeScreen
+          <HomeScreenComponent
             projects={projects}
             projectFilters={projectFilters}
             teamLeadOptions={teamLeadTeamOptions}
@@ -4311,7 +4335,7 @@ const updateProjectFilters = useCallback((updater) => {
             tourContext={tourContext}
           />
         ) : screen === 'inspiration-form' ? (
-          <InspirationForm
+          <InspirationFormComponent
             formConfig={inspirationFormFields}
             existingProjects={inspirationProjects}
             onSubmit={handleSaveInspirationProject}
@@ -4321,7 +4345,7 @@ const updateProjectFilters = useCallback((updater) => {
             }}
           />
         ) : screen === 'inspiration-detail' ? (
-          <InspirationDetail
+          <InspirationDetailComponent
             project={activeInspirationProject}
             formConfig={inspirationFormFields}
             onBack={() => {
@@ -4332,7 +4356,7 @@ const updateProjectFilters = useCallback((updater) => {
             onExport={handleExportInspirationProject}
           />
         ) : screen === 'questionnaire' ? (
-          <QuestionnaireScreen
+          <QuestionnaireScreenComponent
             questions={activeQuestions}
             currentIndex={currentQuestionIndex}
             answers={answers}
@@ -4353,7 +4377,7 @@ const updateProjectFilters = useCallback((updater) => {
             onFinish={navigateToSynthesis}
           />
         ) : screen === 'mandatory-summary' ? (
-          <MandatoryQuestionsSummary
+          <MandatoryQuestionsSummaryComponent
             pendingQuestions={pendingMandatoryQuestions}
             totalQuestions={activeQuestions.length}
             onBackToQuestionnaire={handleBackToQuestionnaire}
@@ -4361,41 +4385,41 @@ const updateProjectFilters = useCallback((updater) => {
             onProceedToSynthesis={handleProceedToSynthesis}
           />
         ) : screen === 'synthesis' ? (
-            <SynthesisReport
-              answers={answers}
-              analysis={analysis}
-              teams={teams}
-              questions={activeQuestions}
-              projectStatus={activeProject?.status || null}
-              projectId={activeProjectId}
-              projectName={activeProjectName}
-              onOpenProjectShowcase={handleOpenActiveProjectShowcase}
-              isProjectEditable={isActiveProjectEditable}
-              onRestart={handleRestart}
-              onBack={isActiveProjectEditable ? handleBackToQuestionnaire : undefined}
-              onUpdateAnswers={isActiveProjectEditable ? handleUpdateAnswers : undefined}
-              onUpdateComplianceComments={activeProjectId ? handleUpdateComplianceComments : undefined}
-              currentUser={currentUser}
-              sharedMembers={activeProject?.sharedWith || []}
-              onShareProjectMember={activeProjectId ? handleAddSharedMember : undefined}
-              onRemoveProjectMember={activeProjectId ? handleRemoveSharedMember : undefined}
-              onSubmitProject={handleSubmitProject}
-              onNavigateToQuestion={handleNavigateToQuestionFromReport}
-              isExistingProject={Boolean(activeProjectId)}
-              onSaveDraft={
-                isOnboardingActive
-                  ? noop
-                  : isActiveProjectEditable
-                    ? handleSaveDraft
-                    : undefined
-              }
-              saveFeedback={saveFeedback}
-              onDismissSaveFeedback={handleDismissSaveFeedback}
-              isAdminMode={isAdminMode}
-              hasIncompleteAnswers={hasIncompleteAnswers}
-              tourContext={tourContext}
-              validationCommitteeConfig={validationCommitteeConfig}
-            />
+          <SynthesisReportComponent
+            answers={answers}
+            analysis={analysis}
+            teams={teams}
+            questions={activeQuestions}
+            projectStatus={activeProject?.status || null}
+            projectId={activeProjectId}
+            projectName={activeProjectName}
+            onOpenProjectShowcase={handleOpenActiveProjectShowcase}
+            isProjectEditable={isActiveProjectEditable}
+            onRestart={handleRestart}
+            onBack={isActiveProjectEditable ? handleBackToQuestionnaire : undefined}
+            onUpdateAnswers={isActiveProjectEditable ? handleUpdateAnswers : undefined}
+            onUpdateComplianceComments={activeProjectId ? handleUpdateComplianceComments : undefined}
+            currentUser={currentUser}
+            sharedMembers={activeProject?.sharedWith || []}
+            onShareProjectMember={activeProjectId ? handleAddSharedMember : undefined}
+            onRemoveProjectMember={activeProjectId ? handleRemoveSharedMember : undefined}
+            onSubmitProject={handleSubmitProject}
+            onNavigateToQuestion={handleNavigateToQuestionFromReport}
+            isExistingProject={Boolean(activeProjectId)}
+            onSaveDraft={
+              isOnboardingActive
+                ? noop
+                : isActiveProjectEditable
+                  ? handleSaveDraft
+                  : undefined
+            }
+            saveFeedback={saveFeedback}
+            onDismissSaveFeedback={handleDismissSaveFeedback}
+            isAdminMode={isAdminMode}
+            hasIncompleteAnswers={hasIncompleteAnswers}
+            tourContext={tourContext}
+            validationCommitteeConfig={validationCommitteeConfig}
+          />
         ) : screen === 'showcase' ? (
           showcaseProjectContext ? (
             <div className="space-y-4">
@@ -4414,7 +4438,7 @@ const updateProjectFilters = useCallback((updater) => {
                   />
                 )}
               >
-                <LazyProjectShowcase
+                <LazyShowcaseComponent
                   projectName={showcaseProjectContext.projectName}
                   onClose={handleCloseProjectShowcase}
                   analysis={showcaseProjectContext.analysis}
