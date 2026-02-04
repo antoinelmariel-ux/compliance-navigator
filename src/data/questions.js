@@ -2,7 +2,7 @@ export const initialQuestions = [
   {
     "id": "projectName",
     "type": "text",
-    "question": "Quel est le nom du partenaire ?",
+    "question": "Quel est le nom de l'entreprise partenaire ?",
     "options": [],
     "required": true,
     "conditions": [],
@@ -46,7 +46,7 @@ export const initialQuestions = [
   {
     "id": "contactName",
     "type": "text",
-    "question": "Nom du contact",
+    "question": "Nom du contact (personne physique)",
     "options": [],
     "required": true,
     "conditions": [],

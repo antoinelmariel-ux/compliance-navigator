@@ -1,8 +1,15 @@
 const DEFAULT_INSPIRATION_FILTERS = {
   fields: [
     {
+      id: 'companyName',
+      label: 'Entreprise',
+      type: 'text',
+      enabled: true,
+      sourceQuestionId: 'companyName'
+    },
+    {
       id: 'contactName',
-      label: 'Nom du contact',
+      label: 'Nom du contact (personne physique)',
       type: 'text',
       enabled: true,
       sourceQuestionId: 'contactName'
@@ -63,8 +70,16 @@ const DEFAULT_INSPIRATION_FILTERS = {
 const DEFAULT_INSPIRATION_FORM_FIELDS = {
   fields: [
     {
+      id: 'companyName',
+      label: 'Entreprise',
+      type: 'text',
+      required: true,
+      enabled: true,
+      placeholder: "Nom de l'entreprise"
+    },
+    {
       id: 'contactName',
-      label: 'Nom du contact',
+      label: 'Nom du contact (personne physique)',
       type: 'text',
       required: true,
       enabled: true
