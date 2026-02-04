@@ -188,6 +188,24 @@ const complexityColors = {
   Élevée: 'text-red-600'
 };
 
+const prospectSituationStyles = {
+  'Identifié': {
+    label: 'Identifié',
+    className: 'border-orange-200 bg-orange-50 text-orange-700',
+    dotClassName: 'bg-orange-500'
+  },
+  'En prise de contact': {
+    label: 'En prise de contact',
+    className: 'border-rose-200 bg-rose-50 text-rose-700',
+    dotClassName: 'bg-rose-500'
+  },
+  'En relation': {
+    label: 'En relation',
+    className: 'border-blue-200 bg-blue-50 text-blue-700',
+    dotClassName: 'bg-blue-500'
+  }
+};
+
 const statusStyles = {
   draft: {
     label: 'Brouillon en cours',
@@ -1135,26 +1153,49 @@ export const DistribHomeScreen = ({
       key={project.id}
       className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all hv-surface"
       role="listitem"
-      aria-label={`Projet inspirant ${project.title || 'sans titre'}`}
+      aria-label={`Prospect ${project.partnerName || 'sans nom'}`}
     >
       <div className="space-y-3">
         <div>
-          <h3 className="text-xl font-semibold text-gray-900">{project.title || 'Projet sans titre'}</h3>
-          <p className="text-sm text-gray-500">{project.labName || 'Laboratoire non renseigné'}</p>
+          <h3 className="text-xl font-semibold text-gray-900">{project.partnerName || 'Partenaire non renseigné'}</h3>
+          <p className="text-sm text-gray-500">{project.role || 'Rôle non renseigné'}</p>
         </div>
         <dl className="grid grid-cols-1 gap-2 text-sm text-gray-600">
           <div className="flex items-center gap-2">
             <Compass className="w-4 h-4" />
-            <span>{project.country || 'Pays non renseigné'}</span>
+            {normalizeInspirationFieldValues(project.countries).length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {normalizeInspirationFieldValues(project.countries).map((country) => (
+                  <span
+                    key={country}
+                    className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700"
+                  >
+                    {country}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <span>Pays non renseigné</span>
+            )}
           </div>
-          <div className="flex items-center gap-2">
-            <Target className="w-4 h-4" />
-            <span>{project.target || 'Cible non renseignée'}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4" />
-            <span>{project.therapeuticArea || 'Aire thérapeutique non renseignée'}</span>
-          </div>
+          {(() => {
+            const situationValue = getSafeString(project.situation).trim();
+            const situationConfig = prospectSituationStyles[situationValue] || {
+              label: situationValue || 'Situation non renseignée',
+              className: 'border-gray-200 bg-gray-50 text-gray-600',
+              dotClassName: 'bg-gray-400'
+            };
+            return (
+              <div className="flex items-center gap-2">
+                <span
+                  className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold ${situationConfig.className}`}
+                >
+                  <span className={`h-2 w-2 rounded-full ${situationConfig.dotClassName}`} aria-hidden="true" />
+                  {situationConfig.label}
+                </span>
+              </div>
+            );
+          })()}
         </dl>
       </div>
       <div className="mt-5 flex flex-wrap gap-3">
@@ -1253,11 +1294,11 @@ export const DistribHomeScreen = ({
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h2 id="projects-heading" className="text-2xl font-bold text-gray-900">
-                {homeView === 'inspiration' ? 'Projets inspirants' : 'Vos projets enregistrés'}
+                {homeView === 'inspiration' ? 'Prospects' : 'Vos projets enregistrés'}
               </h2>
               <p className="text-sm text-gray-600">
                 {homeView === 'inspiration'
-                  ? 'Découvrez les initiatives d’autres laboratoires et gérez vos projets inspirants.'
+                  ? 'Suivez les distributeurs pharmaceutiques potentiels avec lesquels collaborer.'
                   : 'Accédez aux brouillons et aux synthèses finalisées pour les reprendre à tout moment.'}
               </p>
             </div>
@@ -1287,7 +1328,7 @@ export const DistribHomeScreen = ({
                       : 'text-blue-700 hover:bg-blue-100'
                   }`}
                 >
-                  Inspiration
+                  Prospects
                 </button>
               </div>
               {homeView === 'inspiration' ? (
@@ -1297,7 +1338,7 @@ export const DistribHomeScreen = ({
                   className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
                 >
                   <Plus className="w-4 h-4" aria-hidden="true" />
-                  Ajouter un projet inspirant
+                  Ajouter un prospect
                 </button>
               ) : (
                 <span className="inline-flex items-center text-sm font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded-full px-3 py-1">
@@ -1492,14 +1533,14 @@ export const DistribHomeScreen = ({
 
           {homeView === 'inspiration' && !hasInspirationProjects && (
             <div className="bg-white border border-dashed border-blue-200 rounded-3xl p-8 text-center text-gray-600 hv-surface" role="status" aria-live="polite">
-              <p className="text-lg font-medium text-gray-800">Aucun projet inspirant enregistré.</p>
-              <p className="mt-2">Ajoutez des exemples pour nourrir vos réflexions.</p>
+              <p className="text-lg font-medium text-gray-800">Aucun prospect enregistré.</p>
+              <p className="mt-2">Ajoutez des prospects pour nourrir vos futures collaborations.</p>
               <button
                 type="button"
                 onClick={onStartInspirationProject}
                 className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-all hv-button hv-button-primary"
               >
-                <Plus className="w-4 h-4 mr-2" /> Créer un projet inspirant
+                <Plus className="w-4 h-4 mr-2" /> Créer un prospect
               </button>
             </div>
           )}
@@ -1510,11 +1551,11 @@ export const DistribHomeScreen = ({
                 <div
                   className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hv-surface space-y-4"
                   role="region"
-                  aria-label="Filtres des projets inspirants"
+                  aria-label="Filtres des prospects"
                 >
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-700">
-                      Filtres Inspiration
+                      Filtres prospects
                     </h3>
                     <button
                       type="button"
@@ -1618,7 +1659,7 @@ export const DistribHomeScreen = ({
                   role="status"
                   aria-live="polite"
                 >
-                  <p className="text-lg font-medium text-gray-800">Aucun projet ne correspond à vos filtres.</p>
+                  <p className="text-lg font-medium text-gray-800">Aucun prospect ne correspond à vos filtres.</p>
                   <p className="mt-2">Ajustez vos critères ou réinitialisez les filtres.</p>
                   {hasActiveInspirationFilters && (
                     <button

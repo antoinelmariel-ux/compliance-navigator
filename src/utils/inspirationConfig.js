@@ -1,43 +1,50 @@
 const DEFAULT_INSPIRATION_FILTERS = {
   fields: [
     {
-      id: 'labName',
-      label: 'Nom du labo',
-      type: 'select',
+      id: 'partnerName',
+      label: 'Nom du partenaire',
+      type: 'text',
       enabled: true,
-      sourceQuestionId: 'labName'
+      sourceQuestionId: 'partnerName'
     },
     {
-      id: 'target',
-      label: 'Cible du projet',
-      type: 'select',
+      id: 'role',
+      label: 'Rôle',
+      type: 'text',
       enabled: true,
-      options: ['PS', 'Patient', 'GP'],
-      sourceQuestionId: 'target'
+      sourceQuestionId: 'role'
     },
     {
-      id: 'typology',
-      label: 'Typologie',
-      type: 'select',
-      enabled: true,
-      options: ['Digital', 'Print'],
-      sourceQuestionId: 'typology'
-    },
-    {
-      id: 'therapeuticArea',
-      label: 'Aire thérapeutique',
-      type: 'select',
-      enabled: true,
-      options: ['Immunologie', 'Hémostase', 'Soins intensifs'],
-      sourceQuestionId: 'therapeuticArea'
-    },
-    {
-      id: 'country',
+      id: 'countries',
       label: 'Pays',
       type: 'select',
       enabled: true,
-      options: ['France', 'Europe', 'États-Unis', 'Autre'],
-      sourceQuestionId: 'country'
+      options: [
+        'France',
+        'Belgique',
+        'Luxembourg',
+        'Suisse',
+        'Allemagne',
+        'Espagne',
+        'Italie',
+        'Royaume-Uni',
+        'Pays-Bas',
+        'Portugal',
+        'Canada',
+        'États-Unis',
+        'Maroc',
+        'Tunisie',
+        'Sénégal'
+      ],
+      sourceQuestionId: 'countries'
+    },
+    {
+      id: 'situation',
+      label: 'Situation',
+      type: 'select',
+      enabled: true,
+      options: ['Identifié', 'En prise de contact', 'En relation'],
+      sourceQuestionId: 'situation'
     }
   ]
 };
@@ -45,78 +52,83 @@ const DEFAULT_INSPIRATION_FILTERS = {
 const DEFAULT_INSPIRATION_FORM_FIELDS = {
   fields: [
     {
-      id: 'title',
-      label: 'Titre du projet',
+      id: 'partnerName',
+      label: 'Nom du partenaire',
       type: 'text',
       required: true,
       enabled: true
     },
     {
-      id: 'labName',
-      label: 'Nom du laboratoire / association',
+      id: 'contactName',
+      label: 'Nom du contact',
       type: 'text',
       required: true,
       enabled: true
     },
     {
-      id: 'target',
-      label: 'Cible du projet',
-      type: 'select',
+      id: 'email',
+      label: 'Email',
+      type: 'email',
       required: true,
       enabled: true,
-      options: ['PS', 'Patient', 'GP']
+      placeholder: 'contact@partenaire.com'
     },
     {
-      id: 'typology',
-      label: 'Typologie',
-      type: 'select',
-      required: true,
-      enabled: true,
-      options: ['Digital', 'Print']
-    },
-    {
-      id: 'therapeuticArea',
-      label: 'Aire thérapeutique',
-      type: 'select',
-      required: true,
-      enabled: true,
-      options: ['Immunologie', 'Hémostase', 'Soins intensifs']
-    },
-    {
-      id: 'country',
-      label: 'Pays',
-      type: 'select',
-      required: true,
-      enabled: true,
-      options: ['France', 'Europe', 'États-Unis', 'Autre']
-    },
-    {
-      id: 'description',
-      label: 'Description du projet',
-      type: 'long_text',
-      required: false,
-      enabled: true
-    },
-    {
-      id: 'link',
-      label: 'Lien utile',
+      id: 'website',
+      label: 'Site internet',
       type: 'url',
       required: false,
+      enabled: true,
+      placeholder: 'https://...'
+    },
+    {
+      id: 'role',
+      label: 'Rôle',
+      type: 'text',
+      required: true,
       enabled: true
     },
     {
-      id: 'documents',
-      label: 'Documents',
-      type: 'documents',
-      required: false,
-      enabled: true
+      id: 'countries',
+      label: 'Pays',
+      type: 'multi_select',
+      required: true,
+      enabled: true,
+      options: [
+        'France',
+        'Belgique',
+        'Luxembourg',
+        'Suisse',
+        'Allemagne',
+        'Espagne',
+        'Italie',
+        'Royaume-Uni',
+        'Pays-Bas',
+        'Portugal',
+        'Canada',
+        'États-Unis',
+        'Maroc',
+        'Tunisie',
+        'Sénégal'
+      ],
+      placeholder: 'Sélectionner un ou plusieurs pays'
+    },
+    {
+      id: 'situation',
+      label: 'Situation',
+      type: 'select',
+      required: true,
+      enabled: true,
+      options: ['Identifié', 'En prise de contact', 'En relation'],
+      placeholder: 'Sélectionner une situation'
     },
     {
       id: 'review',
-      label: 'Avis sur le projet',
+      label: 'Avis',
       type: 'long_text',
       required: false,
-      enabled: true
+      enabled: true,
+      placeholder: 'Ajoutez vos observations sur ce prospect.'
     }
   ]
 };
