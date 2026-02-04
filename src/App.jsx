@@ -10,6 +10,7 @@ import { AnnotationLayer } from './components/AnnotationLayer.jsx';
 import { CheckCircle, Link, Lock, MessageSquare, Settings, Sparkles } from './components/icons.js';
 import { MandatoryQuestionsSummary } from './components/MandatoryQuestionsSummary.jsx';
 import { initialQuestions } from './data/questions.js';
+import { initialContractQuestions } from './data/contractQuestions.js';
 import { initialRules } from './data/rules.js';
 import { initialRiskLevelRules } from './data/riskLevelRules.js';
 import { initialRiskWeights } from './data/riskWeights.js';
@@ -44,7 +45,7 @@ import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.279';
+const APP_VERSION = 'v1.0.280';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -189,6 +190,34 @@ const clamp01 = (value) => {
   }
 
   return value;
+};
+
+const normalizeInspirationFieldValues = (value) => {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => (typeof item === 'string' ? item.trim() : ''))
+      .filter(Boolean);
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? [trimmed] : [];
+  }
+
+  return [];
+};
+
+const buildContractPartnerLabel = (partner) => {
+  if (!partner) {
+    return 'Distributeur sans nom';
+  }
+
+  const companyName = typeof partner.companyName === 'string' ? partner.companyName.trim() : '';
+  const contactName = typeof partner.contactName === 'string' ? partner.contactName.trim() : '';
+  const baseLabel = companyName || contactName || 'Distributeur sans nom';
+  const countryLabel = normalizeInspirationFieldValues(partner.countries).join(', ');
+
+  return countryLabel ? `${baseLabel} (${countryLabel})` : baseLabel;
 };
 
 const createAnnotationId = () => {
@@ -608,6 +637,9 @@ export const App = () => {
   const [screen, setScreen] = useState('home');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState({});
+  const [contractQuestionIndex, setContractQuestionIndex] = useState(0);
+  const [contractAnswers, setContractAnswers] = useState({});
+  const [contractValidationError, setContractValidationError] = useState(null);
   const [analysis, setAnalysis] = useState(null);
   const [projects, setProjects] = useState(buildInitialProjectsState);
   const projectsRef = useRef(projects);
@@ -2023,6 +2055,27 @@ const updateProjectFilters = useCallback((updater) => {
       .filter(Boolean);
   }, [inspirationProjects, partnerCompareSelection]);
 
+  const contractQuestions = useMemo(() => {
+    const partnerOptions = selectedPartners.map(buildContractPartnerLabel).filter(Boolean);
+    return initialContractQuestions.map((question) => {
+      if (!question || question.id !== 'contractPartner') {
+        return question;
+      }
+
+      return {
+        ...question,
+        options: partnerOptions
+      };
+    });
+  }, [selectedPartners]);
+
+  useEffect(() => {
+    if (contractQuestions.length === 0) {
+      return;
+    }
+    setContractQuestionIndex((prev) => Math.min(prev, contractQuestions.length - 1));
+  }, [contractQuestions]);
+
   useEffect(() => {
     if (!Array.isArray(partnerCompareSelection) || partnerCompareSelection.length === 0) {
       if (partnerComparePreferredId) {
@@ -3062,6 +3115,59 @@ const updateProjectFilters = useCallback((updater) => {
     resetProjectState();
     setScreen('questionnaire');
   }, [resetProjectState]);
+
+  const handleStartContractQuestionnaire = useCallback(() => {
+    setContractAnswers({});
+    setContractQuestionIndex(0);
+    setContractValidationError(null);
+    setScreen('contract-questionnaire');
+  }, []);
+
+  const handleContractAnswer = useCallback((questionId, answer) => {
+    setContractAnswers((prev) => ({ ...prev, [questionId]: answer }));
+    setContractValidationError((prev) => {
+      if (!prev) {
+        return null;
+      }
+      return prev.questionId === questionId ? null : prev;
+    });
+  }, []);
+
+  const handleContractNext = useCallback(() => {
+    const currentQuestion = contractQuestions[contractQuestionIndex];
+    if (currentQuestion?.required && !isAnswerProvided(contractAnswers[currentQuestion.id])) {
+      setContractValidationError({
+        questionId: currentQuestion.id,
+        message: 'Veuillez répondre à cette question avant de continuer.'
+      });
+      return;
+    }
+
+    if (contractQuestionIndex < contractQuestions.length - 1) {
+      setContractQuestionIndex(contractQuestionIndex + 1);
+      setContractValidationError(null);
+      return;
+    }
+
+    setContractValidationError(null);
+    setScreen('home');
+  }, [contractAnswers, contractQuestionIndex, contractQuestions]);
+
+  const handleContractBack = useCallback(() => {
+    if (contractQuestionIndex > 0) {
+      setContractQuestionIndex(contractQuestionIndex - 1);
+      setContractValidationError(null);
+      return;
+    }
+
+    setContractValidationError(null);
+    setScreen('home');
+  }, [contractQuestionIndex]);
+
+  const handleContractFinish = useCallback(() => {
+    setContractValidationError(null);
+    setScreen('home');
+  }, []);
 
   const handleStartInspirationProject = useCallback(() => {
     setScreen('inspiration-form');
@@ -4468,6 +4574,7 @@ const updateProjectFilters = useCallback((updater) => {
             onStartInspirationProject={handleStartInspirationProject}
             onOpenInspirationProject={handleOpenInspirationProject}
             onStartNewProject={handleCreateNewProject}
+            onStartNewContract={handleStartContractQuestionnaire}
             onOpenPartnerComparison={handleOpenPartnerComparison}
             onOpenProject={handleOpenProject}
             onDeleteProject={handleDeleteProject}
@@ -4536,6 +4643,20 @@ const updateProjectFilters = useCallback((updater) => {
             isReturnToSynthesisRequested={returnToSynthesisAfterEdit}
             tourContext={tourContext}
             onFinish={navigateToSynthesis}
+          />
+        ) : screen === 'contract-questionnaire' ? (
+          <QuestionnaireScreen
+            questions={contractQuestions}
+            currentIndex={contractQuestionIndex}
+            answers={contractAnswers}
+            onAnswer={handleContractAnswer}
+            onNext={handleContractNext}
+            onBack={handleContractBack}
+            allQuestions={contractQuestions}
+            onNavigateToQuestion={noop}
+            validationError={contractValidationError}
+            finishLabel="Terminer le brief"
+            onFinish={handleContractFinish}
           />
         ) : screen === 'mandatory-summary' ? (
           <MandatoryQuestionsSummary
