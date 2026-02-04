@@ -11,7 +11,6 @@ import {
   AlertTriangle,
   Edit,
   Save,
-  Upload,
   Copy,
   Trash2,
   Close,
@@ -1186,31 +1185,22 @@ export const DistribHomeScreen = ({
               <p className="text-lg text-gray-600 leading-relaxed max-w-2xl">
                 {navigatorLabel} vous guide pas à pas pour qualifier votre initiative, identifier les interlocuteurs à mobiliser et sécuriser vos délais réglementaires.
               </p>
-              <div className="flex flex-col sm:flex-row gap-3" role="group" aria-label="Actions principales">
-                <button
-                  type="button"
-                  onClick={onStartNewProject}
-                  className="inline-flex items-center justify-center gap-3 px-5 py-3 text-base font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md transition-all hv-button hv-button-primary"
-                  data-tour-id="home-create-project"
-                >
-                  <Plus className="w-5 h-5" aria-hidden="true" />
-                  <span className="flex flex-col leading-tight text-left">
-                    <span>Créer un nouveau</span>
-                    <span>projet</span>
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleTriggerImport}
-                  className="inline-flex items-center justify-center gap-3 px-5 py-3 text-base font-semibold text-blue-600 bg-white hover:bg-blue-50 rounded-xl border border-blue-200 transition-all hv-button hv-focus-ring"
-                  data-tour-id="home-import-project"
-                >
-                  <Upload className="w-5 h-5" aria-hidden="true" />
-                  <span className="flex flex-col leading-tight text-left">
-                    <span>Charger</span>
-                    <span>un projet</span>
-                  </span>
-                </button>
+              <div className="flex flex-wrap gap-3" role="group" aria-label="Actions principales">
+                {[
+                  'Revue des pays',
+                  'Évaluation d’un distributeur',
+                  'Comparaison et sélection',
+                  'Contractualisation / avenant',
+                  'Audit et plan d’action'
+                ].map((label) => (
+                  <button
+                    key={label}
+                    type="button"
+                    className="inline-flex items-center justify-center gap-3 px-5 py-3 text-base font-semibold text-blue-600 bg-white hover:bg-blue-50 rounded-xl border border-blue-200 transition-all hv-button hv-focus-ring"
+                  >
+                    <span className="leading-tight text-left">{label}</span>
+                  </button>
+                ))}
               </div>
               <input
                 ref={fileInputRef}
