@@ -49,7 +49,7 @@ import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.
 import { DISTRIBUTOR_SITUATION_IDS, resolveDistributorSituationId } from './utils/distributor.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.282';
+const APP_VERSION = 'v1.0.283';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
