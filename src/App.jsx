@@ -47,7 +47,7 @@ import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.287';
+const APP_VERSION = 'v1.0.288';
 
 const normalizeHomeView = (value) => {
   if (value === 'platform') {
@@ -654,6 +654,7 @@ export const App = () => {
   const [answers, setAnswers] = useState({});
   const [contractQuestionIndex, setContractQuestionIndex] = useState(0);
   const [contractAnswers, setContractAnswers] = useState({});
+  const [contractSynthesisTab, setContractSynthesisTab] = useState('summary');
   const [contractValidationError, setContractValidationError] = useState(null);
   const [analysis, setAnalysis] = useState(null);
   const [projects, setProjects] = useState(buildInitialProjectsState);
@@ -3135,6 +3136,7 @@ const updateProjectFilters = useCallback((updater) => {
     setContractAnswers({});
     setContractQuestionIndex(0);
     setContractValidationError(null);
+    setContractSynthesisTab('summary');
     setScreen('contract-questionnaire');
   }, []);
 
@@ -3165,6 +3167,7 @@ const updateProjectFilters = useCallback((updater) => {
     }
 
     setContractValidationError(null);
+    setContractSynthesisTab('summary');
     setScreen('contract-synthesis');
   }, [contractAnswers, contractQuestionIndex, contractQuestions]);
 
@@ -3181,6 +3184,12 @@ const updateProjectFilters = useCallback((updater) => {
 
   const handleContractFinish = useCallback(() => {
     setContractValidationError(null);
+    setContractSynthesisTab('summary');
+    setScreen('contract-synthesis');
+  }, []);
+
+  const handleOpenContractSynthesis = useCallback((tab) => {
+    setContractSynthesisTab(tab || 'summary');
     setScreen('contract-synthesis');
   }, []);
 
@@ -4577,6 +4586,7 @@ const updateProjectFilters = useCallback((updater) => {
             onOpenCountryVision={() => setScreen('country-vision')}
             onOpenPartnerComparison={handleOpenPartnerComparison}
             onOpenProject={handleOpenProject}
+            onOpenContractSynthesis={handleOpenContractSynthesis}
             onDeleteProject={handleDeleteProject}
             onDuplicateProject={handleDuplicateProject}
             isAdminMode={isAdminMode}
@@ -4662,6 +4672,7 @@ const updateProjectFilters = useCallback((updater) => {
         ) : screen === 'contract-synthesis' ? (
           <ContractSynthesis
             answers={contractAnswers}
+            initialTab={contractSynthesisTab}
             onBack={() => setScreen('home')}
           />
         ) : screen === 'mandatory-summary' ? (

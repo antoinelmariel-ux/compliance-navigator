@@ -255,6 +255,7 @@ export const HomeScreen = ({
   onOpenCountryVision,
   onOpenPartnerComparison,
   onOpenProject,
+  onOpenContractSynthesis,
   onDeleteProject,
   onDuplicateProject,
   isAdminMode = false,
@@ -1271,13 +1272,6 @@ export const HomeScreen = ({
     );
   };
 
-  const handleOpenContractActions = (partnerUrl) => {
-    if (!partnerUrl || typeof window === 'undefined') {
-      return;
-    }
-    window.open(`${partnerUrl}#plans-actions`, '_blank', 'noopener,noreferrer');
-  };
-
   const renderContractCard = (contract, index) => (
     <article
       key={`${contract.partnerName}-${index}`}
@@ -1300,18 +1294,17 @@ export const HomeScreen = ({
         </div>
       </div>
       <div className="mt-5 flex flex-wrap gap-3">
-        <a
-          href={contract.partnerUrl}
+        <button
+          type="button"
+          onClick={() => onOpenContractSynthesis?.('contract')}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all hv-button bg-blue-600 text-white hover:bg-blue-700 hv-button-primary"
-          target="_blank"
-          rel="noreferrer"
         >
           <FileText className="w-4 h-4" aria-hidden="true" />
           <span>Voir le contrat</span>
-        </a>
+        </button>
         <button
           type="button"
-          onClick={() => handleOpenContractActions(contract.partnerUrl)}
+          onClick={() => onOpenContractSynthesis?.('action-plans')}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all hv-button border border-emerald-200 text-emerald-700 hover:bg-emerald-50"
         >
           <Clipboard className="w-4 h-4" aria-hidden="true" />
