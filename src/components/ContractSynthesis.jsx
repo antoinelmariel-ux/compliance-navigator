@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from '../react.js';
+import React, { useEffect, useMemo, useState } from '../react.js';
 import { AlertTriangle, Edit, Eye, Plus } from './icons.js';
 import {
   contractClauseSummaries,
@@ -34,8 +34,17 @@ const actionPlanStatusStyles = {
   Finalisé: 'border-emerald-200 bg-emerald-50 text-emerald-700'
 };
 
-export const ContractSynthesis = ({ answers, onBack }) => {
-  const [activeTab, setActiveTab] = useState('summary');
+const availableTabs = ['summary', 'contract', 'action-plans'];
+
+const resolveInitialTab = (value) =>
+  availableTabs.includes(value) ? value : 'summary';
+
+export const ContractSynthesis = ({ answers, onBack, initialTab = 'summary' }) => {
+  const [activeTab, setActiveTab] = useState(() => resolveInitialTab(initialTab));
+
+  useEffect(() => {
+    setActiveTab(resolveInitialTab(initialTab));
+  }, [initialTab]);
 
   const summaryCards = useMemo(() => ([
     {
