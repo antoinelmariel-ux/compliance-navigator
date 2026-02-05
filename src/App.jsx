@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspens
 import { QuestionnaireScreen } from './components/QuestionnaireScreen.jsx';
 import { SynthesisReport } from './components/SynthesisReport.jsx';
 import { HomeScreen } from './components/HomeScreen.jsx';
+import { CountryVisionScreen } from './components/CountryVisionScreen.jsx';
 import { InspirationForm } from './components/InspirationForm.jsx';
 import { InspirationDetail } from './components/InspirationDetail.jsx';
 import { ContractSynthesis } from './components/ContractSynthesis.jsx';
@@ -46,7 +47,7 @@ import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.286';
+const APP_VERSION = 'v1.0.287';
 
 const normalizeHomeView = (value) => {
   if (value === 'platform') {
@@ -4573,6 +4574,7 @@ const updateProjectFilters = useCallback((updater) => {
             onOpenInspirationProject={handleOpenInspirationProject}
             onStartNewProject={handleCreateNewProject}
             onStartNewContract={handleStartContractQuestionnaire}
+            onOpenCountryVision={() => setScreen('country-vision')}
             onOpenPartnerComparison={handleOpenPartnerComparison}
             onOpenProject={handleOpenProject}
             onDeleteProject={handleDeleteProject}
@@ -4580,6 +4582,8 @@ const updateProjectFilters = useCallback((updater) => {
             isAdminMode={isAdminMode}
             tourContext={tourContext}
           />
+        ) : screen === 'country-vision' ? (
+          <CountryVisionScreen onBack={() => setScreen('home')} />
         ) : screen === 'partner-compare-gallery' ? (
           <PartnerComparisonGallery
             partners={inspirationProjects}
