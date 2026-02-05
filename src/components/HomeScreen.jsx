@@ -1347,7 +1347,7 @@ export const HomeScreen = ({
                   onClick={() => {
                     onOpenCountryVision?.();
                   }}
-                  className="inline-flex items-center justify-center gap-3 px-5 py-3 text-base font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-md transition-all hv-button hv-button-primary"
+                  className="inline-flex items-center justify-center gap-3 px-5 py-3 text-base font-semibold text-white bg-black hover:bg-gray-900 rounded-xl shadow-md transition-all hv-button hv-button-primary"
                 >
                   <Compass className="w-5 h-5" aria-hidden="true" />
                   <span className="flex flex-col leading-tight text-left">

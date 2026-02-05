@@ -10,9 +10,9 @@ export const countryVisionData = [
     pharma:
       "Autorisation de mise sur le marché (AMM) via l’ANSM, vigilance accrue sur la pharmacovigilance et la traçabilité.",
     contract: {
-      partnerName: 'PharmaHexa',
+      partnerName: 'PharmaHexa SAS',
       endDate: '2026-12-31',
-      partnerUrl: 'https://example.com/partenaires/pharmahexa'
+      partnerUrl: 'https://www.pharmahexa.fr/contrats'
     }
   },
   {
@@ -26,6 +26,18 @@ export const countryVisionData = [
     contract: null
   },
   {
+    id: 'CA',
+    iso3: 'CAN',
+    name: 'Canada',
+    geopolitical:
+      "Marché stable, aligné sur les politiques nord-américaines et engagé dans des accords commerciaux structurants.",
+    sanctions:
+      "Alignement sur les sanctions occidentales, contrôles renforcés sur les exportations sensibles.",
+    pharma:
+      "Santé Canada impose un dossier complet avec exigences bilingues et suivi strict des variations post-AMM.",
+    contract: null
+  },
+  {
     id: 'BR',
     iso3: 'BRA',
     name: 'Brésil',
@@ -35,9 +47,9 @@ export const countryVisionData = [
     pharma:
       'ANVISA requiert des inspections locales et des dossiers techniques traduits pour les produits importés.',
     contract: {
-      partnerName: 'NovaMed Distribuição',
+      partnerName: 'NovaMed Distribuição Ltda',
       endDate: '2025-09-15',
-      partnerUrl: 'https://example.com/partenaires/novamed'
+      partnerUrl: 'https://www.novamed.com.br/partenariats'
     }
   },
   {
@@ -50,10 +62,22 @@ export const countryVisionData = [
     pharma:
       'Central Drugs Standard Control Organization (CDSCO) impose des délais longs pour les AMM et audits GMP.',
     contract: {
-      partnerName: 'Surya Lifescience',
+      partnerName: 'Surya Lifescience Pvt Ltd',
       endDate: '2027-03-20',
-      partnerUrl: 'https://example.com/partenaires/surya-lifescience'
+      partnerUrl: 'https://www.suryalifescience.in/partnerships'
     }
+  },
+  {
+    id: 'AU',
+    iso3: 'AUS',
+    name: 'Australie',
+    geopolitical:
+      'Cadre réglementaire mature, forte stabilité politique et coopération active avec les autorités sanitaires internationales.',
+    sanctions:
+      'Sanctions ciblées appliquées en coordination avec les partenaires du G20, vigilance sur les flux financiers.',
+    pharma:
+      'Le TGA exige des preuves de qualité, sécurité et efficacité avec audits GMP réguliers.',
+    contract: null
   },
   {
     id: 'JP',
@@ -64,6 +88,18 @@ export const countryVisionData = [
     sanctions: 'Alignement avec les sanctions du G7, contrôles sur les transferts de technologie.',
     pharma:
       'PMDA impose des données locales et une surveillance post-commercialisation renforcée.',
+    contract: null
+  },
+  {
+    id: 'KE',
+    iso3: 'KEN',
+    name: 'Kenya',
+    geopolitical:
+      "Hub régional d'Afrique de l'Est, stabilité relative et programmes de santé publique en expansion.",
+    sanctions:
+      'Pas de sanctions majeures, mais exigences de conformité anticorruption sur les appels d’offres publics.',
+    pharma:
+      'La PPB requiert un enregistrement local, un titulaire sur place et un suivi qualité régulier.',
     contract: null
   },
   {
@@ -78,7 +114,7 @@ export const countryVisionData = [
     contract: {
       partnerName: 'Ubuntu Health Partners',
       endDate: '2026-05-30',
-      partnerUrl: 'https://example.com/partenaires/ubuntu-health'
+      partnerUrl: 'https://www.ubuntuhealth.co.za/contrats'
     }
   }
 ];
