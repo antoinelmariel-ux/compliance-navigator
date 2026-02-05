@@ -212,6 +212,75 @@ const distributorSituationStyles = {
   }
 };
 
+const VISION_COUNTRY_CODE_BY_NAME = {
+  France: 'FR',
+  Belgique: 'BE',
+  Suisse: 'CH',
+  Allemagne: 'DE',
+  Espagne: 'ES',
+  Italie: 'IT',
+  'Royaume-Uni': 'GB',
+  'Pays-Bas': 'NL',
+  Portugal: 'PT',
+  Canada: 'CA',
+  'États-Unis': 'US',
+  Maroc: 'MA',
+  Tunisie: 'TN',
+  Sénégal: 'SN',
+  Luxembourg: 'LU',
+  Norvège: 'NO',
+  Suède: 'SE',
+  Danemark: 'DK',
+  Irlande: 'IE',
+  Pologne: 'PL'
+};
+
+const VISION_NO_CONTRACT_COUNTRIES = [
+  {
+    code: 'NO',
+    name: 'Norvège',
+    focus: 'Marché nordique mature, forte exigence de traçabilité.',
+    potential: 'Volume hospitalier stable, accès piloté par appels d’offres.',
+    nextStep: 'Identifier un distributeur local certifié GDP.'
+  },
+  {
+    code: 'SE',
+    name: 'Suède',
+    focus: 'Priorité pour les traitements spécialisés en hôpital.',
+    potential: 'Potentiel élevé sur les hôpitaux universitaires.',
+    nextStep: 'Lancer une étude de conformité réglementaire locale.'
+  },
+  {
+    code: 'DK',
+    name: 'Danemark',
+    focus: 'Marché consolidé, logique de groupements d’achat.',
+    potential: 'Accès possible via 1 partenaire national.',
+    nextStep: 'Prendre contact avec les centrales d’achat publiques.'
+  },
+  {
+    code: 'IE',
+    name: 'Irlande',
+    focus: 'Besoin identifié sur les gammes plasmatiques.',
+    potential: 'Opportunité sélective, volumes limités mais stables.',
+    nextStep: 'Préparer une prise de contact avec un acteur GDP.'
+  },
+  {
+    code: 'PL',
+    name: 'Pologne',
+    focus: 'Croissance rapide des besoins hospitaliers.',
+    potential: 'Potentiel fort sur les appels d’offres régionaux.',
+    nextStep: 'Évaluer les contraintes d’enregistrement produits.'
+  }
+];
+
+const HERO_ACTIONS = [
+  { label: 'Vision Pays', tone: 'dark' },
+  { label: 'Évaluation d’un distributeur' },
+  { label: 'Comparaison et sélection' },
+  { label: 'Contractualisation / avenant' },
+  { label: 'Audit et plan d’action' }
+];
+
 export const DistribHomeScreen = ({
   projects = [],
   projectFilters,
@@ -266,6 +335,7 @@ export const DistribHomeScreen = ({
   const deleteCancelButtonRef = useRef(null);
   const deleteConfirmButtonRef = useRef(null);
   const previouslyFocusedElementRef = useRef(null);
+  const [visionMapSvg, setVisionMapSvg] = useState('');
 
   const accessibleProjects = useMemo(() => {
     if (!Array.isArray(projects)) {
@@ -288,6 +358,31 @@ export const DistribHomeScreen = ({
       return ownerEmail === currentUserEmail || isShared;
     });
   }, [projects, isAdminMode, currentUserEmail]);
+
+  const contractCountryCodes = useMemo(() => {
+    const codes = new Set();
+
+    accessibleProjects.forEach((project) => {
+      const situationId = resolveDistributorSituationId(project);
+      if (situationId !== DISTRIBUTOR_SITUATION_IDS.underContract) {
+        return;
+      }
+
+      normalizeDistributorCountries(project).forEach((country) => {
+        const code = VISION_COUNTRY_CODE_BY_NAME[country];
+        if (code) {
+          codes.add(code);
+        }
+      });
+    });
+
+    return Array.from(codes);
+  }, [accessibleProjects]);
+
+  const noContractCountryCodes = useMemo(
+    () => VISION_NO_CONTRACT_COUNTRIES.map((country) => country.code),
+    []
+  );
 
   useEffect(() => {
     const projectIds = new Set(accessibleProjects.map((project) => project.id));
@@ -338,6 +433,79 @@ export const DistribHomeScreen = ({
       }
     }
   }, [tourContext]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    const loadMap = async () => {
+      try {
+        const response = await fetch('./src/data/world%20map.svg');
+        if (!response.ok) {
+          throw new Error('Carte indisponible');
+        }
+
+        const rawSvg = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(rawSvg, 'image/svg+xml');
+        const svg = doc.querySelector('svg');
+
+        if (!svg) {
+          if (isActive) {
+            setVisionMapSvg('');
+          }
+          return;
+        }
+
+        const style = doc.createElement('style');
+        style.textContent = `
+          .country--contract { fill: #2563eb; }
+          .country--no-contract { fill: #f5e7c6; }
+          .country--neutral { fill: #e5e7eb; }
+        `;
+        svg.insertBefore(style, svg.firstChild);
+
+        const applyClass = (code, className) => {
+          const node = doc.getElementById(code);
+          if (!node) {
+            return;
+          }
+          const existing = node.getAttribute('class');
+          node.setAttribute('class', `${existing ? `${existing} ` : ''}${className}`.trim());
+        };
+
+        noContractCountryCodes.forEach((code) => applyClass(code, 'country--no-contract'));
+        contractCountryCodes.forEach((code) => applyClass(code, 'country--contract'));
+
+        doc.querySelectorAll('path').forEach((path) => {
+          const existing = path.getAttribute('class') || '';
+          if (!existing.includes('country--contract') && !existing.includes('country--no-contract')) {
+            path.setAttribute('class', `${existing ? `${existing} ` : ''}country--neutral`.trim());
+          }
+        });
+
+        svg.setAttribute('role', 'img');
+        svg.setAttribute('aria-label', 'Carte des pays couverts et non couverts');
+        svg.setAttribute('class', 'w-full h-auto');
+
+        const serializer = new XMLSerializer();
+        const markup = serializer.serializeToString(svg);
+
+        if (isActive) {
+          setVisionMapSvg(markup);
+        }
+      } catch (error) {
+        if (isActive) {
+          setVisionMapSvg('');
+        }
+      }
+    };
+
+    loadMap();
+
+    return () => {
+      isActive = false;
+    };
+  }, [contractCountryCodes, noContractCountryCodes]);
 
   const handleRequestProjectDeletion = useCallback((project) => {
     if (!project || !project.id || typeof onDeleteProject !== 'function') {
@@ -1178,19 +1346,17 @@ export const DistribHomeScreen = ({
                 {navigatorLabel} vous guide pas à pas pour qualifier vos distributeurs, suivre les obligations contractuelles et sécuriser vos délais réglementaires.
               </p>
               <div className="flex flex-wrap gap-3" role="group" aria-label="Actions principales">
-                {[
-                  'Revue des pays',
-                  'Évaluation d’un distributeur',
-                  'Comparaison et sélection',
-                  'Contractualisation / avenant',
-                  'Audit et plan d’action'
-                ].map((label) => (
+                {HERO_ACTIONS.map((action) => (
                   <button
-                    key={label}
+                    key={action.label}
                     type="button"
-                    className="inline-flex items-center justify-center gap-3 px-5 py-3 text-base font-semibold text-blue-600 bg-white hover:bg-blue-50 rounded-xl border border-blue-200 transition-all hv-button hv-focus-ring"
+                    className={`inline-flex items-center justify-center gap-3 px-5 py-3 text-base font-semibold rounded-xl border transition-all hv-button hv-focus-ring ${
+                      action.tone === 'dark'
+                        ? 'bg-black text-white border-black hover:bg-gray-900'
+                        : 'text-blue-600 bg-white hover:bg-blue-50 border-blue-200'
+                    }`}
                   >
-                    <span className="leading-tight text-left">{label}</span>
+                    <span className="leading-tight text-left">{action.label}</span>
                   </button>
                 ))}
               </div>
@@ -1240,6 +1406,86 @@ export const DistribHomeScreen = ({
             </div>
           </div>
         </header>
+
+        {homeView === 'platform' && (
+          <section aria-labelledby="vision-pays-heading" className="space-y-6">
+            <div className="flex flex-col gap-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Vision Pays</p>
+              <h2 id="vision-pays-heading" className="text-2xl font-bold text-gray-900">
+                Couverture contractuelle et pays à développer
+              </h2>
+              <p className="text-sm text-gray-600">
+                Visualisez les pays couverts par contrat et suivez les opportunités sans distribution active.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+              <div className="rounded-3xl border border-blue-100 bg-white p-6 shadow-sm hv-surface">
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-gray-600">
+                    <span className="inline-flex items-center gap-2">
+                      <span className="h-3 w-3 rounded-full bg-blue-600" />
+                      Contrat actif
+                    </span>
+                    <span className="inline-flex items-center gap-2">
+                      <span className="h-3 w-3 rounded-full bg-[#f5e7c6]" />
+                      Pays sans contrat
+                    </span>
+                    <span className="inline-flex items-center gap-2">
+                      <span className="h-3 w-3 rounded-full bg-gray-200" />
+                      Autres pays
+                    </span>
+                  </div>
+                  {visionMapSvg ? (
+                    <div
+                      className="w-full overflow-hidden rounded-2xl border border-gray-100 bg-gray-50 p-4"
+                      dangerouslySetInnerHTML={{ __html: visionMapSvg }}
+                    />
+                  ) : (
+                    <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-6 text-sm text-gray-500">
+                      Carte indisponible pour le moment.
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="rounded-3xl border border-blue-100 bg-white p-6 shadow-sm hv-surface">
+                <div className="flex flex-col gap-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Pays sans contrat à prioriser</h3>
+                    <p className="text-sm text-gray-600">
+                      Informations qualitatives pour préparer les prochaines prises de contact.
+                    </p>
+                  </div>
+                  <div className="space-y-3">
+                    {VISION_NO_CONTRACT_COUNTRIES.map((country) => (
+                      <div
+                        key={country.code}
+                        className="rounded-2xl border border-amber-100 bg-amber-50/60 p-4 text-sm text-gray-700"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-base font-semibold text-gray-900">{country.name}</span>
+                          <span className="inline-flex items-center rounded-full bg-[#f5e7c6] px-3 py-1 text-xs font-semibold text-gray-700">
+                            Sans contrat
+                          </span>
+                        </div>
+                        <div className="mt-3 space-y-2">
+                          <p>
+                            <span className="font-semibold">Focus :</span> {country.focus}
+                          </p>
+                          <p>
+                            <span className="font-semibold">Potentiel :</span> {country.potential}
+                          </p>
+                          <p>
+                            <span className="font-semibold">Prochaine étape :</span> {country.nextStep}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
 
         <section aria-labelledby="projects-heading" className="space-y-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
