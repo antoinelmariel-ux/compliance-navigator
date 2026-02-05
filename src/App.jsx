@@ -47,7 +47,7 @@ import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.288';
+const APP_VERSION = 'v1.0.289';
 
 const normalizeHomeView = (value) => {
   if (value === 'platform') {
@@ -2012,7 +2012,7 @@ const updateProjectFilters = useCallback((updater) => {
   );
 
   const partnerProspectOptions = useMemo(() => {
-    const baseOption = ['Aucun prospect (saisie manuelle)'];
+    const baseOption = ['Autre'];
     const entries = inspirationProjects
       .filter(project => project && typeof project.id === 'string' && project.id.trim().length > 0)
       .map((project) => {
@@ -2664,12 +2664,15 @@ const updateProjectFilters = useCallback((updater) => {
         return;
       }
 
-      if (answer === 'Aucun prospect (saisie manuelle)' || !partnerProspectMap.has(answer)) {
+      if (answer === 'Autre' || !partnerProspectMap.has(answer)) {
         handleUpdateAnswers({ [questionId]: answer });
         return;
       }
 
       const prospect = partnerProspectMap.get(answer);
+      const prospectCountries = Array.isArray(prospect?.countries)
+        ? prospect.countries[0]
+        : prospect?.countries;
       handleUpdateAnswers({
         [questionId]: answer,
         projectName: prospect?.companyName,
@@ -2677,8 +2680,7 @@ const updateProjectFilters = useCallback((updater) => {
         email: prospect?.email,
         website: prospect?.website,
         role: prospect?.role,
-        countries: prospect?.countries,
-        situation: prospect?.situation
+        countries: prospectCountries
       });
       return;
     }

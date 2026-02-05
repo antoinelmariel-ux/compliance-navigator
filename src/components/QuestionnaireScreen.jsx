@@ -412,7 +412,7 @@ export const QuestionnaireScreen = ({
         return (
           <div className="mb-8" data-tour-id="question-main-content">
             <label className="block text-sm sm:text-base font-medium text-gray-700 mb-3" htmlFor={inputId}>
-              Sélectionnez un distributeur
+              {currentQuestion.question}
             </label>
             <input
               type="search"
