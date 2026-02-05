@@ -47,7 +47,7 @@ import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.289';
+const APP_VERSION = 'v1.0.290';
 
 const normalizeHomeView = (value) => {
   if (value === 'platform') {

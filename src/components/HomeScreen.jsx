@@ -274,6 +274,18 @@ export const HomeScreen = ({
   const heroHeadline = currentUserFirstName.length > 0
     ? `${currentUserFirstName}, pilotez votre développement international en quelques étapes`
     : 'Pilotez votre développement international en quelques étapes';
+  const handleEntrySelection = useCallback((targetView) => {
+    if (typeof onHomeViewChange === 'function') {
+      onHomeViewChange(targetView);
+    }
+
+    if (typeof document !== 'undefined') {
+      const section = document.getElementById('projects-heading');
+      if (section && typeof section.scrollIntoView === 'function') {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
+  }, [onHomeViewChange]);
   const [filtersState, setFiltersState] = useState(() => buildInitialFiltersState(normalizedFilters));
   const normalizedInspirationFilters = useMemo(
     () => normalizeInspirationFiltersConfig(inspirationFilters),
@@ -1328,6 +1340,64 @@ export const HomeScreen = ({
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 px-4 py-8 sm:px-8 hv-background">
       <div className="max-w-6xl mx-auto space-y-12">
+        <section
+          aria-labelledby="entry-heading"
+          className="bg-white border border-blue-100 rounded-3xl shadow-lg p-6 sm:p-8 hv-surface"
+        >
+          <div className="flex flex-col gap-6">
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-blue-500">Accès rapide</p>
+              <h2 id="entry-heading" className="text-2xl font-bold text-gray-900">
+                Choisissez votre parcours
+              </h2>
+              <p className="text-sm text-gray-600">
+                Accédez directement au bon espace selon votre besoin : cadrage projet ou suivi distributeurs.
+              </p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <article className="rounded-2xl border border-blue-100 bg-blue-50/40 p-5 hv-surface">
+                <div className="flex items-start gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white">
+                    <Target className="h-5 w-5" aria-hidden="true" />
+                  </span>
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-semibold text-gray-900">Project Navigator</h3>
+                    <p className="text-sm text-gray-600">
+                      Cadrez un nouveau partenaire, préparez la synthèse compliance et sollicitez les équipes internes.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleEntrySelection('partners')}
+                      className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                    >
+                      Accéder à Project Navigator
+                    </button>
+                  </div>
+                </div>
+              </article>
+              <article className="rounded-2xl border border-emerald-100 bg-emerald-50/40 p-5 hv-surface">
+                <div className="flex items-start gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-600 text-white">
+                    <Compass className="h-5 w-5" aria-hidden="true" />
+                  </span>
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-semibold text-gray-900">Distrib Navigator</h3>
+                    <p className="text-sm text-gray-600">
+                      Explorez les opportunités pays, suivez la prospection distributeurs et vos contrats actifs.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleEntrySelection('prospects')}
+                      className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                    >
+                      Accéder à Distrib Navigator
+                    </button>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
         <header className="bg-white border border-blue-100 rounded-3xl shadow-xl p-6 sm:p-10 hv-surface" role="banner">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div className="space-y-4">
