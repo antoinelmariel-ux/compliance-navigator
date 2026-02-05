@@ -69,6 +69,49 @@ export const initialRules = [
     ]
   },
   {
+    "id": "rule-new-partner",
+    "name": "Nouveau partenaire",
+    "conditions": [
+      {
+        "type": "question",
+        "question": "partnerProspectId",
+        "operator": "equals",
+        "value": "Autre"
+      }
+    ],
+    "conditionGroups": [
+      {
+        "logic": "all",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "partnerProspectId",
+            "operator": "equals",
+            "value": "Autre"
+          }
+        ]
+      }
+    ],
+    "conditionLogic": "all",
+    "teams": [
+      "legal",
+      "Ethics",
+      "pv"
+    ],
+    "questions": {
+      "legal": [
+        "Vérifier la structure contractuelle et les clauses critiques dès l'identification du nouveau partenaire."
+      ],
+      "Ethics": [
+        "Confirmer l'analyse éthique et les exigences compliance applicables au nouveau partenaire."
+      ],
+      "pv": [
+        "Préciser l'organisation de pharmacovigilance attendue pour ce nouveau partenaire."
+      ]
+    },
+    "risks": []
+  },
+  {
     "id": "rule4",
     "name": "Rémunération PDS",
     "conditions": [
