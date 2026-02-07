@@ -123,6 +123,7 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
   const [draggedOptionIndex, setDraggedOptionIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [optionConditionModal, setOptionConditionModal] = useState({ index: null, groups: [] });
+  const [expandedOptionIndex, setExpandedOptionIndex] = useState(null);
   const questionType = editedQuestion.type || 'choice';
   const typeUsesOptions = questionType === 'choice' || questionType === 'multi_choice';
   const normalizedGuidance = ensureGuidance(editedQuestion.guidance);
@@ -672,6 +673,60 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
     setEditedQuestion({ ...editedQuestion, options: newOptions });
   };
 
+  const updateOptionSubType = (index, value) => {
+    const newOptions = [...editedQuestion.options];
+    const current = newOptions[index];
+    newOptions[index] = {
+      ...(current && typeof current === 'object' ? current : {}),
+      subType: value
+    };
+    setEditedQuestion({ ...editedQuestion, options: newOptions });
+  };
+
+  const addSubOption = (index) => {
+    const newOptions = [...editedQuestion.options];
+    const current = newOptions[index];
+    const existing = Array.isArray(current?.subOptions) ? current.subOptions : [];
+    newOptions[index] = {
+      ...(current && typeof current === 'object' ? current : {}),
+      subOptions: [...existing, { label: 'Nouvelle sous-option' }]
+    };
+    setEditedQuestion({ ...editedQuestion, options: newOptions });
+  };
+
+  const updateSubOption = (index, subIndex, value) => {
+    const newOptions = [...editedQuestion.options];
+    const current = newOptions[index];
+    const existing = Array.isArray(current?.subOptions) ? current.subOptions : [];
+    const nextSubOptions = existing.map((entry, entryIndex) => {
+      if (entryIndex !== subIndex) {
+        return entry;
+      }
+
+      return {
+        ...(entry && typeof entry === 'object' ? entry : {}),
+        label: value
+      };
+    });
+
+    newOptions[index] = {
+      ...(current && typeof current === 'object' ? current : {}),
+      subOptions: nextSubOptions
+    };
+    setEditedQuestion({ ...editedQuestion, options: newOptions });
+  };
+
+  const deleteSubOption = (index, subIndex) => {
+    const newOptions = [...editedQuestion.options];
+    const current = newOptions[index];
+    const existing = Array.isArray(current?.subOptions) ? current.subOptions : [];
+    newOptions[index] = {
+      ...(current && typeof current === 'object' ? current : {}),
+      subOptions: existing.filter((_, entryIndex) => entryIndex !== subIndex)
+    };
+    setEditedQuestion({ ...editedQuestion, options: newOptions });
+  };
+
   const deleteOption = (index) => {
     if (editedQuestion.options.length > 1) {
       setEditedQuestion({
@@ -964,72 +1019,126 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                         : visibility === 'disabled'
                           ? 'Option désactivée'
                           : 'Option toujours visible';
+                    const subOptionCount = Array.isArray(option?.subOptions) ? option.subOptions.length : 0;
+                    const isExpanded = expandedOptionIndex === idx;
 
                     return (
-                    <div
-                      key={idx}
-                      className={`flex items-center space-x-2 rounded-lg border border-transparent bg-white p-2 transition-colors ${
-                        dragOverIndex === idx ? 'border-blue-200 bg-blue-50 shadow' : 'shadow-sm'
-                      }`}
-                      onDragOver={(e) => {
-                        e.preventDefault();
-                        setDragOverIndex(idx);
-                      }}
-                      onDragEnter={() => handleDragEnter(idx)}
-                      onDragLeave={(e) => {
-                        e.preventDefault();
-                        if (draggedOptionIndex !== idx) {
-                          setDragOverIndex(null);
-                        }
-                      }}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        handleDragEnd();
-                      }}
-                      onDragEnd={handleDragEnd}
-                    >
-                      <button
-                        type="button"
-                        draggable
-                        onDragStart={(event) => handleDragStart(event, idx)}
-                        className="cursor-grab px-2 py-3 text-gray-400 hover:text-blue-600 focus:outline-none"
-                        aria-label={`Réordonner l'option ${idx + 1}`}
+                    <div key={idx} className="space-y-2">
+                      <div
+                        className={`flex flex-wrap items-center gap-2 rounded-lg border border-transparent bg-white p-2 transition-colors ${
+                          dragOverIndex === idx ? 'border-blue-200 bg-blue-50 shadow' : 'shadow-sm'
+                        }`}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          setDragOverIndex(idx);
+                        }}
+                        onDragEnter={() => handleDragEnter(idx)}
+                        onDragLeave={(e) => {
+                          e.preventDefault();
+                          if (draggedOptionIndex !== idx) {
+                            setDragOverIndex(null);
+                          }
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          handleDragEnd();
+                        }}
+                        onDragEnd={handleDragEnd}
                       >
-                        <GripVertical className="w-4 h-4" />
-                      </button>
-                      <span className="text-gray-500 font-medium w-6 text-center">{idx + 1}.</span>
-                      <input
-                        type="text"
-                        value={optionLabel}
-                        onChange={(e) => updateOption(idx, e.target.value)}
-                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                        placeholder="Texte de l'option..."
-                      />
-                      {visibility === 'conditional' && (
                         <button
                           type="button"
-                          onClick={() => openOptionConditionModal(idx)}
-                          className="px-3 py-2 text-xs font-semibold text-orange-600 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100"
+                          draggable
+                          onDragStart={(event) => handleDragStart(event, idx)}
+                          className="cursor-grab px-2 py-3 text-gray-400 hover:text-blue-600 focus:outline-none"
+                          aria-label={`Réordonner l'option ${idx + 1}`}
                         >
-                          Modifier conditions
+                          <GripVertical className="w-4 h-4" />
                         </button>
+                        <span className="text-gray-500 font-medium w-6 text-center">{idx + 1}.</span>
+                        <input
+                          type="text"
+                          value={optionLabel}
+                          onChange={(e) => updateOption(idx, e.target.value)}
+                          className="flex-1 min-w-[220px] px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          placeholder="Texte de l'option..."
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setExpandedOptionIndex(isExpanded ? null : idx)}
+                          className="px-3 py-2 text-xs font-semibold text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100"
+                        >
+                          Sous-options {subOptionCount > 0 ? `(${subOptionCount})` : ''}
+                        </button>
+                        {visibility === 'conditional' && (
+                          <button
+                            type="button"
+                            onClick={() => openOptionConditionModal(idx)}
+                            className="px-3 py-2 text-xs font-semibold text-orange-600 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100"
+                          >
+                            Modifier conditions
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => toggleOptionVisibility(idx)}
+                          className="p-2 rounded-full hover:bg-gray-100"
+                          aria-label={`${statusLabel} - cliquer pour changer`}
+                          title={statusLabel}
+                        >
+                          <CheckCircle className={`w-5 h-5 ${statusColor}`} />
+                        </button>
+                        <button
+                          onClick={() => deleteOption(idx)}
+                          disabled={editedQuestion.options.length === 1}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                      {isExpanded && (
+                        <div className="ml-8 rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                            <label className="text-xs font-semibold text-gray-600">Type de sous-options</label>
+                            <select
+                              value={option?.subType === 'multi_choice' ? 'multi_choice' : 'choice'}
+                              onChange={(e) => updateOptionSubType(idx, e.target.value)}
+                              className="w-full sm:w-auto rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="choice">Choix unique</option>
+                              <option value="multi_choice">Choix multiples</option>
+                            </select>
+                          </div>
+                          <div className="space-y-2">
+                            {(option?.subOptions || []).map((subOption, subIdx) => (
+                              <div key={`${idx}-sub-${subIdx}`} className="flex items-center gap-2">
+                                <input
+                                  type="text"
+                                  value={typeof subOption?.label === 'string' ? subOption.label : ''}
+                                  onChange={(e) => updateSubOption(idx, subIdx, e.target.value)}
+                                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                  placeholder={`Sous-option ${subIdx + 1}`}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => deleteSubOption(idx, subIdx)}
+                                  className="p-2 text-red-600 hover:bg-red-50 rounded"
+                                  aria-label={`Supprimer la sous-option ${subIdx + 1}`}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ))}
+                            <button
+                              type="button"
+                              onClick={() => addSubOption(idx)}
+                              className="inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold text-blue-600 bg-white border border-blue-200 rounded-lg hover:bg-blue-50"
+                            >
+                              <Plus className="w-4 h-4" />
+                              Ajouter une sous-option
+                            </button>
+                          </div>
+                        </div>
                       )}
-                      <button
-                        type="button"
-                        onClick={() => toggleOptionVisibility(idx)}
-                        className="p-2 rounded-full hover:bg-gray-100"
-                        aria-label={`${statusLabel} - cliquer pour changer`}
-                        title={statusLabel}
-                      >
-                        <CheckCircle className={`w-5 h-5 ${statusColor}`} />
-                      </button>
-                      <button
-                        onClick={() => deleteOption(idx)}
-                        disabled={editedQuestion.options.length === 1}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
                     </div>
                     );
                   })}
