@@ -23,6 +23,7 @@ import { BackOfficeDashboard } from './BackOfficeDashboard.jsx';
 import { VirtualizedList } from './VirtualizedList.jsx';
 import { renderTextWithLinks } from '../utils/linkify.js';
 import { normalizeConditionGroups } from '../utils/conditionGroups.js';
+import { getConditionQuestionEntries, getQuestionOptionLabels } from '../utils/questions.js';
 import { initialOnboardingTourConfig } from '../data/onboardingTour.js';
 import {
   normalizeTimingRequirement,
@@ -128,6 +129,7 @@ const formatOperatorSymbol = (operator) => {
 
 const buildConditionSummary = (question, allQuestions) => {
   const conditionGroups = normalizeConditionGroups(question);
+  const conditionEntries = getConditionQuestionEntries(allQuestions);
   const summaries = [];
 
   for (let groupIndex = 0; groupIndex < conditionGroups.length; groupIndex += 1) {
@@ -145,7 +147,7 @@ const buildConditionSummary = (question, allQuestions) => {
         continue;
       }
 
-      const refQuestion = allQuestions.find((item) => item.id === condition.question);
+      const refQuestion = conditionEntries.find((item) => item.id === condition.question);
       const label = refQuestion ? refQuestion.question : `Question ${condition.question}`;
       const operator = formatOperatorSymbol(condition.operator);
 
@@ -168,6 +170,7 @@ const buildConditionSummary = (question, allQuestions) => {
 
 const buildRuleConditionSummary = (rule, questions) => {
   const groups = normalizeConditionGroups(rule, sanitizeRuleCondition);
+  const conditionEntries = getConditionQuestionEntries(questions);
   const formatted = [];
 
   for (let groupIndex = 0; groupIndex < groups.length; groupIndex += 1) {
@@ -212,7 +215,7 @@ const buildRuleConditionSummary = (rule, questions) => {
         continue;
       }
 
-      const refQuestion = questions.find((item) => item.id === condition.question);
+      const refQuestion = conditionEntries.find((item) => item.id === condition.question);
       const label = refQuestion ? `${refQuestion.id} – ${refQuestion.question}` : `Question ${condition.question}`;
       const operator = formatOperatorSymbol(condition.operator);
       const value = typeof condition.value === 'string' ? condition.value : JSON.stringify(condition.value);
@@ -553,6 +556,10 @@ export const BackOffice = ({
   const normalizedValidationCommitteeConfig = useMemo(
     () => normalizeValidationCommitteeConfig(validationCommitteeConfig),
     [validationCommitteeConfig]
+  );
+  const conditionQuestionEntries = useMemo(
+    () => getConditionQuestionEntries(questions),
+    [questions]
   );
   const dateQuestions = useMemo(
     () => (Array.isArray(questions) ? questions.filter((question) => question?.type === 'date') : []),
@@ -2202,27 +2209,21 @@ export const BackOffice = ({
       }
     });
 
-    const questionIds = new Set(questionMap.keys());
+    const conditionQuestionEntries = getConditionQuestionEntries(safeQuestions);
+    const conditionQuestionMap = new Map();
+    conditionQuestionEntries.forEach((question) => {
+      if (question?.id) {
+        conditionQuestionMap.set(question.id, question);
+      }
+    });
+
+    const questionIds = new Set(conditionQuestionMap.keys());
 
     const questionOptionMap = new Map();
     questionMap.forEach((question, id) => {
-      if (Array.isArray(question?.options) && question.options.length > 0) {
-        const normalizedOptions = question.options
-          .map((option) => {
-            if (
-              typeof option === 'string' ||
-              typeof option === 'number' ||
-              typeof option === 'boolean'
-            ) {
-              return String(option);
-            }
-            return null;
-          })
-          .filter(Boolean);
-
-        if (normalizedOptions.length > 0) {
-          questionOptionMap.set(id, new Set(normalizedOptions));
-        }
+      const normalizedOptions = getQuestionOptionLabels(question);
+      if (normalizedOptions.length > 0) {
+        questionOptionMap.set(id, new Set(normalizedOptions));
       }
     });
 
@@ -2257,7 +2258,7 @@ export const BackOffice = ({
     };
 
     const getQuestionLabel = (questionId) => {
-      const reference = questionMap.get(questionId);
+      const reference = conditionQuestionMap.get(questionId);
       if (!reference) {
         return questionId || 'Question inconnue';
       }
@@ -5022,13 +5023,13 @@ export const BackOffice = ({
                                   )}
                                 </div>
 
-                                {(Array.isArray(question.options) && question.options.length > 0) && (
+                                {getQuestionOptionLabels(question).length > 0 && (
                                   <div>
                                     <h4 className="text-sm font-semibold text-gray-700 flex items-center">
                                       <Info className="w-4 h-4 mr-2" /> Options proposées
                                     </h4>
                                     <ul className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-700">
-                                      {question.options.map((option, optionIndex) => (
+                                      {getQuestionOptionLabels(question).map((option, optionIndex) => (
                                         <li key={`${question.id}-option-${optionIndex}`} className="px-3 py-2 bg-gray-50 rounded-lg border border-gray-200">
                                           {option}
                                         </li>
@@ -5269,13 +5270,13 @@ export const BackOffice = ({
                                 )}
                               </div>
 
-                              {(Array.isArray(question.options) && question.options.length > 0) && (
+                              {getQuestionOptionLabels(question).length > 0 && (
                                 <div>
                                   <h4 className="text-sm font-semibold text-gray-700 flex items-center">
                                     <Info className="w-4 h-4 mr-2" /> Options proposées
                                   </h4>
                                   <ul className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-gray-700">
-                                    {question.options.map((option, optionIndex) => (
+                                    {getQuestionOptionLabels(question).map((option, optionIndex) => (
                                       <li key={`${question.id}-option-${optionIndex}`} className="px-3 py-2 bg-gray-50 rounded-lg border border-gray-200">
                                         {option}
                                       </li>
@@ -6054,7 +6055,9 @@ export const BackOffice = ({
                                             <div className="space-y-4">
                                               {conditions.map((condition, conditionIdx) => {
                                                 const conditionType = condition.type === 'timing' ? 'timing' : 'question';
-                                                const selectedQuestion = questions.find((item) => item.id === condition.question);
+                                                const selectedQuestion = conditionQuestionEntries.find(
+                                                  (item) => item.id === condition.question
+                                                );
                                                 const selectedQuestionType = selectedQuestion?.type || 'choice';
                                                 const usesOptions = ['choice', 'multi_choice'].includes(selectedQuestionType);
                                                 const inputType = selectedQuestionType === 'number'
@@ -6242,7 +6245,7 @@ export const BackOffice = ({
                                                             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
                                                           >
                                                             <option value="">Sélectionner...</option>
-                                                            {questions.map((question) => (
+                                                            {conditionQuestionEntries.map((question) => (
                                                               <option key={question.id} value={question.id}>
                                                                 {question.id} - {question.question ?? ''}
                                                               </option>
@@ -6309,6 +6312,28 @@ export const BackOffice = ({
                                                               );
                                                             }
 
+                                                            if (selectedQuestionType === 'boolean') {
+                                                              return (
+                                                                <select
+                                                                  value={condition.value}
+                                                                  onChange={(event) =>
+                                                                    updateCommitteeConditionField(
+                                                                      committee.id,
+                                                                      groupIdx,
+                                                                      conditionIdx,
+                                                                      'value',
+                                                                      event.target.value
+                                                                    )
+                                                                  }
+                                                                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                                                                >
+                                                                  <option value="">Sélectionner...</option>
+                                                                  <option value="true">Coché</option>
+                                                                  <option value="false">Non coché</option>
+                                                                </select>
+                                                              );
+                                                            }
+
                                                             if (usesOptions) {
                                                               return (
                                                                 <select
@@ -6325,7 +6350,7 @@ export const BackOffice = ({
                                                                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
                                                                 >
                                                                   <option value="">Sélectionner...</option>
-                                                                  {(selectedQuestion?.options || []).map((option, optionIndex) => (
+                                                                  {getQuestionOptionLabels(selectedQuestion).map((option, optionIndex) => (
                                                                     <option key={optionIndex} value={option}>
                                                                       {option}
                                                                     </option>

@@ -1,5 +1,53 @@
-import { normalizeConditionGroups } from './conditionGroups.js';
+import { applyConditionGroups, normalizeConditionGroups } from './conditionGroups.js';
 import { formatRankingAnswer } from './ranking.js';
+
+export const EXTRA_CHECKBOX_SUFFIX = '__extra_checkbox';
+
+export const buildExtraCheckboxQuestionId = (questionId) => {
+  if (!questionId || typeof questionId !== 'string') {
+    return '';
+  }
+
+  return `${questionId}${EXTRA_CHECKBOX_SUFFIX}`;
+};
+
+export const isExtraCheckboxQuestionId = (questionId) => {
+  if (!questionId || typeof questionId !== 'string') {
+    return false;
+  }
+
+  return questionId.endsWith(EXTRA_CHECKBOX_SUFFIX);
+};
+
+export const getConditionQuestionEntries = (questions = []) => {
+  if (!Array.isArray(questions)) {
+    return [];
+  }
+
+  const entries = [...questions];
+
+  questions.forEach((question) => {
+    if (!question || !question.id) {
+      return;
+    }
+
+    const extraCheckbox = question.extraCheckbox;
+    const label = typeof extraCheckbox?.label === 'string' ? extraCheckbox.label.trim() : '';
+    const enabled = Boolean(extraCheckbox?.enabled);
+
+    if (!enabled || label.length === 0) {
+      return;
+    }
+
+    entries.push({
+      id: buildExtraCheckboxQuestionId(question.id),
+      question: `${question.question || question.id} · Case à cocher : ${label}`,
+      type: 'boolean'
+    });
+  });
+
+  return entries;
+};
 
 const normalizeAnswerForComparison = (answer) => {
   if (Array.isArray(answer)) {
@@ -19,6 +67,19 @@ const normalizeAnswerForComparison = (answer) => {
   return answer;
 };
 
+export const normalizeConditionValueForAnswer = (answer, expected) => {
+  if (typeof answer === 'boolean') {
+    if (expected === true || expected === 'true') {
+      return true;
+    }
+    if (expected === false || expected === 'false') {
+      return false;
+    }
+  }
+
+  return expected;
+};
+
 const toNumber = (value) => {
   if (value === null || value === undefined || value === '') {
     return null;
@@ -34,24 +95,28 @@ const evaluateQuestionCondition = (condition, answers) => {
   if (rawAnswer === null || rawAnswer === undefined || rawAnswer === '') return false;
 
   const answer = normalizeAnswerForComparison(rawAnswer);
+  const normalizedExpected = normalizeConditionValueForAnswer(
+    Array.isArray(answer) ? answer[0] : answer,
+    condition.value
+  );
 
   switch (condition.operator) {
     case 'equals':
       if (Array.isArray(answer)) {
-        return answer.includes(condition.value);
+        return answer.includes(normalizedExpected);
       }
-      return answer === condition.value;
+      return answer === normalizedExpected;
     case 'not_equals':
       if (Array.isArray(answer)) {
-        return !answer.includes(condition.value);
+        return !answer.includes(normalizedExpected);
       }
-      return answer !== condition.value;
+      return answer !== normalizedExpected;
     case 'contains':
       if (Array.isArray(answer)) {
-        return answer.includes(condition.value);
+        return answer.includes(normalizedExpected);
       }
       if (typeof answer === 'string') {
-        return answer.includes(condition.value);
+        return answer.includes(normalizedExpected);
       }
       return false;
     case 'lt':
@@ -87,14 +152,12 @@ const evaluateQuestionCondition = (condition, answers) => {
   }
 };
 
-export const shouldShowQuestion = (question, answers) => {
-  const conditionGroups = normalizeConditionGroups(question);
-
+const evaluateConditionGroups = (conditionGroups, answers) => {
   if (conditionGroups.length === 0) {
     return true;
   }
 
-  return conditionGroups.every(group => {
+  return conditionGroups.every((group) => {
     const groupConditions = Array.isArray(group.conditions) ? group.conditions : [];
     if (groupConditions.length === 0) {
       return true;
@@ -108,6 +171,62 @@ export const shouldShowQuestion = (question, answers) => {
 
     return groupConditions.every(condition => evaluateQuestionCondition(condition, answers));
   });
+};
+
+export const shouldShowQuestion = (question, answers) => {
+  const conditionGroups = normalizeConditionGroups(question);
+  return evaluateConditionGroups(conditionGroups, answers);
+};
+
+export const normalizeQuestionOption = (option) => {
+  const baseOption =
+    option && typeof option === 'object' && !Array.isArray(option) ? { ...option } : { label: option };
+  const rawLabel = baseOption.label ?? baseOption.value;
+  const label = typeof rawLabel === 'string' || typeof rawLabel === 'number' || typeof rawLabel === 'boolean'
+    ? String(rawLabel)
+    : '';
+  const rawVisibility = baseOption.visibility;
+  const visibility = rawVisibility === 'conditional' || rawVisibility === 'disabled' ? rawVisibility : 'always';
+  const conditionGroups = normalizeConditionGroups(baseOption);
+
+  return applyConditionGroups(
+    {
+      ...baseOption,
+      label,
+      visibility
+    },
+    conditionGroups
+  );
+};
+
+export const normalizeQuestionOptions = (questionOrOptions) => {
+  const options = Array.isArray(questionOrOptions?.options)
+    ? questionOrOptions.options
+    : Array.isArray(questionOrOptions)
+      ? questionOrOptions
+      : [];
+
+  return options
+    .map(normalizeQuestionOption)
+    .filter(option => option.label && option.label.trim() !== '');
+};
+
+export const getQuestionOptionLabels = (questionOrOptions) =>
+  normalizeQuestionOptions(questionOrOptions).map(option => option.label);
+
+export const shouldShowOption = (option, answers) => {
+  const normalized = normalizeQuestionOption(option);
+
+  if (normalized.visibility === 'disabled') {
+    return false;
+  }
+
+  if (normalized.visibility !== 'conditional') {
+    return true;
+  }
+
+  const conditionGroups = Array.isArray(normalized.conditionGroups) ? normalized.conditionGroups : [];
+  return evaluateConditionGroups(conditionGroups, answers);
 };
 
 export const formatAnswer = (question, answer) => {

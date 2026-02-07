@@ -10,7 +10,12 @@ import {
   Plus,
   Trash2
 } from './icons.js';
-import { formatAnswer } from '../utils/questions.js';
+import {
+  buildExtraCheckboxQuestionId,
+  formatAnswer,
+  normalizeQuestionOptions,
+  shouldShowOption
+} from '../utils/questions.js';
 import { normalizeConditionGroups } from '../utils/conditionGroups.js';
 import { renderTextWithLinks } from '../utils/linkify.js';
 import { RichTextEditor } from './RichTextEditor.jsx';
@@ -116,6 +121,21 @@ export const QuestionnaireScreen = ({
   const questionType = currentQuestion.type || 'choice';
   const currentAnswer = answers[currentQuestion.id];
   const multiSelection = Array.isArray(currentAnswer) ? currentAnswer : [];
+  const extraCheckbox = currentQuestion.extraCheckbox || { enabled: false, label: '' };
+  const extraCheckboxId = buildExtraCheckboxQuestionId(currentQuestion.id);
+  const extraCheckboxAnswer = answers[extraCheckboxId];
+  const normalizedOptions = useMemo(
+    () => normalizeQuestionOptions(currentQuestion),
+    [currentQuestion]
+  );
+  const visibleOptions = useMemo(
+    () => normalizedOptions.filter(option => shouldShowOption(option, answers)),
+    [normalizedOptions, answers]
+  );
+  const visibleOptionLabels = useMemo(
+    () => visibleOptions.map(option => option.label),
+    [visibleOptions]
+  );
   const rankingConfig = useMemo(
     () => normalizeRankingConfig(currentQuestion.rankingConfig || {}),
     [currentQuestion.rankingConfig]
@@ -174,6 +194,22 @@ export const QuestionnaireScreen = ({
   useEffect(() => {
     setShowGuidance(false);
   }, [currentQuestion.id]);
+
+  useEffect(() => {
+    if (questionType === 'choice') {
+      if (currentAnswer && !visibleOptionLabels.includes(currentAnswer)) {
+        onAnswer(currentQuestion.id, null);
+      }
+      return;
+    }
+
+    if (questionType === 'multi_choice') {
+      const filtered = multiSelection.filter(option => visibleOptionLabels.includes(option));
+      if (filtered.length !== multiSelection.length) {
+        onAnswer(currentQuestion.id, filtered);
+      }
+    }
+  }, [currentAnswer, currentQuestion.id, multiSelection, onAnswer, questionType, visibleOptionLabels]);
 
   useEffect(() => {
     if (questionType !== 'milestone_list') {
@@ -386,8 +422,9 @@ export const QuestionnaireScreen = ({
         return (
           <fieldset className="space-y-3 mb-8" aria-describedby={currentIndex === 0 ? instructionsId : undefined}>
             <legend className="sr-only">{currentQuestion.question}</legend>
-            {currentQuestion.options.map((option, idx) => {
-              const isSelected = answers[currentQuestion.id] === option;
+            {visibleOptions.map((option, idx) => {
+              const optionLabel = option.label;
+              const isSelected = answers[currentQuestion.id] === optionLabel;
               const optionId = `${currentQuestion.id}-option-${idx}`;
 
               return (
@@ -405,12 +442,12 @@ export const QuestionnaireScreen = ({
                       type="radio"
                       id={optionId}
                       name={currentQuestion.id}
-                      value={option}
+                      value={optionLabel}
                       checked={isSelected}
-                      onChange={() => onAnswer(currentQuestion.id, option)}
+                      onChange={() => onAnswer(currentQuestion.id, optionLabel)}
                       className="w-5 h-5 text-blue-600 border-gray-300 focus:ring-blue-500 hv-focus-ring"
                     />
-                    <span className="ml-3 font-medium text-sm sm:text-base">{option}</span>
+                    <span className="ml-3 font-medium text-sm sm:text-base">{optionLabel}</span>
                   </div>
                   {isSelected && <CheckCircle className="w-5 h-5 text-blue-600 self-end sm:self-auto" />}
                 </label>
@@ -421,18 +458,19 @@ export const QuestionnaireScreen = ({
       case 'multi_choice':
         return (
           <div className="space-y-3 mb-8">
-            {currentQuestion.options.map((option, idx) => {
-              const isSelected = multiSelection.includes(option);
+            {visibleOptions.map((option, idx) => {
+              const optionLabel = option.label;
+              const isSelected = multiSelection.includes(optionLabel);
               const optionId = `${currentQuestion.id}-multi-option-${idx}`;
 
               const toggleOption = () => {
                 if (isSelected) {
                   onAnswer(
                     currentQuestion.id,
-                    multiSelection.filter(item => item !== option)
+                    multiSelection.filter(item => item !== optionLabel)
                   );
                 } else {
-                  onAnswer(currentQuestion.id, [...multiSelection, option]);
+                  onAnswer(currentQuestion.id, [...multiSelection, optionLabel]);
                 }
               };
 
@@ -454,7 +492,7 @@ export const QuestionnaireScreen = ({
                       id={optionId}
                       className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 hv-focus-ring"
                     />
-                    <span className="ml-3 font-medium text-sm sm:text-base">{option}</span>
+                    <span className="ml-3 font-medium text-sm sm:text-base">{optionLabel}</span>
                   </div>
                   {isSelected && <CheckCircle className="w-5 h-5 text-blue-600 self-end sm:self-auto" />}
                 </label>
@@ -1037,6 +1075,20 @@ export const QuestionnaireScreen = ({
           )}
 
           {renderQuestionInput()}
+
+          {extraCheckbox?.enabled && extraCheckbox?.label?.trim() && (
+            <div className="mb-8 rounded-xl border border-gray-200 bg-white p-4">
+              <label className="flex items-center gap-3 text-sm font-medium text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={Boolean(extraCheckboxAnswer)}
+                  onChange={(event) => onAnswer(extraCheckboxId, event.target.checked)}
+                  className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span>{extraCheckbox.label.trim()}</span>
+              </label>
+            </div>
+          )}
 
           <div
             className={`flex flex-col-reverse gap-3 sm:flex-row sm:items-center ${
