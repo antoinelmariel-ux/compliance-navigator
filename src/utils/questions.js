@@ -55,6 +55,9 @@ const normalizeAnswerForComparison = (answer) => {
   }
 
   if (answer && typeof answer === 'object') {
+    if (Array.isArray(answer.values)) {
+      return answer.values;
+    }
     if (typeof answer.value !== 'undefined') {
       return answer.value;
     }
@@ -188,12 +191,19 @@ export const normalizeQuestionOption = (option) => {
   const rawVisibility = baseOption.visibility;
   const visibility = rawVisibility === 'conditional' || rawVisibility === 'disabled' ? rawVisibility : 'always';
   const conditionGroups = normalizeConditionGroups(baseOption);
+  const rawSubType = baseOption.subType;
+  const subType = rawSubType === 'multi_choice' || rawSubType === 'choice' ? rawSubType : null;
+  const rawSubOptions = Array.isArray(baseOption.subOptions) ? baseOption.subOptions : [];
 
   return applyConditionGroups(
     {
       ...baseOption,
       label,
-      visibility
+      visibility,
+      subType,
+      subOptions: rawSubOptions
+        .map(normalizeQuestionOption)
+        .filter(optionEntry => optionEntry.label && optionEntry.label.trim() !== '')
     },
     conditionGroups
   );
@@ -287,6 +297,35 @@ export const formatAnswer = (question, answer) => {
 
   if (questionType === 'multi_choice' && Array.isArray(answer)) {
     return answer.join(', ');
+  }
+
+  if (questionType === 'choice' && answer && typeof answer === 'object' && !Array.isArray(answer)) {
+    const value = typeof answer.value !== 'undefined' ? answer.value : answer.name;
+    const label = value == null ? '' : String(value);
+    const children = Array.isArray(answer.children) ? answer.children : [];
+    if (children.length === 0) {
+      return label;
+    }
+    return `${label} (${children.map(item => String(item)).join(', ')})`;
+  }
+
+  if (questionType === 'multi_choice' && answer && typeof answer === 'object' && !Array.isArray(answer)) {
+    const values = Array.isArray(answer.values) ? answer.values : [];
+    const children = answer.children && typeof answer.children === 'object' ? answer.children : {};
+    if (values.length === 0) {
+      return '';
+    }
+    return values
+      .map((value) => {
+        const label = value == null ? '' : String(value);
+        const childValues = Array.isArray(children[label]) ? children[label] : [];
+        if (childValues.length === 0) {
+          return label;
+        }
+        return `${label} (${childValues.map(item => String(item)).join(', ')})`;
+      })
+      .filter(Boolean)
+      .join(', ');
   }
 
   if (questionType === 'ranking') {

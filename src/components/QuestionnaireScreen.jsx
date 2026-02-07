@@ -88,6 +88,61 @@ const sanitizeMilestonesForAnswer = (drafts) => {
     .filter(entry => entry.date.length > 0 || entry.description.length > 0);
 };
 
+const normalizeChoiceAnswer = (answer) => {
+  if (answer && typeof answer === 'object' && !Array.isArray(answer)) {
+    return {
+      value: typeof answer.value !== 'undefined'
+        ? answer.value
+        : typeof answer.label !== 'undefined'
+          ? answer.label
+          : '',
+      children: Array.isArray(answer.children) ? answer.children : []
+    };
+  }
+
+  return {
+    value: typeof answer === 'string' ? answer : '',
+    children: []
+  };
+};
+
+const normalizeMultiChoiceAnswer = (answer) => {
+  if (Array.isArray(answer)) {
+    return { values: answer, children: {} };
+  }
+
+  if (answer && typeof answer === 'object') {
+    const values = Array.isArray(answer.values) ? answer.values : [];
+    const children = answer.children && typeof answer.children === 'object' ? answer.children : {};
+    return { values, children };
+  }
+
+  return { values: [], children: {} };
+};
+
+const buildMultiChoiceAnswerPayload = (values, children) => {
+  const sanitizedValues = Array.isArray(values) ? values.filter(Boolean) : [];
+  const sanitizedChildren = Object.entries(children || {})
+    .reduce((acc, [key, childValues]) => {
+      const normalized = Array.isArray(childValues)
+        ? childValues.filter(Boolean)
+        : [];
+      if (normalized.length > 0) {
+        acc[key] = normalized;
+      }
+      return acc;
+    }, {});
+
+  if (Object.keys(sanitizedChildren).length === 0) {
+    return sanitizedValues;
+  }
+
+  return {
+    values: sanitizedValues,
+    children: sanitizedChildren
+  };
+};
+
 export const QuestionnaireScreen = ({
   questions,
   currentIndex,
@@ -120,7 +175,9 @@ export const QuestionnaireScreen = ({
     : `${remainingQuestions} question${remainingQuestions > 1 ? 's' : ''} restante${remainingQuestions > 1 ? 's' : ''}`;
   const questionType = currentQuestion.type || 'choice';
   const currentAnswer = answers[currentQuestion.id];
-  const multiSelection = Array.isArray(currentAnswer) ? currentAnswer : [];
+  const choiceAnswerState = useMemo(() => normalizeChoiceAnswer(currentAnswer), [currentAnswer]);
+  const multiAnswerState = useMemo(() => normalizeMultiChoiceAnswer(currentAnswer), [currentAnswer]);
+  const multiSelection = multiAnswerState.values;
   const extraCheckbox = currentQuestion.extraCheckbox || { enabled: false, label: '' };
   const extraCheckboxId = buildExtraCheckboxQuestionId(currentQuestion.id);
   const extraCheckboxAnswer = answers[extraCheckboxId];
@@ -197,7 +254,7 @@ export const QuestionnaireScreen = ({
 
   useEffect(() => {
     if (questionType === 'choice') {
-      if (currentAnswer && !visibleOptionLabels.includes(currentAnswer)) {
+      if (choiceAnswerState.value && !visibleOptionLabels.includes(choiceAnswerState.value)) {
         onAnswer(currentQuestion.id, null);
       }
       return;
@@ -206,10 +263,18 @@ export const QuestionnaireScreen = ({
     if (questionType === 'multi_choice') {
       const filtered = multiSelection.filter(option => visibleOptionLabels.includes(option));
       if (filtered.length !== multiSelection.length) {
-        onAnswer(currentQuestion.id, filtered);
+        onAnswer(currentQuestion.id, buildMultiChoiceAnswerPayload(filtered, multiAnswerState.children));
       }
     }
-  }, [currentAnswer, currentQuestion.id, multiSelection, onAnswer, questionType, visibleOptionLabels]);
+  }, [
+    choiceAnswerState.value,
+    currentQuestion.id,
+    multiAnswerState.children,
+    multiSelection,
+    onAnswer,
+    questionType,
+    visibleOptionLabels
+  ]);
 
   useEffect(() => {
     if (questionType !== 'milestone_list') {
@@ -424,33 +489,86 @@ export const QuestionnaireScreen = ({
             <legend className="sr-only">{currentQuestion.question}</legend>
             {visibleOptions.map((option, idx) => {
               const optionLabel = option.label;
-              const isSelected = answers[currentQuestion.id] === optionLabel;
+              const isSelected = choiceAnswerState.value === optionLabel;
               const optionId = `${currentQuestion.id}-option-${idx}`;
+              const subOptions = Array.isArray(option.subOptions) ? option.subOptions : [];
+              const hasSubOptions = subOptions.length > 0;
+              const subType = option.subType === 'multi_choice' ? 'multi_choice' : 'choice';
+
+              const handleSelectOption = () => {
+                if (hasSubOptions) {
+                  const preservedChildren = isSelected ? choiceAnswerState.children : [];
+                  onAnswer(currentQuestion.id, {
+                    value: optionLabel,
+                    children: preservedChildren
+                  });
+                  return;
+                }
+                onAnswer(currentQuestion.id, optionLabel);
+              };
+
+              const childSelections = isSelected ? choiceAnswerState.children : [];
 
               return (
-                <label
+                <div
                   key={idx}
-                  htmlFor={optionId}
-                  className={`w-full p-3 sm:p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl border-2 transition-all duration-200 cursor-pointer hv-focus-ring ${
+                  className={`w-full p-3 sm:p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl border-2 transition-all duration-200 hv-focus-ring ${
                     isSelected
                       ? 'border-blue-600 bg-blue-50 text-blue-900'
                       : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
                   }`}
                 >
-                  <div className="flex items-center">
+                  <label htmlFor={optionId} className="flex items-center cursor-pointer">
                     <input
                       type="radio"
                       id={optionId}
                       name={currentQuestion.id}
                       value={optionLabel}
                       checked={isSelected}
-                      onChange={() => onAnswer(currentQuestion.id, optionLabel)}
+                      onChange={handleSelectOption}
                       className="w-5 h-5 text-blue-600 border-gray-300 focus:ring-blue-500 hv-focus-ring"
                     />
                     <span className="ml-3 font-medium text-sm sm:text-base">{optionLabel}</span>
-                  </div>
+                  </label>
                   {isSelected && <CheckCircle className="w-5 h-5 text-blue-600 self-end sm:self-auto" />}
-                </label>
+                  {isSelected && hasSubOptions && (
+                    <div className="w-full sm:pl-8 sm:border-l sm:border-gray-200 space-y-2">
+                      <p className="text-xs text-gray-500">Précisez votre choix</p>
+                      <div className="space-y-2">
+                        {subOptions.map((subOption, subIdx) => {
+                          const subLabel = subOption.label;
+                          const subId = `${optionId}-sub-${subIdx}`;
+                          const isSubSelected = childSelections.includes(subLabel);
+                          const toggleSubOption = () => {
+                            const nextChildren = subType === 'multi_choice'
+                              ? (isSubSelected
+                                ? childSelections.filter(item => item !== subLabel)
+                                : [...childSelections, subLabel])
+                              : [subLabel];
+                            onAnswer(currentQuestion.id, {
+                              value: optionLabel,
+                              children: nextChildren
+                            });
+                          };
+
+                          return (
+                            <label key={subId} htmlFor={subId} className="flex items-center text-sm text-gray-700">
+                              <input
+                                id={subId}
+                                type={subType === 'multi_choice' ? 'checkbox' : 'radio'}
+                                name={subType === 'multi_choice' ? subId : `${optionId}-sub-group`}
+                                checked={isSubSelected}
+                                onChange={toggleSubOption}
+                                className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                              />
+                              <span className="ml-2">{subLabel}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
               );
             })}
           </fieldset>
@@ -462,29 +580,45 @@ export const QuestionnaireScreen = ({
               const optionLabel = option.label;
               const isSelected = multiSelection.includes(optionLabel);
               const optionId = `${currentQuestion.id}-multi-option-${idx}`;
+              const subOptions = Array.isArray(option.subOptions) ? option.subOptions : [];
+              const hasSubOptions = subOptions.length > 0;
+              const subType = option.subType === 'multi_choice' ? 'multi_choice' : 'choice';
+              const childSelections = Array.isArray(multiAnswerState.children[optionLabel])
+                ? multiAnswerState.children[optionLabel]
+                : [];
 
               const toggleOption = () => {
+                const nextChildren = { ...multiAnswerState.children };
                 if (isSelected) {
+                  delete nextChildren[optionLabel];
                   onAnswer(
                     currentQuestion.id,
-                    multiSelection.filter(item => item !== optionLabel)
+                    buildMultiChoiceAnswerPayload(
+                      multiSelection.filter(item => item !== optionLabel),
+                      nextChildren
+                    )
                   );
                 } else {
-                  onAnswer(currentQuestion.id, [...multiSelection, optionLabel]);
+                  onAnswer(
+                    currentQuestion.id,
+                    buildMultiChoiceAnswerPayload(
+                      [...multiSelection, optionLabel],
+                      nextChildren
+                    )
+                  );
                 }
               };
 
               return (
-                <label
+                <div
                   key={idx}
-                  htmlFor={optionId}
-                  className={`w-full p-3 sm:p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl border-2 transition-all duration-200 cursor-pointer hv-focus-ring ${
+                  className={`w-full p-3 sm:p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl border-2 transition-all duration-200 hv-focus-ring ${
                     isSelected
                       ? 'border-blue-600 bg-blue-50 text-blue-900'
                       : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
                   }`}
                 >
-                  <div className="flex items-center">
+                  <label htmlFor={optionId} className="flex items-center cursor-pointer">
                     <input
                       type="checkbox"
                       checked={isSelected}
@@ -493,9 +627,55 @@ export const QuestionnaireScreen = ({
                       className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 hv-focus-ring"
                     />
                     <span className="ml-3 font-medium text-sm sm:text-base">{optionLabel}</span>
-                  </div>
+                  </label>
                   {isSelected && <CheckCircle className="w-5 h-5 text-blue-600 self-end sm:self-auto" />}
-                </label>
+                  {isSelected && hasSubOptions && (
+                    <div className="w-full sm:pl-8 sm:border-l sm:border-gray-200 space-y-2">
+                      <p className="text-xs text-gray-500">Précisez votre choix</p>
+                      <div className="space-y-2">
+                        {subOptions.map((subOption, subIdx) => {
+                          const subLabel = subOption.label;
+                          const subId = `${optionId}-sub-${subIdx}`;
+                          const isSubSelected = childSelections.includes(subLabel);
+                          const toggleSubOption = () => {
+                            const nextChildren = subType === 'multi_choice'
+                              ? (isSubSelected
+                                ? childSelections.filter(item => item !== subLabel)
+                                : [...childSelections, subLabel])
+                              : [subLabel];
+                            const nextValues = isSelected
+                              ? multiSelection
+                              : [...multiSelection, optionLabel];
+                            onAnswer(
+                              currentQuestion.id,
+                              buildMultiChoiceAnswerPayload(
+                                nextValues,
+                                {
+                                  ...multiAnswerState.children,
+                                  [optionLabel]: nextChildren
+                                }
+                              )
+                            );
+                          };
+
+                          return (
+                            <label key={subId} htmlFor={subId} className="flex items-center text-sm text-gray-700">
+                              <input
+                                id={subId}
+                                type={subType === 'multi_choice' ? 'checkbox' : 'radio'}
+                                name={subType === 'multi_choice' ? subId : `${optionId}-sub-group`}
+                                checked={isSubSelected}
+                                onChange={toggleSubOption}
+                                className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                              />
+                              <span className="ml-2">{subLabel}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>

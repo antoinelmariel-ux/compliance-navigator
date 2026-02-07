@@ -82,6 +82,15 @@ const formatAnswerValue = (value) => {
     return value.map((item) => (item == null ? '' : String(item))).filter(Boolean).join(', ');
   }
 
+  if (value && typeof value === 'object') {
+    if (Array.isArray(value.values)) {
+      return value.values.map((item) => (item == null ? '' : String(item))).filter(Boolean).join(', ');
+    }
+    if (typeof value.value !== 'undefined') {
+      return String(value.value);
+    }
+  }
+
   if (value == null) {
     return '';
   }
