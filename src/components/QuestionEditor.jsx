@@ -15,6 +15,7 @@ import {
   buildExtraCheckboxQuestionId,
   getConditionQuestionEntries,
   getQuestionOptionLabels,
+  normalizeOtherOption,
   normalizeQuestionOptions
 } from '../utils/questions.js';
 
@@ -39,6 +40,15 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
     return {
       enabled: Boolean(config.enabled),
       label: typeof config.label === 'string' ? config.label : ''
+    };
+  };
+
+  const ensureOtherOption = (config) => {
+    const normalized = normalizeOtherOption(config);
+    return {
+      enabled: Boolean(normalized.enabled),
+      label: typeof normalized.label === 'string' ? normalized.label : 'Autre',
+      placeholder: typeof normalized.placeholder === 'string' ? normalized.placeholder : ''
     };
   };
 
@@ -103,9 +113,10 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
     const base = {
       ...source,
       type: source.type || 'choice',
-      options: normalizeQuestionOptions(source),
+      options: normalizeQuestionOptions(source, { includeOther: false }),
       guidance: ensureGuidance(source.guidance),
       extraCheckbox: ensureExtraCheckbox(source.extraCheckbox),
+      otherOption: ensureOtherOption(source.otherOption),
       placeholder: typeof source.placeholder === 'string' ? source.placeholder : '',
       numberUnit: typeof source.numberUnit === 'string' ? source.numberUnit : '',
       rankingConfig
@@ -756,11 +767,19 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
       enabled: extraCheckbox.enabled && extraLabel.length > 0,
       label: extraLabel
     };
+    const otherOption = ensureOtherOption(editedQuestion.otherOption);
+    const otherLabel = otherOption.label.trim();
+    const normalizedOtherOption = {
+      enabled: typeUsesOptions && otherOption.enabled && otherLabel.length > 0,
+      label: otherLabel.length > 0 ? otherLabel : 'Autre',
+      placeholder: typeof otherOption.placeholder === 'string' ? otherOption.placeholder.trim() : ''
+    };
 
     onSave({
       ...sanitizedQuestion,
       numberUnit: unitLabel,
-      extraCheckbox: normalizedExtraCheckbox
+      extraCheckbox: normalizedExtraCheckbox,
+      otherOption: normalizedOtherOption
     });
   };
 
@@ -970,6 +989,67 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                   </p>
                 </div>
               </div>
+
+              {typeUsesOptions && (
+                <div className="border border-gray-200 rounded-lg p-4 space-y-3">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={editedQuestion.otherOption?.enabled}
+                      onChange={(e) => setEditedQuestion(prev => ({
+                        ...prev,
+                        otherOption: {
+                          ...ensureOtherOption(prev.otherOption),
+                          enabled: e.target.checked
+                        }
+                      }))}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label className="ml-2 text-sm font-medium text-gray-700">
+                      Autoriser l&apos;option &quot;Autre&quot;
+                    </label>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                      Libellé de l&apos;option
+                    </label>
+                    <input
+                      type="text"
+                      value={editedQuestion.otherOption?.label || ''}
+                      onChange={(e) => setEditedQuestion(prev => ({
+                        ...prev,
+                        otherOption: {
+                          ...ensureOtherOption(prev.otherOption),
+                          label: e.target.value
+                        }
+                      }))}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      placeholder="Autre"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                      Placeholder du champ libre
+                    </label>
+                    <input
+                      type="text"
+                      value={editedQuestion.otherOption?.placeholder || ''}
+                      onChange={(e) => setEditedQuestion(prev => ({
+                        ...prev,
+                        otherOption: {
+                          ...ensureOtherOption(prev.otherOption),
+                          placeholder: e.target.value
+                        }
+                      }))}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      placeholder="Précisez votre réponse"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Le champ texte s&apos;affichera uniquement si la personne choisit cette option.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
