@@ -13,6 +13,7 @@ import {
 import {
   buildExtraCheckboxQuestionId,
   formatAnswer,
+  normalizeOtherOption,
   normalizeQuestionOptions,
   shouldShowOption
 } from '../utils/questions.js';
@@ -96,31 +97,33 @@ const normalizeChoiceAnswer = (answer) => {
         : typeof answer.label !== 'undefined'
           ? answer.label
           : '',
-      children: Array.isArray(answer.children) ? answer.children : []
+      children: Array.isArray(answer.children) ? answer.children : [],
+      otherText: typeof answer.otherText === 'string' ? answer.otherText : ''
     };
   }
 
   return {
     value: typeof answer === 'string' ? answer : '',
-    children: []
+    children: [],
+    otherText: ''
   };
 };
 
 const normalizeMultiChoiceAnswer = (answer) => {
   if (Array.isArray(answer)) {
-    return { values: answer, children: {} };
+    return { values: answer, children: {}, otherText: '' };
   }
 
   if (answer && typeof answer === 'object') {
     const values = Array.isArray(answer.values) ? answer.values : [];
     const children = answer.children && typeof answer.children === 'object' ? answer.children : {};
-    return { values, children };
+    return { values, children, otherText: typeof answer.otherText === 'string' ? answer.otherText : '' };
   }
 
-  return { values: [], children: {} };
+  return { values: [], children: {}, otherText: '' };
 };
 
-const buildMultiChoiceAnswerPayload = (values, children) => {
+const buildMultiChoiceAnswerPayload = (values, children, otherText) => {
   const sanitizedValues = Array.isArray(values) ? values.filter(Boolean) : [];
   const sanitizedChildren = Object.entries(children || {})
     .reduce((acc, [key, childValues]) => {
@@ -133,13 +136,16 @@ const buildMultiChoiceAnswerPayload = (values, children) => {
       return acc;
     }, {});
 
-  if (Object.keys(sanitizedChildren).length === 0) {
+  const sanitizedOtherText = typeof otherText === 'string' ? otherText : '';
+
+  if (Object.keys(sanitizedChildren).length === 0 && !sanitizedOtherText) {
     return sanitizedValues;
   }
 
   return {
     values: sanitizedValues,
-    children: sanitizedChildren
+    children: sanitizedChildren,
+    otherText: sanitizedOtherText
   };
 };
 
@@ -181,6 +187,14 @@ export const QuestionnaireScreen = ({
   const extraCheckbox = currentQuestion.extraCheckbox || { enabled: false, label: '' };
   const extraCheckboxId = buildExtraCheckboxQuestionId(currentQuestion.id);
   const extraCheckboxAnswer = answers[extraCheckboxId];
+  const otherOption = useMemo(
+    () => normalizeOtherOption(currentQuestion.otherOption),
+    [currentQuestion.otherOption]
+  );
+  const otherOptionLabel = typeof otherOption.label === 'string' ? otherOption.label.trim() : '';
+  const otherOptionPlaceholder = typeof otherOption.placeholder === 'string'
+    ? otherOption.placeholder.trim()
+    : '';
   const normalizedOptions = useMemo(
     () => normalizeQuestionOptions(currentQuestion),
     [currentQuestion]
@@ -263,15 +277,20 @@ export const QuestionnaireScreen = ({
     if (questionType === 'multi_choice') {
       const filtered = multiSelection.filter(option => visibleOptionLabels.includes(option));
       if (filtered.length !== multiSelection.length) {
-        onAnswer(currentQuestion.id, buildMultiChoiceAnswerPayload(filtered, multiAnswerState.children));
+        const nextOtherText = otherOptionLabel && filtered.includes(otherOptionLabel)
+          ? multiAnswerState.otherText
+          : '';
+        onAnswer(currentQuestion.id, buildMultiChoiceAnswerPayload(filtered, multiAnswerState.children, nextOtherText));
       }
     }
   }, [
     choiceAnswerState.value,
     currentQuestion.id,
     multiAnswerState.children,
+    multiAnswerState.otherText,
     multiSelection,
     onAnswer,
+    otherOptionLabel,
     questionType,
     visibleOptionLabels
   ]);
@@ -494,8 +513,16 @@ export const QuestionnaireScreen = ({
               const subOptions = Array.isArray(option.subOptions) ? option.subOptions : [];
               const hasSubOptions = subOptions.length > 0;
               const subType = option.subType === 'multi_choice' ? 'multi_choice' : 'choice';
+              const isOtherOption = option.isOther === true;
 
               const handleSelectOption = () => {
+                if (isOtherOption) {
+                  onAnswer(currentQuestion.id, {
+                    value: optionLabel,
+                    otherText: choiceAnswerState.otherText || ''
+                  });
+                  return;
+                }
                 if (hasSubOptions) {
                   const preservedChildren = isSelected ? choiceAnswerState.children : [];
                   onAnswer(currentQuestion.id, {
@@ -531,7 +558,23 @@ export const QuestionnaireScreen = ({
                     <span className="ml-3 font-medium text-sm sm:text-base">{optionLabel}</span>
                   </label>
                   {isSelected && <CheckCircle className="w-5 h-5 text-blue-600 self-end sm:self-auto" />}
-                  {isSelected && hasSubOptions && (
+                  {isSelected && isOtherOption && (
+                    <div className="w-full sm:pl-8 sm:border-l sm:border-gray-200 space-y-2">
+                      <p className="text-xs text-gray-500">Précisez votre choix</p>
+                      <input
+                        id={`${optionId}-other`}
+                        type="text"
+                        value={choiceAnswerState.otherText}
+                        onChange={(e) => onAnswer(currentQuestion.id, {
+                          value: optionLabel,
+                          otherText: e.target.value
+                        })}
+                        placeholder={otherOptionPlaceholder || 'Précisez votre réponse'}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  )}
+                  {isSelected && hasSubOptions && !isOtherOption && (
                     <div className="w-full sm:pl-8 sm:border-l sm:border-gray-200 space-y-2">
                       <p className="text-xs text-gray-500">Précisez votre choix</p>
                       <div className="space-y-2">
@@ -586,24 +629,33 @@ export const QuestionnaireScreen = ({
               const childSelections = Array.isArray(multiAnswerState.children[optionLabel])
                 ? multiAnswerState.children[optionLabel]
                 : [];
+              const isOtherOption = option.isOther === true;
+              const resolveOtherText = (values) => (
+                otherOptionLabel && values.includes(otherOptionLabel) ? multiAnswerState.otherText : ''
+              );
 
               const toggleOption = () => {
                 const nextChildren = { ...multiAnswerState.children };
                 if (isSelected) {
                   delete nextChildren[optionLabel];
+                  const nextValues = multiSelection.filter(item => item !== optionLabel);
+                  const nextOtherText = isOtherOption ? '' : resolveOtherText(nextValues);
                   onAnswer(
                     currentQuestion.id,
                     buildMultiChoiceAnswerPayload(
-                      multiSelection.filter(item => item !== optionLabel),
-                      nextChildren
+                      nextValues,
+                      nextChildren,
+                      nextOtherText
                     )
                   );
                 } else {
+                  const nextValues = [...multiSelection, optionLabel];
                   onAnswer(
                     currentQuestion.id,
                     buildMultiChoiceAnswerPayload(
-                      [...multiSelection, optionLabel],
-                      nextChildren
+                      nextValues,
+                      nextChildren,
+                      resolveOtherText(nextValues)
                     )
                   );
                 }
@@ -629,7 +681,32 @@ export const QuestionnaireScreen = ({
                     <span className="ml-3 font-medium text-sm sm:text-base">{optionLabel}</span>
                   </label>
                   {isSelected && <CheckCircle className="w-5 h-5 text-blue-600 self-end sm:self-auto" />}
-                  {isSelected && hasSubOptions && (
+                  {isSelected && isOtherOption && (
+                    <div className="w-full sm:pl-8 sm:border-l sm:border-gray-200 space-y-2">
+                      <p className="text-xs text-gray-500">Précisez votre choix</p>
+                      <input
+                        id={`${optionId}-other`}
+                        type="text"
+                        value={multiAnswerState.otherText}
+                        onChange={(e) => {
+                          const nextValues = isSelected
+                            ? multiSelection
+                            : [...multiSelection, optionLabel];
+                          onAnswer(
+                            currentQuestion.id,
+                            buildMultiChoiceAnswerPayload(
+                              nextValues,
+                              multiAnswerState.children,
+                              e.target.value
+                            )
+                          );
+                        }}
+                        placeholder={otherOptionPlaceholder || 'Précisez votre réponse'}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  )}
+                  {isSelected && hasSubOptions && !isOtherOption && (
                     <div className="w-full sm:pl-8 sm:border-l sm:border-gray-200 space-y-2">
                       <p className="text-xs text-gray-500">Précisez votre choix</p>
                       <div className="space-y-2">
@@ -653,7 +730,8 @@ export const QuestionnaireScreen = ({
                                 {
                                   ...multiAnswerState.children,
                                   [optionLabel]: nextChildren
-                                }
+                                },
+                                resolveOtherText(nextValues)
                               )
                             );
                           };
