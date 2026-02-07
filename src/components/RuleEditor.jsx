@@ -18,6 +18,7 @@ import {
   createEmptyTimingCondition
 } from '../utils/ruleConditions.js';
 import { ensureOperatorForType, getOperatorOptionsForType } from '../utils/operatorOptions.js';
+import { getConditionQuestionEntries, getQuestionOptionLabels } from '../utils/questions.js';
 import {
   sanitizeRiskTimingConstraint,
   sanitizeTeamQuestionEntry,
@@ -84,6 +85,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
   }, []);
 
   const sanitizeConditionGroups = (groups) => {
+    const conditionQuestions = getConditionQuestionEntries(questions);
     return Array.isArray(groups)
       ? groups.map(group => ({
           ...group,
@@ -94,7 +96,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                   return restTiming;
                 }
 
-                const question = questions.find(q => q.id === condition?.question);
+                const question = conditionQuestions.find(q => q.id === condition?.question);
                 const questionType = question?.type || 'choice';
                 return {
                   ...condition,
@@ -178,7 +180,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
     const updatedCondition = sanitizeRuleCondition(
       updater ? updater(currentCondition) || currentCondition : currentCondition
     );
-    const question = questions.find(q => q.id === updatedCondition.question);
+    const question = conditionQuestionEntries.find(q => q.id === updatedCondition.question);
     const questionType = question?.type || 'choice';
     const nextCondition = updatedCondition.type === 'timing'
       ? updatedCondition
@@ -358,6 +360,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
     });
   };
 
+  const conditionQuestionEntries = getConditionQuestionEntries(questions);
   const dateQuestions = questions.filter(q => (q.type || 'choice') === 'date');
   const dialogTitleId = 'rule-editor-title';
 
@@ -576,7 +579,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                             <div className="space-y-4">
                               {conditions.map((condition, conditionIdx) => {
                                 const conditionType = condition.type === 'timing' ? 'timing' : 'question';
-                                const selectedQuestion = questions.find(q => q.id === condition.question);
+                                const selectedQuestion = conditionQuestionEntries.find(q => q.id === condition.question);
                                 const selectedQuestionType = selectedQuestion?.type || 'choice';
                                 const usesOptions = ['choice', 'multi_choice'].includes(selectedQuestionType);
                                 const inputType = selectedQuestionType === 'number'
@@ -699,7 +702,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                                           >
                                             <option value="">Sélectionner...</option>
-                                            {questions.map(q => (
+                                            {conditionQuestionEntries.map(q => (
                                               <option key={q.id} value={q.id}>{q.id} - {q.question ?? ''}</option>
                                             ))}
                                           </select>
@@ -739,7 +742,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                               );
                                             }
 
-                                            if (usesOptions) {
+                                            if (selectedQuestionType === 'boolean') {
                                               return (
                                                 <select
                                                   value={condition.value}
@@ -747,7 +750,22 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                                                 >
                                                   <option value="">Sélectionner...</option>
-                                                  {(selectedQuestion?.options || []).map((opt, i) => (
+                                                  <option value="true">Coché</option>
+                                                  <option value="false">Non coché</option>
+                                                </select>
+                                              );
+                                            }
+
+                                            if (usesOptions) {
+                                              const optionLabels = getQuestionOptionLabels(selectedQuestion);
+                                              return (
+                                                <select
+                                                  value={condition.value}
+                                                  onChange={(e) => updateConditionField(groupIdx, conditionIdx, 'value', e.target.value)}
+                                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                                >
+                                                  <option value="">Sélectionner...</option>
+                                                  {optionLabels.map((opt, i) => (
                                                     <option key={i} value={opt}>{opt}</option>
                                                   ))}
                                                 </select>
@@ -1240,4 +1258,3 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
     </div>
   );
 };
-

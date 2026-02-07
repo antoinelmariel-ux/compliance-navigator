@@ -5,7 +5,7 @@ import {
   Plus,
   Trash2
 } from './icons.js';
-import { formatAnswer } from '../utils/questions.js';
+import { formatAnswer, getQuestionOptionLabels } from '../utils/questions.js';
 import { renderTextWithLinks } from '../utils/linkify.js';
 import { initialShowcaseThemes } from '../data/showcaseThemes.js';
 import { RichTextEditor } from './RichTextEditor.jsx';
@@ -5179,7 +5179,7 @@ export const ProjectShowcase = ({
           const type = question?.type || field.fallbackType || 'text';
           const label = question?.question || field.fallbackLabel || fieldId;
           const fieldValue = draftValues[fieldId];
-          const options = Array.isArray(question?.options) ? question.options : [];
+          const options = getQuestionOptionLabels(question);
           const isLong = type === 'long_text';
           const isRichText = type === 'text' || type === 'long_text';
           const isMulti = type === 'multi_choice';

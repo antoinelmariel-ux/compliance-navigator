@@ -12,6 +12,11 @@ const NUMBER_OPERATOR_OPTIONS = [
   { value: 'gt', label: 'Supérieur (>)' }
 ];
 
+const BOOLEAN_OPERATOR_OPTIONS = [
+  { value: 'equals', label: 'Égal (=)' },
+  { value: 'not_equals', label: 'Différent de (≠)' }
+];
+
 const OPERATOR_LABELS = {
   equals: 'est égal à',
   not_equals: 'est différent de',
@@ -23,7 +28,15 @@ const OPERATOR_LABELS = {
 };
 
 export const getOperatorOptionsForType = (questionType = 'choice') => {
-  return questionType === 'number' ? NUMBER_OPERATOR_OPTIONS : TEXT_OPERATOR_OPTIONS;
+  if (questionType === 'number') {
+    return NUMBER_OPERATOR_OPTIONS;
+  }
+
+  if (questionType === 'boolean') {
+    return BOOLEAN_OPERATOR_OPTIONS;
+  }
+
+  return TEXT_OPERATOR_OPTIONS;
 };
 
 export const ensureOperatorForType = (questionType = 'choice', operator = 'equals') => {
@@ -42,6 +55,7 @@ export const getOperatorLabel = (operator) => {
 export const getOperatorOptions = () => {
   return {
     text: TEXT_OPERATOR_OPTIONS,
-    number: NUMBER_OPERATOR_OPTIONS
+    number: NUMBER_OPERATOR_OPTIONS,
+    boolean: BOOLEAN_OPERATOR_OPTIONS
   };
 };

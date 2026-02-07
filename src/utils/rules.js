@@ -1,4 +1,4 @@
-import { normalizeAnswerForComparison } from './questions.js';
+import { normalizeAnswerForComparison, normalizeConditionValueForAnswer } from './questions.js';
 import { normalizeConditionGroups } from './conditionGroups.js';
 import { sanitizeRuleCondition } from './ruleConditions.js';
 import { getRiskWeightKey, normalizeRiskWeighting } from './risk.js';
@@ -176,7 +176,10 @@ const matchesCondition = (condition, answers) => {
 
   const answer = normalizeAnswerForComparison(rawAnswer);
   const operator = condition.operator || 'equals';
-  const expected = condition.value;
+  const expected = normalizeConditionValueForAnswer(
+    Array.isArray(answer) ? answer[0] : answer,
+    condition.value
+  );
 
   const toNumber = (value) => {
     if (value === null || value === undefined || value === '') {

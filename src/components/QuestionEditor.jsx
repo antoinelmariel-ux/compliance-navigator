@@ -11,6 +11,12 @@ import {
 } from './icons.js';
 import { applyConditionGroups, normalizeConditionGroups } from '../utils/conditionGroups.js';
 import { ensureOperatorForType, getOperatorOptionsForType } from '../utils/operatorOptions.js';
+import {
+  buildExtraCheckboxQuestionId,
+  getConditionQuestionEntries,
+  getQuestionOptionLabels,
+  normalizeQuestionOptions
+} from '../utils/questions.js';
 
 export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => {
   const ensureGuidance = (guidance) => {
@@ -22,6 +28,17 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
       objective: guidance.objective || '',
       details: guidance.details || '',
       tips: Array.isArray(guidance.tips) ? guidance.tips : []
+    };
+  };
+
+  const ensureExtraCheckbox = (config) => {
+    if (!config || typeof config !== 'object') {
+      return { enabled: false, label: '' };
+    }
+
+    return {
+      enabled: Boolean(config.enabled),
+      label: typeof config.label === 'string' ? config.label : ''
     };
   };
 
@@ -62,12 +79,13 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
   };
 
   const sanitizeConditionGroups = (groups) => {
+    const conditionQuestions = getConditionQuestionEntries(allQuestions);
     return Array.isArray(groups)
       ? groups.map(group => ({
           ...group,
           conditions: Array.isArray(group.conditions)
             ? group.conditions.map(condition => {
-                const question = allQuestions.find(q => q.id === condition?.question);
+                const question = conditionQuestions.find(q => q.id === condition?.question);
                 const questionType = question?.type || 'choice';
                 return {
                   ...condition,
@@ -85,8 +103,9 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
     const base = {
       ...source,
       type: source.type || 'choice',
-      options: source.options || [],
+      options: normalizeQuestionOptions(source),
       guidance: ensureGuidance(source.guidance),
+      extraCheckbox: ensureExtraCheckbox(source.extraCheckbox),
       placeholder: typeof source.placeholder === 'string' ? source.placeholder : '',
       numberUnit: typeof source.numberUnit === 'string' ? source.numberUnit : '',
       rankingConfig
@@ -103,6 +122,7 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
 
   const [draggedOptionIndex, setDraggedOptionIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
+  const [optionConditionModal, setOptionConditionModal] = useState({ index: null, groups: [] });
   const questionType = editedQuestion.type || 'choice';
   const typeUsesOptions = questionType === 'choice' || questionType === 'multi_choice';
   const normalizedGuidance = ensureGuidance(editedQuestion.guidance);
@@ -166,7 +186,10 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
         options:
           prev.options && prev.options.length > 0
             ? prev.options
-            : ['Option 1', 'Option 2']
+            : [
+                applyConditionGroups({ label: 'Option 1', visibility: 'always' }, []),
+                applyConditionGroups({ label: 'Option 2', visibility: 'always' }, [])
+              ]
       }));
       return;
     }
@@ -449,16 +472,203 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
     updateConditionGroupsState(groups => groups.filter((_, idx) => idx !== groupIndex));
   };
 
+  const openOptionConditionModal = (index) => {
+    const option = editedQuestion.options[index];
+    if (!option) {
+      return;
+    }
+
+    const sanitizedGroups = sanitizeConditionGroups(normalizeConditionGroups(option));
+    setOptionConditionModal({ index, groups: sanitizedGroups });
+  };
+
+  const closeOptionConditionModal = () => {
+    setOptionConditionModal({ index: null, groups: [] });
+  };
+
+  const updateOptionConditionGroups = (updater) => {
+    setOptionConditionModal(prev => ({
+      ...prev,
+      groups: sanitizeConditionGroups(updater(prev.groups || []))
+    }));
+  };
+
+  const saveOptionConditionGroups = () => {
+    const { index, groups } = optionConditionModal;
+    if (index === null || index === undefined) {
+      return;
+    }
+
+    const sanitizedGroups = sanitizeConditionGroups(groups);
+
+    setEditedQuestion(prev => {
+      const nextOptions = [...prev.options];
+      const current = nextOptions[index];
+      if (!current) {
+        return prev;
+      }
+
+      nextOptions[index] = applyConditionGroups(
+        {
+          ...(current && typeof current === 'object' ? current : {}),
+          visibility: 'conditional'
+        },
+        sanitizedGroups
+      );
+
+      return {
+        ...prev,
+        options: nextOptions
+      };
+    });
+
+    closeOptionConditionModal();
+  };
+
+  const toggleOptionVisibility = (index) => {
+    const option = editedQuestion.options[index];
+    if (!option) {
+      return;
+    }
+
+    const visibility = option.visibility || 'always';
+
+    if (visibility === 'always') {
+      openOptionConditionModal(index);
+      return;
+    }
+
+    if (visibility === 'conditional') {
+      setEditedQuestion(prev => {
+        const nextOptions = [...prev.options];
+        const current = nextOptions[index];
+        if (!current) {
+          return prev;
+        }
+
+        nextOptions[index] = {
+          ...(current && typeof current === 'object' ? current : {}),
+          visibility: 'disabled'
+        };
+
+        return {
+          ...prev,
+          options: nextOptions
+        };
+      });
+      return;
+    }
+
+    setEditedQuestion(prev => {
+      const nextOptions = [...prev.options];
+      const current = nextOptions[index];
+      if (!current) {
+        return prev;
+      }
+
+      nextOptions[index] = {
+        ...(current && typeof current === 'object' ? current : {}),
+        visibility: 'always'
+      };
+
+      return {
+        ...prev,
+        options: nextOptions
+      };
+    });
+  };
+
+  const updateOptionConditionGroupLogic = (groupIndex, logic) => {
+    updateOptionConditionGroups(groups => {
+      const updated = [...groups];
+      const target = updated[groupIndex] || { logic: 'all', conditions: [] };
+      updated[groupIndex] = {
+        ...target,
+        logic: logic === 'any' ? 'any' : 'all'
+      };
+      return updated;
+    });
+  };
+
+  const addOptionConditionGroup = () => {
+    updateOptionConditionGroups(groups => ([
+      ...groups,
+      {
+        logic: 'all',
+        conditions: [{ question: '', operator: 'equals', value: '' }]
+      }
+    ]));
+  };
+
+  const addOptionConditionToGroup = (groupIndex) => {
+    updateOptionConditionGroups(groups => {
+      const updated = [...groups];
+      const target = updated[groupIndex] || { logic: 'all', conditions: [] };
+      updated[groupIndex] = {
+        ...target,
+        conditions: [...target.conditions, { question: '', operator: 'equals', value: '' }]
+      };
+      return updated;
+    });
+  };
+
+  const updateOptionConditionInGroup = (groupIndex, conditionIndex, field, value) => {
+    updateOptionConditionGroups(groups => {
+      const updated = [...groups];
+      const target = updated[groupIndex] || { logic: 'all', conditions: [] };
+      const conditions = [...(target.conditions || [])];
+      const condition = { ...conditions[conditionIndex] };
+
+      if (field === 'question') {
+        condition.question = value;
+      } else if (field === 'operator') {
+        condition.operator = value;
+      } else {
+        condition[field] = value;
+      }
+
+      const conditionQuestions = getConditionQuestionEntries(allQuestions);
+      const linkedQuestion = conditionQuestions.find(q => q.id === condition.question);
+      const linkedType = linkedQuestion?.type || 'choice';
+      condition.operator = ensureOperatorForType(linkedType, condition.operator);
+
+      conditions[conditionIndex] = condition;
+      updated[groupIndex] = { ...target, conditions };
+      return updated;
+    });
+  };
+
+  const deleteOptionConditionFromGroup = (groupIndex, conditionIndex) => {
+    updateOptionConditionGroups(groups => {
+      const updated = [...groups];
+      const target = updated[groupIndex] || { logic: 'all', conditions: [] };
+      const conditions = (target.conditions || []).filter((_, idx) => idx !== conditionIndex);
+      updated[groupIndex] = { ...target, conditions };
+      return updated;
+    });
+  };
+
+  const deleteOptionConditionGroup = (groupIndex) => {
+    updateOptionConditionGroups(groups => groups.filter((_, idx) => idx !== groupIndex));
+  };
+
   const addOption = () => {
     setEditedQuestion({
       ...editedQuestion,
-      options: [...editedQuestion.options, 'Nouvelle option']
+      options: [
+        ...editedQuestion.options,
+        applyConditionGroups({ label: 'Nouvelle option', visibility: 'always' }, [])
+      ]
     });
   };
 
   const updateOption = (index, value) => {
     const newOptions = [...editedQuestion.options];
-    newOptions[index] = value;
+    const current = newOptions[index];
+    newOptions[index] = {
+      ...(current && typeof current === 'object' ? current : {}),
+      label: value
+    };
     setEditedQuestion({ ...editedQuestion, options: newOptions });
   };
 
@@ -472,7 +682,11 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
   };
 
   // Filtrer les questions pour ne pas inclure la question en cours d'édition
-  const availableQuestions = allQuestions.filter(q => q.id !== editedQuestion.id);
+  const conditionQuestionEntries = getConditionQuestionEntries(allQuestions);
+  const extraCheckboxQuestionId = buildExtraCheckboxQuestionId(editedQuestion.id);
+  const availableQuestions = conditionQuestionEntries.filter(
+    q => q.id !== editedQuestion.id && q.id !== extraCheckboxQuestionId
+  );
   const conditionGroups = Array.isArray(editedQuestion.conditionGroups) ? editedQuestion.conditionGroups : [];
   const dialogTitleId = 'question-editor-title';
 
@@ -481,10 +695,17 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
     const unitLabel = typeof editedQuestion.numberUnit === 'string'
       ? editedQuestion.numberUnit.trim()
       : '';
+    const extraCheckbox = ensureExtraCheckbox(editedQuestion.extraCheckbox);
+    const extraLabel = extraCheckbox.label.trim();
+    const normalizedExtraCheckbox = {
+      enabled: extraCheckbox.enabled && extraLabel.length > 0,
+      label: extraLabel
+    };
 
     onSave({
       ...sanitizedQuestion,
-      numberUnit: unitLabel
+      numberUnit: unitLabel,
+      extraCheckbox: normalizedExtraCheckbox
     });
   };
 
@@ -500,6 +721,11 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
       titleRef.current.focus();
     }
   }, []);
+
+  const isOptionConditionOpen = optionConditionModal.index !== null;
+  const optionConditionGroups = Array.isArray(optionConditionModal.groups)
+    ? optionConditionModal.groups
+    : [];
 
   return (
     <div
@@ -648,6 +874,47 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                   Question obligatoire
                 </label>
               </div>
+
+              <div className="border border-gray-200 rounded-lg p-4 space-y-3">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={editedQuestion.extraCheckbox?.enabled}
+                    onChange={(e) => setEditedQuestion(prev => ({
+                      ...prev,
+                      extraCheckbox: {
+                        ...ensureExtraCheckbox(prev.extraCheckbox),
+                        enabled: e.target.checked
+                      }
+                    }))}
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <label className="ml-2 text-sm font-medium text-gray-700">
+                    Ajouter une case à cocher complémentaire
+                  </label>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Texte affiché à côté de la case
+                  </label>
+                  <input
+                    type="text"
+                    value={editedQuestion.extraCheckbox?.label || ''}
+                    onChange={(e) => setEditedQuestion(prev => ({
+                      ...prev,
+                      extraCheckbox: {
+                        ...ensureExtraCheckbox(prev.extraCheckbox),
+                        label: e.target.value
+                      }
+                    }))}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="Ex : Je confirme que ces informations sont exactes"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Cette case peut être utilisée comme critère d&apos;affichage pour d&apos;autres questions ou règles.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -677,7 +944,28 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                 </p>
 
                 <div className="space-y-2">
-                  {editedQuestion.options.map((option, idx) => (
+                  {editedQuestion.options.map((option, idx) => {
+                    const optionLabel =
+                      typeof option === 'string' || typeof option === 'number' || typeof option === 'boolean'
+                        ? String(option)
+                        : typeof option?.label === 'string'
+                          ? option.label
+                          : '';
+                    const visibility = option?.visibility || 'always';
+                    const statusColor =
+                      visibility === 'conditional'
+                        ? 'text-orange-500'
+                        : visibility === 'disabled'
+                          ? 'text-red-500'
+                          : 'text-emerald-600';
+                    const statusLabel =
+                      visibility === 'conditional'
+                        ? 'Option conditionnelle'
+                        : visibility === 'disabled'
+                          ? 'Option désactivée'
+                          : 'Option toujours visible';
+
+                    return (
                     <div
                       key={idx}
                       className={`flex items-center space-x-2 rounded-lg border border-transparent bg-white p-2 transition-colors ${
@@ -712,11 +1000,29 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                       <span className="text-gray-500 font-medium w-6 text-center">{idx + 1}.</span>
                       <input
                         type="text"
-                        value={option}
+                        value={optionLabel}
                         onChange={(e) => updateOption(idx, e.target.value)}
                         className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                         placeholder="Texte de l'option..."
                       />
+                      {visibility === 'conditional' && (
+                        <button
+                          type="button"
+                          onClick={() => openOptionConditionModal(idx)}
+                          className="px-3 py-2 text-xs font-semibold text-orange-600 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100"
+                        >
+                          Modifier conditions
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => toggleOptionVisibility(idx)}
+                        className="p-2 rounded-full hover:bg-gray-100"
+                        aria-label={`${statusLabel} - cliquer pour changer`}
+                        title={statusLabel}
+                      >
+                        <CheckCircle className={`w-5 h-5 ${statusColor}`} />
+                      </button>
                       <button
                         onClick={() => deleteOption(idx)}
                         disabled={editedQuestion.options.length === 1}
@@ -725,7 +1031,8 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </>
             ) : (
@@ -1207,7 +1514,7 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                                         Opérateur
                                       </label>
                                       {(() => {
-                                        const selectedQuestion = allQuestions.find(q => q.id === condition.question);
+                                        const selectedQuestion = conditionQuestionEntries.find(q => q.id === condition.question);
                                         const selectedType = selectedQuestion?.type || 'choice';
                                         const operatorOptions = getOperatorOptionsForType(selectedType);
                                         const operatorValue = ensureOperatorForType(selectedType, condition.operator);
@@ -1242,11 +1549,11 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                                           );
                                         }
 
-                                        const selectedQuestion = allQuestions.find(q => q.id === condition.question);
+                                        const selectedQuestion = conditionQuestionEntries.find(q => q.id === condition.question);
                                         const selectedType = selectedQuestion?.type || 'choice';
                                         const usesOptions = ['choice', 'multi_choice'].includes(selectedType);
 
-                                        if (usesOptions) {
+                                        if (selectedType === 'boolean') {
                                           return (
                                             <select
                                               value={condition.value}
@@ -1254,7 +1561,22 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                                               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500"
                                             >
                                               <option value="">Sélectionner...</option>
-                                              {(selectedQuestion?.options || []).map((opt, i) => (
+                                              <option value="true">Coché</option>
+                                              <option value="false">Non coché</option>
+                                            </select>
+                                          );
+                                        }
+
+                                        if (usesOptions) {
+                                          const optionLabels = getQuestionOptionLabels(selectedQuestion);
+                                          return (
+                                            <select
+                                              value={condition.value}
+                                              onChange={(e) => updateConditionInGroup(groupIdx, idx, 'value', e.target.value)}
+                                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500"
+                                            >
+                                              <option value="">Sélectionner...</option>
+                                              {optionLabels.map((opt, i) => (
                                                 <option key={i} value={opt}>{opt}</option>
                                               ))}
                                             </select>
@@ -1306,7 +1628,274 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
           </div>
         </div>
       </div>
+      {isOptionConditionOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 py-6">
+          <div
+            className="absolute inset-0 bg-gray-900/50"
+            onClick={closeOptionConditionModal}
+            aria-hidden="true"
+          />
+          <div className="relative w-full max-w-3xl rounded-2xl bg-white p-6 shadow-xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Conditions de visibilité de l&apos;option
+                </h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  L&apos;option apparaîtra si les conditions ci-dessous sont satisfaites.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeOptionConditionModal}
+                className="text-sm font-semibold text-gray-500 hover:text-gray-700"
+              >
+                Fermer
+              </button>
+            </div>
+
+            <div className="mt-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-semibold text-gray-700">Groupes de conditions</h4>
+                <button
+                  type="button"
+                  onClick={addOptionConditionGroup}
+                  className="inline-flex items-center gap-2 rounded-lg bg-orange-50 px-3 py-2 text-sm font-medium text-orange-700 hover:bg-orange-100"
+                >
+                  <Plus className="h-4 w-4" />
+                  Ajouter un groupe
+                </button>
+              </div>
+
+              {optionConditionGroups.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-orange-200 bg-orange-50 p-4 text-sm text-orange-700">
+                  <p>Aucune condition définie. Ajoutez un groupe pour limiter l&apos;affichage.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {optionConditionGroups.map((group, groupIdx) => {
+                    const logic = group.logic === 'any' ? 'any' : 'all';
+                    const conditions = Array.isArray(group.conditions) ? group.conditions : [];
+                    const connectorLabel = logic === 'any' ? 'OU' : 'ET';
+
+                    return (
+                      <div key={groupIdx} className="rounded-lg border border-orange-200 bg-orange-50 p-4">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <span className="text-sm font-semibold text-gray-700">
+                            Groupe {groupIdx + 1}
+                          </span>
+                          <select
+                            value={logic}
+                            onChange={(e) => updateOptionConditionGroupLogic(groupIdx, e.target.value)}
+                            className="rounded-lg border border-orange-200 bg-white px-3 py-1.5 text-xs text-gray-700"
+                          >
+                            <option value="all">Toutes les conditions (ET)</option>
+                            <option value="any">Au moins une condition (OU)</option>
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() => deleteOptionConditionGroup(groupIdx)}
+                            className="ml-auto p-2 text-red-600 hover:bg-red-50 rounded"
+                            aria-label={`Supprimer le groupe ${groupIdx + 1}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+
+                        {conditions.length === 0 ? (
+                          <div className="mt-3 rounded-lg border border-dashed border-orange-200 bg-white p-3 text-sm text-orange-700">
+                            <p>Ajoutez une condition pour activer ce groupe.</p>
+                            <button
+                              type="button"
+                              onClick={() => addOptionConditionToGroup(groupIdx)}
+                              className="mt-2 inline-flex items-center gap-2 rounded-lg bg-orange-50 px-3 py-2 text-sm font-medium text-orange-700 hover:bg-orange-100"
+                            >
+                              <Plus className="h-4 w-4" />
+                              Ajouter une condition
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="mt-4 space-y-3">
+                            {conditions.map((condition, idx) => {
+                              const selectedQuestion = conditionQuestionEntries.find(
+                                (entry) => entry.id === condition.question
+                              );
+                              const selectedType = selectedQuestion?.type || 'choice';
+                              const usesOptions = ['choice', 'multi_choice'].includes(selectedType);
+                              const operatorOptions = getOperatorOptionsForType(selectedType);
+                              const operatorValue = ensureOperatorForType(selectedType, condition.operator);
+                              return (
+                                <div key={idx} className="rounded-lg border border-orange-200 bg-white p-4">
+                                  <div className="flex items-center gap-3 mb-3">
+                                    {idx > 0 && (
+                                      <span className="rounded-full bg-orange-500 px-3 py-1 text-xs font-bold text-white">
+                                        {connectorLabel}
+                                      </span>
+                                    )}
+                                    <span className="text-sm font-semibold text-gray-700">
+                                      Condition {idx + 1}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => deleteOptionConditionFromGroup(groupIdx, idx)}
+                                      className="ml-auto p-1 text-red-600 hover:bg-red-50 rounded"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                                        Si la question
+                                      </label>
+                                      <select
+                                        value={condition.question}
+                                        onChange={(e) =>
+                                          updateOptionConditionInGroup(
+                                            groupIdx,
+                                            idx,
+                                            'question',
+                                            e.target.value
+                                          )}
+                                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                      >
+                                        <option value="">Sélectionner...</option>
+                                        {availableQuestions.map((q) => (
+                                          <option key={q.id} value={q.id}>
+                                            {q.id} - {q.question ?? ''}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                                        Opérateur
+                                      </label>
+                                      <select
+                                        value={operatorValue}
+                                        onChange={(e) =>
+                                          updateOptionConditionInGroup(
+                                            groupIdx,
+                                            idx,
+                                            'operator',
+                                            e.target.value
+                                          )}
+                                        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                      >
+                                        {operatorOptions.map((option) => (
+                                          <option key={option.value} value={option.value}>
+                                            {option.label}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+
+                                    <div>
+                                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                                        Valeur
+                                      </label>
+                                      {selectedType === 'boolean' ? (
+                                        <select
+                                          value={condition.value}
+                                          onChange={(e) =>
+                                            updateOptionConditionInGroup(
+                                              groupIdx,
+                                              idx,
+                                              'value',
+                                              e.target.value
+                                            )}
+                                          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                        >
+                                          <option value="">Sélectionner...</option>
+                                          <option value="true">Coché</option>
+                                          <option value="false">Non coché</option>
+                                        </select>
+                                      ) : usesOptions ? (
+                                        <select
+                                          value={condition.value}
+                                          onChange={(e) =>
+                                            updateOptionConditionInGroup(
+                                              groupIdx,
+                                              idx,
+                                              'value',
+                                              e.target.value
+                                            )}
+                                          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                        >
+                                          <option value="">Sélectionner...</option>
+                                          {getQuestionOptionLabels(selectedQuestion).map((opt, optIdx) => (
+                                            <option key={optIdx} value={opt}>
+                                              {opt}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      ) : (
+                                        <input
+                                          type={selectedType === 'number' ? 'number' : 'text'}
+                                          value={condition.value}
+                                          onChange={(e) =>
+                                            updateOptionConditionInGroup(
+                                              groupIdx,
+                                              idx,
+                                              'value',
+                                              e.target.value
+                                            )}
+                                          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                          placeholder={
+                                            selectedType === 'date'
+                                              ? 'AAAA-MM-JJ'
+                                              : selectedType === 'url'
+                                                ? 'https://...'
+                                                : 'Valeur...'
+                                          }
+                                        />
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+
+                            <div className="flex justify-end">
+                              <button
+                                type="button"
+                                onClick={() => addOptionConditionToGroup(groupIdx)}
+                                className="inline-flex items-center gap-2 rounded-lg bg-orange-50 px-3 py-2 text-sm font-medium text-orange-700 hover:bg-orange-100"
+                              >
+                                <Plus className="h-4 w-4" />
+                                Ajouter une condition
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 flex flex-wrap justify-end gap-3">
+              <button
+                type="button"
+                onClick={closeOptionConditionModal}
+                className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={saveOptionConditionGroups}
+                className="rounded-lg bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-600"
+              >
+                Enregistrer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
-
