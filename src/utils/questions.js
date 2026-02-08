@@ -209,16 +209,44 @@ export const normalizeQuestionOption = (option) => {
   );
 };
 
-export const normalizeQuestionOptions = (questionOrOptions) => {
+export const normalizeOtherOption = (config) => {
+  if (!config || typeof config !== 'object') {
+    return { enabled: false, label: 'Autre', placeholder: '' };
+  }
+
+  return {
+    enabled: Boolean(config.enabled),
+    label: typeof config.label === 'string' ? config.label : 'Autre',
+    placeholder: typeof config.placeholder === 'string' ? config.placeholder : ''
+  };
+};
+
+export const normalizeQuestionOptions = (questionOrOptions, { includeOther = true } = {}) => {
   const options = Array.isArray(questionOrOptions?.options)
     ? questionOrOptions.options
     : Array.isArray(questionOrOptions)
       ? questionOrOptions
       : [];
 
-  return options
+  const normalizedOptions = options
     .map(normalizeQuestionOption)
     .filter(option => option.label && option.label.trim() !== '');
+
+  if (!includeOther) {
+    return normalizedOptions;
+  }
+
+  const otherOption = normalizeOtherOption(questionOrOptions?.otherOption);
+  const otherLabel = typeof otherOption.label === 'string' ? otherOption.label.trim() : '';
+
+  if (otherOption.enabled && otherLabel.length > 0) {
+    normalizedOptions.push({
+      ...normalizeQuestionOption({ label: otherLabel }),
+      isOther: true
+    });
+  }
+
+  return normalizedOptions;
 };
 
 export const getQuestionOptionLabels = (questionOrOptions) =>
@@ -303,26 +331,45 @@ export const formatAnswer = (question, answer) => {
     const value = typeof answer.value !== 'undefined' ? answer.value : answer.name;
     const label = value == null ? '' : String(value);
     const children = Array.isArray(answer.children) ? answer.children : [];
+    const otherText = typeof answer.otherText === 'string' ? answer.otherText.trim() : '';
     if (children.length === 0) {
+      if (otherText) {
+        return `${label} (${otherText})`;
+      }
       return label;
     }
-    return `${label} (${children.map(item => String(item)).join(', ')})`;
+    const formattedChildren = children.map(item => String(item)).join(', ');
+    if (otherText) {
+      return `${label} (${formattedChildren} · ${otherText})`;
+    }
+    return `${label} (${formattedChildren})`;
   }
 
   if (questionType === 'multi_choice' && answer && typeof answer === 'object' && !Array.isArray(answer)) {
     const values = Array.isArray(answer.values) ? answer.values : [];
     const children = answer.children && typeof answer.children === 'object' ? answer.children : {};
+    const otherText = typeof answer.otherText === 'string' ? answer.otherText.trim() : '';
     if (values.length === 0) {
       return '';
     }
+    const otherLabel = typeof question?.otherOption?.label === 'string'
+      ? question.otherOption.label.trim()
+      : '';
     return values
       .map((value) => {
         const label = value == null ? '' : String(value);
         const childValues = Array.isArray(children[label]) ? children[label] : [];
         if (childValues.length === 0) {
+          if (otherText && otherLabel && label === otherLabel) {
+            return `${label} (${otherText})`;
+          }
           return label;
         }
-        return `${label} (${childValues.map(item => String(item)).join(', ')})`;
+        const formattedChildren = childValues.map(item => String(item)).join(', ');
+        if (otherText && otherLabel && label === otherLabel) {
+          return `${label} (${formattedChildren} · ${otherText})`;
+        }
+        return `${label} (${formattedChildren})`;
       })
       .filter(Boolean)
       .join(', ');
