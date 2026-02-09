@@ -6164,7 +6164,7 @@ export const BackOffice = ({
                                                                   <option value="">Sélectionner...</option>
                                                                   {dateQuestions.map((question) => (
                                                                     <option key={question.id} value={question.id}>
-                                                                      {question.id} - {question.question ?? ''}
+                                                                      {question.question || question.id}
                                                                     </option>
                                                                   ))}
                                                                 </select>
@@ -6190,7 +6190,7 @@ export const BackOffice = ({
                                                                   <option value="">Sélectionner...</option>
                                                                   {dateQuestions.map((question) => (
                                                                     <option key={question.id} value={question.id}>
-                                                                      {question.id} - {question.question ?? ''}
+                                                                      {question.question || question.id}
                                                                     </option>
                                                                   ))}
                                                                 </select>
@@ -6275,7 +6275,7 @@ export const BackOffice = ({
                                                             <option value="">Sélectionner...</option>
                                                             {conditionQuestionEntries.map((question) => (
                                                               <option key={question.id} value={question.id}>
-                                                                {question.id} - {question.question ?? ''}
+                                                                {question.question || question.id}
                                                               </option>
                                                             ))}
                                                           </select>

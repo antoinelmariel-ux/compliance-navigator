@@ -98,32 +98,42 @@ const normalizeChoiceAnswer = (answer) => {
           ? answer.label
           : '',
       children: Array.isArray(answer.children) ? answer.children : [],
-      otherText: typeof answer.otherText === 'string' ? answer.otherText : ''
+      otherText: typeof answer.otherText === 'string' ? answer.otherText : '',
+      childrenOtherText: typeof answer.childrenOtherText === 'string' ? answer.childrenOtherText : ''
     };
   }
 
   return {
     value: typeof answer === 'string' ? answer : '',
     children: [],
-    otherText: ''
+    otherText: '',
+    childrenOtherText: ''
   };
 };
 
 const normalizeMultiChoiceAnswer = (answer) => {
   if (Array.isArray(answer)) {
-    return { values: answer, children: {}, otherText: '' };
+    return { values: answer, children: {}, otherText: '', childrenOtherText: {} };
   }
 
   if (answer && typeof answer === 'object') {
     const values = Array.isArray(answer.values) ? answer.values : [];
     const children = answer.children && typeof answer.children === 'object' ? answer.children : {};
-    return { values, children, otherText: typeof answer.otherText === 'string' ? answer.otherText : '' };
+    const childrenOtherText = answer.childrenOtherText && typeof answer.childrenOtherText === 'object'
+      ? answer.childrenOtherText
+      : {};
+    return {
+      values,
+      children,
+      otherText: typeof answer.otherText === 'string' ? answer.otherText : '',
+      childrenOtherText
+    };
   }
 
-  return { values: [], children: {}, otherText: '' };
+  return { values: [], children: {}, otherText: '', childrenOtherText: {} };
 };
 
-const buildMultiChoiceAnswerPayload = (values, children, otherText) => {
+const buildMultiChoiceAnswerPayload = (values, children, otherText, childrenOtherText = {}) => {
   const sanitizedValues = Array.isArray(values) ? values.filter(Boolean) : [];
   const sanitizedChildren = Object.entries(children || {})
     .reduce((acc, [key, childValues]) => {
@@ -137,15 +147,31 @@ const buildMultiChoiceAnswerPayload = (values, children, otherText) => {
     }, {});
 
   const sanitizedOtherText = typeof otherText === 'string' ? otherText : '';
+  const sanitizedChildrenOtherText = Object.entries(childrenOtherText || {})
+    .reduce((acc, [key, value]) => {
+      if (!sanitizedChildren[key]) {
+        return acc;
+      }
+      const normalized = typeof value === 'string' ? value.trim() : '';
+      if (normalized) {
+        acc[key] = normalized;
+      }
+      return acc;
+    }, {});
 
-  if (Object.keys(sanitizedChildren).length === 0 && !sanitizedOtherText) {
+  if (
+    Object.keys(sanitizedChildren).length === 0
+    && Object.keys(sanitizedChildrenOtherText).length === 0
+    && !sanitizedOtherText
+  ) {
     return sanitizedValues;
   }
 
   return {
     values: sanitizedValues,
     children: sanitizedChildren,
-    otherText: sanitizedOtherText
+    otherText: sanitizedOtherText,
+    childrenOtherText: sanitizedChildrenOtherText
   };
 };
 
@@ -280,7 +306,15 @@ export const QuestionnaireScreen = ({
         const nextOtherText = otherOptionLabel && filtered.includes(otherOptionLabel)
           ? multiAnswerState.otherText
           : '';
-        onAnswer(currentQuestion.id, buildMultiChoiceAnswerPayload(filtered, multiAnswerState.children, nextOtherText));
+        onAnswer(
+          currentQuestion.id,
+          buildMultiChoiceAnswerPayload(
+            filtered,
+            multiAnswerState.children,
+            nextOtherText,
+            multiAnswerState.childrenOtherText
+          )
+        );
       }
     }
   }, [
@@ -514,6 +548,7 @@ export const QuestionnaireScreen = ({
               const hasSubOptions = subOptions.length > 0;
               const subType = option.subType === 'multi_choice' ? 'multi_choice' : 'choice';
               const isOtherOption = option.isOther === true;
+              const otherSubOptionLabel = subOptions.find(subOption => subOption?.isOther)?.label;
 
               const handleSelectOption = () => {
                 if (isOtherOption) {
@@ -525,9 +560,11 @@ export const QuestionnaireScreen = ({
                 }
                 if (hasSubOptions) {
                   const preservedChildren = isSelected ? choiceAnswerState.children : [];
+                  const preservedChildrenOtherText = isSelected ? choiceAnswerState.childrenOtherText : '';
                   onAnswer(currentQuestion.id, {
                     value: optionLabel,
-                    children: preservedChildren
+                    children: preservedChildren,
+                    childrenOtherText: preservedChildrenOtherText
                   });
                   return;
                 }
@@ -582,30 +619,52 @@ export const QuestionnaireScreen = ({
                           const subLabel = subOption.label;
                           const subId = `${optionId}-sub-${subIdx}`;
                           const isSubSelected = childSelections.includes(subLabel);
+                          const isSubOtherOption = subOption.isOther === true;
                           const toggleSubOption = () => {
                             const nextChildren = subType === 'multi_choice'
                               ? (isSubSelected
                                 ? childSelections.filter(item => item !== subLabel)
                                 : [...childSelections, subLabel])
                               : [subLabel];
+                            const nextChildrenOtherText = otherSubOptionLabel
+                              && !nextChildren.includes(otherSubOptionLabel)
+                              ? ''
+                              : choiceAnswerState.childrenOtherText;
                             onAnswer(currentQuestion.id, {
                               value: optionLabel,
-                              children: nextChildren
+                              children: nextChildren,
+                              childrenOtherText: nextChildrenOtherText
                             });
                           };
 
                           return (
-                            <label key={subId} htmlFor={subId} className="flex items-center text-sm text-gray-700">
-                              <input
-                                id={subId}
-                                type={subType === 'multi_choice' ? 'checkbox' : 'radio'}
-                                name={subType === 'multi_choice' ? subId : `${optionId}-sub-group`}
-                                checked={isSubSelected}
-                                onChange={toggleSubOption}
-                                className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                              />
-                              <span className="ml-2">{subLabel}</span>
-                            </label>
+                            <div key={subId} className="space-y-1">
+                              <label htmlFor={subId} className="flex items-center text-sm text-gray-700">
+                                <input
+                                  id={subId}
+                                  type={subType === 'multi_choice' ? 'checkbox' : 'radio'}
+                                  name={subType === 'multi_choice' ? subId : `${optionId}-sub-group`}
+                                  checked={isSubSelected}
+                                  onChange={toggleSubOption}
+                                  className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                                />
+                                <span className="ml-2">{subLabel}</span>
+                              </label>
+                              {isSubSelected && isSubOtherOption && (
+                                <input
+                                  type="text"
+                                  value={choiceAnswerState.childrenOtherText}
+                                  onChange={(event) =>
+                                    onAnswer(currentQuestion.id, {
+                                      value: optionLabel,
+                                      children: childSelections,
+                                      childrenOtherText: event.target.value
+                                    })}
+                                  placeholder="Précisez votre réponse"
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                />
+                              )}
+                            </div>
                           );
                         })}
                       </div>
@@ -629,6 +688,10 @@ export const QuestionnaireScreen = ({
               const childSelections = Array.isArray(multiAnswerState.children[optionLabel])
                 ? multiAnswerState.children[optionLabel]
                 : [];
+              const otherSubOptionLabel = subOptions.find(subOption => subOption?.isOther)?.label;
+              const childOtherText = typeof multiAnswerState.childrenOtherText?.[optionLabel] === 'string'
+                ? multiAnswerState.childrenOtherText[optionLabel]
+                : '';
               const isOtherOption = option.isOther === true;
               const resolveOtherText = (values) => (
                 otherOptionLabel && values.includes(otherOptionLabel) ? multiAnswerState.otherText : ''
@@ -636,8 +699,10 @@ export const QuestionnaireScreen = ({
 
               const toggleOption = () => {
                 const nextChildren = { ...multiAnswerState.children };
+                const nextChildrenOtherText = { ...multiAnswerState.childrenOtherText };
                 if (isSelected) {
                   delete nextChildren[optionLabel];
+                  delete nextChildrenOtherText[optionLabel];
                   const nextValues = multiSelection.filter(item => item !== optionLabel);
                   const nextOtherText = isOtherOption ? '' : resolveOtherText(nextValues);
                   onAnswer(
@@ -645,7 +710,8 @@ export const QuestionnaireScreen = ({
                     buildMultiChoiceAnswerPayload(
                       nextValues,
                       nextChildren,
-                      nextOtherText
+                      nextOtherText,
+                      nextChildrenOtherText
                     )
                   );
                 } else {
@@ -655,7 +721,8 @@ export const QuestionnaireScreen = ({
                     buildMultiChoiceAnswerPayload(
                       nextValues,
                       nextChildren,
-                      resolveOtherText(nextValues)
+                      resolveOtherText(nextValues),
+                      nextChildrenOtherText
                     )
                   );
                 }
@@ -697,7 +764,8 @@ export const QuestionnaireScreen = ({
                             buildMultiChoiceAnswerPayload(
                               nextValues,
                               multiAnswerState.children,
-                              e.target.value
+                              e.target.value,
+                              multiAnswerState.childrenOtherText
                             )
                           );
                         }}
@@ -714,6 +782,7 @@ export const QuestionnaireScreen = ({
                           const subLabel = subOption.label;
                           const subId = `${optionId}-sub-${subIdx}`;
                           const isSubSelected = childSelections.includes(subLabel);
+                          const isSubOtherOption = subOption.isOther === true;
                           const toggleSubOption = () => {
                             const nextChildren = subType === 'multi_choice'
                               ? (isSubSelected
@@ -723,6 +792,10 @@ export const QuestionnaireScreen = ({
                             const nextValues = isSelected
                               ? multiSelection
                               : [...multiSelection, optionLabel];
+                            const nextChildrenOtherText = { ...multiAnswerState.childrenOtherText };
+                            if (otherSubOptionLabel && !nextChildren.includes(otherSubOptionLabel)) {
+                              delete nextChildrenOtherText[optionLabel];
+                            }
                             onAnswer(
                               currentQuestion.id,
                               buildMultiChoiceAnswerPayload(
@@ -731,23 +804,54 @@ export const QuestionnaireScreen = ({
                                   ...multiAnswerState.children,
                                   [optionLabel]: nextChildren
                                 },
-                                resolveOtherText(nextValues)
+                                resolveOtherText(nextValues),
+                                nextChildrenOtherText
                               )
                             );
                           };
 
                           return (
-                            <label key={subId} htmlFor={subId} className="flex items-center text-sm text-gray-700">
-                              <input
-                                id={subId}
-                                type={subType === 'multi_choice' ? 'checkbox' : 'radio'}
-                                name={subType === 'multi_choice' ? subId : `${optionId}-sub-group`}
-                                checked={isSubSelected}
-                                onChange={toggleSubOption}
-                                className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                              />
-                              <span className="ml-2">{subLabel}</span>
-                            </label>
+                            <div key={subId} className="space-y-1">
+                              <label htmlFor={subId} className="flex items-center text-sm text-gray-700">
+                                <input
+                                  id={subId}
+                                  type={subType === 'multi_choice' ? 'checkbox' : 'radio'}
+                                  name={subType === 'multi_choice' ? subId : `${optionId}-sub-group`}
+                                  checked={isSubSelected}
+                                  onChange={toggleSubOption}
+                                  className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                                />
+                                <span className="ml-2">{subLabel}</span>
+                              </label>
+                              {isSubSelected && isSubOtherOption && (
+                                <input
+                                  type="text"
+                                  value={childOtherText}
+                                  onChange={(event) => {
+                                    const nextValues = isSelected
+                                      ? multiSelection
+                                      : [...multiSelection, optionLabel];
+                                    onAnswer(
+                                      currentQuestion.id,
+                                      buildMultiChoiceAnswerPayload(
+                                        nextValues,
+                                        {
+                                          ...multiAnswerState.children,
+                                          [optionLabel]: childSelections
+                                        },
+                                        resolveOtherText(nextValues),
+                                        {
+                                          ...multiAnswerState.childrenOtherText,
+                                          [optionLabel]: event.target.value
+                                        }
+                                      )
+                                    );
+                                  })}
+                                  placeholder="Précisez votre réponse"
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                                />
+                              )}
+                            </div>
                           );
                         })}
                       </div>
