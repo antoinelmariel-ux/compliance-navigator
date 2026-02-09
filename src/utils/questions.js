@@ -56,9 +56,22 @@ const normalizeAnswerForComparison = (answer) => {
 
   if (answer && typeof answer === 'object') {
     if (Array.isArray(answer.values)) {
-      return answer.values;
+      const childEntries = answer.children && typeof answer.children === 'object'
+        ? Object.values(answer.children)
+        : [];
+      const flattenedChildren = childEntries.reduce((acc, values) => {
+        if (Array.isArray(values)) {
+          acc.push(...values);
+        }
+        return acc;
+      }, []);
+      return [...answer.values, ...flattenedChildren];
     }
     if (typeof answer.value !== 'undefined') {
+      const children = Array.isArray(answer.children) ? answer.children : [];
+      if (children.length > 0) {
+        return [answer.value, ...children];
+      }
       return answer.value;
     }
 
@@ -249,8 +262,44 @@ export const normalizeQuestionOptions = (questionOrOptions, { includeOther = tru
   return normalizedOptions;
 };
 
-export const getQuestionOptionLabels = (questionOrOptions) =>
-  normalizeQuestionOptions(questionOrOptions).map(option => option.label);
+export const getQuestionOptionLabels = (questionOrOptions, { includeChildren = true } = {}) => {
+  const normalizedOptions = normalizeQuestionOptions(questionOrOptions);
+  const labels = [];
+
+  normalizedOptions.forEach((option) => {
+    if (option.label) {
+      labels.push(option.label);
+    }
+
+    if (!includeChildren || !Array.isArray(option.subOptions)) {
+      return;
+    }
+
+    option.subOptions.forEach((subOption) => {
+      if (subOption && subOption.label) {
+        labels.push(subOption.label);
+      }
+    });
+  });
+
+  return labels;
+};
+
+const getOtherSubOptionLabel = (question, parentLabel) => {
+  if (!question || !parentLabel) {
+    return '';
+  }
+
+  const options = normalizeQuestionOptions(question, { includeOther: false });
+  const parentOption = options.find(option => option.label === parentLabel);
+
+  if (!parentOption || !Array.isArray(parentOption.subOptions)) {
+    return '';
+  }
+
+  const otherSubOption = parentOption.subOptions.find(subOption => subOption?.isOther);
+  return typeof otherSubOption?.label === 'string' ? otherSubOption.label : '';
+};
 
 export const shouldShowOption = (option, answers) => {
   const normalized = normalizeQuestionOption(option);
@@ -332,13 +381,25 @@ export const formatAnswer = (question, answer) => {
     const label = value == null ? '' : String(value);
     const children = Array.isArray(answer.children) ? answer.children : [];
     const otherText = typeof answer.otherText === 'string' ? answer.otherText.trim() : '';
+    const childrenOtherText = typeof answer.childrenOtherText === 'string'
+      ? answer.childrenOtherText.trim()
+      : '';
     if (children.length === 0) {
       if (otherText) {
         return `${label} (${otherText})`;
       }
       return label;
     }
-    const formattedChildren = children.map(item => String(item)).join(', ');
+    const otherChildLabel = childrenOtherText ? getOtherSubOptionLabel(question, label) : '';
+    const formattedChildren = children
+      .map((item) => {
+        const childLabel = String(item);
+        if (childrenOtherText && otherChildLabel && childLabel === otherChildLabel) {
+          return `${childLabel} (${childrenOtherText})`;
+        }
+        return childLabel;
+      })
+      .join(', ');
     if (otherText) {
       return `${label} (${formattedChildren} · ${otherText})`;
     }
@@ -349,6 +410,9 @@ export const formatAnswer = (question, answer) => {
     const values = Array.isArray(answer.values) ? answer.values : [];
     const children = answer.children && typeof answer.children === 'object' ? answer.children : {};
     const otherText = typeof answer.otherText === 'string' ? answer.otherText.trim() : '';
+    const childrenOtherText = answer.childrenOtherText && typeof answer.childrenOtherText === 'object'
+      ? answer.childrenOtherText
+      : {};
     if (values.length === 0) {
       return '';
     }
@@ -359,13 +423,25 @@ export const formatAnswer = (question, answer) => {
       .map((value) => {
         const label = value == null ? '' : String(value);
         const childValues = Array.isArray(children[label]) ? children[label] : [];
+        const childOtherText = typeof childrenOtherText[label] === 'string'
+          ? childrenOtherText[label].trim()
+          : '';
+        const otherChildLabel = childOtherText ? getOtherSubOptionLabel(question, label) : '';
         if (childValues.length === 0) {
           if (otherText && otherLabel && label === otherLabel) {
             return `${label} (${otherText})`;
           }
           return label;
         }
-        const formattedChildren = childValues.map(item => String(item)).join(', ');
+        const formattedChildren = childValues
+          .map((item) => {
+            const childLabel = String(item);
+            if (childOtherText && otherChildLabel && childLabel === otherChildLabel) {
+              return `${childLabel} (${childOtherText})`;
+            }
+            return childLabel;
+          })
+          .join(', ');
         if (otherText && otherLabel && label === otherLabel) {
           return `${label} (${formattedChildren} · ${otherText})`;
         }

@@ -705,6 +705,23 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
     setEditedQuestion({ ...editedQuestion, options: newOptions });
   };
 
+  const addOtherSubOption = (index) => {
+    const newOptions = [...editedQuestion.options];
+    const current = newOptions[index];
+    const existing = Array.isArray(current?.subOptions) ? current.subOptions : [];
+    const hasOther = existing.some(entry => entry?.isOther);
+
+    if (hasOther) {
+      return;
+    }
+
+    newOptions[index] = {
+      ...(current && typeof current === 'object' ? current : {}),
+      subOptions: [...existing, { label: 'Autre', isOther: true }]
+    };
+    setEditedQuestion({ ...editedQuestion, options: newOptions });
+  };
+
   const updateSubOption = (index, subIndex, value) => {
     const newOptions = [...editedQuestion.options];
     const current = newOptions[index];
@@ -1208,14 +1225,24 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                                 </button>
                               </div>
                             ))}
-                            <button
-                              type="button"
-                              onClick={() => addSubOption(idx)}
-                              className="inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold text-blue-600 bg-white border border-blue-200 rounded-lg hover:bg-blue-50"
-                            >
-                              <Plus className="w-4 h-4" />
-                              Ajouter une sous-option
-                            </button>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => addSubOption(idx)}
+                                className="inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold text-blue-600 bg-white border border-blue-200 rounded-lg hover:bg-blue-50"
+                              >
+                                <Plus className="w-4 h-4" />
+                                Ajouter une sous-option
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => addOtherSubOption(idx)}
+                                className="inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold text-purple-600 bg-white border border-purple-200 rounded-lg hover:bg-purple-50"
+                              >
+                                <Plus className="w-4 h-4" />
+                                Autre
+                              </button>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -1692,7 +1719,7 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                                         <option value="">Sélectionner...</option>
                                         {availableQuestions.map(q => (
                                           <option key={q.id} value={q.id}>
-                                            {q.id} - {q.question ?? ''}
+                                            {q.question || q.id}
                                           </option>
                                         ))}
                                       </select>
@@ -1952,7 +1979,7 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                                         <option value="">Sélectionner...</option>
                                         {availableQuestions.map((q) => (
                                           <option key={q.id} value={q.id}>
-                                            {q.id} - {q.question ?? ''}
+                                            {q.question || q.id}
                                           </option>
                                         ))}
                                       </select>

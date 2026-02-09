@@ -635,7 +635,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                                 >
                                                   <option value="">Sélectionner...</option>
                                                   {dateQuestions.map(q => (
-                                                    <option key={q.id} value={q.id}>{q.id} - {q.question ?? ''}</option>
+                                                    <option key={q.id} value={q.id}>{q.question || q.id}</option>
                                                   ))}
                                                 </select>
                                               </div>
@@ -649,7 +649,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                                 >
                                                   <option value="">Sélectionner...</option>
                                                   {dateQuestions.map(q => (
-                                                    <option key={q.id} value={q.id}>{q.id} - {q.question ?? ''}</option>
+                                                    <option key={q.id} value={q.id}>{q.question || q.id}</option>
                                                   ))}
                                                 </select>
                                               </div>
@@ -703,7 +703,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                           >
                                             <option value="">Sélectionner...</option>
                                             {conditionQuestionEntries.map(q => (
-                                              <option key={q.id} value={q.id}>{q.id} - {q.question ?? ''}</option>
+                                              <option key={q.id} value={q.id}>{q.question || q.id}</option>
                                             ))}
                                           </select>
                                         </div>
@@ -948,7 +948,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                           <option value="">Sélectionner...</option>
                                           {dateQuestions.map(question => (
                                             <option key={question.id} value={question.id}>
-                                              {question.id} – {question.question || 'Question sans intitulé'}
+                                              {question.question || question.id}
                                             </option>
                                           ))}
                                         </select>
@@ -965,7 +965,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                           <option value="">Sélectionner...</option>
                                           {dateQuestions.map(question => (
                                             <option key={question.id} value={question.id}>
-                                              {question.id} – {question.question || 'Question sans intitulé'}
+                                              {question.question || question.id}
                                             </option>
                                           ))}
                                         </select>
@@ -1185,7 +1185,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                   <option value="">Sélectionner...</option>
                                   {dateQuestions.map(question => (
                                     <option key={question.id} value={question.id}>
-                                      {question.id} – {question.question || 'Question sans intitulé'}
+                                      {question.question || question.id}
                                     </option>
                                   ))}
                                 </select>
@@ -1200,7 +1200,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                   <option value="">Sélectionner...</option>
                                   {dateQuestions.map(question => (
                                     <option key={question.id} value={question.id}>
-                                      {question.id} – {question.question || 'Question sans intitulé'}
+                                      {question.question || question.id}
                                     </option>
                                   ))}
                                 </select>
