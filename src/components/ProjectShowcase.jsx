@@ -20,6 +20,11 @@ const SHOWCASE_SECTION_OPTIONS = [
   { id: 'timeline', label: 'Feuille de route' }
 ];
 
+const LIGHT_VISIBILITY_OPTIONS = [
+  ...SHOWCASE_SECTION_OPTIONS,
+  { id: 'budget', label: 'Budget estimé' }
+];
+
 const MAX_CUSTOM_SECTION_COLUMNS = 4;
 
 const SECTION_TEMPLATES = [
@@ -149,7 +154,12 @@ const SECTION_TEMPLATE_CONFIG = {
   }
 };
 
-const buildDefaultLightSectionSelection = (sectionIds = SHOWCASE_SECTION_OPTIONS.map(section => section.id)) =>
+const buildLightVisibilityIds = (sectionIds = []) => {
+  const merged = [...sectionIds, ...LIGHT_VISIBILITY_OPTIONS.map(option => option.id)];
+  return Array.from(new Set(merged));
+};
+
+const buildDefaultLightSectionSelection = (sectionIds = LIGHT_VISIBILITY_OPTIONS.map(section => section.id)) =>
   sectionIds.reduce((acc, sectionId) => {
     acc[sectionId] = true;
     return acc;
@@ -1584,7 +1594,7 @@ export const ProjectShowcase = ({
   const resolvedInitialDisplayMode = initialDisplayMode === 'light' ? 'light' : 'full';
   const [displayMode, setDisplayMode] = useState(resolvedDisplayModeLock || resolvedInitialDisplayMode);
   const [lightSections, setLightSections] = useState(() =>
-    buildDefaultLightSectionSelection(sectionOrder)
+    buildDefaultLightSectionSelection(buildLightVisibilityIds(sectionOrder))
   );
   const [pendingLightSections, setPendingLightSections] = useState(lightSections);
   const [isLightConfigOpen, setIsLightConfigOpen] = useState(false);
@@ -1648,8 +1658,9 @@ export const ProjectShowcase = ({
     setLightSections(previous => {
       const nextState = { ...previous };
       let changed = false;
+      const visibilityIds = buildLightVisibilityIds(sectionOrder);
 
-      sectionOrder.forEach(id => {
+      visibilityIds.forEach(id => {
         if (nextState[id] === undefined) {
           nextState[id] = true;
           changed = true;
@@ -1657,7 +1668,7 @@ export const ProjectShowcase = ({
       });
 
       Object.keys(nextState).forEach(id => {
-        if (!sectionOrder.includes(id)) {
+        if (!visibilityIds.includes(id)) {
           delete nextState[id];
           changed = true;
         }
@@ -1731,8 +1742,8 @@ export const ProjectShowcase = ({
   }, []);
 
   const handleSelectAllSections = useCallback(() => {
-    setPendingLightSections(buildDefaultLightSectionSelection());
-  }, []);
+    setPendingLightSections(buildDefaultLightSectionSelection(buildLightVisibilityIds(sectionOrder)));
+  }, [sectionOrder]);
 
   const handleValidateLightConfig = useCallback(() => {
     setLightSections(pendingLightSections);
@@ -2038,6 +2049,8 @@ export const ProjectShowcase = ({
   ]);
 
   const isLightMode = displayMode === 'light';
+  const lightVisibilityIds = useMemo(() => buildLightVisibilityIds(sectionOrder), [sectionOrder]);
+  const canShowBudget = displayMode === 'full' || lightSections.budget !== false;
 
   const shouldDisplaySection = useCallback(
     (sectionId) => displayMode === 'full' || lightSections[sectionId] !== false,
@@ -2045,8 +2058,8 @@ export const ProjectShowcase = ({
   );
 
   const selectedLightSectionsCount = useMemo(
-    () => Object.values(lightSections).filter(Boolean).length,
-    [lightSections]
+    () => lightVisibilityIds.filter((id) => lightSections[id] !== false).length,
+    [lightSections, lightVisibilityIds]
   );
 
   const canEdit = typeof onUpdateAnswers === 'function' && !hideEditBar;
@@ -2666,7 +2679,7 @@ export const ProjectShowcase = ({
                   </ul>
                 </div>
               )}
-              {hasText(budgetEstimate) && (
+              {hasText(budgetEstimate) && canShowBudget && (
                 <div className="deezer-card">
                   <h3>Budget estimé</h3>
                   <p
@@ -2957,7 +2970,7 @@ export const ProjectShowcase = ({
                   </ul>
                 </div>
               )}
-              {hasText(budgetEstimate) && (
+              {hasText(budgetEstimate) && canShowBudget && (
                 <div className="editorial-card editorial-card--accent">
                   <h3 className="editorial-card__title">Budget estimé</h3>
                   <p className={`editorial-metric ${missingInfoClass(budgetEstimate)}`}>
@@ -3260,7 +3273,7 @@ export const ProjectShowcase = ({
                   </ul>
                 </div>
               )}
-              {hasText(budgetEstimate) && (
+              {hasText(budgetEstimate) && canShowBudget && (
                 <div className="fibclot-impact__metric" data-tour-id="showcase-budget">
                   <p className="fibclot-impact__label">Budget estimé</p>
                   <p className={`fibclot-impact__value ${missingInfoClass(budgetEstimate)}`}>
@@ -3577,7 +3590,7 @@ export const ProjectShowcase = ({
                   <p className="aurora-eyebrow">Notre impact</p>
                   <h2 className="aurora-section__title">Délivrer le maximum de valeur</h2>
                 </div>
-                {hasText(budgetEstimate) && (
+                {hasText(budgetEstimate) && canShowBudget && (
                   <div className="aurora-card aurora-card--budget" data-tour-id="showcase-budget">
                     <p className="aurora-eyebrow">Budget estimé</p>
                     <p className={`aurora-card__metric ${missingInfoClass(budgetEstimate)}`}>
@@ -4774,7 +4787,7 @@ export const ProjectShowcase = ({
             aria-pressed={isLightMode}
           >
             Mode Light
-            <span className="text-xs text-gray-500">({selectedLightSectionsCount}/{sectionOrder.length})</span>
+            <span className="text-xs text-gray-500">({selectedLightSectionsCount}/{lightVisibilityIds.length})</span>
           </button>
           <button
             type="button"
@@ -4803,8 +4816,8 @@ export const ProjectShowcase = ({
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm font-semibold text-gray-800">Sections visibles en mode Light</p>
-                <p className="text-xs text-gray-600">Décochez les sections à masquer dans l'affichage allégé.</p>
+                <p className="text-sm font-semibold text-gray-800">Sections et éléments visibles en mode Light</p>
+                <p className="text-xs text-gray-600">Décochez les sections ou éléments à masquer dans l'affichage allégé.</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <button
@@ -4832,7 +4845,7 @@ export const ProjectShowcase = ({
             </div>
 
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {SHOWCASE_SECTION_OPTIONS.map(section => {
+              {LIGHT_VISIBILITY_OPTIONS.map(section => {
                 const checkboxId = `light-section-${section.id}`;
                 const isChecked = pendingLightSections[section.id] !== false;
                 return (
