@@ -535,6 +535,7 @@ export const BackOffice = ({
   const [selectedFilterQuestionId, setSelectedFilterQuestionId] = useState('');
   const [selectedInspirationFilterQuestionId, setSelectedInspirationFilterQuestionId] = useState('');
   const [newInspirationFormField, setNewInspirationFormField] = useState(() => createEmptyInspirationFormField());
+  const [teamContactDrafts, setTeamContactDrafts] = useState({});
   const undoStackRef = useRef([]);
   const [canUndo, setCanUndo] = useState(false);
   const [undoMessage, setUndoMessage] = useState('');
@@ -3354,6 +3355,25 @@ export const BackOffice = ({
     setTeams(next);
   };
 
+  const handleTeamContactsChange = (index, teamId, value) => {
+    setTeamContactDrafts((prev) => ({
+      ...prev,
+      [teamId]: value
+    }));
+    updateTeamField(index, 'contacts', parseTeamContacts(value));
+  };
+
+  const handleTeamContactsBlur = (teamId) => {
+    setTeamContactDrafts((prev) => {
+      if (!Object.prototype.hasOwnProperty.call(prev, teamId)) {
+        return prev;
+      }
+      const next = { ...prev };
+      delete next[teamId];
+      return next;
+    });
+  };
+
   const deleteTeam = (id) => {
     const targetIndex = teams.findIndex((team) => team.id === id);
     if (targetIndex < 0) {
@@ -3375,6 +3395,14 @@ export const BackOffice = ({
     });
 
     setTeams((prevTeams) => prevTeams.filter((team) => team.id !== id));
+    setTeamContactDrafts((prev) => {
+      if (!Object.prototype.hasOwnProperty.call(prev, id)) {
+        return prev;
+      }
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
   };
 
   return (
@@ -6870,10 +6898,11 @@ export const BackOffice = ({
                     </label>
                     <textarea
                       id={`${team.id}-contact`}
-                      value={formatTeamContacts(team, ', ')}
+                      value={teamContactDrafts[team.id] ?? formatTeamContacts(team, ', ')}
                       onChange={(event) =>
-                        updateTeamField(index, 'contacts', parseTeamContacts(event.target.value))
+                        handleTeamContactsChange(index, team.id, event.target.value)
                       }
+                      onBlur={() => handleTeamContactsBlur(team.id)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-2 hv-focus-ring"
                       rows={2}
                       placeholder="ex : contact@company.com, support@company.com"
