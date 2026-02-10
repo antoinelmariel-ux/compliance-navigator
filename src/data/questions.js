@@ -20,7 +20,37 @@ export const initialQuestions = [
         "hero"
       ],
       "usage": "Titre principal affiché dans la vitrine du projet."
-    }
+    },
+    "extraCheckbox": {
+      "enabled": true,
+      "label": "J'aurais besoin d'un nom / un logo (non encore protégé) pour communiquer à l'externe sur mon projet"
+    },
+    "otherOption": {
+      "enabled": false,
+      "label": "Autre",
+      "placeholder": ""
+    },
+    "placeholder": "",
+    "numberUnit": "",
+    "rankingConfig": {
+      "title": "Base de données",
+      "criteria": [
+        {
+          "id": "critere-1",
+          "label": "Critère 1"
+        },
+        {
+          "id": "critere-2",
+          "label": "Critère 2"
+        },
+        {
+          "id": "critere-3",
+          "label": "Critère 3"
+        }
+      ],
+      "entries": []
+    },
+    "conditionGroups": []
   },
   {
     "id": "teamLead",
@@ -44,19 +74,84 @@ export const initialQuestions = [
       "usage": "Bloc « Lead du projet » dans la section équipe."
     },
     "placeholder": "",
-    "conditionGroups": []
+    "conditionGroups": [],
+    "extraCheckbox": {
+      "enabled": false,
+      "label": ""
+    },
+    "otherOption": {
+      "enabled": false,
+      "label": "Autre",
+      "placeholder": ""
+    },
+    "numberUnit": "",
+    "rankingConfig": {
+      "title": "Base de données",
+      "criteria": [
+        {
+          "id": "critere-1",
+          "label": "Critère 1"
+        },
+        {
+          "id": "critere-2",
+          "label": "Critère 2"
+        },
+        {
+          "id": "critere-3",
+          "label": "Critère 3"
+        }
+      ],
+      "entries": []
+    }
   },
   {
     "id": "teamLeadTeam",
     "type": "choice",
-    "question": "Équipe à laquelle cette personne appartient",
+    "question": "A quelle équipe est-il rattaché ? ",
     "options": [
-      "Marketing",
-      "Médical",
-      "Accès",
-      "Vente",
-      "Digital",
-      "Autre"
+      {
+        "label": "Marketing DOI",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Médical DOI",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Marketing DOF",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Médical DOI",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Affaires Publiques",
+        "visibility": "always",
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      }
     ],
     "required": true,
     "conditions": [],
@@ -76,6 +171,59 @@ export const initialQuestions = [
       "usage": "Mention du rattachement du lead dans la section équipe."
     },
     "placeholder": "",
+    "conditionGroups": [],
+    "extraCheckbox": {
+      "enabled": false,
+      "label": ""
+    },
+    "otherOption": {
+      "enabled": true,
+      "label": "Autre",
+      "placeholder": "Uniquement si le projet n'est pas rattaché au Médical / Marketing DOF/DOI"
+    },
+    "numberUnit": "",
+    "rankingConfig": {
+      "title": "Base de données",
+      "criteria": [
+        {
+          "id": "critere-1",
+          "label": "Critère 1"
+        },
+        {
+          "id": "critere-2",
+          "label": "Critère 2"
+        },
+        {
+          "id": "critere-3",
+          "label": "Critère 3"
+        }
+      ],
+      "entries": []
+    }
+  },
+  {
+    "id": "teamCoreMembers",
+    "type": "long_text",
+    "question": "Quels sont les membres de l'équipe projet ?",
+    "options": [],
+    "required": false,
+    "conditions": [],
+    "conditionLogic": "all",
+    "guidance": {
+      "objective": "Mettre en avant la complémentarité de l’équipe.",
+      "details": "Chaque ligne sera affichée comme un membre du “collectif moteur”.",
+      "tips": [
+        "Mentionnez pour chaque personne le rôle ou l’expertise apportée.",
+        "Incluez éventuellement les partenaires ou experts externes essentiels."
+      ]
+    },
+    "showcase": {
+      "sections": [
+        "team"
+      ],
+      "usage": "Liste « Collectif moteur » dans la section équipe."
+    },
+    "placeholder": "Prénom Nom - Poste de la personne\nPrénom Nom - Poste de la personne",
     "conditionGroups": []
   },
   {
@@ -83,11 +231,42 @@ export const initialQuestions = [
     "type": "multi_choice",
     "question": "De quel type de projet s'agit-il ?",
     "options": [
-      "Parrainage / Partenariat",
-      "Support d'information / sensibilisation",
-      "Outil d'aide à la décision",
-      "Outil d'optimisation de la prise en charge des patients",
-      "Autre"
+      {
+        "label": "Projet du LFB",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Projet co-construit entre le LFB et un partenaire",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Projet d'un tiers soutenu par le LFB",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Don / bourse / Appel à projets",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      }
     ],
     "required": true,
     "conditions": [],
@@ -100,6 +279,34 @@ export const initialQuestions = [
       "tips": [
         "En cas de doute, sélectionner les différentes catégories applicables"
       ]
+    },
+    "extraCheckbox": {
+      "enabled": true,
+      "label": "Il s'agit d'un simple renouvellement d'un projet déjà validé"
+    },
+    "otherOption": {
+      "enabled": false,
+      "label": "Autre",
+      "placeholder": ""
+    },
+    "numberUnit": "",
+    "rankingConfig": {
+      "title": "Base de données",
+      "criteria": [
+        {
+          "id": "critere-1",
+          "label": "Critère 1"
+        },
+        {
+          "id": "critere-2",
+          "label": "Critère 2"
+        },
+        {
+          "id": "critere-3",
+          "label": "Critère 3"
+        }
+      ],
+      "entries": []
     }
   },
   {
@@ -107,11 +314,51 @@ export const initialQuestions = [
     "type": "multi_choice",
     "question": "À qui s'adresse votre projet ?",
     "options": [
-      "Grand public",
-      "Patients",
-      "Professionnels de santé",
-      "Acheteurs",
-      "Collaborateurs du LFB"
+      {
+        "label": "Grand public",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Patients / Association de patients",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Professionnels de santé",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Institutionnels",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Collaborateurs du LFB",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      }
     ],
     "required": true,
     "conditions": [],
@@ -131,20 +378,91 @@ export const initialQuestions = [
       "usage": "Badge « Audience principale » dans le bandeau de la vitrine."
     },
     "placeholder": "",
-    "conditionGroups": []
+    "conditionGroups": [],
+    "extraCheckbox": {
+      "enabled": false,
+      "label": ""
+    },
+    "otherOption": {
+      "enabled": true,
+      "label": "Autre",
+      "placeholder": ""
+    },
+    "numberUnit": "",
+    "rankingConfig": {
+      "title": "Base de données",
+      "criteria": [
+        {
+          "id": "critere-1",
+          "label": "Critère 1"
+        },
+        {
+          "id": "critere-2",
+          "label": "Critère 2"
+        },
+        {
+          "id": "critere-3",
+          "label": "Critère 3"
+        }
+      ],
+      "entries": []
+    }
   },
   {
     "id": "showcaseTheme",
     "type": "choice",
-    "question": "Quel thème souhaitez-vous pour la vitrine ?",
+    "question": "S'agit-il d'un projet produit ou environnement ?",
     "options": [
-      "Universel",
-      "Produit",
-      "Cupertino",
-      "Lumen",
-      "Voyage",
-      "Arena",
-      "Prism"
+      {
+        "label": "Projet produit",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [
+          {
+            "label": "Alfalstin"
+          },
+          {
+            "label": "Fibclot"
+          },
+          {
+            "label": "Wilfactin"
+          },
+          {
+            "label": "Cevenfacta"
+          },
+          {
+            "label": "IqYmune"
+          }
+        ],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Projet environnement",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [
+          {
+            "label": "Immunologie"
+          },
+          {
+            "label": "Hémostase"
+          },
+          {
+            "label": "Soins intensifs"
+          },
+          {
+            "label": "Pneumologie"
+          },
+          {
+            "label": "Cross aire thérapeutique"
+          }
+        ],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      }
     ],
     "required": true,
     "conditions": [],
@@ -169,7 +487,35 @@ export const initialQuestions = [
       "usage": "Pilote les couleurs et dégradés utilisés dans l'ensemble de la vitrine."
     },
     "placeholder": "",
-    "conditionGroups": []
+    "conditionGroups": [],
+    "extraCheckbox": {
+      "enabled": false,
+      "label": ""
+    },
+    "otherOption": {
+      "enabled": false,
+      "label": "Autre",
+      "placeholder": ""
+    },
+    "numberUnit": "",
+    "rankingConfig": {
+      "title": "Base de données",
+      "criteria": [
+        {
+          "id": "critere-1",
+          "label": "Critère 1"
+        },
+        {
+          "id": "critere-2",
+          "label": "Critère 2"
+        },
+        {
+          "id": "critere-3",
+          "label": "Critère 3"
+        }
+      ],
+      "entries": []
+    }
   },
   {
     "id": "projectSlogan",
@@ -241,37 +587,941 @@ export const initialQuestions = [
     }
   },
   {
-    "id": "q11",
-    "type": "multi_choice",
-    "question": "Quels sont les livrables associés au projet ?",
+    "id": "q19",
+    "type": "choice",
+    "question": "Quelles sont les composantes du projet ?",
     "options": [
-      "Site internet",
-      "Communication sur les réseaux sociaux",
-      "Application mobile / web app",
-      "Matériel promotionnel",
-      "Matériel environnement",
-      "Publication scientifique"
+      {
+        "label": "Enquête / étude de marché",
+        "visibility": "always",
+        "subType": "multi_choice",
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Digital",
+        "visibility": "always",
+        "subType": "multi_choice",
+        "subOptions": [
+          {
+            "label": "Site internet",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
+          },
+          {
+            "label": "Campagne réseaux sociaux",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
+          },
+          {
+            "label": "Applications mobiles",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
+          },
+          {
+            "label": "Campagne d'emailing",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
+          },
+          {
+            "label": "Webconférence",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
+          },
+          {
+            "label": "Podcast",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
+          },
+          {
+            "label": "Elearning",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
+          },
+          {
+            "label": "Bot IA",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
+          }
+        ],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Print",
+        "visibility": "always",
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all",
+        "subType": null,
+        "subOptions": []
+      },
+      {
+        "label": "Evenement",
+        "visibility": "always",
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all",
+        "subType": null,
+        "subOptions": []
+      },
+      {
+        "label": "Présentation de cas cliniques",
+        "visibility": "always",
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      }
     ],
     "required": true,
     "conditions": [],
     "conditionLogic": "all",
     "conditionGroups": [],
     "placeholder": "",
+    "numberUnit": "",
     "guidance": {
       "objective": "",
       "details": "",
       "tips": []
+    },
+    "extraCheckbox": {
+      "enabled": false,
+      "label": ""
+    },
+    "otherOption": {
+      "enabled": false,
+      "label": "Autre",
+      "placeholder": ""
+    },
+    "rankingConfig": {
+      "title": "Base de données",
+      "criteria": [
+        {
+          "id": "critere-1",
+          "label": "Critère 1"
+        },
+        {
+          "id": "critere-2",
+          "label": "Critère 2"
+        },
+        {
+          "id": "critere-3",
+          "label": "Critère 3"
+        }
+      ],
+      "entries": []
+    }
+  },
+  {
+    "id": "q20",
+    "type": "choice",
+    "question": "Dans le cadre du projet, allez-vous recourir à l'IA",
+    "options": [
+      {
+        "label": "Oui pour générer des éléments (texte, image, ...)",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Oui pour analyser des résultats et prendre des décisions",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Oui, pour la mettre à disposition de l'utilisateur",
+        "visibility": "always",
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      }
+    ],
+    "required": true,
+    "conditions": [],
+    "conditionLogic": "all",
+    "conditionGroups": [],
+    "placeholder": "",
+    "numberUnit": "",
+    "guidance": {
+      "objective": "",
+      "details": "",
+      "tips": []
+    },
+    "extraCheckbox": {
+      "enabled": false,
+      "label": ""
+    },
+    "otherOption": {
+      "enabled": false,
+      "label": "Autre",
+      "placeholder": ""
+    },
+    "rankingConfig": {
+      "title": "Base de données",
+      "criteria": [
+        {
+          "id": "critere-1",
+          "label": "Critère 1"
+        },
+        {
+          "id": "critere-2",
+          "label": "Critère 2"
+        },
+        {
+          "id": "critere-3",
+          "label": "Critère 3"
+        }
+      ],
+      "entries": []
+    }
+  },
+  {
+    "id": "q10",
+    "type": "multi_choice",
+    "question": "Dans le cadre du projet, allez-vous collaborer avec ...",
+    "options": [
+      {
+        "label": "Association de patients / Patients",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Professionnels de santé (hors France) (ou association de PdS / Société savante)",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Professionnel de santé français (ou association de PdS / Société savante)",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Expert français non professionnels de santé",
+        "visibility": "always",
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all",
+        "subType": null,
+        "subOptions": []
+      },
+      {
+        "label": "Etablissement hospitalier",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Institutionnel",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Agence",
+        "visibility": "always",
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all",
+        "subType": null,
+        "subOptions": []
+      },
+      {
+        "label": "Un autre industriel",
+        "visibility": "always",
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Aucune collaboration prévue avec l'externe",
+        "visibility": "always",
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      }
+    ],
+    "required": false,
+    "conditions": [],
+    "conditionLogic": "all",
+    "conditionGroups": [],
+    "placeholder": "",
+    "guidance": {
+      "objective": "Anticiper l'implication de prestataires externes et les contrôles associés",
+      "details": "Les partenariats imposent une revue juridique des contrats, et parfois des délais supplémentaires liés à des obligations de déclaration / demande d'autorisation aux autorités",
+      "tips": []
+    },
+    "extraCheckbox": {
+      "enabled": false,
+      "label": ""
+    },
+    "otherOption": {
+      "enabled": true,
+      "label": "Autre",
+      "placeholder": ""
+    },
+    "numberUnit": "",
+    "rankingConfig": {
+      "title": "Base de données",
+      "criteria": [
+        {
+          "id": "critere-1",
+          "label": "Critère 1"
+        },
+        {
+          "id": "critere-2",
+          "label": "Critère 2"
+        },
+        {
+          "id": "critere-3",
+          "label": "Critère 3"
+        }
+      ],
+      "entries": []
+    }
+  },
+  {
+    "id": "q17",
+    "type": "multi_choice",
+    "question": "Avez-vous des attentes particulières vis-à-vis de votre ou vos partenaires ?",
+    "options": [
+      {
+        "label": "Exclusivité",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Collaboration pour plus de 3 ans négociée dès maintenant",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Possibilité de renouveler facilement ce type de projets dans le temps",
+        "visibility": "conditional",
+        "conditionGroups": [
+          {
+            "logic": "any",
+            "conditions": [
+              {
+                "question": "q10",
+                "operator": "equals",
+                "value": "Agence"
+              },
+              {
+                "question": "q10",
+                "operator": "equals",
+                "value": "Un autre industriel"
+              }
+            ]
+          }
+        ],
+        "conditions": [
+          {
+            "question": "q10",
+            "operator": "equals",
+            "value": "Agence"
+          },
+          {
+            "question": "q10",
+            "operator": "equals",
+            "value": "Un autre industriel"
+          }
+        ],
+        "conditionLogic": "any"
+      }
+    ],
+    "required": false,
+    "conditions": [
+      {
+        "question": "q10",
+        "operator": "not_equals",
+        "value": "Aucune collaboration prévue avec l'externe"
+      }
+    ],
+    "conditionLogic": "all",
+    "conditionGroups": [
+      {
+        "logic": "all",
+        "conditions": [
+          {
+            "question": "q10",
+            "operator": "not_equals",
+            "value": "Aucune collaboration prévue avec l'externe"
+          }
+        ]
+      }
+    ],
+    "placeholder": "",
+    "numberUnit": "",
+    "guidance": {
+      "objective": "",
+      "details": "",
+      "tips": []
+    },
+    "extraCheckbox": {
+      "enabled": false,
+      "label": ""
+    },
+    "otherOption": {
+      "enabled": false,
+      "label": "Autre",
+      "placeholder": ""
+    },
+    "rankingConfig": {
+      "title": "Base de données",
+      "criteria": [
+        {
+          "id": "critere-1",
+          "label": "Critère 1"
+        },
+        {
+          "id": "critere-2",
+          "label": "Critère 2"
+        },
+        {
+          "id": "critere-3",
+          "label": "Critère 3"
+        }
+      ],
+      "entries": []
+    }
+  },
+  {
+    "id": "q21",
+    "type": "choice",
+    "question": "Concernant l'élaboration du logo / du nom, allez-vous faire appel à un prestataire ?",
+    "options": [
+      {
+        "label": "Oui",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Non",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      }
+    ],
+    "required": true,
+    "conditions": [
+      {
+        "question": "projectName__extra_checkbox",
+        "operator": "equals",
+        "value": "true"
+      },
+      {
+        "question": "q10",
+        "operator": "equals",
+        "value": "Agence"
+      }
+    ],
+    "conditionLogic": "all",
+    "conditionGroups": [
+      {
+        "logic": "all",
+        "conditions": [
+          {
+            "question": "projectName__extra_checkbox",
+            "operator": "equals",
+            "value": "true"
+          },
+          {
+            "question": "q10",
+            "operator": "equals",
+            "value": "Agence"
+          }
+        ]
+      }
+    ],
+    "placeholder": "",
+    "numberUnit": "",
+    "guidance": {
+      "objective": "",
+      "details": "",
+      "tips": []
+    },
+    "extraCheckbox": {
+      "enabled": false,
+      "label": ""
+    },
+    "otherOption": {
+      "enabled": false,
+      "label": "Autre",
+      "placeholder": ""
+    },
+    "rankingConfig": {
+      "title": "Base de données",
+      "criteria": [
+        {
+          "id": "critere-1",
+          "label": "Critère 1"
+        },
+        {
+          "id": "critere-2",
+          "label": "Critère 2"
+        },
+        {
+          "id": "critere-3",
+          "label": "Critère 3"
+        }
+      ],
+      "entries": []
+    }
+  },
+  {
+    "id": "q14",
+    "type": "multi_choice",
+    "question": "Comment allez-vous communiquer sur votre projet ?",
+    "options": [
+      {
+        "label": "Via les canaux digitaux du LFB",
+        "visibility": "always",
+        "subType": "multi_choice",
+        "subOptions": [
+          {
+            "label": "Site internet corporate du LFB",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
+          },
+          {
+            "label": "Site internet Agora",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
+          },
+          {
+            "label": "Site internet des filiales du LFB",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
+          },
+          {
+            "label": "Réseaux sociaux du LFB",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
+          },
+          {
+            "label": "Emailing",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
+          }
+        ],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Via les canaux physique du LFB",
+        "visibility": "always",
+        "subType": "multi_choice",
+        "subOptions": [
+          {
+            "label": "Remis (flyer, affiche, ...)",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
+          },
+          {
+            "label": "Equipe vente",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
+          },
+          {
+            "label": "Equipe médical",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
+          },
+          {
+            "label": "Evénements (via stand, kakémono, ...)",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
+          }
+        ],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Via notre partenaire",
+        "visibility": "conditional",
+        "conditionGroups": [
+          {
+            "logic": "all",
+            "conditions": [
+              {
+                "question": "q10",
+                "operator": "not_equals",
+                "value": "Aucune collaboration prévue avec l'externe"
+              }
+            ]
+          }
+        ],
+        "conditions": [
+          {
+            "question": "q10",
+            "operator": "not_equals",
+            "value": "Aucune collaboration prévue avec l'externe"
+          }
+        ],
+        "conditionLogic": "all",
+        "subType": null,
+        "subOptions": []
+      },
+      {
+        "label": "Via un tiers",
+        "visibility": "always",
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all",
+        "subType": null,
+        "subOptions": []
+      }
+    ],
+    "required": true,
+    "conditions": [],
+    "conditionLogic": "all",
+    "conditionGroups": [],
+    "placeholder": "",
+    "numberUnit": "",
+    "guidance": {
+      "objective": "",
+      "details": "",
+      "tips": []
+    },
+    "extraCheckbox": {
+      "enabled": false,
+      "label": ""
+    },
+    "otherOption": {
+      "enabled": false,
+      "label": "Autre",
+      "placeholder": ""
+    },
+    "rankingConfig": {
+      "title": "Base de données",
+      "criteria": [
+        {
+          "id": "critere-1",
+          "label": "Critère 1"
+        },
+        {
+          "id": "critere-2",
+          "label": "Critère 2"
+        },
+        {
+          "id": "critere-3",
+          "label": "Critère 3"
+        }
+      ],
+      "entries": []
+    }
+  },
+  {
+    "id": "q11",
+    "type": "multi_choice",
+    "question": "Les livrables du projet intègrent ils les éléments suivants ?",
+    "options": [
+      {
+        "label": "Visuels créés spécifiquement pour le projet",
+        "visibility": "conditional",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [
+          {
+            "logic": "all",
+            "conditions": [
+              {
+                "question": "q10",
+                "operator": "equals",
+                "value": "Agence"
+              }
+            ]
+          }
+        ],
+        "conditions": [
+          {
+            "question": "q10",
+            "operator": "equals",
+            "value": "Agence"
+          }
+        ],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Logo de tiers (ex : logos d'associations de patients, de sociétés savantes, ...)",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Images de tiers ou issues de banques d'images",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Extrait de publications (sans modification ni paraphrase par le LFB) ou utilisation d'échelles scientifiques",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Extrait de de sites internet",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      }
+    ],
+    "required": false,
+    "conditions": [
+      {
+        "question": "ProjectType",
+        "operator": "equals",
+        "value": "Projet du LFB"
+      },
+      {
+        "question": "ProjectType",
+        "operator": "equals",
+        "value": "Projet co-construit entre le LFB et un partenaire"
+      }
+    ],
+    "conditionLogic": "any",
+    "conditionGroups": [
+      {
+        "logic": "any",
+        "conditions": [
+          {
+            "question": "ProjectType",
+            "operator": "equals",
+            "value": "Projet du LFB"
+          },
+          {
+            "question": "ProjectType",
+            "operator": "equals",
+            "value": "Projet co-construit entre le LFB et un partenaire"
+          }
+        ]
+      }
+    ],
+    "placeholder": "",
+    "guidance": {
+      "objective": "",
+      "details": "",
+      "tips": []
+    },
+    "extraCheckbox": {
+      "enabled": false,
+      "label": ""
+    },
+    "otherOption": {
+      "enabled": false,
+      "label": "Autre",
+      "placeholder": ""
+    },
+    "numberUnit": "",
+    "rankingConfig": {
+      "title": "Base de données",
+      "criteria": [
+        {
+          "id": "critere-1",
+          "label": "Critère 1"
+        },
+        {
+          "id": "critere-2",
+          "label": "Critère 2"
+        },
+        {
+          "id": "critere-3",
+          "label": "Critère 3"
+        }
+      ],
+      "entries": []
+    }
+  },
+  {
+    "id": "solutionComparison",
+    "type": "long_text",
+    "question": "En quoi cette solution se distingue-t-elle des alternatives actuelles ?",
+    "options": [],
+    "required": false,
+    "conditions": [],
+    "conditionLogic": "all",
+    "guidance": {
+      "objective": "Souligner la différenciation sans dénigrer la concurrence.",
+      "details": "Cette réponse apparaît dans la section “Solution” comme une comparaison subtile.",
+      "tips": [
+        "Comparez-vous à un comportement ou à une solution existante plutôt qu’à un concurrent direct.",
+        "Appuyez-vous sur un bénéfice mesurable ou une expérience utilisateur plus fluide."
+      ]
+    },
+    "showcase": {
+      "sections": [
+        "solution"
+      ],
+      "usage": "Bloc « Pourquoi c’est différent » dans la section solution."
     }
   },
   {
     "id": "q3",
     "type": "multi_choice",
-    "question": "Collectez-vous des données dans le cadre de votre projet / solution ?",
+    "question": "Collectez-vous / manipulez-vous des données personnelles dans le cadre de votre projet / solution ?",
     "options": [
-      "Oui - Données de santé",
-      "Oui - Autre données sensibles",
-      "Oui - Données personnelles standard",
-      "Non"
+      {
+        "label": "Oui - Données de santé",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Oui - Autre données sensibles",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Oui - Données personnelles standard (ex : email)",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Non",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      }
     ],
     "required": true,
     "conditions": [
@@ -311,7 +1561,35 @@ export const initialQuestions = [
         ]
       }
     ],
-    "conditionLogic": "any"
+    "conditionLogic": "any",
+    "extraCheckbox": {
+      "enabled": false,
+      "label": ""
+    },
+    "otherOption": {
+      "enabled": false,
+      "label": "Autre",
+      "placeholder": ""
+    },
+    "numberUnit": "",
+    "rankingConfig": {
+      "title": "Base de données",
+      "criteria": [
+        {
+          "id": "critere-1",
+          "label": "Critère 1"
+        },
+        {
+          "id": "critere-2",
+          "label": "Critère 2"
+        },
+        {
+          "id": "critere-3",
+          "label": "Critère 3"
+        }
+      ],
+      "entries": []
+    }
   },
   {
     "id": "q13",
@@ -386,6 +1664,29 @@ export const initialQuestions = [
     }
   },
   {
+    "id": "roadmapMilestones",
+    "type": "milestone_list",
+    "question": "Quels jalons clés souhaitez-vous mettre en avant ?",
+    "options": [],
+    "required": false,
+    "conditions": [],
+    "conditionLogic": "all",
+    "guidance": {
+      "objective": "Projeter les étapes majeures à venir pour synchroniser les parties prenantes.",
+      "details": "Chaque jalon affichera une date et un descriptif dans la section feuille de route de la vitrine.",
+      "tips": [
+        "Utilisez un format AAAA-MM-JJ pour les dates afin de faciliter la lecture.",
+        "Formulez des descriptions actionnables : validation, lancement partiel, publication clé, etc."
+      ]
+    },
+    "showcase": {
+      "sections": [
+        "timeline"
+      ],
+      "usage": "Liste de jalons personnalisés dans la section « Les prochains jalons »."
+    }
+  },
+  {
     "id": "solutionBenefits",
     "type": "long_text",
     "question": "Quels bénéfices tangibles votre solution apporte-t-elle ?",
@@ -406,51 +1707,6 @@ export const initialQuestions = [
         "solution"
       ],
       "usage": "Liste des bénéfices clés dans la section solution."
-    }
-  },
-  {
-    "id": "solutionComparison",
-    "type": "long_text",
-    "question": "En quoi cette solution se distingue-t-elle des alternatives actuelles ?",
-    "options": [],
-    "required": false,
-    "conditions": [],
-    "conditionLogic": "all",
-    "guidance": {
-      "objective": "Souligner la différenciation sans dénigrer la concurrence.",
-      "details": "Cette réponse apparaît dans la section “Solution” comme une comparaison subtile.",
-      "tips": [
-        "Comparez-vous à un comportement ou à une solution existante plutôt qu’à un concurrent direct.",
-        "Appuyez-vous sur un bénéfice mesurable ou une expérience utilisateur plus fluide."
-      ]
-    },
-    "showcase": {
-      "sections": [
-        "solution"
-      ],
-      "usage": "Bloc « Pourquoi c’est différent » dans la section solution."
-    }
-  },
-  {
-    "id": "q10",
-    "type": "multi_choice",
-    "question": "Allez-vous impliquer un ou plusieurs partenaires ?",
-    "options": [
-      "Prestataire de service",
-      "Etablissement de santé",
-      "Professionnel de santé (via contrat à mettre en place)",
-      "Société savante / association de PDS",
-      "Association de patients"
-    ],
-    "required": false,
-    "conditions": [],
-    "conditionLogic": "all",
-    "conditionGroups": [],
-    "placeholder": "",
-    "guidance": {
-      "objective": "Anticiper l'implication de prestataires externes et les contrôles associés",
-      "details": "Les partenariats imposent une revue juridique des contrats, et parfois des délais supplémentaires liés à des obligations de déclaration / demande d'autorisation aux autorités",
-      "tips": []
     }
   },
   {
@@ -570,60 +1826,306 @@ export const initialQuestions = [
     }
   },
   {
-    "id": "roadmapMilestones",
-    "type": "milestone_list",
-    "question": "Quels jalons clés souhaitez-vous mettre en avant ?",
+    "id": "q15",
+    "type": "long_text",
+    "question": "Souhaitez-vous partager une autre information clef sur ce projet ?",
     "options": [],
     "required": false,
     "conditions": [],
     "conditionLogic": "all",
+    "conditionGroups": [],
+    "placeholder": "Renseignez ici les informations détaillées...",
+    "numberUnit": "",
     "guidance": {
-      "objective": "Projeter les étapes majeures à venir pour synchroniser les parties prenantes.",
-      "details": "Chaque jalon affichera une date et un descriptif dans la section feuille de route de la vitrine.",
-      "tips": [
-        "Utilisez un format AAAA-MM-JJ pour les dates afin de faciliter la lecture.",
-        "Formulez des descriptions actionnables : validation, lancement partiel, publication clé, etc."
-      ]
+      "objective": "",
+      "details": "",
+      "tips": []
     },
-    "showcase": {
-      "sections": [
-        "timeline"
+    "extraCheckbox": {
+      "enabled": false,
+      "label": ""
+    },
+    "otherOption": {
+      "enabled": false,
+      "label": "Autre",
+      "placeholder": ""
+    },
+    "rankingConfig": {
+      "title": "Base de données",
+      "criteria": [
+        {
+          "id": "critere-1",
+          "label": "Critère 1"
+        },
+        {
+          "id": "critere-2",
+          "label": "Critère 2"
+        },
+        {
+          "id": "critere-3",
+          "label": "Critère 3"
+        }
       ],
-      "usage": "Liste de jalons personnalisés dans la section « Les prochains jalons »."
+      "entries": []
     }
   },
   {
-    "id": "teamCoreMembers",
+    "id": "q15_copy",
     "type": "long_text",
-    "question": "Quels sont les membres de l'équipe projet ?",
+    "question": "Avez-vous un document que vous souhaiteriez partager ?",
     "options": [],
     "required": false,
     "conditions": [],
     "conditionLogic": "all",
+    "conditionGroups": [],
+    "placeholder": "Renseignez ici les informations détaillées...",
+    "numberUnit": "",
     "guidance": {
-      "objective": "Mettre en avant la complémentarité de l’équipe.",
-      "details": "Chaque ligne sera affichée comme un membre du “collectif moteur”.",
+      "objective": "",
+      "details": "",
       "tips": [
-        "Mentionnez pour chaque personne le rôle ou l’expertise apportée.",
-        "Incluez éventuellement les partenaires ou experts externes essentiels."
+        "Pensez à donner un nom intelligible à votre fichier"
       ]
     },
-    "showcase": {
-      "sections": [
-        "team"
-      ],
-      "usage": "Liste « Collectif moteur » dans la section équipe."
+    "extraCheckbox": {
+      "enabled": false,
+      "label": ""
     },
-    "placeholder": "Prénom Nom - Poste de la personne\nPrénom Nom - Poste de la personne",
-    "conditionGroups": []
+    "otherOption": {
+      "enabled": false,
+      "label": "Autre",
+      "placeholder": ""
+    },
+    "rankingConfig": {
+      "title": "Base de données",
+      "criteria": [
+        {
+          "id": "critere-1",
+          "label": "Critère 1"
+        },
+        {
+          "id": "critere-2",
+          "label": "Critère 2"
+        },
+        {
+          "id": "critere-3",
+          "label": "Critère 3"
+        }
+      ],
+      "entries": []
+    }
+  },
+  {
+    "id": "q18",
+    "type": "choice",
+    "question": "Pouvez-vous préciser le type de don dont il s'agit ?",
+    "options": [
+      {
+        "label": "Don financier",
+        "visibility": "always",
+        "subType": "multi_choice",
+        "subOptions": [
+          {
+            "label": "Pour un projet défini"
+          },
+          {
+            "label": "Pour un projet non encore défini (appel à projets)"
+          },
+          {
+            "label": "Pour l'activité générale"
+          }
+        ],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Don de produits",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      }
+    ],
+    "required": true,
+    "conditions": [
+      {
+        "question": "ProjectType",
+        "operator": "equals",
+        "value": "Don / bourse / Appel à projets"
+      }
+    ],
+    "conditionLogic": "all",
+    "conditionGroups": [
+      {
+        "logic": "all",
+        "conditions": [
+          {
+            "question": "ProjectType",
+            "operator": "equals",
+            "value": "Don / bourse / Appel à projets"
+          }
+        ]
+      }
+    ],
+    "placeholder": "",
+    "numberUnit": "",
+    "guidance": {
+      "objective": "",
+      "details": "",
+      "tips": []
+    },
+    "extraCheckbox": {
+      "enabled": false,
+      "label": ""
+    },
+    "otherOption": {
+      "enabled": false,
+      "label": "Autre",
+      "placeholder": ""
+    },
+    "rankingConfig": {
+      "title": "Base de données",
+      "criteria": [
+        {
+          "id": "critere-1",
+          "label": "Critère 1"
+        },
+        {
+          "id": "critere-2",
+          "label": "Critère 2"
+        },
+        {
+          "id": "critere-3",
+          "label": "Critère 3"
+        }
+      ],
+      "entries": []
+    }
+  },
+  {
+    "id": "q18_copy",
+    "type": "choice",
+    "question": "Pouvez-vous préciser le type de soutien dont il s'agit ?",
+    "options": [
+      {
+        "label": "Parrainage d'événément",
+        "visibility": "always",
+        "subType": "multi_choice",
+        "subOptions": [
+          {
+            "label": "Stand",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
+          },
+          {
+            "label": "Autre soutien à un événément ",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
+          }
+        ],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Etude interventionnelle (IIS)",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Etude non-interventionnelle (NIS)",
+        "visibility": "always",
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all",
+        "subType": null,
+        "subOptions": []
+      }
+    ],
+    "required": true,
+    "conditions": [
+      {
+        "question": "ProjectType",
+        "operator": "equals",
+        "value": "Projet d'un tiers soutenu par le LFB"
+      }
+    ],
+    "conditionLogic": "all",
+    "conditionGroups": [
+      {
+        "logic": "all",
+        "conditions": [
+          {
+            "question": "ProjectType",
+            "operator": "equals",
+            "value": "Projet d'un tiers soutenu par le LFB"
+          }
+        ]
+      }
+    ],
+    "placeholder": "",
+    "numberUnit": "",
+    "guidance": {
+      "objective": "",
+      "details": "",
+      "tips": []
+    },
+    "extraCheckbox": {
+      "enabled": true,
+      "label": "Il s'agit d'un parrainage multi-sponsors (soutien d'autres laboratoires pharmaceutiques)"
+    },
+    "otherOption": {
+      "enabled": false,
+      "label": "Autre",
+      "placeholder": ""
+    },
+    "rankingConfig": {
+      "title": "Base de données",
+      "criteria": [
+        {
+          "id": "critere-1",
+          "label": "Critère 1"
+        },
+        {
+          "id": "critere-2",
+          "label": "Critère 2"
+        },
+        {
+          "id": "critere-3",
+          "label": "Critère 3"
+        }
+      ],
+      "entries": []
+    }
   },
   {
     "id": "agencyRanking",
     "type": "ranking",
-    "question": "Classez vos critères pour sélectionner une agence médicale partenaire",
+    "question": "Si vous souhaitez une proposition d'agences, triez ces critères par ordre d'importance",
     "options": [],
     "required": false,
-    "conditions": [],
+    "conditions": [
+      {
+        "question": "q10",
+        "operator": "equals",
+        "value": "Agence"
+      }
+    ],
     "conditionLogic": "all",
     "guidance": {
       "objective": "Identifier rapidement l'agence qui correspond le mieux à vos attentes.",
@@ -636,17 +2138,38 @@ export const initialQuestions = [
     "rankingConfig": {
       "title": "Prestataires pré-identifiés",
       "criteria": [
-        { "id": "international", "label": "International" },
-        { "id": "scientific", "label": "Contenu scientifique" },
-        { "id": "creativity", "label": "Créativité" },
-        { "id": "price", "label": "Prix" },
-        { "id": "opinion", "label": "Avis global" }
+        {
+          "id": "international",
+          "label": "International"
+        },
+        {
+          "id": "scientific",
+          "label": "Contenu scientifique"
+        },
+        {
+          "id": "creativity",
+          "label": "Créativité"
+        },
+        {
+          "id": "price",
+          "label": "Prix"
+        },
+        {
+          "id": "opinion",
+          "label": "Avis global"
+        }
       ],
       "entries": [
         {
           "id": "a-a",
           "name": "A+A",
-          "scores": { "international": 3, "scientific": 3, "creativity": 3, "price": 3, "opinion": 2 },
+          "scores": {
+            "international": 3,
+            "scientific": 3,
+            "creativity": 3,
+            "price": 3,
+            "opinion": 2
+          },
           "contact": "antoine.ada@aa.com",
           "website": "https://www.adhealth.com",
           "previousProject": "",
@@ -656,7 +2179,13 @@ export const initialQuestions = [
         {
           "id": "adahealth",
           "name": "ADAHealth",
-          "scores": { "international": 1, "scientific": 2, "creativity": 3, "price": 3, "opinion": 2 },
+          "scores": {
+            "international": 1,
+            "scientific": 2,
+            "creativity": 3,
+            "price": 3,
+            "opinion": 2
+          },
           "contact": "robin.benard@adhealth.com",
           "website": "https://www.adhealth.com",
           "previousProject": "",
@@ -666,7 +2195,13 @@ export const initialQuestions = [
         {
           "id": "anna-purna",
           "name": "Anna Purna",
-          "scores": { "international": 2, "scientific": 2, "creativity": 3, "price": 3, "opinion": 2 },
+          "scores": {
+            "international": 2,
+            "scientific": 2,
+            "creativity": 3,
+            "price": 3,
+            "opinion": 2
+          },
           "contact": "l.esperanza@annapurna8000.com",
           "website": "https://www.agence-annapurna.com",
           "previousProject": "",
@@ -676,7 +2211,13 @@ export const initialQuestions = [
         {
           "id": "arsenal-cdm",
           "name": "Arsenal CDM",
-          "scores": { "international": 1, "scientific": 1, "creativity": 1, "price": 1, "opinion": 1 },
+          "scores": {
+            "international": 1,
+            "scientific": 1,
+            "creativity": 1,
+            "price": 1,
+            "opinion": 1
+          },
           "contact": "cherry@cdmparis.com",
           "website": "https://www.cdmparis.com",
           "previousProject": "FitCLOT / CLOTTAFACT",
@@ -686,6 +2227,27 @@ export const initialQuestions = [
       ]
     },
     "placeholder": "",
-    "conditionGroups": []
+    "conditionGroups": [
+      {
+        "logic": "all",
+        "conditions": [
+          {
+            "question": "q10",
+            "operator": "equals",
+            "value": "Agence"
+          }
+        ]
+      }
+    ],
+    "extraCheckbox": {
+      "enabled": false,
+      "label": ""
+    },
+    "otherOption": {
+      "enabled": false,
+      "label": "Autre",
+      "placeholder": ""
+    },
+    "numberUnit": ""
   }
 ];
