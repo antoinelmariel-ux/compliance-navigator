@@ -42,7 +42,7 @@ import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.280';
+const APP_VERSION = 'v1.0.281';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -1073,88 +1073,93 @@ const updateProjectFilters = useCallback((updater) => {
   }, [synchronizeExternalInspirations]);
 
   useEffect(() => {
-    const savedState = loadPersistedState();
-    if (!savedState) {
+    try {
+      const savedState = loadPersistedState();
+      if (!savedState) {
+        return;
+      }
+
+      const fallbackQuestions = Array.isArray(savedState.questions) ? savedState.questions : questions;
+      const fallbackRules = Array.isArray(savedState.rules) ? savedState.rules : rules;
+      const fallbackRiskLevelRules = Array.isArray(savedState.riskLevelRules)
+        ? savedState.riskLevelRules
+        : riskLevelRules;
+      const fallbackRiskWeights = savedState && typeof savedState.riskWeights === 'object'
+        ? normalizeRiskWeighting(savedState.riskWeights)
+        : riskWeights;
+      const fallbackQuestionsLength = resolveFallbackQuestionsLength(savedState, fallbackQuestions.length);
+
+      if (savedState.mode === 'admin') {
+        setMode('user');
+      } else if (savedState.mode) {
+        setMode(savedState.mode);
+      }
+      if (savedState.screen) setScreen(savedState.screen);
+      if (typeof savedState.currentQuestionIndex === 'number' && savedState.currentQuestionIndex >= 0) {
+        setCurrentQuestionIndex(savedState.currentQuestionIndex);
+      }
+      if (savedState.answers && typeof savedState.answers === 'object') setAnswers(savedState.answers);
+      if (typeof savedState.analysis !== 'undefined') setAnalysis(savedState.analysis);
+      if (Array.isArray(savedState.projects)) {
+        const normalized = normalizeProjectsCollection(savedState.projects, fallbackQuestionsLength);
+        if (normalized && normalized.length > 0) {
+          setProjects(normalized);
+        } else {
+          setProjects([createDemoProject({
+            questions: fallbackQuestions,
+            rules: fallbackRules,
+            riskLevelRules: fallbackRiskLevelRules,
+            riskWeights: fallbackRiskWeights
+          })]);
+        }
+      } else if (Array.isArray(savedState.submittedProjects)) {
+        const normalized = normalizeProjectsCollection(savedState.submittedProjects, fallbackQuestionsLength);
+        if (normalized && normalized.length > 0) {
+          setProjects(normalized);
+        } else {
+          setProjects([createDemoProject({
+            questions: fallbackQuestions,
+            rules: fallbackRules,
+            riskLevelRules: fallbackRiskLevelRules,
+            riskWeights: fallbackRiskWeights
+          })]);
+        }
+      }
+      if (typeof savedState.activeProjectId === 'string') setActiveProjectId(savedState.activeProjectId);
+      if (typeof savedState.activeInspirationId === 'string') setActiveInspirationId(savedState.activeInspirationId);
+      if (typeof savedState.homeView === 'string') setHomeView(savedState.homeView);
+      if (Array.isArray(savedState.questions)) {
+        setQuestions(restoreShowcaseQuestions(savedState.questions));
+      }
+      if (Array.isArray(savedState.rules)) setRules(savedState.rules);
+      if (Array.isArray(savedState.riskLevelRules)) setRiskLevelRules(savedState.riskLevelRules);
+      if (savedState && typeof savedState.riskWeights === 'object') {
+        setRiskWeights(normalizeRiskWeighting(savedState.riskWeights));
+      }
+      if (Array.isArray(savedState.teams)) setTeams(savedState.teams);
+      if (Array.isArray(savedState.showcaseThemes)) setShowcaseThemes(savedState.showcaseThemes);
+      if (savedState && typeof savedState.projectFilters === 'object') {
+        setProjectFiltersState(normalizeProjectFilterConfig(savedState.projectFilters));
+      }
+      if (Array.isArray(savedState.inspirationProjects)) {
+        setInspirationProjects(cloneDeep(savedState.inspirationProjects));
+      }
+      if (savedState && typeof savedState.inspirationFilters === 'object') {
+        setInspirationFilters(normalizeInspirationFiltersConfig(savedState.inspirationFilters));
+      }
+      if (savedState && typeof savedState.inspirationFormFields === 'object') {
+        setInspirationFormFields(normalizeInspirationFormConfig(savedState.inspirationFormFields));
+      }
+      if (savedState && savedState.onboardingTourConfig) {
+        setOnboardingTourConfig(normalizeOnboardingConfig(savedState.onboardingTourConfig));
+      }
+    } catch (error) {
+      if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+        console.warn('[Hydration] Échec du chargement de l’état local :', error);
+      }
+    } finally {
       setIsHydrated(true);
-      return;
     }
-
-    const fallbackQuestions = Array.isArray(savedState.questions) ? savedState.questions : questions;
-    const fallbackRules = Array.isArray(savedState.rules) ? savedState.rules : rules;
-    const fallbackRiskLevelRules = Array.isArray(savedState.riskLevelRules)
-      ? savedState.riskLevelRules
-      : riskLevelRules;
-    const fallbackRiskWeights = savedState && typeof savedState.riskWeights === 'object'
-      ? normalizeRiskWeighting(savedState.riskWeights)
-      : riskWeights;
-    const fallbackQuestionsLength = resolveFallbackQuestionsLength(savedState, fallbackQuestions.length);
-
-    if (savedState.mode === 'admin') {
-      setMode('user');
-    } else if (savedState.mode) {
-      setMode(savedState.mode);
-    }
-    if (savedState.screen) setScreen(savedState.screen);
-    if (typeof savedState.currentQuestionIndex === 'number' && savedState.currentQuestionIndex >= 0) {
-      setCurrentQuestionIndex(savedState.currentQuestionIndex);
-    }
-    if (savedState.answers && typeof savedState.answers === 'object') setAnswers(savedState.answers);
-    if (typeof savedState.analysis !== 'undefined') setAnalysis(savedState.analysis);
-    if (Array.isArray(savedState.projects)) {
-      const normalized = normalizeProjectsCollection(savedState.projects, fallbackQuestionsLength);
-      if (normalized && normalized.length > 0) {
-        setProjects(normalized);
-      } else {
-        setProjects([createDemoProject({
-          questions: fallbackQuestions,
-          rules: fallbackRules,
-          riskLevelRules: fallbackRiskLevelRules,
-          riskWeights: fallbackRiskWeights
-        })]);
-      }
-    } else if (Array.isArray(savedState.submittedProjects)) {
-      const normalized = normalizeProjectsCollection(savedState.submittedProjects, fallbackQuestionsLength);
-      if (normalized && normalized.length > 0) {
-        setProjects(normalized);
-      } else {
-        setProjects([createDemoProject({
-          questions: fallbackQuestions,
-          rules: fallbackRules,
-          riskLevelRules: fallbackRiskLevelRules,
-          riskWeights: fallbackRiskWeights
-        })]);
-      }
-    }
-    if (typeof savedState.activeProjectId === 'string') setActiveProjectId(savedState.activeProjectId);
-    if (typeof savedState.activeInspirationId === 'string') setActiveInspirationId(savedState.activeInspirationId);
-    if (typeof savedState.homeView === 'string') setHomeView(savedState.homeView);
-    if (Array.isArray(savedState.questions)) {
-      setQuestions(restoreShowcaseQuestions(savedState.questions));
-    }
-    if (Array.isArray(savedState.rules)) setRules(savedState.rules);
-    if (Array.isArray(savedState.riskLevelRules)) setRiskLevelRules(savedState.riskLevelRules);
-    if (savedState && typeof savedState.riskWeights === 'object') {
-      setRiskWeights(normalizeRiskWeighting(savedState.riskWeights));
-    }
-    if (Array.isArray(savedState.teams)) setTeams(savedState.teams);
-    if (Array.isArray(savedState.showcaseThemes)) setShowcaseThemes(savedState.showcaseThemes);
-    if (savedState && typeof savedState.projectFilters === 'object') {
-      setProjectFiltersState(normalizeProjectFilterConfig(savedState.projectFilters));
-    }
-    if (Array.isArray(savedState.inspirationProjects)) {
-      setInspirationProjects(cloneDeep(savedState.inspirationProjects));
-    }
-    if (savedState && typeof savedState.inspirationFilters === 'object') {
-      setInspirationFilters(normalizeInspirationFiltersConfig(savedState.inspirationFilters));
-    }
-    if (savedState && typeof savedState.inspirationFormFields === 'object') {
-      setInspirationFormFields(normalizeInspirationFormConfig(savedState.inspirationFormFields));
-    }
-    if (savedState && savedState.onboardingTourConfig) {
-      setOnboardingTourConfig(normalizeOnboardingConfig(savedState.onboardingTourConfig));
-    }
-
-    setIsHydrated(true);
   }, []);
 
   useEffect(() => {
