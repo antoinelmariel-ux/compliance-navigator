@@ -119,7 +119,7 @@ export const initialQuestions = [
         "conditionLogic": "all"
       },
       {
-        "label": "Médical DOF",
+        "label": "Médical DOI",
         "visibility": "always",
         "subType": null,
         "subOptions": [],
