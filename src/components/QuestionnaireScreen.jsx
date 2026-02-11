@@ -258,6 +258,40 @@ export const QuestionnaireScreen = ({
   const guidancePanelId = `guidance-${currentQuestion.id}`;
   const progressLabelId = `progress-label-${currentQuestion.id}`;
   const hasValidationError = validationError?.questionId === currentQuestion.id;
+
+  useEffect(() => {
+    const isEditableTarget = (target) => {
+      if (!(target instanceof Element)) {
+        return false;
+      }
+
+      return Boolean(
+        target.closest('input, textarea, select, [contenteditable="true"], [role="textbox"]')
+      );
+    };
+
+    const handleArrowNavigation = (event) => {
+      if (isEditableTarget(event.target)) {
+        return;
+      }
+
+      if (event.key === 'ArrowLeft' && currentIndex > 0) {
+        event.preventDefault();
+        onBack?.();
+        return;
+      }
+
+      if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        onNext?.();
+      }
+    };
+
+    window.addEventListener('keydown', handleArrowNavigation);
+    return () => {
+      window.removeEventListener('keydown', handleArrowNavigation);
+    };
+  }, [currentIndex, onBack, onNext]);
   const hasSaveFeedback = Boolean(saveFeedback?.message);
   const isSaveSuccess = saveFeedback?.status === 'success';
   const relatedQuestionEntries = useMemo(() => {
@@ -1439,7 +1473,7 @@ export const QuestionnaireScreen = ({
           {renderQuestionInput()}
 
           {extraCheckbox?.enabled && extraCheckbox?.label?.trim() && (
-            <div className="mb-8 rounded-xl border border-gray-200 bg-white p-4">
+            <div className="mb-8 rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50 to-blue-100 p-4">
               <label className="flex items-center gap-3 text-sm font-medium text-gray-700">
                 <input
                   type="checkbox"
