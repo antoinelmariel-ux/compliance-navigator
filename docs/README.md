@@ -13,7 +13,7 @@ graph TD
   App --> Components["Composants React"]
   App --> Utils["Utilitaires métier"]
   App --> Data["Données statiques"]
-  App --> Storage["localStorage (désactivé)"]
+  App --> Storage["localStorage (activé)"]
   App --> Export["Export JSON local"]
   App --> Submitted["submitted-projects (snapshot local)"]
 ```
@@ -24,7 +24,7 @@ graph TD
 - **Composants UI** : dossier `src/components/` (écrans, éditeurs, listes virtualisées).
 - **Logique métier** : dossier `src/utils/` (règles, scoring, normalisation, export, persistance locale).
 - **Référentiels** : dossier `src/data/` (questions, règles, équipes, pondérations).
-- **Stockage** : localStorage prévu mais désactivé, et dépôt local dans `submitted-projects/`.
+- **Stockage** : localStorage activé, et dépôt local dans `submitted-projects/`.
 
 ## Exigences fonctionnelles
 - Questionnaire adaptatif (affichage conditionnel des questions).
@@ -39,7 +39,7 @@ graph TD
 ## Structure des bases de données (locale)
 > Aucune base externe. Les données sont locales et statiques.
 
-### localStorage (désactivé)
+### localStorage (activé)
 - **Clé** : `complianceNavigatorState`
 - **Schéma** (quand activé) :
   - `projects[]` : liste de projets (id, projectName, answers, analysis, status, dates)
@@ -429,14 +429,14 @@ graph TD
 ```
 
 ### `src/utils/storage.js`
-- **Résumé** : Gestion de la persistance locale (désactivée).
+- **Résumé** : Gestion de la persistance locale (activée).
 - **Fonctionnalités** : charger/sauver l’état via localStorage.
 - **Paramètres** :
   - `loadPersistedState(): object | null`
   - `persistState(state: object): void`
 - **Cas d’usage** : restauration d’état au démarrage.
 - **Dépendances** : `window.localStorage`.
-- **Notes techniques** : `ENABLE_PERSISTENCE` à `false`.
+- **Notes techniques** : `ENABLE_PERSISTENCE` à `true`.
 
 ### `src/utils/questions.js`
 - **Résumé** : Normalisation/formatage des réponses et visibilité des questions.
