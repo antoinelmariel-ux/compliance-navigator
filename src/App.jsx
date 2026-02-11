@@ -42,7 +42,7 @@ import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.284';
+const APP_VERSION = 'v1.0.285';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -911,6 +911,21 @@ const updateProjectFilters = useCallback((updater) => {
       const existingOptions = Array.isArray(nextQuestions[themeQuestionIndex]?.options)
         ? nextQuestions[themeQuestionIndex].options
         : [];
+
+      const existingHasStructuredOptions = existingOptions.some((option) => {
+        if (!option || typeof option !== 'object' || Array.isArray(option)) {
+          return false;
+        }
+
+        const hasSubOptions = Array.isArray(option.subOptions) && option.subOptions.length > 0;
+        const hasDefinedSubType = option.subType === 'choice' || option.subType === 'multi_choice';
+
+        return hasSubOptions || hasDefinedSubType;
+      });
+
+      if (existingHasStructuredOptions) {
+        return previousQuestions;
+      }
 
       if (
         themeOptions.length === existingOptions.length &&
