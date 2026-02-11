@@ -216,7 +216,7 @@ const buildRuleConditionSummary = (rule, questions) => {
       }
 
       const refQuestion = conditionEntries.find((item) => item.id === condition.question);
-      const label = refQuestion ? `${refQuestion.id} – ${refQuestion.question}` : `Question ${condition.question}`;
+      const label = refQuestion ? refQuestion.question : `Question ${condition.question}`;
       const operator = formatOperatorSymbol(condition.operator);
       const value = typeof condition.value === 'string' ? condition.value : JSON.stringify(condition.value);
 
@@ -3055,7 +3055,7 @@ export const BackOffice = ({
         .filter((rule) => rule && rule.id)
         .map((rule) => ({
           value: rule.id,
-          label: rule.name ? `${rule.name} (${rule.id})` : rule.id
+          label: rule.name || 'Règle sans nom'
         })),
     [rules]
   );
@@ -4827,7 +4827,7 @@ export const BackOffice = ({
                       htmlFor="question-title-filter"
                       className="text-xs font-semibold uppercase tracking-wide text-gray-600"
                     >
-                      Filtrer par titre ou identifiant
+                      Filtrer par titre
                     </label>
                     <input
                       id="question-title-filter"
@@ -4835,7 +4835,7 @@ export const BackOffice = ({
                       value={questionTitleFilter}
                       onChange={(event) => setQuestionTitleFilter(event.target.value)}
                       className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                      placeholder="Ex. audience, q12..."
+                      placeholder="Ex. audience..."
                     />
                   </div>
                   <div>
@@ -4945,9 +4945,6 @@ export const BackOffice = ({
                                 </button>
                                 <div className="space-y-2 flex-1">
                                   <div className="flex flex-wrap items-center gap-2">
-                                    <span className="text-xs font-semibold uppercase tracking-wide bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
-                                      {question.id}
-                                    </span>
                                     <span className="text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
                                       {typeMeta.label}
                                     </span>
@@ -5192,9 +5189,6 @@ export const BackOffice = ({
                               </button>
                               <div className="space-y-2 flex-1">
                                 <div className="flex flex-wrap items-center gap-2">
-                                  <span className="text-xs font-semibold uppercase tracking-wide bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
-                                    {question.id}
-                                  </span>
                                   <span className="text-sm bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
                                     {typeMeta.label}
                                   </span>
@@ -5411,7 +5405,7 @@ export const BackOffice = ({
                       htmlFor="rule-title-filter"
                       className="text-xs font-semibold uppercase tracking-wide text-gray-600"
                     >
-                      Filtrer par titre ou identifiant
+                      Filtrer par titre
                     </label>
                     <input
                       id="rule-title-filter"
@@ -5504,7 +5498,6 @@ export const BackOffice = ({
                                 </button>
                                 <div className="space-y-2 flex-1">
                                   <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500">
-                                    <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-semibold">{rule.id}</span>
                                     <span className={`px-2 py-1 rounded-full font-semibold ${getPriorityBadgeClasses(highestRiskPriority)}`}>
                                       {highestRiskPriority
                                         ? `Priorité principale : ${highestRiskPriority}`
@@ -5671,7 +5664,6 @@ export const BackOffice = ({
                             </button>
                             <div className="space-y-2 flex-1">
                               <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500">
-                                <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-semibold">{rule.id}</span>
                                 <span className={`px-2 py-1 rounded-full font-semibold ${getPriorityBadgeClasses(highestRiskPriority)}`}>
                                   {highestRiskPriority
                                     ? `Priorité principale : ${highestRiskPriority}`
