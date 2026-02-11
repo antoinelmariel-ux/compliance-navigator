@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from '../react.js';
 import {
   Plus,
   Trash2,
-  GripVertical,
+  ArrowUp,
+  ArrowDown,
   Clipboard,
   Compass,
   Target,
@@ -131,8 +132,6 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
     setEditedQuestion(buildQuestionState(question));
   }, [question]);
 
-  const [draggedOptionIndex, setDraggedOptionIndex] = useState(null);
-  const [dragOverIndex, setDragOverIndex] = useState(null);
   const [optionConditionModal, setOptionConditionModal] = useState({ index: null, groups: [] });
   const [expandedOptionIndex, setExpandedOptionIndex] = useState(null);
   const questionType = editedQuestion.type || 'choice';
@@ -246,25 +245,18 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
     });
   };
 
-  const handleDragStart = (event, index) => {
-    if (event?.dataTransfer) {
-      event.dataTransfer.effectAllowed = 'move';
-      event.dataTransfer.setData('text/plain', String(index));
+  const moveOptionUp = (index) => {
+    if (index <= 0) {
+      return;
     }
-    setDraggedOptionIndex(index);
-    setDragOverIndex(index);
+    reorderOptions(index, index - 1);
   };
 
-  const handleDragEnter = (index) => {
-    if (draggedOptionIndex === null || draggedOptionIndex === index) return;
-    reorderOptions(draggedOptionIndex, index);
-    setDraggedOptionIndex(index);
-    setDragOverIndex(index);
-  };
-
-  const handleDragEnd = () => {
-    setDraggedOptionIndex(null);
-    setDragOverIndex(null);
+  const moveOptionDown = (index) => {
+    if (index >= editedQuestion.options.length - 1) {
+      return;
+    }
+    reorderOptions(index, index + 1);
   };
 
   const updateRankingConfig = (updater) => {
@@ -1091,7 +1083,7 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                 </div>
 
                 <p className="text-xs text-gray-500 mb-3">
-                  Glissez-déposez les options pour modifier leur ordre d'affichage.
+                  Utilisez les flèches pour modifier l&apos;ordre d&apos;affichage des options.
                   {questionType === 'multi_choice' && ' Les répondants pourront sélectionner plusieurs valeurs.'}
                 </p>
 
@@ -1122,35 +1114,30 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                     return (
                     <div key={idx} className="space-y-2">
                       <div
-                        className={`flex flex-wrap items-center gap-2 rounded-lg border border-transparent bg-white p-2 transition-colors ${
-                          dragOverIndex === idx ? 'border-blue-200 bg-blue-50 shadow' : 'shadow-sm'
-                        }`}
-                        onDragOver={(e) => {
-                          e.preventDefault();
-                          setDragOverIndex(idx);
-                        }}
-                        onDragEnter={() => handleDragEnter(idx)}
-                        onDragLeave={(e) => {
-                          e.preventDefault();
-                          if (draggedOptionIndex !== idx) {
-                            setDragOverIndex(null);
-                          }
-                        }}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          handleDragEnd();
-                        }}
-                        onDragEnd={handleDragEnd}
+                        className="flex flex-wrap items-center gap-2 rounded-lg border border-transparent bg-white p-2 shadow-sm"
                       >
-                        <button
-                          type="button"
-                          draggable
-                          onDragStart={(event) => handleDragStart(event, idx)}
-                          className="cursor-grab px-2 py-3 text-gray-400 hover:text-blue-600 focus:outline-none"
-                          aria-label={`Réordonner l'option ${idx + 1}`}
-                        >
-                          <GripVertical className="w-4 h-4" />
-                        </button>
+                        <div className="flex flex-col gap-1">
+                          <button
+                            type="button"
+                            onClick={() => moveOptionUp(idx)}
+                            disabled={idx === 0}
+                            className="rounded border border-gray-200 p-1 text-gray-500 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-30"
+                            aria-label={`Monter l'option ${idx + 1}`}
+                            title="Monter"
+                          >
+                            <ArrowUp className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moveOptionDown(idx)}
+                            disabled={idx === editedQuestion.options.length - 1}
+                            className="rounded border border-gray-200 p-1 text-gray-500 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-30"
+                            aria-label={`Descendre l'option ${idx + 1}`}
+                            title="Descendre"
+                          >
+                            <ArrowDown className="h-4 w-4" />
+                          </button>
+                        </div>
                         <span className="text-gray-500 font-medium w-6 text-center">{idx + 1}.</span>
                         <input
                           type="text"
