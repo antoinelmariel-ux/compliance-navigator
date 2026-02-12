@@ -76,5 +76,13 @@ export const initialTeams = [
       "vauvrecys@lfb.fr"
     ],
     "expertise": "L’équipe Propriété intellectuelle a pour mission de protéger, valoriser et sécuriser les actifs immatériels du Groupe, tout en veillant à ce que les projets ne portent pas atteinte aux droits de propriété intellectuelle des tiers."
+  },
+  {
+    "id": "team2",
+    "name": "Achats",
+    "contacts": [
+      "baptiste.jarrassier@lfb.fr"
+    ],
+    "expertise": "Le département Achats accompagne les équipes dans la sélection du prestataire le plus adapté au besoin, dans les meilleures conditions économiques"
   }
 ];
