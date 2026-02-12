@@ -1,6 +1,7 @@
 import React from '../react.js';
 
 const URL_REGEX = /(https?:\/\/[^\s<]+)/gi;
+const MARKDOWN_LINK_REGEX = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/gi;
 const TRAILING_PUNCTUATION_REGEX = /[)\]\}.,;!?]+$/;
 const ALLOWED_TAGS = new Set(['b', 'strong', 'i', 'em', 'u', 'p', 'br', 'ul', 'ol', 'li', 'a']);
 
@@ -35,7 +36,41 @@ const linkifyTextNode = (node, documentContext) => {
   }
 
   const textContent = node.textContent || '';
-  const matches = Array.from(textContent.matchAll(URL_REGEX));
+  const matches = [];
+  let markdownMatch;
+  MARKDOWN_LINK_REGEX.lastIndex = 0;
+  while ((markdownMatch = MARKDOWN_LINK_REGEX.exec(textContent)) !== null) {
+    matches.push({
+      type: 'markdown',
+      fullMatch: markdownMatch[0],
+      index: markdownMatch.index ?? 0,
+      label: markdownMatch[1],
+      url: markdownMatch[2]
+    });
+  }
+
+  let urlMatch;
+  URL_REGEX.lastIndex = 0;
+  while ((urlMatch = URL_REGEX.exec(textContent)) !== null) {
+    const offset = urlMatch.index ?? 0;
+    const isInsideMarkdownLink = matches.some((existingMatch) =>
+      existingMatch.type === 'markdown'
+      && offset >= existingMatch.index
+      && offset < existingMatch.index + existingMatch.fullMatch.length
+    );
+
+    if (isInsideMarkdownLink) {
+      continue;
+    }
+
+    matches.push({
+      type: 'url',
+      fullMatch: urlMatch[0],
+      index: offset
+    });
+  }
+
+  matches.sort((a, b) => a.index - b.index);
 
   if (matches.length === 0) {
     return;
@@ -45,24 +80,23 @@ const linkifyTextNode = (node, documentContext) => {
   let lastIndex = 0;
 
   matches.forEach(match => {
-    const fullMatch = match[0];
-    const offset = match.index ?? 0;
+    const fullMatch = match.fullMatch;
+    const offset = match.index;
 
     if (offset > lastIndex) {
       fragment.appendChild(documentContext.createTextNode(textContent.slice(lastIndex, offset)));
     }
 
-    let url = fullMatch;
-    const trailingMatch = url.match(TRAILING_PUNCTUATION_REGEX);
-    let trailing = '';
+    let url = match.type === 'markdown' ? match.url : fullMatch;
+    const trailingMatch = match.type === 'markdown' ? null : url.match(TRAILING_PUNCTUATION_REGEX);
+    const trailing = trailingMatch ? trailingMatch[0] : '';
 
     if (trailingMatch) {
       url = url.slice(0, -trailingMatch[0].length);
-      trailing = trailingMatch[0];
     }
 
     const anchor = documentContext.createElement('a');
-    anchor.textContent = url;
+    anchor.textContent = match.type === 'markdown' ? match.label : url;
     anchor.href = url;
     anchor.target = '_blank';
     anchor.rel = 'noopener noreferrer';
