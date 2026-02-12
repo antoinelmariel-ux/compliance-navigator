@@ -2,6 +2,7 @@ import React from '../react.js';
 import { sanitizeRichText } from './richText.js';
 
 const URL_REGEX = /(https?:\/\/[^\s]+)/g;
+const MARKDOWN_LINK_REGEX = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
 const TRAILING_PUNCTUATION_REGEX = /[)\]\}.,;!?]+$/;
 
 const renderWithDomSanitizer = (text) => {
@@ -19,7 +20,42 @@ const renderWithDomSanitizer = (text) => {
 };
 
 const renderWithoutDomParser = (text) => {
-  const matches = Array.from(text.matchAll(URL_REGEX));
+  const matches = [];
+
+  let markdownMatch;
+  MARKDOWN_LINK_REGEX.lastIndex = 0;
+  while ((markdownMatch = MARKDOWN_LINK_REGEX.exec(text)) !== null) {
+    matches.push({
+      type: 'markdown',
+      fullMatch: markdownMatch[0],
+      offset: markdownMatch.index ?? 0,
+      label: markdownMatch[1],
+      url: markdownMatch[2]
+    });
+  }
+
+  let urlMatch;
+  URL_REGEX.lastIndex = 0;
+  while ((urlMatch = URL_REGEX.exec(text)) !== null) {
+    const offset = urlMatch.index ?? 0;
+    const isInsideMarkdownLink = matches.some((existingMatch) =>
+      existingMatch.type === 'markdown'
+      && offset >= existingMatch.offset
+      && offset < existingMatch.offset + existingMatch.fullMatch.length
+    );
+
+    if (isInsideMarkdownLink) {
+      continue;
+    }
+
+    matches.push({
+      type: 'url',
+      fullMatch: urlMatch[0],
+      offset
+    });
+  }
+
+  matches.sort((a, b) => a.offset - b.offset);
 
   if (matches.length === 0) {
     return text;
@@ -29,15 +65,15 @@ const renderWithoutDomParser = (text) => {
   let lastIndex = 0;
 
   matches.forEach((match, matchIdx) => {
-    const fullMatch = match[0];
-    const offset = match.index ?? 0;
+    const fullMatch = match.fullMatch;
+    const offset = match.offset;
 
     if (offset > lastIndex) {
       elements.push(text.slice(lastIndex, offset));
     }
 
-    let url = fullMatch;
-    const trailingMatch = url.match(TRAILING_PUNCTUATION_REGEX);
+    let url = match.type === 'markdown' ? match.url : fullMatch;
+    const trailingMatch = match.type === 'markdown' ? null : url.match(TRAILING_PUNCTUATION_REGEX);
     let trailing = '';
 
     if (trailingMatch) {
@@ -53,7 +89,7 @@ const renderWithoutDomParser = (text) => {
         rel="noopener noreferrer"
         className="text-blue-600 underline"
       >
-        {url}
+        {match.type === 'markdown' ? match.label : url}
       </a>
     );
 
