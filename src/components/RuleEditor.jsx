@@ -24,6 +24,7 @@ import {
   sanitizeTeamQuestionEntry,
   sanitizeTeamQuestionsByTeam
 } from '../utils/rules.js';
+import { RichTextEditor } from './RichTextEditor.jsx';
 
 const RISK_PRIORITY_OPTIONS = [
   'A réaliser',
@@ -885,13 +886,16 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                           return (
                             <div key={idx} className="border border-gray-200 rounded-lg p-3 bg-white space-y-3">
                               <div className="flex items-center space-x-2">
-                                <input
-                                  type="text"
-                                  value={sanitizedEntry.text}
-                                  onChange={(e) => updateTeamQuestion(teamId, idx, e.target.value)}
-                                  className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm"
-                                  placeholder="Question pour l'équipe..."
-                                />
+                                <div className="flex-1 min-w-0">
+                                  <RichTextEditor
+                                    id={`team-question-${teamId}-${idx}`}
+                                    value={sanitizedEntry.text}
+                                    onChange={(nextValue) => updateTeamQuestion(teamId, idx, nextValue)}
+                                    placeholder="Question pour l'équipe..."
+                                    compact
+                                    ariaLabel="Question pour l'équipe"
+                                  />
+                                </div>
                                 <button
                                   onClick={() => deleteTeamQuestion(teamId, idx)}
                                   className="p-2 text-red-600 hover:bg-red-50 rounded transition-all"
