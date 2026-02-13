@@ -8,6 +8,7 @@ import {
 import { formatAnswer, getQuestionOptionLabels } from '../utils/questions.js';
 import { renderTextWithLinks } from '../utils/linkify.js';
 import { initialShowcaseThemes } from '../data/showcaseThemes.js';
+import { resolveThemeFromActivation } from '../utils/showcase.js';
 import { RichTextEditor } from './RichTextEditor.jsx';
 
 const SHOWCASE_SECTION_OPTIONS = [
@@ -959,8 +960,14 @@ const buildThemeVariables = (theme) => {
 
 const normalizeThemeKey = (value) => (typeof value === 'string' ? value.trim().toLowerCase() : '');
 
-const resolveShowcaseTheme = (themes, answer) => {
+const resolveShowcaseTheme = (themes, answer, answers) => {
   const availableThemes = Array.isArray(themes) && themes.length > 0 ? themes : initialShowcaseThemes;
+  const activatedTheme = resolveThemeFromActivation(availableThemes, answers);
+
+  if (activatedTheme) {
+    return activatedTheme;
+  }
+
   const normalizedAnswer = normalizeThemeKey(answer);
 
   if (normalizedAnswer.length > 0) {
@@ -1546,8 +1553,8 @@ export const ProjectShowcase = ({
     [showcaseThemes]
   );
   const selectedTheme = useMemo(
-    () => resolveShowcaseTheme(availableThemes, answers?.showcaseTheme),
-    [answers?.showcaseTheme, availableThemes]
+    () => resolveShowcaseTheme(availableThemes, answers?.showcaseTheme, answers),
+    [answers, answers?.showcaseTheme, availableThemes]
   );
   const showcaseThemeId = selectedTheme?.id || FALLBACK_SHOWCASE_THEME.id;
   const showcaseLayout =

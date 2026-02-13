@@ -239,6 +239,7 @@ export const HomeScreen = ({
   onOpenProject,
   onDeleteProject,
   onShowProjectShowcase,
+  canShowProjectShowcase,
   onImportProject,
   onDuplicateProject,
   isAdminMode = false,
@@ -1125,7 +1126,7 @@ export const HomeScreen = ({
               <span>Consulter la synthèse</span>
             </button>
           )}
-          {onShowProjectShowcase && (
+          {onShowProjectShowcase && (typeof canShowProjectShowcase !== 'function' || canShowProjectShowcase(project)) && (
             <button
               type="button"
               onClick={() => onShowProjectShowcase(project.id)}
