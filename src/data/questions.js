@@ -409,16 +409,197 @@ export const initialQuestions = [
     }
   },
   {
+    "id": "q27",
+    "type": "multi_choice",
+    "question": "Dans quels pays ce projet sera-t-il déployé ?",
+    "options": [
+      {
+        "label": "France",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Grande-Bretagne",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Benelux",
+        "visibility": "always",
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Allemagne",
+        "visibility": "always",
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Mexique",
+        "visibility": "always",
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      }
+    ],
+    "required": true,
+    "conditions": [
+      {
+        "question": "teamLeadTeam",
+        "operator": "equals",
+        "value": "Marketing DOI"
+      },
+      {
+        "question": "teamLeadTeam",
+        "operator": "equals",
+        "value": "Médical DOI"
+      },
+      {
+        "question": "teamLeadTeam",
+        "operator": "equals",
+        "value": "Affaires Publiques"
+      },
+      {
+        "question": "teamLeadTeam",
+        "operator": "equals",
+        "value": "Autre"
+      }
+    ],
+    "conditionLogic": "any",
+    "conditionGroups": [
+      {
+        "logic": "any",
+        "conditions": [
+          {
+            "question": "teamLeadTeam",
+            "operator": "equals",
+            "value": "Marketing DOI"
+          },
+          {
+            "question": "teamLeadTeam",
+            "operator": "equals",
+            "value": "Médical DOI"
+          },
+          {
+            "question": "teamLeadTeam",
+            "operator": "equals",
+            "value": "Affaires Publiques"
+          },
+          {
+            "question": "teamLeadTeam",
+            "operator": "equals",
+            "value": "Autre"
+          }
+        ]
+      }
+    ],
+    "placeholder": "",
+    "numberUnit": "",
+    "guidance": {
+      "objective": "",
+      "details": "",
+      "tips": []
+    },
+    "extraCheckbox": {
+      "enabled": false,
+      "label": ""
+    },
+    "otherOption": {
+      "enabled": true,
+      "label": "Autre",
+      "placeholder": ""
+    },
+    "rankingConfig": {
+      "title": "Base de données",
+      "criteria": [
+        {
+          "id": "critere-1",
+          "label": "Critère 1"
+        },
+        {
+          "id": "critere-2",
+          "label": "Critère 2"
+        },
+        {
+          "id": "critere-3",
+          "label": "Critère 3"
+        }
+      ],
+      "entries": []
+    }
+  },
+  {
     "id": "showcaseTheme",
     "type": "choice",
     "question": "S'agit-il d'un projet produit ou environnement ?",
     "options": [
-      "Universel",
-      "Deezer",
-      "Mirage",
-      "Cevenfacta",
-      "Fibclot",
-      "IqYmune"
+      {
+        "label": "Produit",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [
+          {
+            "label": "Cevenfacta",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
+          },
+          {
+            "label": "iQymune",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
+          }
+        ],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Environnement",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [
+          {
+            "label": "Hémostase",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
+          },
+          {
+            "label": "Soins intensifs",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
+          }
+        ],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      }
     ],
     "required": true,
     "conditions": [],
@@ -580,8 +761,15 @@ export const initialQuestions = [
       {
         "label": "Enquête / étude de marché",
         "visibility": "always",
-        "subType": "multi_choice",
-        "subOptions": [],
+        "subType": "choice",
+        "subOptions": [
+          {
+            "label": "Liée aux pratiques médicales"
+          },
+          {
+            "label": "Liée à la vie avec la maladie"
+          }
+        ],
         "conditionGroups": [],
         "conditions": [],
         "conditionLogic": "all"
@@ -591,7 +779,9 @@ export const initialQuestions = [
         "visibility": "always",
         "conditionGroups": [],
         "conditions": [],
-        "conditionLogic": "all"
+        "conditionLogic": "all",
+        "subType": null,
+        "subOptions": []
       },
       {
         "label": "Digital",
@@ -703,7 +893,7 @@ export const initialQuestions = [
         "subOptions": []
       },
       {
-        "label": "Publications",
+        "label": "Rédaction d’abstract / de poster / articles scientifiques",
         "visibility": "always",
         "conditionGroups": [],
         "conditions": [],
@@ -754,7 +944,7 @@ export const initialQuestions = [
   {
     "id": "q25",
     "type": "choice",
-    "question": "Avez-vous prévu une session de question / réponse dans le cadre de l'événement ?",
+    "question": "Avez-vous prévu une session de questions / réponses dans le cadre de l'événement ?",
     "options": [
       {
         "label": "Oui",
@@ -762,10 +952,22 @@ export const initialQuestions = [
         "subType": "multi_choice",
         "subOptions": [
           {
-            "label": "Avec modération préalable des questions"
+            "label": "Avec modération préalable des questions",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
           },
           {
-            "label": "En présence d'un collaborateur du LFB"
+            "label": "En présence d'un collaborateur du LFB",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
           }
         ],
         "conditionGroups": [],
@@ -876,14 +1078,37 @@ export const initialQuestions = [
         "visibility": "always",
         "conditionGroups": [],
         "conditions": [],
-        "conditionLogic": "all"
+        "conditionLogic": "all",
+        "subType": null,
+        "subOptions": []
       },
       {
         "label": "Partager des informations sur des sujets sensibles (ex : défaillance industrielle, tension d'approvisionnement, augmentation de capital, ...)",
         "visibility": "always",
         "conditionGroups": [],
         "conditions": [],
-        "conditionLogic": "all"
+        "conditionLogic": "all",
+        "subType": null,
+        "subOptions": []
+      },
+      {
+        "label": "Utiliser l'IA",
+        "visibility": "always",
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all",
+        "subType": "multi_choice",
+        "subOptions": [
+          {
+            "label": "Oui, dans le cadre de la préparation du projet"
+          },
+          {
+            "label": "Oui, pour générer du contenu pour le projet"
+          },
+          {
+            "label": "Oui, le projet permettra aux utilisateurs d'utiliser l'IA"
+          }
+        ]
       }
     ],
     "required": false,
@@ -931,7 +1156,7 @@ export const initialQuestions = [
     "question": "Votre projet correspond  il a une de ces situations ?",
     "options": [
       {
-        "label": "Un dispositif structuré d’accompagnement du patient autour pour l’accompagner dans l’usage du traitement (initiation, observance, gestion des effets indésirables, compréhension de la maladie, soutien pratique ou financier)",
+        "label": "Un dispositif structuré d’accompagnement du patient pour l’accompagner dans l’usage du traitement (initiation, observance, gestion des effets indésirables, compréhension de la maladie, soutien pratique ou financier)",
         "visibility": "always",
         "subType": null,
         "subOptions": [],
@@ -1071,11 +1296,13 @@ export const initialQuestions = [
         "conditionLogic": "all"
       },
       {
-        "label": "Présence de champs libre dans ma solution",
+        "label": "Présence de champs libres dans ma solution",
         "visibility": "always",
         "conditionGroups": [],
         "conditions": [],
-        "conditionLogic": "all"
+        "conditionLogic": "all",
+        "subType": null,
+        "subOptions": []
       },
       {
         "label": "Non",
@@ -1090,14 +1317,14 @@ export const initialQuestions = [
     "required": true,
     "conditions": [
       {
-        "question": "q11",
+        "question": "q19",
         "operator": "contains",
         "value": "Site internet"
       },
       {
-        "question": "q11",
+        "question": "q19",
         "operator": "contains",
-        "value": "Application mobile / web app"
+        "value": "Applications mobiles"
       }
     ],
     "guidance": {
@@ -1113,14 +1340,14 @@ export const initialQuestions = [
         "logic": "any",
         "conditions": [
           {
-            "question": "q11",
+            "question": "q19",
             "operator": "contains",
             "value": "Site internet"
           },
           {
-            "question": "q11",
+            "question": "q19",
             "operator": "contains",
-            "value": "Application mobile / web app"
+            "value": "Applications mobiles"
           }
         ]
       }
@@ -1741,6 +1968,13 @@ export const initialQuestions = [
         "conditionGroups": [],
         "conditions": [],
         "conditionLogic": "all"
+      },
+      {
+        "label": "Contenu généré via de l'IA",
+        "visibility": "always",
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
       }
     ],
     "required": false,
@@ -2013,6 +2247,182 @@ export const initialQuestions = [
     }
   },
   {
+    "id": "q18_copy",
+    "type": "choice",
+    "question": "Pouvez-vous préciser le type de soutien dont il s'agit ?",
+    "options": [
+      {
+        "label": "Parrainage d'événément",
+        "visibility": "always",
+        "subType": "multi_choice",
+        "subOptions": [
+          {
+            "label": "Stand",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
+          },
+          {
+            "label": "Autre soutien à un événément ",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
+          }
+        ],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Etude interventionnelle (IIS)",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [
+          {
+            "label": "Avec administration de produit"
+          },
+          {
+            "label": "Sans administration de produit"
+          }
+        ],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Etude non-interventionnelle (NIS)",
+        "visibility": "always",
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all",
+        "subType": null,
+        "subOptions": []
+      }
+    ],
+    "required": true,
+    "conditions": [
+      {
+        "question": "ProjectType",
+        "operator": "equals",
+        "value": "Projet d'un tiers soutenu par le LFB"
+      }
+    ],
+    "conditionLogic": "all",
+    "conditionGroups": [
+      {
+        "logic": "all",
+        "conditions": [
+          {
+            "question": "ProjectType",
+            "operator": "equals",
+            "value": "Projet d'un tiers soutenu par le LFB"
+          }
+        ]
+      }
+    ],
+    "placeholder": "",
+    "numberUnit": "",
+    "guidance": {
+      "objective": "",
+      "details": "",
+      "tips": []
+    },
+    "extraCheckbox": {
+      "enabled": true,
+      "label": "Il s'agit d'un parrainage multi-sponsors (soutien d'autres laboratoires pharmaceutiques)"
+    },
+    "otherOption": {
+      "enabled": false,
+      "label": "Autre",
+      "placeholder": ""
+    },
+    "rankingConfig": {
+      "title": "Base de données",
+      "criteria": [
+        {
+          "id": "critere-1",
+          "label": "Critère 1"
+        },
+        {
+          "id": "critere-2",
+          "label": "Critère 2"
+        },
+        {
+          "id": "critere-3",
+          "label": "Critère 3"
+        }
+      ],
+      "entries": []
+    }
+  },
+  {
+    "id": "q26",
+    "type": "long_text",
+    "question": "Indiquez moi ce qui évolue entre le projet historique et le nouveau projet",
+    "options": [],
+    "required": true,
+    "conditions": [
+      {
+        "question": "ProjectType__extra_checkbox",
+        "operator": "equals",
+        "value": "true"
+      }
+    ],
+    "conditionLogic": "all",
+    "conditionGroups": [
+      {
+        "logic": "all",
+        "conditions": [
+          {
+            "question": "ProjectType__extra_checkbox",
+            "operator": "equals",
+            "value": "true"
+          }
+        ]
+      }
+    ],
+    "placeholder": "Renseignez ici les informations détaillées...",
+    "numberUnit": "",
+    "guidance": {
+      "objective": "",
+      "details": "",
+      "tips": []
+    },
+    "extraCheckbox": {
+      "enabled": false,
+      "label": ""
+    },
+    "otherOption": {
+      "enabled": false,
+      "label": "Autre",
+      "placeholder": ""
+    },
+    "rankingConfig": {
+      "title": "Base de données",
+      "criteria": [
+        {
+          "id": "critere-1",
+          "label": "Critère 1"
+        },
+        {
+          "id": "critere-2",
+          "label": "Critère 2"
+        },
+        {
+          "id": "critere-3",
+          "label": "Critère 3"
+        }
+      ],
+      "entries": []
+    }
+  },
+  {
     "id": "launchDate",
     "type": "date",
     "question": "Quelle est la date de lancement souhaitée ?",
@@ -2236,121 +2646,6 @@ export const initialQuestions = [
     "extraCheckbox": {
       "enabled": false,
       "label": ""
-    },
-    "otherOption": {
-      "enabled": false,
-      "label": "Autre",
-      "placeholder": ""
-    },
-    "rankingConfig": {
-      "title": "Base de données",
-      "criteria": [
-        {
-          "id": "critere-1",
-          "label": "Critère 1"
-        },
-        {
-          "id": "critere-2",
-          "label": "Critère 2"
-        },
-        {
-          "id": "critere-3",
-          "label": "Critère 3"
-        }
-      ],
-      "entries": []
-    }
-  },
-  {
-    "id": "q18_copy",
-    "type": "choice",
-    "question": "Pouvez-vous préciser le type de soutien dont il s'agit ?",
-    "options": [
-      {
-        "label": "Parrainage d'événément",
-        "visibility": "always",
-        "subType": "multi_choice",
-        "subOptions": [
-          {
-            "label": "Stand",
-            "visibility": "always",
-            "subType": null,
-            "subOptions": [],
-            "conditionGroups": [],
-            "conditions": [],
-            "conditionLogic": "all"
-          },
-          {
-            "label": "Autre soutien à un événément ",
-            "visibility": "always",
-            "subType": null,
-            "subOptions": [],
-            "conditionGroups": [],
-            "conditions": [],
-            "conditionLogic": "all"
-          }
-        ],
-        "conditionGroups": [],
-        "conditions": [],
-        "conditionLogic": "all"
-      },
-      {
-        "label": "Etude interventionnelle (IIS)",
-        "visibility": "always",
-        "subType": null,
-        "subOptions": [
-          {
-            "label": "Avec administration de produit"
-          },
-          {
-            "label": "Sans administration de produit"
-          }
-        ],
-        "conditionGroups": [],
-        "conditions": [],
-        "conditionLogic": "all"
-      },
-      {
-        "label": "Etude non-interventionnelle (NIS)",
-        "visibility": "always",
-        "conditionGroups": [],
-        "conditions": [],
-        "conditionLogic": "all",
-        "subType": null,
-        "subOptions": []
-      }
-    ],
-    "required": true,
-    "conditions": [
-      {
-        "question": "ProjectType",
-        "operator": "equals",
-        "value": "Projet d'un tiers soutenu par le LFB"
-      }
-    ],
-    "conditionLogic": "all",
-    "conditionGroups": [
-      {
-        "logic": "all",
-        "conditions": [
-          {
-            "question": "ProjectType",
-            "operator": "equals",
-            "value": "Projet d'un tiers soutenu par le LFB"
-          }
-        ]
-      }
-    ],
-    "placeholder": "",
-    "numberUnit": "",
-    "guidance": {
-      "objective": "",
-      "details": "",
-      "tips": []
-    },
-    "extraCheckbox": {
-      "enabled": true,
-      "label": "Il s'agit d'un parrainage multi-sponsors (soutien d'autres laboratoires pharmaceutiques)"
     },
     "otherOption": {
       "enabled": false,
