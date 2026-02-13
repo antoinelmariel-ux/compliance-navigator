@@ -167,6 +167,3 @@ export const getTriggeredValidationCommittees = (config, context = {}) => {
 
   return normalized.committees.filter((committee) => shouldTriggerCommittee(committee, context));
 };
-
-export const shouldRequireValidationCommittee = (config, context = {}) =>
-  getTriggeredValidationCommittees(config, context).some((committee) => committee.commentRequired);

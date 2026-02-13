@@ -54,7 +54,3 @@ export const applyConditionGroups = (entity = {}, groups = [], conditionSanitize
     conditionLogic: legacyLogic
   };
 };
-
-export const hasAnyConditions = (entity = {}, conditionSanitizer = sanitizeCondition) => {
-  return normalizeConditionGroups(entity, conditionSanitizer).some(group => group.conditions.length > 0);
-};
