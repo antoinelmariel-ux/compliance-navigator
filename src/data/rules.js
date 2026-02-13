@@ -11,7 +11,7 @@ export const initialRules = [
             "type": "question",
             "question": "q3",
             "operator": "not_equals",
-            "value": "Présence de champs libre dans ma solution"
+            "value": "Présence de champs libres dans ma solution"
           },
           {
             "type": "question",
@@ -1097,6 +1097,52 @@ export const initialRules = [
     "risks": []
   },
   {
+    "id": "rule13_copy_copy_copy_copy2",
+    "name": "Publication  - PI",
+    "conditions": [
+      {
+        "type": "question",
+        "question": "q19",
+        "operator": "equals",
+        "value": "Rédaction d’abstract / de poster / articles scientifiques"
+      }
+    ],
+    "conditionGroups": [
+      {
+        "logic": "all",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "q19",
+            "operator": "equals",
+            "value": "Rédaction d’abstract / de poster / articles scientifiques"
+          }
+        ]
+      }
+    ],
+    "conditionLogic": "all",
+    "teams": [
+      "team1"
+    ],
+    "questions": {
+      "team1": []
+    },
+    "risks": [
+      {
+        "description": "CELLCOS",
+        "level": "Moyen",
+        "mitigation": "Les projets prévoyant des publications nécessitent un passage en CELLCOS",
+        "priority": "A anticiper",
+        "teamId": "team1",
+        "timingConstraint": {
+          "enabled": false,
+          "startQuestion": "",
+          "endQuestion": ""
+        }
+      }
+    ]
+  },
+  {
     "id": "rule13_copy_copy_copy_copy",
     "name": "Logo tiers  - PI",
     "conditions": [
@@ -1587,6 +1633,52 @@ export const initialRules = [
     "risks": []
   },
   {
+    "id": "rule14_copy_copy_copy_copy",
+    "name": "Accès digital promo - Contrôle pub",
+    "conditions": [],
+    "conditionGroups": [
+      {
+        "logic": "all",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "showcaseTheme",
+            "operator": "equals",
+            "value": "Produit"
+          }
+        ]
+      },
+      {
+        "logic": "all",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "q19",
+            "operator": "equals",
+            "value": "Site internet"
+          }
+        ]
+      }
+    ],
+    "conditionLogic": "all",
+    "teams": [
+      "bpp"
+    ],
+    "questions": {
+      "bpp": [
+        {
+          "text": "Comment vous assurez-vous que seuls les professionnels de santé habilités à prescrire puissent accéder aux informations promotionnelles ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        }
+      ]
+    },
+    "risks": []
+  },
+  {
     "id": "rule15",
     "name": "Contrats PS - E&C",
     "conditions": [
@@ -1724,6 +1816,114 @@ export const initialRules = [
       "Ethics": [
         {
           "text": "Y-a-t-il des professionnels de santé dans le board de l'association ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        }
+      ]
+    },
+    "risks": []
+  },
+  {
+    "id": "rule15_copy_copy2",
+    "name": "App - E&C",
+    "conditions": [
+      {
+        "type": "question",
+        "question": "q19",
+        "operator": "equals",
+        "value": "Applications mobiles"
+      }
+    ],
+    "conditionGroups": [
+      {
+        "logic": "all",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "q19",
+            "operator": "equals",
+            "value": "Applications mobiles"
+          }
+        ]
+      }
+    ],
+    "conditionLogic": "all",
+    "teams": [
+      "Ethics"
+    ],
+    "questions": {
+      "Ethics": [
+        {
+          "text": "Est-ce que le même type d'application est déjà disponible sur l'AppStore ? Si oui, est-elle gratuite ou payante ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        }
+      ]
+    },
+    "risks": []
+  },
+  {
+    "id": "rule15_copy_copy2_copy",
+    "name": "Evénement LFB - E&C",
+    "conditions": [
+      {
+        "type": "question",
+        "question": "q19",
+        "operator": "equals",
+        "value": "Evenement"
+      }
+    ],
+    "conditionGroups": [
+      {
+        "logic": "all",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "q19",
+            "operator": "equals",
+            "value": "Evenement"
+          }
+        ]
+      }
+    ],
+    "conditionLogic": "all",
+    "teams": [
+      "Ethics"
+    ],
+    "questions": {
+      "Ethics": [
+        {
+          "text": "Quel est le programme de l'événement ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Où se déroulera l'événement ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Un repas / café / ... est il prévu ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Avez-vous prévu de prendre en charge une nuitée ? le transport ?",
           "timingConstraint": {
             "enabled": false,
             "startQuestion": "",
@@ -2013,7 +2213,7 @@ export const initialRules = [
   },
   {
     "id": "rule15_copy_copy_copy_copy_copy_copy",
-    "name": "Rémunération PS France - E&C (copie)",
+    "name": "Rémunération Expert non PS France - E&C",
     "conditions": [],
     "conditionGroups": [
       {
@@ -2069,5 +2269,756 @@ export const initialRules = [
         }
       }
     ]
+  },
+  {
+    "id": "rule15_copy_copy_copy_copy_copy_copy_copy",
+    "name": "IA - E&C",
+    "conditions": [
+      {
+        "type": "question",
+        "question": "q19",
+        "operator": "equals",
+        "value": "Bot IA"
+      },
+      {
+        "type": "question",
+        "question": "q24",
+        "operator": "equals",
+        "value": "Utiliser l'IA"
+      },
+      {
+        "type": "question",
+        "question": "q11",
+        "operator": "equals",
+        "value": "Contenu généré via de l'IA"
+      }
+    ],
+    "conditionGroups": [
+      {
+        "logic": "any",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "q19",
+            "operator": "equals",
+            "value": "Bot IA"
+          },
+          {
+            "type": "question",
+            "question": "q24",
+            "operator": "equals",
+            "value": "Utiliser l'IA"
+          },
+          {
+            "type": "question",
+            "question": "q11",
+            "operator": "equals",
+            "value": "Contenu généré via de l'IA"
+          }
+        ]
+      }
+    ],
+    "conditionLogic": "any",
+    "teams": [
+      "Ethics"
+    ],
+    "questions": {
+      "Ethics": [
+        {
+          "text": "Pouvez-vous préciser comment l'IA est précisément intégrée dans votre projet ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        }
+      ]
+    },
+    "risks": []
+  },
+  {
+    "id": "rule15_copy_copy_copy_copy_copy_copy_copy_copy",
+    "name": "Génération contenu IA  - E&C",
+    "conditions": [
+      {
+        "type": "question",
+        "question": "q24",
+        "operator": "equals",
+        "value": "Oui, pour générer du contenu pour le projet"
+      },
+      {
+        "type": "question",
+        "question": "q11",
+        "operator": "equals",
+        "value": "Contenu généré via de l'IA"
+      }
+    ],
+    "conditionGroups": [
+      {
+        "logic": "any",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "q24",
+            "operator": "equals",
+            "value": "Oui, pour générer du contenu pour le projet"
+          },
+          {
+            "type": "question",
+            "question": "q11",
+            "operator": "equals",
+            "value": "Contenu généré via de l'IA"
+          }
+        ]
+      }
+    ],
+    "conditionLogic": "any",
+    "teams": [
+      "Ethics"
+    ],
+    "questions": {
+      "Ethics": [
+        {
+          "text": "Les contenus générés par IA doivent être indiqués comme tels",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        }
+      ]
+    },
+    "risks": []
+  },
+  {
+    "id": "rule15_copy_copy_copy_copy_copy_copy_copy_copy_copy",
+    "name": "Risque IA - E&C",
+    "conditions": [
+      {
+        "type": "question",
+        "question": "q19",
+        "operator": "equals",
+        "value": "Bot IA"
+      },
+      {
+        "type": "question",
+        "question": "q24",
+        "operator": "equals",
+        "value": "Oui, le projet permettra aux utilisateurs d'utiliser l'IA"
+      }
+    ],
+    "conditionGroups": [
+      {
+        "logic": "any",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "q19",
+            "operator": "equals",
+            "value": "Bot IA"
+          },
+          {
+            "type": "question",
+            "question": "q24",
+            "operator": "equals",
+            "value": "Oui, le projet permettra aux utilisateurs d'utiliser l'IA"
+          }
+        ]
+      }
+    ],
+    "conditionLogic": "any",
+    "teams": [
+      "Ethics"
+    ],
+    "questions": {
+      "Ethics": [
+        {
+          "text": "Comment fonctionne votre modèle d'IA ? Sur quoi se base-t-il ? Que permet il ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        }
+      ]
+    },
+    "risks": [
+      {
+        "description": "Outil intégrant de l'IA",
+        "level": "Élevé",
+        "mitigation": "L'utilisation de l'IA dans un outil doit amener une analyse fine afin de nous assurer de respecter les exigences de l'IA Act",
+        "priority": "A particulièrement anticiper",
+        "teamId": "Ethics",
+        "timingConstraint": {
+          "enabled": false,
+          "startQuestion": "",
+          "endQuestion": ""
+        }
+      }
+    ]
+  },
+  {
+    "id": "rule16",
+    "name": "Contractualisation - Juridique International",
+    "conditions": [],
+    "conditionGroups": [
+      {
+        "logic": "any",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "q27",
+            "operator": "equals",
+            "value": "Grande-Bretagne"
+          },
+          {
+            "type": "question",
+            "question": "q27",
+            "operator": "equals",
+            "value": "Benelux"
+          },
+          {
+            "type": "question",
+            "question": "q27",
+            "operator": "equals",
+            "value": "Allemagne"
+          },
+          {
+            "type": "question",
+            "question": "q27",
+            "operator": "equals",
+            "value": "Mexique"
+          },
+          {
+            "type": "question",
+            "question": "q27",
+            "operator": "equals",
+            "value": "Autre"
+          }
+        ]
+      },
+      {
+        "logic": "all",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "q10",
+            "operator": "not_equals",
+            "value": "Aucune collaboration prévue avec l'externe"
+          }
+        ]
+      }
+    ],
+    "conditionLogic": "all",
+    "teams": [
+      "privacy"
+    ],
+    "questions": {
+      "privacy": [
+        {
+          "text": "Avec qui contracte-t-on ? Quelle est sa nature (association, société privée, …) ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Qui contracte ? (HQ ou filiale)",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Quelle est la roadmap du projet ? Date de lancement souhaitée ? Pilote ? Date de fin identifiée ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Quel est le montant du projet ? et comment se répartit il ? y compris dans le temps",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        }
+      ]
+    },
+    "risks": []
+  },
+  {
+    "id": "rule16_copy2",
+    "name": "Parrainage - Juridique International",
+    "conditions": [],
+    "conditionGroups": [
+      {
+        "logic": "any",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "q27",
+            "operator": "equals",
+            "value": "Grande-Bretagne"
+          },
+          {
+            "type": "question",
+            "question": "q27",
+            "operator": "equals",
+            "value": "Benelux"
+          },
+          {
+            "type": "question",
+            "question": "q27",
+            "operator": "equals",
+            "value": "Allemagne"
+          },
+          {
+            "type": "question",
+            "question": "q27",
+            "operator": "equals",
+            "value": "Mexique"
+          },
+          {
+            "type": "question",
+            "question": "q27",
+            "operator": "equals",
+            "value": "Autre"
+          }
+        ]
+      },
+      {
+        "logic": "all",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "ProjectType",
+            "operator": "equals",
+            "value": "Projet d'un tiers soutenu par le LFB"
+          }
+        ]
+      }
+    ],
+    "conditionLogic": "all",
+    "teams": [
+      "privacy"
+    ],
+    "questions": {
+      "privacy": [
+        {
+          "text": "Avec qui contracte-t-on ? Quelle est sa nature (association, société privée, …) ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Qui contracte ? (HQ ou filiale)",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "A quelle hauteur le LFB contribue au projet ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Quelles sont les contreparties prévues pour le LFB ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Y-a-t-il d'autres partenaires qui financent le projet ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        }
+      ]
+    },
+    "risks": []
+  },
+  {
+    "id": "rule16_copy",
+    "name": "DM - Juridique France IT",
+    "conditions": [
+      {
+        "type": "question",
+        "question": "q22",
+        "operator": "equals",
+        "value": "Une application / instrument / outil destiné à être utilisé à des fins médicales (prévention, diagnostic, traitement, suivi de la maladie. "
+      }
+    ],
+    "conditionGroups": [
+      {
+        "logic": "all",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "q22",
+            "operator": "equals",
+            "value": "Une application / instrument / outil destiné à être utilisé à des fins médicales (prévention, diagnostic, traitement, suivi de la maladie. "
+          }
+        ]
+      }
+    ],
+    "conditionLogic": "all",
+    "teams": [
+      "legal"
+    ],
+    "questions": {
+      "privacy": [
+        {
+          "text": "Qui est le partenaire en charge du développement de l'application/ instrument/outil destiné à être utilisé à des fins médicales ?&nbsp;<br>",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Quel est notre rôle dans le projet ? promotion ?&nbsp;",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Volonté d’acheter l'application/ instrument/outil destiné à être utilisé à des fins médicales ?&nbsp;",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Volonté de le proposer dans le cadre d’Appels d’Offre l'application/ instrument/outil destiné à être utilisé à des fins médicales ?&nbsp;",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        }
+      ]
+    },
+    "risks": [
+      {
+        "description": "Dispositif Médical",
+        "level": "Moyen",
+        "mitigation": "Si votre application/instrument/outil est qualifié de dispositif médical, de nombreuses obligations s'appliqueront. Il est donc essentiel d'identifier si votre projet tombe dans la qualification de dispositif médical",
+        "priority": "A réaliser",
+        "teamId": "legal",
+        "timingConstraint": {
+          "enabled": false,
+          "startQuestion": "",
+          "endQuestion": ""
+        }
+      }
+    ]
+  },
+  {
+    "id": "rule17",
+    "name": "Enquête Etude - PV",
+    "conditions": [
+      {
+        "type": "question",
+        "question": "q19",
+        "operator": "equals",
+        "value": "Liée aux pratiques médicales"
+      },
+      {
+        "type": "question",
+        "question": "q19",
+        "operator": "equals",
+        "value": "Liée à la vie avec la maladie"
+      }
+    ],
+    "conditionGroups": [
+      {
+        "logic": "any",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "q19",
+            "operator": "equals",
+            "value": "Liée aux pratiques médicales"
+          },
+          {
+            "type": "question",
+            "question": "q19",
+            "operator": "equals",
+            "value": "Liée à la vie avec la maladie"
+          }
+        ]
+      }
+    ],
+    "conditionLogic": "any",
+    "teams": [
+      "pv"
+    ],
+    "questions": {
+      "pv": [
+        {
+          "text": "Comment se déroule l'étude / l'enquête ? Qui sera en charge de la menée ? N'hésitez pas à partager un support de l'agence qui pourrait vous accompagner",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Pouvez-vous transmettre la liste des questions qui seront posées dans le cadre de l'étude /enquête ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        }
+      ]
+    },
+    "risks": [
+      {
+        "description": "Formation PV du prestataire éventuel",
+        "level": "Faible",
+        "mitigation": "Si le prestataire qui réalise l'étude n'a pas été formé à la PV ou a été formé depuis plus d'un an, il doit réaliser une formation avant le début de l'étude / de l'enquête. Merci de transmettre le nom du prestataire et les mails des personnes concernées. Il faut compter 15 jours",
+        "priority": "A réaliser",
+        "teamId": "pv",
+        "timingConstraint": {
+          "enabled": false,
+          "startQuestion": "",
+          "endQuestion": ""
+        }
+      }
+    ]
+  },
+  {
+    "id": "rule17_copy",
+    "name": "Enquête Etude - PV (copie)",
+    "conditions": [
+      {
+        "type": "question",
+        "question": "q22",
+        "operator": "equals",
+        "value": "Un dispositif structuré d’accompagnement du patient pour l’accompagner dans l’usage du traitement (initiation, observance, gestion des effets indésirables, compréhension de la maladie, soutien pratique ou financier)"
+      }
+    ],
+    "conditionGroups": [
+      {
+        "logic": "any",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "q22",
+            "operator": "equals",
+            "value": "Un dispositif structuré d’accompagnement du patient pour l’accompagner dans l’usage du traitement (initiation, observance, gestion des effets indésirables, compréhension de la maladie, soutien pratique ou financier)"
+          }
+        ]
+      }
+    ],
+    "conditionLogic": "any",
+    "teams": [
+      "pv"
+    ],
+    "questions": {
+      "pv": []
+    },
+    "risks": [
+      {
+        "description": "Formation PV du prestataire éventuel",
+        "level": "Moyen",
+        "mitigation": "Si le prestataire en charge de programme patient n'a pas été formé à la PV ou a été formé depuis plus d'un an, il doit réaliser une formation avant le début de l'étude / de l'enquête. Merci de transmettre le nom du prestataire et les mails des personnes concernées. Il faut compter 15 jours",
+        "priority": "A réaliser",
+        "teamId": "pv",
+        "timingConstraint": {
+          "enabled": false,
+          "startQuestion": "",
+          "endQuestion": ""
+        }
+      }
+    ]
+  },
+  {
+    "id": "rule17_copy_copy",
+    "name": "Champs libres - PV",
+    "conditions": [
+      {
+        "type": "question",
+        "question": "q3",
+        "operator": "equals",
+        "value": "Présence de champs libres dans ma solution"
+      }
+    ],
+    "conditionGroups": [
+      {
+        "logic": "any",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "q3",
+            "operator": "equals",
+            "value": "Présence de champs libres dans ma solution"
+          }
+        ]
+      }
+    ],
+    "conditionLogic": "any",
+    "teams": [
+      "pv"
+    ],
+    "questions": {
+      "pv": [
+        {
+          "text": "Pouvez-vous nous préciser les champs libres présents dans le cadre du projet ? Quels sont les intitulés ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        }
+      ]
+    },
+    "risks": []
+  },
+  {
+    "id": "rule17_copy_copy_copy",
+    "name": "ISS avec administration - PV",
+    "conditions": [
+      {
+        "type": "question",
+        "question": "q18_copy",
+        "operator": "equals",
+        "value": "Avec administration de produit"
+      }
+    ],
+    "conditionGroups": [
+      {
+        "logic": "any",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "q18_copy",
+            "operator": "equals",
+            "value": "Avec administration de produit"
+          }
+        ]
+      }
+    ],
+    "conditionLogic": "any",
+    "teams": [
+      "pv"
+    ],
+    "questions": {
+      "pv": [
+        {
+          "text": "Pouvez-vous nous transmettre le synopsis de l'étude, le nombre de patients prévus et les pays concernées ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        }
+      ]
+    },
+    "risks": []
+  },
+  {
+    "id": "rule17_copy_copy_copy_copy",
+    "name": "NIS - PV",
+    "conditions": [
+      {
+        "type": "question",
+        "question": "q18_copy",
+        "operator": "equals",
+        "value": "Etude non-interventionnelle (NIS)"
+      }
+    ],
+    "conditionGroups": [
+      {
+        "logic": "any",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "q18_copy",
+            "operator": "equals",
+            "value": "Etude non-interventionnelle (NIS)"
+          }
+        ]
+      }
+    ],
+    "conditionLogic": "any",
+    "teams": [
+      "pv"
+    ],
+    "questions": {
+      "pv": [
+        {
+          "text": "Quel type de données sont utilisées dans le cadre de la NIS ? Données rétrospectives ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        }
+      ]
+    },
+    "risks": []
+  },
+  {
+    "id": "rule17_copy_copy_copy_copy_copy",
+    "name": "IIS sans administration - PV",
+    "conditions": [
+      {
+        "type": "question",
+        "question": "q18_copy",
+        "operator": "equals",
+        "value": "Sans administration de produit"
+      }
+    ],
+    "conditionGroups": [
+      {
+        "logic": "any",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "q18_copy",
+            "operator": "equals",
+            "value": "Sans administration de produit"
+          }
+        ]
+      }
+    ],
+    "conditionLogic": "any",
+    "teams": [
+      "pv"
+    ],
+    "questions": {
+      "pv": [
+        {
+          "text": "Merci d'utiliser cette clause dans le cadre du contrat ISS : XXXXX",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        }
+      ]
+    },
+    "risks": []
   }
 ];
