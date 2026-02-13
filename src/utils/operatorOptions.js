@@ -17,16 +17,6 @@ const BOOLEAN_OPERATOR_OPTIONS = [
   { value: 'not_equals', label: 'Différent de (≠)' }
 ];
 
-const OPERATOR_LABELS = {
-  equals: 'est égal à',
-  not_equals: 'est différent de',
-  contains: 'contient',
-  lt: 'est inférieur à',
-  lte: 'est inférieur ou égal à',
-  gt: 'est supérieur à',
-  gte: 'est supérieur ou égal à'
-};
-
 export const getOperatorOptionsForType = (questionType = 'choice') => {
   if (questionType === 'number') {
     return NUMBER_OPERATOR_OPTIONS;
@@ -46,16 +36,4 @@ export const ensureOperatorForType = (questionType = 'choice', operator = 'equal
   }
 
   return options.length > 0 ? options[0].value : 'equals';
-};
-
-export const getOperatorLabel = (operator) => {
-  return OPERATOR_LABELS[operator] || operator || '=';
-};
-
-export const getOperatorOptions = () => {
-  return {
-    text: TEXT_OPERATOR_OPTIONS,
-    number: NUMBER_OPERATOR_OPTIONS,
-    boolean: BOOLEAN_OPERATOR_OPTIONS
-  };
 };

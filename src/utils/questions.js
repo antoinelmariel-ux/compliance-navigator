@@ -10,15 +10,6 @@ export const buildExtraCheckboxQuestionId = (questionId) => {
 
   return `${questionId}${EXTRA_CHECKBOX_SUFFIX}`;
 };
-
-export const isExtraCheckboxQuestionId = (questionId) => {
-  if (!questionId || typeof questionId !== 'string') {
-    return false;
-  }
-
-  return questionId.endsWith(EXTRA_CHECKBOX_SUFFIX);
-};
-
 export const getConditionQuestionEntries = (questions = []) => {
   if (!Array.isArray(questions)) {
     return [];
