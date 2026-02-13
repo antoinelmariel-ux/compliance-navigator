@@ -282,7 +282,7 @@ export const initialQuestions = [
     },
     "extraCheckbox": {
       "enabled": true,
-      "label": "Il s'agit d'un simple renouvellement d'un projet déjà validé"
+      "label": "Il s'agit d'un simple renouvellement ou un duplicata d'un projet déjà validé"
     },
     "otherOption": {
       "enabled": false,
@@ -522,7 +522,7 @@ export const initialQuestions = [
   {
     "id": "solutionDescription",
     "type": "long_text",
-    "question": "Décrivez en quoi consiste votre solution.",
+    "question": "Décrivez en quoi consiste votre solution",
     "options": [],
     "required": true,
     "conditions": [],
@@ -540,7 +540,37 @@ export const initialQuestions = [
         "solution"
       ],
       "usage": "Bloc « Expérience proposée » dans la partie solution."
-    }
+    },
+    "extraCheckbox": {
+      "enabled": false,
+      "label": ""
+    },
+    "otherOption": {
+      "enabled": false,
+      "label": "Autre",
+      "placeholder": ""
+    },
+    "placeholder": "",
+    "numberUnit": "",
+    "rankingConfig": {
+      "title": "Base de données",
+      "criteria": [
+        {
+          "id": "critere-1",
+          "label": "Critère 1"
+        },
+        {
+          "id": "critere-2",
+          "label": "Critère 2"
+        },
+        {
+          "id": "critere-3",
+          "label": "Critère 3"
+        }
+      ],
+      "entries": []
+    },
+    "conditionGroups": []
   },
   {
     "id": "q19",
@@ -683,6 +713,180 @@ export const initialQuestions = [
       }
     ],
     "required": true,
+    "conditions": [],
+    "conditionLogic": "all",
+    "conditionGroups": [],
+    "placeholder": "",
+    "numberUnit": "",
+    "guidance": {
+      "objective": "",
+      "details": "",
+      "tips": []
+    },
+    "extraCheckbox": {
+      "enabled": false,
+      "label": ""
+    },
+    "otherOption": {
+      "enabled": false,
+      "label": "Autre",
+      "placeholder": ""
+    },
+    "rankingConfig": {
+      "title": "Base de données",
+      "criteria": [
+        {
+          "id": "critere-1",
+          "label": "Critère 1"
+        },
+        {
+          "id": "critere-2",
+          "label": "Critère 2"
+        },
+        {
+          "id": "critere-3",
+          "label": "Critère 3"
+        }
+      ],
+      "entries": []
+    }
+  },
+  {
+    "id": "q25",
+    "type": "choice",
+    "question": "Avez-vous prévu une session de question / réponse dans le cadre de l'événement ?",
+    "options": [
+      {
+        "label": "Oui",
+        "visibility": "always",
+        "subType": "multi_choice",
+        "subOptions": [
+          {
+            "label": "Avec modération préalable des questions"
+          },
+          {
+            "label": "En présence d'un collaborateur du LFB"
+          }
+        ],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Non",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      }
+    ],
+    "required": true,
+    "conditions": [
+      {
+        "question": "q19",
+        "operator": "equals",
+        "value": "Webconférence"
+      },
+      {
+        "question": "q19",
+        "operator": "equals",
+        "value": "Evenement"
+      }
+    ],
+    "conditionLogic": "any",
+    "conditionGroups": [
+      {
+        "logic": "any",
+        "conditions": [
+          {
+            "question": "q19",
+            "operator": "equals",
+            "value": "Webconférence"
+          },
+          {
+            "question": "q19",
+            "operator": "equals",
+            "value": "Evenement"
+          }
+        ]
+      }
+    ],
+    "placeholder": "",
+    "numberUnit": "",
+    "guidance": {
+      "objective": "",
+      "details": "",
+      "tips": []
+    },
+    "extraCheckbox": {
+      "enabled": false,
+      "label": ""
+    },
+    "otherOption": {
+      "enabled": false,
+      "label": "Autre",
+      "placeholder": ""
+    },
+    "rankingConfig": {
+      "title": "Base de données",
+      "criteria": [
+        {
+          "id": "critere-1",
+          "label": "Critère 1"
+        },
+        {
+          "id": "critere-2",
+          "label": "Critère 2"
+        },
+        {
+          "id": "critere-3",
+          "label": "Critère 3"
+        }
+      ],
+      "entries": []
+    }
+  },
+  {
+    "id": "q24",
+    "type": "multi_choice",
+    "question": "Dans le cadre du projet allez-vous ...",
+    "options": [
+      {
+        "label": "Partager des informations sur nos procédés de fabrication, nos installations ou des éléments techniques",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Joindre et/ou diffuser des exemplaires papiers ou électroniques de publications",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Partager des informations liés à l'historique du LFB avant 1994",
+        "visibility": "always",
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Partager des informations sur des sujets sensibles (ex : défaillance industrielle, tension d'approvisionnement, augmentation de capital, ...)",
+        "visibility": "always",
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      }
+    ],
+    "required": false,
     "conditions": [],
     "conditionLogic": "all",
     "conditionGroups": [],
@@ -1521,7 +1725,7 @@ export const initialQuestions = [
         "conditionLogic": "all"
       },
       {
-        "label": "Extrait de publications (sans modification ni paraphrase par le LFB) ou utilisation d'échelles scientifiques",
+        "label": "Extrait de publications ou utilisation d'échelles scientifiques",
         "visibility": "always",
         "subType": null,
         "subOptions": [],
