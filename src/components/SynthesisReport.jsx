@@ -746,6 +746,7 @@ export const SynthesisReport = ({
   projectId,
   projectName: providedProjectName,
   onOpenProjectShowcase,
+  canOpenProjectShowcase = true,
   isProjectEditable = true,
   onRestart,
   onBack,
@@ -1291,6 +1292,10 @@ export const SynthesisReport = ({
   }, [onRemoveProjectMember]);
 
   const handleOpenShowcase = useCallback(() => {
+    if (!canOpenProjectShowcase) {
+      return;
+    }
+
     if (typeof onOpenProjectShowcase === 'function') {
       onOpenProjectShowcase({
         projectId,
@@ -1319,6 +1324,7 @@ export const SynthesisReport = ({
     answers,
     effectiveProjectName,
     onOpenProjectShowcase,
+    canOpenProjectShowcase,
     projectId,
     projectStatus,
     questions,
@@ -1547,15 +1553,17 @@ export const SynthesisReport = ({
                 <Send className="w-4 h-4 mr-2" />
                 Soumettre par e-mail
               </button>
-              <button
-                type="button"
-                onClick={handleOpenShowcase}
-                className="px-4 py-2 bg-white border border-blue-200 text-blue-600 hover:bg-blue-50 rounded-lg font-medium transition-all flex items-center justify-center hv-button hv-focus-ring w-full sm:w-auto text-sm sm:text-base"
-                data-tour-id="synthesis-showcase"
-              >
-                <Sparkles className="w-4 h-4 mr-2" />
-                Vitrine du projet
-              </button>
+              {canOpenProjectShowcase && (
+                <button
+                  type="button"
+                  onClick={handleOpenShowcase}
+                  className="px-4 py-2 bg-white border border-blue-200 text-blue-600 hover:bg-blue-50 rounded-lg font-medium transition-all flex items-center justify-center hv-button hv-focus-ring w-full sm:w-auto text-sm sm:text-base"
+                  data-tour-id="synthesis-showcase"
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Vitrine du projet
+                </button>
+              )}
             </div>
           </div>
 

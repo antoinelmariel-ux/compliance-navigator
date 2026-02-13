@@ -59,6 +59,7 @@ import {
 } from '../utils/inspirationConfig.js';
 import { initialShowcaseThemes } from '../data/showcaseThemes.js';
 import { normalizeValidationCommitteeConfig } from '../utils/validationCommittee.js';
+import { getShowcaseThemeActivationConflicts, normalizeThemeActivation } from '../utils/showcase.js';
 
 const QUESTION_TYPE_META = {
   choice: {
@@ -562,6 +563,22 @@ export const BackOffice = ({
     () => getConditionQuestionEntries(questions),
     [questions]
   );
+  const showcaseActivationQuestions = useMemo(
+    () => (Array.isArray(questions)
+      ? questions
+        .map((question) => ({
+          id: question?.id || '',
+          label: question?.question || question?.id || '',
+          options: getQuestionOptionLabels(question, { includeChildren: true })
+        }))
+        .filter((entry) => entry.id && entry.label && entry.options.length > 0)
+      : []),
+    [questions]
+  );
+  const showcaseThemeActivationConflicts = useMemo(
+    () => getShowcaseThemeActivationConflicts(safeShowcaseThemes),
+    [safeShowcaseThemes]
+  );
   const dateQuestions = useMemo(
     () => (Array.isArray(questions) ? questions.filter((question) => question?.type === 'date') : []),
     [questions]
@@ -843,6 +860,38 @@ export const BackOffice = ({
         ...targetTheme,
         [field]: value,
         aliases
+      };
+
+      return nextThemes;
+    });
+  }, [setShowcaseThemes]);
+
+  const updateShowcaseThemeActivation = useCallback((themeIndex, field, value) => {
+    if (typeof setShowcaseThemes !== 'function') {
+      return;
+    }
+
+    setShowcaseThemes((previousThemes) => {
+      const nextThemes = Array.isArray(previousThemes) ? previousThemes.slice() : [];
+      const targetTheme = nextThemes[themeIndex];
+
+      if (!targetTheme) {
+        return previousThemes;
+      }
+
+      const currentActivation = normalizeThemeActivation(targetTheme);
+      const nextActivation = {
+        ...currentActivation,
+        [field]: value
+      };
+
+      if (field === 'questionId') {
+        nextActivation.optionLabel = '';
+      }
+
+      nextThemes[themeIndex] = {
+        ...targetTheme,
+        activation: nextActivation
       };
 
       return nextThemes;
@@ -4342,6 +4391,19 @@ export const BackOffice = ({
                   </button>
                 </div>
 
+                {showcaseThemeActivationConflicts.length > 0 && (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                    <p className="font-semibold">Alerte : plusieurs thèmes peuvent être déclenchés en même temps.</p>
+                    <ul className="mt-2 list-disc space-y-1 pl-5">
+                      {showcaseThemeActivationConflicts.map((conflict, index) => (
+                        <li key={`theme-conflict-${index}`}>
+                          {conflict[0].questionId} → {conflict[0].optionLabel} : {conflict.map((entry) => entry.label).join(', ')}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
                 {safeShowcaseThemes.length === 0 ? (
                   <div className="rounded-xl border border-dashed border-gray-300 p-6 text-center text-gray-500">
                     Aucun thème configuré.
@@ -4398,6 +4460,46 @@ export const BackOffice = ({
                                   className="w-full resize-y rounded-lg border border-gray-300 px-3 py-2 text-sm hv-focus-ring"
                                   placeholder="Décrivez l'esprit du thème (tonalité, usage, cible)"
                                 />
+                              </div>
+
+                              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                <div>
+                                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-600" htmlFor={`${themeId}-activation-question`}>
+                                    Question déclencheur
+                                  </label>
+                                  <select
+                                    id={`${themeId}-activation-question`}
+                                    value={normalizeThemeActivation(theme).questionId}
+                                    onChange={(event) => updateShowcaseThemeActivation(index, 'questionId', event.target.value)}
+                                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm hv-focus-ring"
+                                  >
+                                    <option value="">Aucun déclencheur</option>
+                                    {showcaseActivationQuestions.map((entry) => (
+                                      <option key={`${themeId}-${entry.id}`} value={entry.id}>
+                                        {entry.label}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-600" htmlFor={`${themeId}-activation-option`}>
+                                    Option déclencheur
+                                  </label>
+                                  <select
+                                    id={`${themeId}-activation-option`}
+                                    value={normalizeThemeActivation(theme).optionLabel}
+                                    onChange={(event) => updateShowcaseThemeActivation(index, 'optionLabel', event.target.value)}
+                                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm hv-focus-ring"
+                                    disabled={!normalizeThemeActivation(theme).questionId}
+                                  >
+                                    <option value="">Aucune option</option>
+                                    {(showcaseActivationQuestions.find((entry) => entry.id === normalizeThemeActivation(theme).questionId)?.options || []).map((option) => (
+                                      <option key={`${themeId}-${option}`} value={option}>
+                                        {option}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
                               </div>
                             </div>
 

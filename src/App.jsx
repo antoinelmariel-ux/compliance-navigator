@@ -40,9 +40,10 @@ import {
 } from './utils/inspirationConfig.js';
 import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
+import { isShowcaseAccessBlockedByProjectType } from './utils/showcase.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.289';
+const APP_VERSION = 'v1.0.290';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -3379,22 +3380,41 @@ const updateProjectFilters = useCallback((updater) => {
     openProjectShowcase({ projectId: pendingProjectId });
   }, [isHydrated, openProjectShowcase, projects]);
 
+  const isActiveProjectShowcaseBlocked = useMemo(
+    () => isShowcaseAccessBlockedByProjectType(answers),
+    [answers]
+  );
+
+  const canShowProjectShowcase = useCallback(
+    (project) => !isShowcaseAccessBlockedByProjectType(project?.answers || {}),
+    []
+  );
+
   const handleShowProjectShowcase = useCallback((projectId) => {
     if (!projectId) {
       return;
     }
 
+    const project = projects.find((entry) => entry?.id === projectId);
+    if (isShowcaseAccessBlockedByProjectType(project?.answers || {})) {
+      return;
+    }
+
     openProjectShowcase({ projectId });
-  }, [openProjectShowcase]);
+  }, [openProjectShowcase, projects]);
 
   const handleOpenActiveProjectShowcase = useCallback((payload = {}) => {
     const projectId = payload?.projectId || activeProjectId || null;
+
+    if (isShowcaseAccessBlockedByProjectType(answers)) {
+      return;
+    }
 
     openProjectShowcase({
       ...payload,
       projectId
     });
-  }, [activeProjectId, openProjectShowcase]);
+  }, [activeProjectId, answers, openProjectShowcase]);
 
   const handleCloseProjectShowcase = useCallback(() => {
     setShowcaseProjectContext(null);
@@ -4275,6 +4295,7 @@ const updateProjectFilters = useCallback((updater) => {
             onOpenProject={handleOpenProject}
             onDeleteProject={handleDeleteProject}
             onShowProjectShowcase={handleShowProjectShowcase}
+            canShowProjectShowcase={canShowProjectShowcase}
             onImportProject={handleImportProject}
             onDuplicateProject={handleDuplicateProject}
             isAdminMode={isAdminMode}
@@ -4340,6 +4361,7 @@ const updateProjectFilters = useCallback((updater) => {
               projectId={activeProjectId}
               projectName={activeProjectName}
               onOpenProjectShowcase={handleOpenActiveProjectShowcase}
+              canOpenProjectShowcase={!isActiveProjectShowcaseBlocked}
               isProjectEditable={isActiveProjectEditable}
               onRestart={handleRestart}
               onBack={isActiveProjectEditable ? handleBackToQuestionnaire : undefined}
