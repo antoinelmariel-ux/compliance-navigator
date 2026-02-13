@@ -522,8 +522,6 @@ export const BackOffice = ({
   const [activeTab, setActiveTab] = useState('dashboard');
   const [editingRule, setEditingRule] = useState(null);
   const [editingQuestion, setEditingQuestion] = useState(null);
-  const [draggedQuestionIndex, setDraggedQuestionIndex] = useState(null);
-  const [dragOverIndex, setDragOverIndex] = useState(null);
   const [draggedInspirationFieldIndex, setDraggedInspirationFieldIndex] = useState(null);
   const [dragOverInspirationFieldIndex, setDragOverInspirationFieldIndex] = useState(null);
   const [reorderAnnouncement, setReorderAnnouncement] = useState('');
@@ -2640,64 +2638,20 @@ export const BackOffice = ({
     });
   };
 
-  const handleDragStart = (event, index) => {
-    if (event?.dataTransfer) {
-      event.dataTransfer.effectAllowed = 'move';
-      event.dataTransfer.setData('text/plain', String(index));
-    }
-    setDraggedQuestionIndex(index);
-    setDragOverIndex(index);
-  };
-
-  const handleDragOver = (event, index) => {
-    event.preventDefault();
-    if (dragOverIndex !== index) {
-      setDragOverIndex(index);
-    }
-  };
-
-  const handleDrop = (event, index) => {
-    event.preventDefault();
-
-    let fromIndex = draggedQuestionIndex;
-    if (fromIndex === null) {
-      const transferIndex = Number.parseInt(event?.dataTransfer?.getData('text/plain'), 10);
-      if (Number.isFinite(transferIndex)) {
-        fromIndex = transferIndex;
-      }
-    }
-
-    if (fromIndex !== null) {
-      moveQuestion(fromIndex, index);
-    }
-
-    setDraggedQuestionIndex(null);
-    setDragOverIndex(null);
-  };
-
-  const handleDragEnd = () => {
-    setDraggedQuestionIndex(null);
-    setDragOverIndex(null);
-  };
-
-  const handleKeyboardReorder = (event, index) => {
-    if (questions.length <= 1) {
+  const moveQuestionUp = (index) => {
+    if (index <= 0) {
       return;
     }
 
-    if (event.key === 'ArrowUp' && index > 0) {
-      event.preventDefault();
-      moveQuestion(index, index - 1);
-    } else if (event.key === 'ArrowDown' && index < questions.length - 1) {
-      event.preventDefault();
-      moveQuestion(index, index + 1);
-    } else if (event.key === 'Home') {
-      event.preventDefault();
-      moveQuestion(index, 0);
-    } else if (event.key === 'End') {
-      event.preventDefault();
-      moveQuestion(index, questions.length - 1);
+    moveQuestion(index, index - 1);
+  };
+
+  const moveQuestionDown = (index) => {
+    if (index >= questions.length - 1) {
+      return;
     }
+
+    moveQuestion(index, index + 1);
   };
 
   const moveInspirationFormField = (fromIndex, toIndex) => {
@@ -5024,14 +4978,8 @@ export const BackOffice = ({
                       return (
                         <div className="pb-6">
                           <article
-                            className={`border border-gray-200 rounded-xl p-6 bg-white shadow-sm hv-surface transition-shadow ${
-                              dragOverIndex === index ? 'ring-2 ring-blue-400 ring-offset-2' : ''
-                            } ${
-                              draggedQuestionIndex === index ? 'opacity-75' : ''
-                            }`}
+                            className="border border-gray-200 rounded-xl p-6 bg-white shadow-sm hv-surface transition-shadow"
                             aria-label={`Question ${question.id}`}
-                            onDragOver={(event) => handleDragOver(event, index)}
-                            onDrop={(event) => handleDrop(event, index)}
                           >
                             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                               <div className="flex items-start gap-3 flex-1">
@@ -5080,20 +5028,28 @@ export const BackOffice = ({
                                 </div>
                               </div>
                               <div className="flex flex-wrap gap-2">
-                                <button
-                                  type="button"
-                                  className="p-2 text-gray-500 hover:text-blue-600 rounded hv-button cursor-move"
-                                  aria-label={`Réorganiser la question ${question.id}. Position ${index + 1} sur ${questions.length}. Utilisez les flèches haut et bas.`}
-                                  aria-describedby={`question-${question.id}-position`}
-                                  draggable
-                                  onDragStart={(event) => handleDragStart(event, index)}
-                                  onDragOver={(event) => handleDragOver(event, index)}
-                                  onDrop={(event) => handleDrop(event, index)}
-                                  onDragEnd={handleDragEnd}
-                                  onKeyDown={(event) => handleKeyboardReorder(event, index)}
-                                >
-                                  <GripVertical className="w-4 h-4" />
-                                </button>
+                                <div className="flex flex-col gap-1" role="group" aria-label={`Réorganiser la question ${question.id}`}>
+                                  <button
+                                    type="button"
+                                    onClick={() => moveQuestionUp(index)}
+                                    disabled={index === 0}
+                                    className="rounded border border-gray-200 p-1 text-gray-500 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-30 hv-button"
+                                    aria-label={`Monter la question ${question.id}`}
+                                    title="Monter"
+                                  >
+                                    <ArrowUp className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => moveQuestionDown(index)}
+                                    disabled={index === questions.length - 1}
+                                    className="rounded border border-gray-200 p-1 text-gray-500 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-30 hv-button"
+                                    aria-label={`Descendre la question ${question.id}`}
+                                    title="Descendre"
+                                  >
+                                    <ArrowDown className="h-4 w-4" />
+                                  </button>
+                                </div>
                                 <button
                                   type="button"
                                   onClick={() => duplicateQuestion(question.id)}
@@ -5268,14 +5224,8 @@ export const BackOffice = ({
                     return (
                       <React.Fragment key={question.id}>
                         <article
-                          className={`border border-gray-200 rounded-xl p-6 bg-white shadow-sm hv-surface transition-shadow ${
-                            dragOverIndex === index ? 'ring-2 ring-blue-400 ring-offset-2' : ''
-                          } ${
-                            draggedQuestionIndex === index ? 'opacity-75' : ''
-                          }`}
+                          className="border border-gray-200 rounded-xl p-6 bg-white shadow-sm hv-surface transition-shadow"
                           aria-label={`Question ${question.id}`}
-                          onDragOver={(event) => handleDragOver(event, index)}
-                          onDrop={(event) => handleDrop(event, index)}
                         >
                           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                             <div className="flex items-start gap-3 flex-1">
@@ -5324,20 +5274,28 @@ export const BackOffice = ({
                               </div>
                             </div>
                             <div className="flex flex-wrap gap-2">
-                              <button
-                                type="button"
-                                className="p-2 text-gray-500 hover:text-blue-600 rounded hv-button cursor-move"
-                                aria-label={`Réorganiser la question ${question.id}. Position ${index + 1} sur ${questions.length}. Utilisez les flèches haut et bas.`}
-                                aria-describedby={`question-${question.id}-position`}
-                                draggable
-                                onDragStart={(event) => handleDragStart(event, index)}
-                                onDragOver={(event) => handleDragOver(event, index)}
-                                onDrop={(event) => handleDrop(event, index)}
-                                onDragEnd={handleDragEnd}
-                                onKeyDown={(event) => handleKeyboardReorder(event, index)}
-                              >
-                                <GripVertical className="w-4 h-4" />
-                              </button>
+                              <div className="flex flex-col gap-1" role="group" aria-label={`Réorganiser la question ${question.id}`}>
+                                <button
+                                  type="button"
+                                  onClick={() => moveQuestionUp(index)}
+                                  disabled={index === 0}
+                                  className="rounded border border-gray-200 p-1 text-gray-500 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-30 hv-button"
+                                  aria-label={`Monter la question ${question.id}`}
+                                  title="Monter"
+                                >
+                                  <ArrowUp className="h-4 w-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => moveQuestionDown(index)}
+                                  disabled={index === questions.length - 1}
+                                  className="rounded border border-gray-200 p-1 text-gray-500 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-30 hv-button"
+                                  aria-label={`Descendre la question ${question.id}`}
+                                  title="Descendre"
+                                >
+                                  <ArrowDown className="h-4 w-4" />
+                                </button>
+                              </div>
                               <button
                                 type="button"
                                 onClick={() => duplicateQuestion(question.id)}
