@@ -16,9 +16,7 @@ const demoProjectAnswers = {
   solutionDescription:
     'Plasma360 est une plateforme web immersive et éducative qui raconte le parcours du plasma, depuis le don jusqu’au médicament final.\nLe site propose :\n- Une expérience interactive et visuelle retraçant étape par étape le processus de fractionnement.\n- Deux parcours de navigation : un mode grand public, simple et narratif, et un mode professionnel, plus technique et structuré.\n- Des vidéos immersives tournées sur les sites du LFB.\n- Une bibliothèque de contenus avec infographies, fiches explicatives et ressources téléchargeables.',
   solutionBenefits:
-    'Une meilleure compréhension du rôle du LFB et de la valeur du plasma comme matière première vitale.\nUne valorisation du savoir-faire industriel français, avec des contenus authentiques et validés.\nUn outil de communication réutilisable pour la formation, la sensibilisation et les relations institutionnelles.\nUn renforcement de la confiance entre le LFB, les professionnels de santé et le grand public.',
-  solutionComparison:
-    'Plasma360 se distingue par son format interactif et immersif, là où la plupart des ressources actuelles se limitent à des documents statiques ou des vidéos isolées.\nLe site proposera une double lecture adaptée à chaque public, des contenus validés scientifiquement et un ancrage fort sur le savoir-faire industriel français.',
+    'Une meilleure compréhension du rôle du LFB et de la valeur du plasma comme matière première vitale.\nUn format interactif et immersif qui se distingue des ressources actuelles souvent statiques.\nUne double lecture adaptée à chaque public, avec des contenus validés scientifiquement.\nUn outil de communication réutilisable pour la formation, la sensibilisation et les relations institutionnelles.',
   innovationProcess:
     'Renforcer la compréhension et la confiance envers les médicaments dérivés du plasma.\nValoriser la mission sociétale et le rôle industriel du LFB.\nAccroître la notoriété du LFB auprès des professionnels et du grand public.\nCréer un actif digital durable, réutilisable pour la formation et la communication.',
   visionStatement:

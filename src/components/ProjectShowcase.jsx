@@ -999,7 +999,6 @@ const SHOWCASE_FIELD_CONFIG = [
   { id: 'problemPainPoints', fallbackLabel: 'Besoins utilisateurs', fallbackType: 'long_text' },
   { id: 'solutionDescription', fallbackLabel: 'Description de la solution', fallbackType: 'long_text' },
   { id: 'solutionBenefits', fallbackLabel: 'Bénéfices clés', fallbackType: 'long_text' },
-  { id: 'solutionComparison', fallbackLabel: 'Différenciation', fallbackType: 'long_text' },
   { id: 'innovationProcess', fallbackLabel: 'Processus innovation', fallbackType: 'long_text' },
   { id: 'visionStatement', fallbackLabel: "Indicateurs d'impact", fallbackType: 'long_text' },
   { id: 'BUDGET', fallbackLabel: 'Budget estimé (K€)', fallbackType: 'number' },
@@ -1019,7 +1018,6 @@ const FIELD_SECTION_MAP = {
   problemPainPoints: 'problem',
   solutionDescription: 'solution',
   solutionBenefits: 'solution',
-  solutionComparison: 'solution',
   innovationProcess: 'innovation',
   visionStatement: 'innovation',
   BUDGET: 'innovation',
@@ -1474,7 +1472,6 @@ const REQUIRED_SHOWCASE_QUESTION_IDS = [
   'problemPainPoints',
   'solutionDescription',
   'solutionBenefits',
-  'solutionComparison',
   'innovationProcess',
   'visionStatement',
   'BUDGET',
@@ -2343,7 +2340,6 @@ export const ProjectShowcase = ({
 
   const solutionDescription = getFormattedAnswer(questions, answers, 'solutionDescription');
   const solutionBenefits = parseListAnswer(getRawAnswer(answers, 'solutionBenefits'));
-  const solutionComparison = getFormattedAnswer(questions, answers, 'solutionComparison');
 
   const innovationProcess = getFormattedAnswer(questions, answers, 'innovationProcess');
   const visionStatement = getFormattedAnswer(questions, answers, 'visionStatement');
@@ -2639,21 +2635,13 @@ export const ProjectShowcase = ({
                 </div>
               )}
               {solutionBenefits.length > 0 && (
-                <div className="deezer-card">
-                  <h3>Bénéfices clefs</h3>
+                <div className="deezer-card deezer-card--solution-focus">
+                  <h3>Différenciation & bénéfices</h3>
                   <ul className="deezer-list">
                     {solutionBenefits.map((benefit, benefitIndex) => (
                       <li key={`${benefit}-${benefitIndex}`}>{renderTextWithLinks(benefit)}</li>
                     ))}
                   </ul>
-                </div>
-              )}
-              {hasText(solutionComparison) && (
-                <div className="deezer-card">
-                  <h3>Différenciation</h3>
-                  <p className={`deezer-subtitle ${missingInfoClass(solutionComparison)}`}>
-                    {renderTextWithLinks(solutionComparison)}
-                  </p>
                 </div>
               )}
             </div>
@@ -2826,7 +2814,6 @@ export const ProjectShowcase = ({
     runway,
     shouldDisplaySection,
     solutionBenefits,
-    solutionComparison,
     solutionDescription,
     teamCoreMembers,
     teamLead,
@@ -2928,21 +2915,13 @@ export const ProjectShowcase = ({
                 </div>
               )}
               {solutionBenefits.length > 0 && (
-                <div className="editorial-card">
-                  <h3 className="editorial-card__title">Bénéfices clefs</h3>
+                <div className="editorial-card editorial-card--solution-focus">
+                  <h3 className="editorial-card__title">Différenciation & bénéfices</h3>
                   <ul className="editorial-list">
                     {solutionBenefits.map((benefit, benefitIndex) => (
                       <li key={`${benefit}-${benefitIndex}`}>{renderTextWithLinks(benefit)}</li>
                     ))}
                   </ul>
-                </div>
-              )}
-              {hasText(solutionComparison) && (
-                <div className="editorial-card">
-                  <h3 className="editorial-card__title">Différenciation</h3>
-                  <p className={`editorial-card__text ${missingInfoClass(solutionComparison)}`}>
-                    {renderTextWithLinks(solutionComparison)}
-                  </p>
                 </div>
               )}
             </div>
@@ -3126,7 +3105,6 @@ export const ProjectShowcase = ({
     runway,
     shouldDisplaySection,
     solutionBenefits,
-    solutionComparison,
     solutionDescription,
     teamCoreMembers,
     teamLead,
@@ -3231,21 +3209,13 @@ export const ProjectShowcase = ({
                 </div>
               )}
               {solutionBenefits.length > 0 && (
-                <div className="fibclot-card">
-                  <h3 className="fibclot-card__title">Bénéfices clefs</h3>
+                <div className="fibclot-card fibclot-card--solution-focus">
+                  <h3 className="fibclot-card__title">Différenciation & bénéfices</h3>
                   <ul className="fibclot-list">
                     {solutionBenefits.map((benefit, benefitIndex) => (
                       <li key={`${benefit}-${benefitIndex}`}>{renderTextWithLinks(benefit)}</li>
                     ))}
                   </ul>
-                </div>
-              )}
-              {hasText(solutionComparison) && (
-                <div className="fibclot-card fibclot-card--accent">
-                  <h3 className="fibclot-card__title">Différenciation</h3>
-                  <p className={`fibclot-card__text ${missingInfoClass(solutionComparison)}`}>
-                    {renderTextWithLinks(solutionComparison)}
-                  </p>
                 </div>
               )}
             </div>
@@ -3442,7 +3412,6 @@ export const ProjectShowcase = ({
     runway,
     shouldDisplaySection,
     solutionBenefits,
-    solutionComparison,
     solutionDescription,
     teamCoreMembers,
     teamLead,
@@ -3561,8 +3530,8 @@ export const ProjectShowcase = ({
                   </div>
                 )}
                 {solutionBenefits.length > 0 && (
-                  <div className="aurora-pillar">
-                    <h3 className="aurora-pillar__title">Bénéfices clefs</h3>
+                  <div className="aurora-pillar aurora-pillar--solution-focus">
+                    <h3 className="aurora-pillar__title">Différenciation & bénéfices</h3>
                     <ul className="aurora-pillar__list">
                       {solutionBenefits.map((benefit, benefitIndex) => (
                         <li key={`${benefit}-${benefitIndex}`} className="aurora-pillar__item">
@@ -3571,14 +3540,6 @@ export const ProjectShowcase = ({
                         </li>
                       ))}
                     </ul>
-                  </div>
-                )}
-                {hasText(solutionComparison) && (
-                  <div className="aurora-pillar">
-                    <h3 className="aurora-pillar__title">Pourquoi c'est différent</h3>
-                    <p className={`aurora-pillar__text ${missingInfoClass(solutionComparison)}`}>
-                      {renderTextWithLinks(solutionComparison)}
-                    </p>
                   </div>
                 )}
               </div>
@@ -3836,7 +3797,6 @@ export const ProjectShowcase = ({
     runway,
     shouldDisplaySection,
     solutionBenefits,
-    solutionComparison,
     solutionDescription,
     teamCoreMembers,
     teamLead,
