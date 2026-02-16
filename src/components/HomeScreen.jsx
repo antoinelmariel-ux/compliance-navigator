@@ -70,13 +70,15 @@ const normalizeComplianceComments = (value) => {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
     return {
       teams: value.teams && typeof value.teams === 'object' ? value.teams : {},
-      committees: value.committees && typeof value.committees === 'object' ? value.committees : {}
+      committees: value.committees && typeof value.committees === 'object' ? value.committees : {},
+      forcedCommitteeIds: Array.isArray(value.forcedCommitteeIds) ? value.forcedCommitteeIds : []
     };
   }
 
   return {
     teams: {},
-    committees: {}
+    committees: {},
+    forcedCommitteeIds: []
   };
 };
 
@@ -262,6 +264,7 @@ export const HomeScreen = ({
   canShowProjectShowcase,
   onImportProject,
   onDuplicateProject,
+  onReintegrateProjectInCommittee,
   isAdminMode = false,
   tourContext = null,
   currentUser = null,
@@ -278,6 +281,7 @@ export const HomeScreen = ({
   );
   const currentUserFirstName = getSafeString(currentUser?.givenName).trim();
   const [complianceProjectsView, setComplianceProjectsView] = useState('pending');
+  const [committeeSelectionModal, setCommitteeSelectionModal] = useState({ isOpen: false, project: null, committees: [] });
   const heroHeadline = currentUserFirstName.length > 0
     ? `${currentUserFirstName}, anticipez les besoins compliance de vos projets en quelques minutes`
     : 'Anticipez les besoins compliance de vos projets en quelques minutes';
@@ -347,6 +351,18 @@ export const HomeScreen = ({
     });
   }, [currentUserEmail, normalizedValidationCommitteeConfig.committees]);
 
+
+  const currentUserCommittees = useMemo(() => {
+    if (!currentUserEmail) {
+      return [];
+    }
+
+    return normalizedValidationCommitteeConfig.committees.filter((committee) => {
+      const committeeEmails = Array.isArray(committee?.emails) ? committee.emails : [];
+      return committeeEmails.some((email) => normalizeEmail(email) === currentUserEmail);
+    });
+  }, [currentUserEmail, normalizedValidationCommitteeConfig.committees]);
+
   const isComplianceActor = isComplianceExpert || isValidationCommitteeMember;
 
   const complianceTriggeredProjects = useMemo(() => {
@@ -356,6 +372,8 @@ export const HomeScreen = ({
 
     return accessibleProjects
       .map((project) => {
+        const comments = normalizeComplianceComments(project?.answers?.[COMPLIANCE_COMMENTS_KEY]);
+        const forcedCommitteeIds = comments.forcedCommitteeIds;
         const analysisTeamIds = Array.isArray(project?.analysis?.teams) ? project.analysis.teams : [];
         const relevantTeams = teams.filter((team) => team?.id && analysisTeamIds.includes(team.id));
 
@@ -369,7 +387,8 @@ export const HomeScreen = ({
         const triggeredCommittees = getTriggeredValidationCommittees(normalizedValidationCommitteeConfig, {
           answers: project?.answers || {},
           analysis: project?.analysis || {},
-          relevantTeams
+          relevantTeams,
+          forcedCommitteeIds
         })
           .filter((committee) => {
             const committeeEmails = Array.isArray(committee?.emails) ? committee.emails : [];
@@ -378,48 +397,91 @@ export const HomeScreen = ({
           .map((committee) => ({ id: committee.id, name: committee.name || committee.id, type: 'committee' }));
 
         const triggeredPerimeters = [...triggeredTeams, ...triggeredCommittees];
-        if (triggeredPerimeters.length === 0) {
-          return null;
-        }
 
-        const comments = normalizeComplianceComments(project?.answers?.[COMPLIANCE_COMMENTS_KEY]);
-
-        const allValidated = triggeredPerimeters.every((entry) => {
+        const allValidated = triggeredPerimeters.length > 0 && triggeredPerimeters.every((entry) => {
           const status = entry.type === 'committee'
             ? comments.committees?.[entry.id]?.status
             : comments.teams?.[entry.id]?.status;
           return status === 'validated';
         });
 
+        const allExpertsValidated = relevantTeams.every((team) => comments.teams?.[team.id]?.status === 'validated');
+        const userOutOfScopeCommittees = currentUserCommittees.filter(
+          (committee) => !triggeredCommittees.some((entry) => entry.id === committee.id)
+        );
+
+        const isOutOfScopeCandidate =
+          isValidationCommitteeMember
+          && project?.status === 'submitted'
+          && userOutOfScopeCommittees.length > 0
+          && !allExpertsValidated;
+
         return {
           project,
           triggeredPerimeters,
-          allValidated
+          allValidated,
+          isOutOfScopeCandidate,
+          userOutOfScopeCommittees
         };
       })
-      .filter(Boolean)
+      .filter((entry) => entry.triggeredPerimeters.length > 0 || entry.isOutOfScopeCandidate)
       .sort((a, b) => getProjectTimestamp(b.project) - getProjectTimestamp(a.project));
   }, [
     accessibleProjects,
     currentUserEmail,
+    currentUserCommittees,
     isComplianceActor,
+    isValidationCommitteeMember,
     normalizedValidationCommitteeConfig,
     teams
   ]);
 
   const pendingComplianceProjects = useMemo(
-    () => complianceTriggeredProjects.filter((entry) => !entry.allValidated),
+    () => complianceTriggeredProjects.filter((entry) => entry.triggeredPerimeters.length > 0 && !entry.allValidated),
     [complianceTriggeredProjects]
   );
 
   const treatedComplianceProjects = useMemo(
-    () => complianceTriggeredProjects.filter((entry) => entry.allValidated),
+    () => complianceTriggeredProjects.filter((entry) => entry.triggeredPerimeters.length > 0 && entry.allValidated),
+    [complianceTriggeredProjects]
+  );
+
+  const outOfScopeCommitteeProjects = useMemo(
+    () => complianceTriggeredProjects.filter((entry) => entry.isOutOfScopeCandidate),
     [complianceTriggeredProjects]
   );
 
   const displayedComplianceProjects = complianceProjectsView === 'treated'
     ? treatedComplianceProjects
-    : pendingComplianceProjects;
+    : complianceProjectsView === 'out_of_scope'
+      ? outOfScopeCommitteeProjects
+      : pendingComplianceProjects;
+
+
+  const handleReintegrateInCommittee = useCallback((projectEntry) => {
+    if (!projectEntry || typeof onReintegrateProjectInCommittee !== 'function') {
+      return;
+    }
+
+    const availableCommittees = Array.isArray(projectEntry.userOutOfScopeCommittees)
+      ? projectEntry.userOutOfScopeCommittees
+      : [];
+
+    if (availableCommittees.length === 0) {
+      return;
+    }
+
+    if (availableCommittees.length === 1) {
+      onReintegrateProjectInCommittee(projectEntry.project.id, availableCommittees[0].id);
+      return;
+    }
+
+    setCommitteeSelectionModal({
+      isOpen: true,
+      project: projectEntry,
+      committees: availableCommittees
+    });
+  }, [onReintegrateProjectInCommittee]);
 
   const closeDeleteDialog = useCallback(() => {
     setDeleteDialogState({ isOpen: false, project: null });
@@ -1429,6 +1491,19 @@ export const HomeScreen = ({
                 >
                   Traités ({treatedComplianceProjects.length})
                 </button>
+                {isValidationCommitteeMember && (
+                  <button
+                    type="button"
+                    onClick={() => setComplianceProjectsView('out_of_scope')}
+                    className={`rounded-full px-4 py-2 text-xs font-semibold transition-colors ${
+                      complianceProjectsView === 'out_of_scope'
+                        ? 'bg-blue-600 text-white'
+                        : 'text-blue-700 hover:bg-blue-100'
+                    }`}
+                  >
+                    Hors scope comité ({outOfScopeCommitteeProjects.length})
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1436,55 +1511,69 @@ export const HomeScreen = ({
               <div className="rounded-2xl border border-dashed border-blue-200 bg-blue-50/40 p-5 text-sm text-gray-600">
                 {complianceProjectsView === 'pending'
                   ? "Aucun projet à traiter pour l'instant."
-                  : 'Aucun projet traité pour le moment.'}
+                  : complianceProjectsView === 'treated'
+                    ? 'Aucun projet traité pour le moment.'
+                    : 'Aucun projet hors scope comité pour le moment.'}
               </div>
             ) : (
               <div className="space-y-3" role="list" aria-label="Liste des projets déclenchés">
-                {displayedComplianceProjects.map(({ project, triggeredPerimeters, allValidated }) => (
-                  <article
-                    key={`compliance-trigger-${project.id}`}
-                    className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
-                    role="listitem"
-                  >
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="space-y-2">
-                        <h3 className="text-base font-semibold text-gray-900">
-                          {project.projectName || 'Projet sans nom'}
-                        </h3>
-                        <p className="text-xs text-gray-500">
-                          Dernière mise à jour : {formatDate(project.lastUpdated || project.submittedAt)}
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {triggeredPerimeters.map((entry) => (
-                            <span
-                              key={`${project.id}-${entry.type}-${entry.id}`}
-                              className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700"
+                {displayedComplianceProjects.map((projectEntry) => {
+                  const { project, triggeredPerimeters, allValidated } = projectEntry;
+                  return (
+                    <article
+                      key={`compliance-trigger-${project.id}`}
+                      className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
+                      role="listitem"
+                    >
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="space-y-2">
+                          <h3 className="text-base font-semibold text-gray-900">
+                            {project.projectName || 'Projet sans nom'}
+                          </h3>
+                          <p className="text-xs text-gray-500">
+                            Dernière mise à jour : {formatDate(project.lastUpdated || project.submittedAt)}
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {triggeredPerimeters.map((entry) => (
+                              <span
+                                key={`${project.id}-${entry.type}-${entry.id}`}
+                                className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700"
+                              >
+                                {entry.type === 'committee' ? 'Comité' : 'Expert'} · {entry.name}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${
+                            allValidated
+                              ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                              : 'bg-amber-50 border-amber-200 text-amber-700'
+                          }`}>
+                            {allValidated ? 'Validé' : 'À traiter'}
+                          </span>
+                          {complianceProjectsView === 'out_of_scope' && (
+                            <button
+                              type="button"
+                              onClick={() => handleReintegrateInCommittee(projectEntry)}
+                              className="inline-flex items-center gap-2 rounded-lg border border-amber-200 px-3 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-50"
                             >
-                              {entry.type === 'committee' ? 'Comité' : 'Expert'} · {entry.name}
-                            </span>
-                          ))}
+                              Réintégrer en comité
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => onOpenProject?.(project.id)}
+                            className="inline-flex items-center gap-2 rounded-lg border border-blue-200 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50"
+                          >
+                            <Eye className="h-4 w-4" aria-hidden="true" />
+                            Ouvrir
+                          </button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${
-                          allValidated
-                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                            : 'bg-amber-50 border-amber-200 text-amber-700'
-                        }`}>
-                          {allValidated ? 'Validé' : 'À traiter'}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => onOpenProject?.(project.id)}
-                          className="inline-flex items-center gap-2 rounded-lg border border-blue-200 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50"
-                        >
-                          <Eye className="h-4 w-4" aria-hidden="true" />
-                          Ouvrir
-                        </button>
-                      </div>
-                    </div>
-                  </article>
-                ))}
+                    </article>
+                  );
+                })}
               </div>
             )}
           </section>
@@ -1876,6 +1965,42 @@ export const HomeScreen = ({
           )}
         </section>
       </div>
+
+      {committeeSelectionModal.isOpen && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900">Choisir le comité de réintégration</h3>
+            <p className="text-sm text-gray-600">
+              Ce projet peut être réintégré dans plusieurs comités. Sélectionnez le comité cible.
+            </p>
+            <div className="space-y-2">
+              {committeeSelectionModal.committees.map((committee) => (
+                <button
+                  key={`reintegrate-${committee.id}`}
+                  type="button"
+                  onClick={() => {
+                    onReintegrateProjectInCommittee?.(committeeSelectionModal.project?.project?.id, committee.id);
+                    setCommitteeSelectionModal({ isOpen: false, project: null, committees: [] });
+                  }}
+                  className="w-full rounded-xl border border-blue-200 px-4 py-3 text-left text-sm font-semibold text-blue-700 hover:bg-blue-50"
+                >
+                  {committee.name || committee.id}
+                </button>
+              ))}
+            </div>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setCommitteeSelectionModal({ isOpen: false, project: null, committees: [] })}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {deleteDialogState.isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
           <div
