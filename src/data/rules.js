@@ -1481,7 +1481,7 @@ export const initialRules = [
     ],
     "conditionGroups": [
       {
-        "logic": "all",
+        "logic": "any",
         "conditions": [
           {
             "type": "question",
@@ -1498,7 +1498,7 @@ export const initialRules = [
         ]
       }
     ],
-    "conditionLogic": "all",
+    "conditionLogic": "any",
     "teams": [
       "bpp"
     ],
@@ -1522,6 +1522,14 @@ export const initialRules = [
         },
         {
           "text": "L'événement sera-t-il disponible en replay ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Qui pourra participer ?",
           "timingConstraint": {
             "enabled": false,
             "startQuestion": "",
@@ -1580,6 +1588,14 @@ export const initialRules = [
         },
         {
           "text": "Quel est le programme ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Qui pourra participer ?",
           "timingConstraint": {
             "enabled": false,
             "startQuestion": "",
@@ -2733,6 +2749,97 @@ export const initialRules = [
     ]
   },
   {
+    "id": "rule16_copy_copy",
+    "name": "Etude - Juridique France IT",
+    "conditions": [
+      {
+        "type": "question",
+        "question": "q18_copy",
+        "operator": "equals",
+        "value": "Pour une enquête / étude"
+      },
+      {
+        "type": "question",
+        "question": "q18_copy",
+        "operator": "equals",
+        "value": "Pour une enquête / étude"
+      }
+    ],
+    "conditionGroups": [
+      {
+        "logic": "any",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "q18_copy",
+            "operator": "equals",
+            "value": "Pour une enquête / étude"
+          },
+          {
+            "type": "question",
+            "question": "q18_copy",
+            "operator": "equals",
+            "value": "Pour une enquête / étude"
+          }
+        ]
+      }
+    ],
+    "conditionLogic": "any",
+    "teams": [
+      "legal"
+    ],
+    "questions": {
+      "privacy": [
+        {
+          "text": "Qui est le partenaire en charge du développement de l'application/ instrument/outil destiné à être utilisé à des fins médicales ?&nbsp;<br>",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Quel est notre rôle dans le projet ? promotion ?&nbsp;",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Volonté d’acheter l'application/ instrument/outil destiné à être utilisé à des fins médicales ?&nbsp;",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Volonté de le proposer dans le cadre d’Appels d’Offre l'application/ instrument/outil destiné à être utilisé à des fins médicales ?&nbsp;",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        }
+      ]
+    },
+    "risks": [
+      {
+        "description": "Etudes cliniques",
+        "level": "Moyen",
+        "mitigation": "Attention, si vous étude est requalifiée d'étude clinique un process spécifique doit être suivi",
+        "priority": "A réaliser",
+        "teamId": "legal",
+        "timingConstraint": {
+          "enabled": false,
+          "startQuestion": "",
+          "endQuestion": ""
+        }
+      }
+    ]
+  },
+  {
     "id": "rule17",
     "name": "Enquête Etude - PV",
     "conditions": [
@@ -2809,7 +2916,7 @@ export const initialRules = [
   },
   {
     "id": "rule17_copy",
-    "name": "Enquête Etude - PV (copie)",
+    "name": "PSP  - PV",
     "conditions": [
       {
         "type": "question",
@@ -3020,5 +3127,115 @@ export const initialRules = [
       ]
     },
     "risks": []
+  },
+  {
+    "id": "rule19",
+    "name": "Association de patients - AP",
+    "conditions": [],
+    "conditionGroups": [
+      {
+        "logic": "any",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "q10",
+            "operator": "equals",
+            "value": "Association de patients / Patients"
+          },
+          {
+            "type": "question",
+            "question": "q10_copy",
+            "operator": "equals",
+            "value": "Association de patients"
+          }
+        ]
+      },
+      {
+        "logic": "all",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "teamLeadTeam",
+            "operator": "not_equals",
+            "value": "Affaires Publiques"
+          }
+        ]
+      }
+    ],
+    "conditionLogic": "all",
+    "teams": [
+      "it"
+    ],
+    "questions": {
+      "it": [
+        {
+          "text": "Avec quelle association / patients allez-vous collaborer ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        }
+      ]
+    },
+    "risks": []
+  },
+  {
+    "id": "rule19_copy",
+    "name": "Intégration association patients - AP",
+    "conditions": [
+      {
+        "type": "question",
+        "question": "targetAudience",
+        "operator": "equals",
+        "value": "Patients / Association de patients"
+      },
+      {
+        "type": "question",
+        "question": "q10",
+        "operator": "not_equals",
+        "value": "Association de patients / Patients"
+      }
+    ],
+    "conditionGroups": [
+      {
+        "logic": "all",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "targetAudience",
+            "operator": "equals",
+            "value": "Patients / Association de patients"
+          },
+          {
+            "type": "question",
+            "question": "q10",
+            "operator": "not_equals",
+            "value": "Association de patients / Patients"
+          }
+        ]
+      }
+    ],
+    "conditionLogic": "all",
+    "teams": [
+      "it"
+    ],
+    "questions": {
+      "it": []
+    },
+    "risks": [
+      {
+        "description": "Intrégration des associations",
+        "level": "Faible",
+        "mitigation": "Pour tout projet à destination de patients, nous vous incitons fortement à collaborer avec une association afin de vous assurer que votre projet correspond à un besoin réel ",
+        "priority": "A réaliser",
+        "teamId": "it",
+        "timingConstraint": {
+          "enabled": false,
+          "startQuestion": "",
+          "endQuestion": ""
+        }
+      }
+    ]
   }
 ];
