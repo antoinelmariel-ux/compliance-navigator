@@ -165,5 +165,11 @@ export const getTriggeredValidationCommittees = (config, context = {}) => {
     return [];
   }
 
-  return normalized.committees.filter((committee) => shouldTriggerCommittee(committee, context));
+  const forcedCommitteeIds = Array.isArray(context?.forcedCommitteeIds)
+    ? context.forcedCommitteeIds.filter((id) => typeof id === 'string' && id.trim().length > 0)
+    : [];
+
+  return normalized.committees.filter(
+    (committee) => forcedCommitteeIds.includes(committee.id) || shouldTriggerCommittee(committee, context)
+  );
 };

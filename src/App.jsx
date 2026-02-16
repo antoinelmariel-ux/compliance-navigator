@@ -43,7 +43,7 @@ import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.
 import { isShowcaseAccessBlockedByProjectType } from './utils/showcase.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.296';
+const APP_VERSION = 'v1.0.297';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -3344,6 +3344,44 @@ const updateProjectFilters = useCallback((updater) => {
     shouldShowQuestion
   ]);
 
+
+  const handleReintegrateProjectInCommittee = useCallback((projectId, committeeId) => {
+    if (!projectId || !committeeId) {
+      return;
+    }
+
+    setProjects(prevProjects => prevProjects.map((project) => {
+      if (!project || project.id !== projectId) {
+        return project;
+      }
+
+      const answers = project.answers && typeof project.answers === 'object' ? project.answers : {};
+      const rawComments = answers.__compliance_team_comments__;
+      const comments = rawComments && typeof rawComments === 'object' && !Array.isArray(rawComments)
+        ? rawComments
+        : {};
+      const forcedCommitteeIds = Array.isArray(comments.forcedCommitteeIds)
+        ? comments.forcedCommitteeIds.filter((id) => typeof id === 'string' && id.trim().length > 0)
+        : [];
+
+      const nextForcedCommitteeIds = forcedCommitteeIds.includes(committeeId)
+        ? forcedCommitteeIds
+        : [...forcedCommitteeIds, committeeId];
+
+      return {
+        ...project,
+        answers: {
+          ...answers,
+          __compliance_team_comments__: {
+            ...comments,
+            forcedCommitteeIds: nextForcedCommitteeIds
+          }
+        },
+        lastUpdated: new Date().toISOString()
+      };
+    }));
+  }, []);
+
   const handleDeleteProject = useCallback((projectId) => {
     if (!projectId) {
       return;
@@ -4479,6 +4517,7 @@ const updateProjectFilters = useCallback((updater) => {
             canShowProjectShowcase={canShowProjectShowcase}
             onImportProject={handleImportProject}
             onDuplicateProject={handleDuplicateProject}
+            onReintegrateProjectInCommittee={handleReintegrateProjectInCommittee}
             isAdminMode={isAdminMode}
             tourContext={tourContext}
           />

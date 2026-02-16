@@ -605,6 +605,12 @@ export const QuestionnaireScreen = ({
                 onAnswer(currentQuestion.id, optionLabel);
               };
 
+              const handleUnselectOption = () => {
+                if (isSelected) {
+                  onAnswer(currentQuestion.id, '');
+                }
+              };
+
               const childSelections = isSelected ? choiceAnswerState.children : [];
 
               return (
@@ -623,6 +629,7 @@ export const QuestionnaireScreen = ({
                       name={currentQuestion.id}
                       value={optionLabel}
                       checked={isSelected}
+                      onClick={handleUnselectOption}
                       onChange={handleSelectOption}
                       className="w-5 h-5 text-blue-600 border-gray-300 focus:ring-blue-500 hv-focus-ring"
                     />
@@ -671,6 +678,16 @@ export const QuestionnaireScreen = ({
                             });
                           };
 
+                          const unselectSubOption = () => {
+                            if (subType !== 'multi_choice' && isSubSelected) {
+                              onAnswer(currentQuestion.id, {
+                                value: optionLabel,
+                                children: [],
+                                childrenOtherText: ''
+                              });
+                            }
+                          };
+
                           return (
                             <div key={subId} className="space-y-1">
                               <label htmlFor={subId} className="flex items-center text-sm text-gray-700">
@@ -679,6 +696,7 @@ export const QuestionnaireScreen = ({
                                   type={subType === 'multi_choice' ? 'checkbox' : 'radio'}
                                   name={subType === 'multi_choice' ? subId : `${optionId}-sub-group`}
                                   checked={isSubSelected}
+                                  onClick={unselectSubOption}
                                   onChange={toggleSubOption}
                                   className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                                 />

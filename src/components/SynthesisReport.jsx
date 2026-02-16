@@ -201,6 +201,7 @@ const normalizeComplianceComments = (value) => {
           [DEFAULT_COMMITTEE_ID]: legacyCommittee
         }
         : committees,
+      forcedCommitteeIds: Array.isArray(value.forcedCommitteeIds) ? value.forcedCommitteeIds : [],
       legacy: typeof value.legacy === 'string' ? value.legacy : ''
     };
   }
@@ -209,6 +210,7 @@ const normalizeComplianceComments = (value) => {
     return {
       teams: {},
       committees: {},
+      forcedCommitteeIds: [],
       legacy: value
     };
   }
@@ -216,6 +218,7 @@ const normalizeComplianceComments = (value) => {
   return {
     teams: {},
     committees: {},
+    forcedCommitteeIds: [],
     legacy: ''
   };
 };
@@ -861,9 +864,10 @@ export const SynthesisReport = ({
       getTriggeredValidationCommittees(normalizedValidationCommitteeConfig, {
         answers,
         analysis,
-        relevantTeams
+        relevantTeams,
+        forcedCommitteeIds: complianceComments.forcedCommitteeIds
       }),
-    [analysis, answers, normalizedValidationCommitteeConfig, relevantTeams]
+    [analysis, answers, complianceComments.forcedCommitteeIds, normalizedValidationCommitteeConfig, relevantTeams]
   );
   const requiredValidationCommittees = useMemo(
     () => triggeredValidationCommittees.filter((committee) => committee.commentRequired),
@@ -1075,6 +1079,7 @@ export const SynthesisReport = ({
       const nextComments = {
         teams: { ...(complianceComments?.teams || {}) },
         committees: { ...(complianceComments?.committees || {}) },
+        forcedCommitteeIds: complianceComments?.forcedCommitteeIds || [],
         legacy: complianceComments?.legacy || ''
       };
 
@@ -1189,6 +1194,7 @@ export const SynthesisReport = ({
       const nextComments = {
         teams: { ...(complianceComments?.teams || {}) },
         committees: { ...(complianceComments?.committees || {}) },
+        forcedCommitteeIds: complianceComments?.forcedCommitteeIds || [],
         legacy: complianceComments?.legacy || ''
       };
 
