@@ -8,11 +8,12 @@ export const initialQuestions = [
     "conditions": [],
     "conditionLogic": "all",
     "guidance": {
-      "objective": "Nommer clairement l'initiative pour qu'elle soit mémorisée dès les premières secondes.",
-      "details": "Le nom affiché dans la vitrine du projet sert de repère pour toutes les équipes qui contribuent au pitch.",
+      "objective": "Identifier le projet de façon univoque et anticiper les enjeux de propriété intellectuelle (nom / logo).",
+      "details": "Le nom du projet sert de repère pour toutes les parties prenantes et peut être réutilisé dans des supports internes ou externes. Dès qu’un nom ou un logo est envisagé pour une communication externe, il faut vérifier la liberté d’exploitation (risque de marque antérieure) et définir la stratégie de protection. Si un tiers crée le nom ou le logo, la sécurisation des droits (cession de droits d’auteur) devient un prérequis.",
       "tips": [
-        "Renseignez le nom officiel ou celui que vous souhaitez tester auprès des parties prenantes.",
-        "Si un nom de code interne existe, ajoutez-le entre parenthèses pour faciliter le suivi."
+        "Indiquez le nom ‘courant’ (ou provisoire) du projet ; ajoutez un nom de code entre parenthèses si utile.",
+        "Si vous envisagez un nom/logo pour communiquer à l’externe, activez la case dédiée et sollicitez la PI en amont (avant diffusion).",
+        "Évitez d’utiliser publiquement un nom/logo non vérifié ou non protégé ; privilégiez un intitulé provisoire interne en attendant."
       ]
     },
     "showcase": {
@@ -61,10 +62,12 @@ export const initialQuestions = [
     "conditions": [],
     "conditionLogic": "all",
     "guidance": {
-      "objective": "Identifier l'interlocuteur principal pour les échanges compliance",
-      "details": "Cette information permet aux équipes expertes de contacter la bonne personne pour clarifier les éléments du dossier.",
+      "objective": "Identifier le responsable opérationnel du projet (point d’entrée unique) pour les échanges business, juridiques et compliance.",
+      "details": "Les équipes expertes doivent pouvoir contacter rapidement la bonne personne pour clarifier le périmètre, arbitrer et fournir les pièces (contrats, contenu, planning). Un lead clairement identifié réduit les itérations et sécurise la traçabilité des décisions.",
       "tips": [
-        "Renseignez le prénom et le nom"
+        "Renseignez Prénom NOM et, si possible, la fonction (médical/marketing/affaires publiques…).",
+        "Si plusieurs co-leads existent, indiquez le lead principal (décideur) et mentionnez les co-leads dans l’équipe projet.",
+        "Prévoyez un back-up en cas d’absence (à préciser dans l’équipe projet ou en note interne)."
       ]
     },
     "showcase": {
@@ -157,11 +160,12 @@ export const initialQuestions = [
     "conditions": [],
     "conditionLogic": "all",
     "guidance": {
-      "objective": "Préciser le rattachement du lead pour fluidifier les validations.",
-      "details": "Cette information s’affiche en complément du lead pour aider les interlocuteurs à identifier le bon canal.",
+      "objective": "Orienter la revue vers le bon circuit de validation et les bons interlocuteurs.",
+      "details": "Le rattachement du lead aide à comprendre le contexte (médical, marketing, affaires publiques…) et facilite la mobilisation des experts pertinents (contrôle pub, juridique, DPO, communication externe, E&C…).",
       "tips": [
         "Sélectionnez l’équipe principale du lead.",
-        "Précisez une double appartenance dans vos notes internes si nécessaire."
+        "Si le projet est transverse, choisissez l’équipe qui porte le budget ou la gouvernance, et précisez la co-activité dans l’équipe projet.",
+        "Utilisez ‘Autre’ uniquement si aucune option ne correspond, et explicitez le rattachement."
       ]
     },
     "showcase": {
@@ -210,11 +214,12 @@ export const initialQuestions = [
     "conditions": [],
     "conditionLogic": "all",
     "guidance": {
-      "objective": "Mettre en avant la complémentarité de l’équipe.",
-      "details": "Chaque ligne sera affichée comme un membre du “collectif moteur”.",
+      "objective": "Cartographier les parties prenantes pour sécuriser la gouvernance et anticiper les validations.",
+      "details": "Un projet médico‑marketing implique souvent plusieurs métiers (contenu médical, conformité promotionnelle, données personnelles, contrats, communication externe). Lister l’équipe permet de vérifier que les expertises critiques sont couvertes et d’anticiper les points de friction (responsabilités, accès, livrables).",
       "tips": [
-        "Mentionnez pour chaque personne le rôle ou l’expertise apportée.",
-        "Incluez éventuellement les partenaires ou experts externes essentiels."
+        "Indiquez une ligne par personne : Prénom NOM – rôle dans le projet (ex. chef de projet, médical, digital, data, com…).",
+        "Ajoutez les contributeurs externes essentiels (agence, partenaire, prestataire IT) en précisant leur statut.",
+        "Si le projet implique des patients, associations ou professionnels de santé, mentionnez le référent ‘interaction parties prenantes’ (souvent médical/E&C)."
       ]
     },
     "showcase": {
@@ -274,10 +279,12 @@ export const initialQuestions = [
     "conditionGroups": [],
     "placeholder": "",
     "guidance": {
-      "objective": "Identifier le type de projet pour connaitre les procédures applicables",
-      "details": "En fonction de la catégorie du projet sélectionné, nous vous poserons des questions supplémentaires pour affiner le projet et ainsi vous guider au mieux",
+      "objective": "Qualifier la nature du projet pour déclencher les bonnes exigences (contractuelles, E&C, contrôle pub, data privacy).",
+      "details": "La catégorie conditionne les obligations : type de contrat, qualification du soutien (don/parrainage/partenariat), transparence, règles anti‑cadeaux/avantages, risques de requalification promotionnelle, et besoin de validation locale/internationale. Elle détermine aussi quelles questions complémentaires seront posées.",
       "tips": [
-        "En cas de doute, sélectionner les différentes catégories applicables"
+        "Sélectionnez toutes les catégories applicables (ex. co‑construction + soutien).",
+        "Si c’est un renouvellement/duplicata, cochez la case et préparez la référence du projet/contrat précédent ainsi que les changements.",
+        "En cas de doute, choisissez la catégorie la plus ‘engageante’ (ex. co‑construction plutôt que simple soutien) pour ne pas sous‑estimer les validations."
       ]
     },
     "extraCheckbox": {
@@ -310,17 +317,268 @@ export const initialQuestions = [
     }
   },
   {
+    "id": "q18",
+    "type": "choice",
+    "question": "Pouvez-vous préciser le type de don dont il s'agit ?",
+    "options": [
+      {
+        "label": "Don financier",
+        "visibility": "always",
+        "subType": "multi_choice",
+        "subOptions": [
+          {
+            "label": "Pour un projet défini"
+          },
+          {
+            "label": "Pour un projet non encore défini (appel à projets)"
+          },
+          {
+            "label": "Pour l'activité générale"
+          }
+        ],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Don de produits",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      }
+    ],
+    "required": true,
+    "conditions": [
+      {
+        "question": "ProjectType",
+        "operator": "equals",
+        "value": "Don / bourse / Appel à projets"
+      }
+    ],
+    "conditionLogic": "all",
+    "conditionGroups": [
+      {
+        "logic": "all",
+        "conditions": [
+          {
+            "question": "ProjectType",
+            "operator": "equals",
+            "value": "Don / bourse / Appel à projets"
+          }
+        ]
+      }
+    ],
+    "placeholder": "",
+    "numberUnit": "",
+    "guidance": {
+      "objective": "Distinguer le type de don pour évaluer la licéité, les risques de requalification et les obligations de transparence.",
+      "details": "Les dons (financiers ou de produits) exigent une justification d’intérêt général/scientifique/institutionnel et doivent être indépendants de toute logique promotionnelle. Le type de don influence la documentation attendue, le montage juridique, la traçabilité et les contrôles (notamment lorsque le don est porté par des équipes marketing/commerciales ou lorsqu’il s’agit d’un don de produits).",
+      "tips": [
+        "Précisez si le don est destiné à un projet défini, à un appel à projets (projet non défini) ou à l’activité générale.",
+        "Indiquez le bénéficiaire (statut : association, fondation, établissement…) et le montant/valeur estimée.",
+        "Décrivez le rationnel (intérêt scientifique/sociétal/institutionnel) et confirmez l’absence de contrepartie promotionnelle directe ou indirecte."
+      ]
+    },
+    "extraCheckbox": {
+      "enabled": false,
+      "label": ""
+    },
+    "otherOption": {
+      "enabled": false,
+      "label": "Autre",
+      "placeholder": ""
+    },
+    "rankingConfig": {
+      "title": "Base de données",
+      "criteria": [
+        {
+          "id": "critere-1",
+          "label": "Critère 1"
+        },
+        {
+          "id": "critere-2",
+          "label": "Critère 2"
+        },
+        {
+          "id": "critere-3",
+          "label": "Critère 3"
+        }
+      ],
+      "entries": []
+    }
+  },
+  {
+    "id": "q18_copy",
+    "type": "choice",
+    "question": "Pouvez-vous préciser le type de soutien dont il s'agit ?",
+    "options": [
+      {
+        "label": "Parrainage de projet",
+        "visibility": "always",
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all",
+        "subType": null,
+        "subOptions": []
+      },
+      {
+        "label": "Parrainage d'événément",
+        "visibility": "always",
+        "subType": "multi_choice",
+        "subOptions": [
+          {
+            "label": "Stand",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
+          },
+          {
+            "label": "Autre soutien à un événément ",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
+          }
+        ],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Etude interventionnelle (IIS)",
+        "visibility": "always",
+        "subType": null,
+        "subOptions": [
+          {
+            "label": "Avec administration de produit",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
+          },
+          {
+            "label": "Sans administration de produit",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
+          }
+        ],
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
+        "label": "Etude non-interventionnelle (NIS)",
+        "visibility": "always",
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all",
+        "subType": null,
+        "subOptions": []
+      }
+    ],
+    "required": true,
+    "conditions": [
+      {
+        "question": "ProjectType",
+        "operator": "equals",
+        "value": "Projet d'un tiers soutenu par le LFB"
+      }
+    ],
+    "conditionLogic": "all",
+    "conditionGroups": [
+      {
+        "logic": "all",
+        "conditions": [
+          {
+            "question": "ProjectType",
+            "operator": "equals",
+            "value": "Projet d'un tiers soutenu par le LFB"
+          }
+        ]
+      }
+    ],
+    "placeholder": "",
+    "numberUnit": "",
+    "guidance": {
+      "objective": "Qualifier la nature du soutien à un tiers (parrainage, événement, étude) afin d’appliquer le bon cadre compliance et juridique.",
+      "details": "Selon la nature du soutien, les risques et exigences varient : parrainage (contreparties, visibilité, requalification en promotion), soutien à événement (stands, prises de parole, Q&A), ou soutien à étude (interventionnelle/non‑interventionnelle) avec risques de requalification et exigences méthodologiques. La présence d’autres sponsors/laboratoires ajoute des enjeux de gouvernance et de transparence.",
+      "tips": [
+        "Choisissez l’option la plus fidèle au montage (projet vs événement vs étude).",
+        "Si étude : précisez interventionnelle/non‑interventionnelle et, le cas échéant, administration de produit, périmètre et objectifs.",
+        "Si multi‑sponsors : cochez la case et indiquez les autres sponsors/partenaires, ainsi que la nature des contreparties attendues."
+      ]
+    },
+    "extraCheckbox": {
+      "enabled": true,
+      "label": "Il s'agit d'un parrainage multi-sponsors (soutien d'autres laboratoires pharmaceutiques)"
+    },
+    "otherOption": {
+      "enabled": false,
+      "label": "Autre",
+      "placeholder": ""
+    },
+    "rankingConfig": {
+      "title": "Base de données",
+      "criteria": [
+        {
+          "id": "critere-1",
+          "label": "Critère 1"
+        },
+        {
+          "id": "critere-2",
+          "label": "Critère 2"
+        },
+        {
+          "id": "critere-3",
+          "label": "Critère 3"
+        }
+      ],
+      "entries": []
+    }
+  },
+  {
     "id": "targetAudience",
     "type": "multi_choice",
     "question": "À qui s'adresse votre projet ?",
     "options": [
       {
         "label": "Grand public",
-        "visibility": "always",
+        "visibility": "conditional",
         "subType": null,
         "subOptions": [],
-        "conditionGroups": [],
-        "conditions": [],
+        "conditionGroups": [
+          {
+            "logic": "all",
+            "conditions": [
+              {
+                "question": "ProjectType",
+                "operator": "not_equals",
+                "value": "Don / bourse / Appel à projets"
+              }
+            ]
+          }
+        ],
+        "conditions": [
+          {
+            "question": "ProjectType",
+            "operator": "not_equals",
+            "value": "Don / bourse / Appel à projets"
+          }
+        ],
         "conditionLogic": "all"
       },
       {
@@ -352,11 +610,28 @@ export const initialQuestions = [
       },
       {
         "label": "Collaborateurs du LFB",
-        "visibility": "always",
+        "visibility": "conditional",
         "subType": null,
         "subOptions": [],
-        "conditionGroups": [],
-        "conditions": [],
+        "conditionGroups": [
+          {
+            "logic": "all",
+            "conditions": [
+              {
+                "question": "ProjectType",
+                "operator": "not_equals",
+                "value": "Don / bourse / Appel à projets"
+              }
+            ]
+          }
+        ],
+        "conditions": [
+          {
+            "question": "ProjectType",
+            "operator": "not_equals",
+            "value": "Don / bourse / Appel à projets"
+          }
+        ],
         "conditionLogic": "all"
       }
     ],
@@ -364,11 +639,12 @@ export const initialQuestions = [
     "conditions": [],
     "conditionLogic": "all",
     "guidance": {
-      "objective": "Identifier les destinataires du projet",
-      "details": "En fonction de la cible, les règles de validation ne seront pas les mêmes",
+      "objective": "Identifier l’audience pour appliquer les restrictions de communication (promotion, patients, grand public) et les règles locales.",
+      "details": "La cible conditionne le niveau de risque et les validations : en France, toute communication externe d’un laboratoire peut être qualifiée de publicité et la publicité des médicaments soumis à prescription auprès du grand public est prohibée ; les interactions avec des patients accroissent le risque de diffusion indirecte d’informations produit. La cible influence aussi les règles de transparence, d’encadrement des avantages et le type de contrôle (contrôle pub, E&C, juridique).",
       "tips": [
-        "Choisissez l'ensemble des personnes auxquelles votre projet s'adresse",
-        "Ne sélectionnez \"Interne à LFB\" que si le projet s'adresse aux collaborateurs du LFB (ex : un site intranet)"
+        "Sélectionnez toutes les audiences visées, même si elles sont secondaires (ex. institutionnels + professionnels de santé).",
+        "Si le projet vise des patients ou le grand public, évitez toute mention permettant d’identifier un produit soumis à prescription (risque d’interdiction en France) et anticipez une revue renforcée.",
+        "Si le projet vise des professionnels de santé, précisez si l’accès est restreint (authentification) lorsque des contenus promotionnels sont envisagés."
       ]
     },
     "showcase": {
@@ -423,6 +699,31 @@ export const initialQuestions = [
         "conditionLogic": "all"
       },
       {
+        "label": "Allemagne",
+        "visibility": "always",
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all",
+        "subType": null,
+        "subOptions": []
+      },
+      {
+        "label": "Benelux",
+        "visibility": "always",
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all",
+        "subType": null,
+        "subOptions": []
+      },
+      {
+        "label": "Espagne",
+        "visibility": "always",
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
         "label": "Grande-Bretagne",
         "visibility": "always",
         "subType": null,
@@ -432,25 +733,13 @@ export const initialQuestions = [
         "conditionLogic": "all"
       },
       {
-        "label": "Benelux",
-        "visibility": "always",
-        "conditionGroups": [],
-        "conditions": [],
-        "conditionLogic": "all"
-      },
-      {
-        "label": "Allemagne",
-        "visibility": "always",
-        "conditionGroups": [],
-        "conditions": [],
-        "conditionLogic": "all"
-      },
-      {
         "label": "Mexique",
         "visibility": "always",
         "conditionGroups": [],
         "conditions": [],
-        "conditionLogic": "all"
+        "conditionLogic": "all",
+        "subType": null,
+        "subOptions": []
       }
     ],
     "required": true,
@@ -507,9 +796,13 @@ export const initialQuestions = [
     "placeholder": "",
     "numberUnit": "",
     "guidance": {
-      "objective": "",
-      "details": "",
-      "tips": []
+      "objective": "Déterminer les pays concernés pour anticiper les exigences locales (juridiques, promotionnelles et data privacy).",
+      "details": "Les règles de promotion, de transparence et de protection des données varient selon les pays. Un contenu validé au siège peut nécessiter une relecture locale en cas de traduction/déclinaison ; certains montages peuvent être déployables dans un pays et bloqués dans un autre. Identifier les pays dès l’amont sécurise le planning et les responsabilités (HQ vs filiales).",
+      "tips": [
+        "Cochez tous les pays envisagés, même ‘pilote’ ou ‘phase 2’.",
+        "Si ‘Autre’, listez précisément les pays et indiquez si le déploiement est géré par le siège ou par une filiale.",
+        "Anticipez une validation locale pour la déclinaison/traduction et pour toute adaptation substantielle du contenu."
+      ]
     },
     "extraCheckbox": {
       "enabled": false,
@@ -518,7 +811,7 @@ export const initialQuestions = [
     "otherOption": {
       "enabled": true,
       "label": "Autre",
-      "placeholder": ""
+      "placeholder": "Précisez les autres pays imaginés"
     },
     "rankingConfig": {
       "title": "Base de données",
@@ -602,19 +895,25 @@ export const initialQuestions = [
       }
     ],
     "required": true,
-    "conditions": [],
-    "conditionLogic": "all",
+    "conditions": [
+      {
+        "question": "ProjectType",
+        "operator": "equals",
+        "value": "Projet du LFB"
+      },
+      {
+        "question": "ProjectType",
+        "operator": "equals",
+        "value": "Projet co-construit entre le LFB et un partenaire"
+      }
+    ],
+    "conditionLogic": "any",
     "guidance": {
-      "objective": "Sélectionner la palette de couleurs qui servira de base à la vitrine du projet.",
-      "details": "Chaque thème peut être ajusté dans le back-office grâce aux color-pickers (fond, dégradés, accents). Choisissez celui qui correspond le mieux à votre projet.",
+      "objective": "Ajuster la présentation (vitrine) pour que le projet soit lisible et comparable par les décideurs.",
+      "details": "Ce choix est principalement ergonomique : il pilote la manière dont la vitrine du projet est présentée (univers produit vs environnement). Il n’a pas d’impact direct sur la conformité, mais améliore la compréhension et la cohérence des supports.",
       "tips": [
-        "Universel : reprend l'identité visuelle actuelle de la vitrine.",
-        "Produit : palette solaire et contrastée pour valoriser une offre produit.",
-        "Cupertino : minimalisme lumineux inspiré d’Apple.",
-        "Lumen : dégradés néon et profondeur façon Stripe.",
-        "Voyage : chaleur AirBnB, accent corail et accueil doux.",
-        "Arena : contrastes sportifs et énergie Nike.",
-        "Prism : gradients vibrants inspirés d’Instagram."
+        "Choisissez ‘Produit’ si le projet est rattaché à une marque/aire produit ; ‘Environnement’ si le projet est transversal (parcours, organisation, digital, process).",
+        "Si plusieurs axes existent, sélectionnez l’axe principal (celui qui porte la valeur et le périmètre)."
       ]
     },
     "showcase": {
@@ -624,7 +923,23 @@ export const initialQuestions = [
       "usage": "Pilote les couleurs et dégradés utilisés dans l'ensemble de la vitrine."
     },
     "placeholder": "",
-    "conditionGroups": [],
+    "conditionGroups": [
+      {
+        "logic": "any",
+        "conditions": [
+          {
+            "question": "ProjectType",
+            "operator": "equals",
+            "value": "Projet du LFB"
+          },
+          {
+            "question": "ProjectType",
+            "operator": "equals",
+            "value": "Projet co-construit entre le LFB et un partenaire"
+          }
+        ]
+      }
+    ],
     "extraCheckbox": {
       "enabled": false,
       "label": ""
@@ -655,42 +970,31 @@ export const initialQuestions = [
     }
   },
   {
-    "id": "projectSlogan",
-    "type": "text",
-    "question": "Quel slogan pour votre projet ?",
-    "options": [],
-    "required": false,
-    "conditions": [],
-    "conditionLogic": "all",
-    "guidance": {
-      "objective": "Résumer l'accroche en moins de 10 mots pour capter l'attention immédiatement.",
-      "details": "Le slogan apparaît dans la hero section et doit être simple, mémorable et orienté bénéfice.",
-      "tips": [
-        "Utilisez un verbe d’action qui évoque le résultat attendu.",
-        "Préférez un ton conversationnel : adressez-vous directement à votre audience."
-      ]
-    },
-    "showcase": {
-      "sections": [
-        "hero"
-      ],
-      "usage": "Promesse courte située sous le nom du projet."
-    }
-  },
-  {
     "id": "problemPainPoints",
     "type": "long_text",
-    "question": "Listez 2 à 3 besoins concrets vécus par vos utilisateurs et que votre projet vient solutionner.",
+    "question": "Listez les problèmes concrets de votre cible et que votre projet vient solutionner",
     "options": [],
     "required": true,
-    "conditions": [],
-    "conditionLogic": "all",
+    "conditions": [
+      {
+        "question": "ProjectType",
+        "operator": "equals",
+        "value": "Projet du LFB"
+      },
+      {
+        "question": "ProjectType",
+        "operator": "equals",
+        "value": "Projet co-construit entre le LFB et un partenaire"
+      }
+    ],
+    "conditionLogic": "any",
     "guidance": {
-      "objective": "Montrer que vous comprenez les besoins prioritaires de votre audience.",
-      "details": "Chaque besoin s’affichera comme un bullet point pour renforcer l’empathie.",
+      "objective": "Démontrer la compréhension des besoins réels de la cible (approche Business Model Canvas) sans basculer dans la promotion.",
+      "details": "Cette question structure l’‘empathie’ : quels irritants, obstacles, pertes de chance, frictions de parcours, contraintes organisationnelles… Le contenu doit rester factuel et centré sur l’usage (pas sur un produit), pour éviter les messages promotionnels ou comparatifs non étayés.",
       "tips": [
-        "Utilisez une ligne par besoin pour faciliter la lecture.",
-        "Décrivez la situation vécue plutôt que la solution souhaitée."
+        "Utilisez une ligne par problème concret, formulé du point de vue de la cible.",
+        "Restez factuel (sources, retours terrain, données publiques) et évitez les allégations non démontrées.",
+        "N’introduisez pas de données personnelles identifiantes (ex. histoires de patients) ; anonymisez systématiquement les exemples."
       ]
     },
     "showcase": {
@@ -698,22 +1002,69 @@ export const initialQuestions = [
         "problem"
       ],
       "usage": "Liste des irritants principaux affichée dans la colonne de gauche."
-    }
+    },
+    "extraCheckbox": {
+      "enabled": false,
+      "label": ""
+    },
+    "otherOption": {
+      "enabled": false,
+      "label": "Autre",
+      "placeholder": ""
+    },
+    "placeholder": "",
+    "numberUnit": "",
+    "rankingConfig": {
+      "title": "Base de données",
+      "criteria": [
+        {
+          "id": "critere-1",
+          "label": "Critère 1"
+        },
+        {
+          "id": "critere-2",
+          "label": "Critère 2"
+        },
+        {
+          "id": "critere-3",
+          "label": "Critère 3"
+        }
+      ],
+      "entries": []
+    },
+    "conditionGroups": [
+      {
+        "logic": "any",
+        "conditions": [
+          {
+            "question": "ProjectType",
+            "operator": "equals",
+            "value": "Projet du LFB"
+          },
+          {
+            "question": "ProjectType",
+            "operator": "equals",
+            "value": "Projet co-construit entre le LFB et un partenaire"
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "solutionDescription",
     "type": "long_text",
-    "question": "Décrivez en quoi consiste votre solution",
+    "question": "Décrivez en quoi consiste votre projet",
     "options": [],
     "required": true,
     "conditions": [],
     "conditionLogic": "all",
     "guidance": {
-      "objective": "Clarifier l’expérience proposée avant de détailler les bénéfices.",
-      "details": "Cette description introduit la section “Solution” et doit rester simple à comprendre.",
+      "objective": "Décrire le périmètre du projet pour permettre une évaluation rapide des enjeux business et compliance.",
+      "details": "Les experts doivent comprendre ‘quoi’ (solution), ‘pour qui’ (audience), ‘comment’ (canaux, partenaires, contenu) et ‘avec quels flux’ (données, financement, livrables). Une description claire permet d’identifier les validations nécessaires : contrôle pub (contenus), DPO (données/trackers), juridique (contrats), E&C (interactions, FMV, transparence).",
       "tips": [
-        "Structurez en 2-3 phrases : quoi, pour qui, comment.",
-        "Évitez le vocabulaire interne : imaginez que vous présentez le concept à un prospect."
+        "Structurez en 2–3 phrases : quoi, pour qui, comment (canal principal) ; ajoutez ensuite les éléments clés (partenaires, pays, contenu).",
+        "Précisez si le projet est non‑promotionnel/promotionnel et si des contenus produit sont envisagés.",
+        "Mentionnez tout contact avec patients/professionnels de santé, et toute collecte de données, même minimale (emailing, analytics…)."
       ]
     },
     "showcase": {
@@ -754,6 +1105,87 @@ export const initialQuestions = [
     "conditionGroups": []
   },
   {
+    "id": "projectSlogan",
+    "type": "text",
+    "question": "Si vous deviez résumer en 1 phrase votre proposition de valeur",
+    "options": [],
+    "required": false,
+    "conditions": [
+      {
+        "question": "ProjectType",
+        "operator": "equals",
+        "value": "Projet du LFB"
+      },
+      {
+        "question": "ProjectType",
+        "operator": "equals",
+        "value": "Projet co-construit entre le LFB et un partenaire"
+      }
+    ],
+    "conditionLogic": "any",
+    "guidance": {
+      "objective": "Formuler une promesse courte et mémorable, compatible avec un usage interne/externe.",
+      "details": "Le slogan est un élément de ‘headline’. En environnement pharmaceutique, il doit éviter les superlatifs et les allégations non étayées. S’il peut être vu par des audiences externes, il doit rester institutionnel/éducatif et non promotionnel.",
+      "tips": [
+        "Visez moins de 10 mots, orientés bénéfice d’usage (‘faciliter…’, ‘mieux…’).",
+        "Évitez toute mention produit, comparatif (‘le meilleur’) ou promesse clinique non prouvée.",
+        "Si le projet peut toucher le grand public/patients, privilégiez une formulation neutre et non promotionnelle."
+      ]
+    },
+    "showcase": {
+      "sections": [
+        "hero"
+      ],
+      "usage": "Promesse courte située sous le nom du projet."
+    },
+    "extraCheckbox": {
+      "enabled": false,
+      "label": ""
+    },
+    "otherOption": {
+      "enabled": false,
+      "label": "Autre",
+      "placeholder": ""
+    },
+    "placeholder": "",
+    "numberUnit": "",
+    "rankingConfig": {
+      "title": "Base de données",
+      "criteria": [
+        {
+          "id": "critere-1",
+          "label": "Critère 1"
+        },
+        {
+          "id": "critere-2",
+          "label": "Critère 2"
+        },
+        {
+          "id": "critere-3",
+          "label": "Critère 3"
+        }
+      ],
+      "entries": []
+    },
+    "conditionGroups": [
+      {
+        "logic": "any",
+        "conditions": [
+          {
+            "question": "ProjectType",
+            "operator": "equals",
+            "value": "Projet du LFB"
+          },
+          {
+            "question": "ProjectType",
+            "operator": "equals",
+            "value": "Projet co-construit entre le LFB et un partenaire"
+          }
+        ]
+      }
+    ]
+  },
+  {
     "id": "q19",
     "type": "choice",
     "question": "Quelles sont les composantes du projet ?",
@@ -764,10 +1196,22 @@ export const initialQuestions = [
         "subType": "choice",
         "subOptions": [
           {
-            "label": "Liée aux pratiques médicales"
+            "label": "Liée aux pratiques médicales",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
           },
           {
-            "label": "Liée à la vie avec la maladie"
+            "label": "Liée à la vie avec la maladie",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
           }
         ],
         "conditionGroups": [],
@@ -903,15 +1347,56 @@ export const initialQuestions = [
       }
     ],
     "required": true,
-    "conditions": [],
-    "conditionLogic": "all",
-    "conditionGroups": [],
+    "conditions": [
+      {
+        "question": "ProjectType",
+        "operator": "not_equals",
+        "value": "Don / bourse / Appel à projets"
+      },
+      {
+        "question": "q18_copy",
+        "operator": "equals",
+        "value": "Parrainage d'événément"
+      },
+      {
+        "question": "q18_copy",
+        "operator": "equals",
+        "value": "Etude interventionnelle (IIS)"
+      }
+    ],
+    "conditionLogic": "any",
+    "conditionGroups": [
+      {
+        "logic": "any",
+        "conditions": [
+          {
+            "question": "ProjectType",
+            "operator": "not_equals",
+            "value": "Don / bourse / Appel à projets"
+          },
+          {
+            "question": "q18_copy",
+            "operator": "equals",
+            "value": "Parrainage d'événément"
+          },
+          {
+            "question": "q18_copy",
+            "operator": "equals",
+            "value": "Etude interventionnelle (IIS)"
+          }
+        ]
+      }
+    ],
     "placeholder": "",
     "numberUnit": "",
     "guidance": {
-      "objective": "",
-      "details": "",
-      "tips": []
+      "objective": "Identifier toutes les composantes (digital, print, événement, enquête, base de données…) pour déclencher les contrôles pertinents.",
+      "details": "Chaque composante a des implications différentes : enquête/étude (risque de requalification, information des participants, minimisation), base de données (gouvernance, sécurité, contrat, droits), digital (cookies/trackers, accès, hébergement), événement/webconf (Q&A, contenus), publications/abstracts (mentions obligatoires, droits).",
+      "tips": [
+        "Sélectionnez toutes les composantes prévues, même si elles ne sont pas ‘au cœur’ du projet.",
+        "Pour ‘digital’, précisez dans votre documentation interne si l’accès est public ou restreint (authentification) et si des traceurs/analytics sont envisagés.",
+        "Pour ‘enquête/étude’, indiquez le thème (pratiques médicales / vie avec la maladie) et la population interrogée."
+      ]
     },
     "extraCheckbox": {
       "enabled": false,
@@ -1018,9 +1503,13 @@ export const initialQuestions = [
     "placeholder": "",
     "numberUnit": "",
     "guidance": {
-      "objective": "",
-      "details": "",
-      "tips": []
+      "objective": "Anticiper le risque de communications non validées lors des sessions de questions/réponses (notamment en live).",
+      "details": "Les réponses spontanées ne peuvent pas être validées a priori et peuvent générer des propos promotionnels, hors AMM ou déséquilibrés. Si l’événement est enregistré, il peut être nécessaire de supprimer le Q&A du replay. En interne avec patients/professionnels de santé, les questions peuvent devoir être collectées et modérées en amont.",
+      "tips": [
+        "Indiquez si les questions seront modérées/collectées en amont (option la plus sécurisante).",
+        "Précisez si un collaborateur du LFB sera présent et quel sera son rôle (animation, réponse, modération).",
+        "Si l’événement est enregistré, anticipez la gestion du replay (ex. retrait du Q&A) pour éviter des propos non validés."
+      ]
     },
     "extraCheckbox": {
       "enabled": false,
@@ -1100,27 +1589,86 @@ export const initialQuestions = [
         "subType": "multi_choice",
         "subOptions": [
           {
-            "label": "Oui, dans le cadre de la préparation du projet"
+            "label": "Oui, dans le cadre de la préparation du projet",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
           },
           {
-            "label": "Oui, pour générer du contenu pour le projet"
+            "label": "Oui, pour générer du contenu pour le projet",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
           },
           {
-            "label": "Oui, le projet permettra aux utilisateurs d'utiliser l'IA"
+            "label": "Oui, le projet permettra aux utilisateurs d'utiliser l'IA",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
           }
         ]
       }
     ],
     "required": false,
-    "conditions": [],
+    "conditions": [
+      {
+        "question": "ProjectType",
+        "operator": "equals",
+        "value": "Projet du LFB"
+      },
+      {
+        "question": "ProjectType",
+        "operator": "equals",
+        "value": "Projet co-construit entre le LFB et un partenaire"
+      },
+      {
+        "question": "q18_copy",
+        "operator": "equals",
+        "value": "Stand"
+      }
+    ],
     "conditionLogic": "all",
-    "conditionGroups": [],
+    "conditionGroups": [
+      {
+        "logic": "all",
+        "conditions": [
+          {
+            "question": "ProjectType",
+            "operator": "equals",
+            "value": "Projet du LFB"
+          },
+          {
+            "question": "ProjectType",
+            "operator": "equals",
+            "value": "Projet co-construit entre le LFB et un partenaire"
+          },
+          {
+            "question": "q18_copy",
+            "operator": "equals",
+            "value": "Stand"
+          }
+        ]
+      }
+    ],
     "placeholder": "",
     "numberUnit": "",
     "guidance": {
-      "objective": "",
-      "details": "",
-      "tips": []
+      "objective": "Repérer les sujets ‘sensibles’ (confidentialité, réputation, IA, PI) qui nécessitent une revue renforcée.",
+      "details": "Certaines thématiques déclenchent des exigences spécifiques : informations sur procédés/installation (confidentialité et stratégie PI), diffusion de publications (droits CFC/autorisation), historique sensible (risque réputationnel et cadrage), sujets sensibles (exposition médiatique), usage de l’IA (impacts éthiques, gouvernance, obligations selon le niveau de risque).",
+      "tips": [
+        "Cochez tout ce qui s’applique, même partiellement (ex. mention d’un procédé de fabrication dans une slide).",
+        "Si vous prévoyez une communication externe sur un sujet sensible, impliquez très tôt la communication externe pour cadrer les messages.",
+        "Pour l’IA, précisez l’usage : aide à la préparation, génération de contenu, ou IA mise à disposition des utilisateurs (niveau de risque différent)."
+      ]
     },
     "extraCheckbox": {
       "enabled": false,
@@ -1231,9 +1779,13 @@ export const initialQuestions = [
     "placeholder": "",
     "numberUnit": "",
     "guidance": {
-      "objective": "",
-      "details": "",
-      "tips": []
+      "objective": "Détecter les projets relevant de cadres réglementaires spécifiques (PSP/ETP, télémédecine, dispositif médical).",
+      "details": "Ces projets sont souvent complexes : un programme patient peut être requalifié en dispositif promotionnel/avantage indu ; la télémédecine implique des enjeux de responsabilité et des cadres locaux ; un dispositif médical nécessite une qualification réglementaire et peut générer des obligations de conformité (marquage, responsabilité, surveillance).",
+      "tips": [
+        "Si votre projet ressemble à un PSP/ETP, décrivez brièvement le parcours proposé (initiation, observance, soutien…) et les acteurs impliqués.",
+        "Si télémédecine : indiquez les actes concernés (avis, suivi, prescription, coordination) et les pays.",
+        "Si dispositif médical : précisez qui développe, le rôle du laboratoire (promotion, achat, diffusion) et les modalités d’utilisation."
+      ]
     },
     "extraCheckbox": {
       "enabled": false,
@@ -1315,23 +1867,14 @@ export const initialQuestions = [
       }
     ],
     "required": true,
-    "conditions": [
-      {
-        "question": "q19",
-        "operator": "contains",
-        "value": "Site internet"
-      },
-      {
-        "question": "q19",
-        "operator": "contains",
-        "value": "Applications mobiles"
-      }
-    ],
+    "conditions": [],
     "guidance": {
-      "objective": "Qualifier la nature des données personnelles manipulées.",
-      "details": "Les données de santé impliquent une analyse d'impact renforcée (DPIA), un hébergement certifié HDS et des clauses contractuelles spécifiques.",
+      "objective": "Qualifier la nature des données personnelles manipulées pour déclencher les exigences RGPD (‘privacy by design’).",
+      "details": "La collecte/traitement de données personnelles impose de définir finalités, base légale, durées de conservation, droits des personnes et mesures de sécurité. Les données de santé sont particulièrement sensibles et peuvent nécessiter une analyse d’impact (DPIA), des exigences d’hébergement renforcées et des clauses contractuelles spécifiques. Les champs libres augmentent le risque de collecte de données sensibles non maîtrisées.",
       "tips": [
-        "Si la collecte est incertaine, retenez l'hypothèse la plus protectrice pour planifier les validations."
+        "Choisissez l’hypothèse la plus protectrice si vous n’êtes pas sûr (ex. données de santé) pour anticiper le bon niveau de revue.",
+        "Listez (en interne ou dans un document joint) les catégories de données, les personnes concernées (patients, PdS, collaborateurs…) et la finalité.",
+        "Si des champs libres existent, prévoyez des garde‑fous : minimisation, consignes, modération, et limitation de la collecte de données sensibles."
       ]
     },
     "placeholder": "",
@@ -1348,11 +1891,46 @@ export const initialQuestions = [
             "question": "q19",
             "operator": "contains",
             "value": "Applications mobiles"
+          },
+          {
+            "question": "q19",
+            "operator": "equals",
+            "value": "Enquête / étude de marché"
+          },
+          {
+            "question": "q19",
+            "operator": "equals",
+            "value": "Création / achat / manipulation de base de données"
+          },
+          {
+            "question": "q19",
+            "operator": "equals",
+            "value": "Bot IA"
+          },
+          {
+            "question": "q19",
+            "operator": "equals",
+            "value": "Elearning"
+          }
+        ]
+      },
+      {
+        "logic": "all",
+        "conditions": [
+          {
+            "question": "ProjectType",
+            "operator": "equals",
+            "value": "Projet du LFB"
+          },
+          {
+            "question": "ProjectType",
+            "operator": "equals",
+            "value": "Projet co-construit entre le LFB et un partenaire"
           }
         ]
       }
     ],
-    "conditionLogic": "any",
+    "conditionLogic": "all",
     "extraCheckbox": {
       "enabled": false,
       "label": ""
@@ -1540,9 +2118,13 @@ export const initialQuestions = [
     "placeholder": "",
     "numberUnit": "",
     "guidance": {
-      "objective": "",
-      "details": "",
-      "tips": []
+      "objective": "Identifier les canaux de communication afin d’activer les validations (communication externe, contrôle pub, RGPD, filiales).",
+      "details": "Dès qu’un communiqué de presse, une prise de parole institutionnelle, un site externe ou des réseaux sociaux sont envisagés, la communication externe doit être impliquée pour assurer cohérence et maîtrise des risques. Les réseaux sociaux sont des canaux publics et difficiles à contrôler : ils sont ‘sensibles’ et requièrent un encadrement strict (comptes corporate, commentaires). Toute communication externe d’un laboratoire peut être requalifiée en publicité et doit être évaluée.",
+      "tips": [
+        "Sélectionnez tous les canaux prévus (digital, print, événements, partenaire, presse…).",
+        "Si réseaux sociaux : prévoyez une diffusion via les comptes corporate, avec commentaires désactivés, et une validation en amont.",
+        "Si communiqué de presse ou contenu institutionnel : impliquez la communication externe tôt pour cadrer les messages et anticiper les questions sensibles."
+      ]
     },
     "extraCheckbox": {
       "enabled": false,
@@ -1665,9 +2247,13 @@ export const initialQuestions = [
     "conditionGroups": [],
     "placeholder": "",
     "guidance": {
-      "objective": "Anticiper l'implication de prestataires externes et les contrôles associés",
-      "details": "Les partenariats imposent une revue juridique des contrats, et parfois des délais supplémentaires liés à des obligations de déclaration / demande d'autorisation aux autorités",
-      "tips": []
+      "objective": "Recenser les collaborations externes pour anticiper contrats, FMV, transparence et exigences spécifiques (agents publics, patients, prestataires).",
+      "details": "La collaboration avec des tiers peut déclencher : revue juridique (contrat, responsabilités, durée), exigences E&C (besoin légitime, rémunération juste, transparence, encadrement des avantages/hospitalité), contraintes particulières pour agents publics, et revue DPO si des données personnelles sont traitées par un prestataire.",
+      "tips": [
+        "Sélectionnez tous les types de partenaires impliqués (PdS France/hors France, associations de patients, institutionnels, agences, autres industriels…).",
+        "Si rémunération, hospitalité ou transfert de valeur est prévu, documentez le besoin légitime, les livrables/temps estimé et la proportionnalité.",
+        "Si un prestataire aura accès à des données personnelles, anticipez une revue DPO (sécurité, hébergement, transferts hors UE) et les clauses de sous‑traitance."
+      ]
     },
     "extraCheckbox": {
       "enabled": false,
@@ -1753,17 +2339,13 @@ export const initialQuestions = [
             "value": "Un autre industriel"
           }
         ],
-        "conditionLogic": "any"
+        "conditionLogic": "any",
+        "subType": null,
+        "subOptions": []
       }
     ],
     "required": false,
-    "conditions": [
-      {
-        "question": "q10",
-        "operator": "not_equals",
-        "value": "Aucune collaboration prévue avec l'externe"
-      }
-    ],
+    "conditions": [],
     "conditionLogic": "all",
     "conditionGroups": [
       {
@@ -1775,14 +2357,33 @@ export const initialQuestions = [
             "value": "Aucune collaboration prévue avec l'externe"
           }
         ]
+      },
+      {
+        "logic": "any",
+        "conditions": [
+          {
+            "question": "ProjectType",
+            "operator": "equals",
+            "value": "Projet du LFB"
+          },
+          {
+            "question": "ProjectType",
+            "operator": "equals",
+            "value": "Projet co-construit entre le LFB et un partenaire"
+          }
+        ]
       }
     ],
     "placeholder": "",
     "numberUnit": "",
     "guidance": {
-      "objective": "",
-      "details": "",
-      "tips": []
+      "objective": "Identifier les demandes contractuelles ‘structurantes’ (exclusivité, durée > 3 ans, renouvellement) qui complexifient la négociation.",
+      "details": "L’exclusivité et les engagements longs peuvent poser des enjeux de concurrence, de soutenabilité et de gouvernance. Les prestations récurrentes peuvent nécessiter un contrat cadre. Signaler ces attentes tôt permet au juridique de sécuriser le montage et de calibrer le planning.",
+      "tips": [
+        "Expliquez brièvement la justification business de l’exclusivité (si sélectionnée) et le périmètre (territoire, durée, objets).",
+        "Si collaboration > 3 ans : indiquez pourquoi c’est nécessaire et les mécanismes de révision/renégociation.",
+        "Si vous souhaitez des renouvellements faciles, précisez les prestations récurrentes envisagées (volumes, fréquences, livrables)."
+      ]
     },
     "extraCheckbox": {
       "enabled": false,
@@ -1870,9 +2471,13 @@ export const initialQuestions = [
     "placeholder": "",
     "numberUnit": "",
     "guidance": {
-      "objective": "",
-      "details": "",
-      "tips": []
+      "objective": "Sécuriser la propriété intellectuelle lorsque le nom/logo est créé par un prestataire.",
+      "details": "Si un tiers (agence, freelance) crée un nom/logo, il faut organiser la cession des droits d’auteur et documenter les livrables. Une étude de liberté d’exploitation peut être nécessaire avant tout usage externe. Les éléments contractuels et livrables (devis, déclinaisons, fichiers sources) doivent être annexés.",
+      "tips": [
+        "Si oui : prévoyez un contrat/avenant de cession de droits d’auteur couvrant tous les livrables et déclinaisons.",
+        "Conservez et joignez le devis et les livrables (sources, déclinaisons couleurs, formats) pour faciliter la sécurisation.",
+        "N’utilisez pas le logo/nom à l’externe avant d’avoir sécurisé les droits et, si nécessaire, réalisé la vérification PI."
+      ]
     },
     "extraCheckbox": {
       "enabled": false,
@@ -1974,7 +2579,9 @@ export const initialQuestions = [
         "visibility": "always",
         "conditionGroups": [],
         "conditions": [],
-        "conditionLogic": "all"
+        "conditionLogic": "all",
+        "subType": null,
+        "subOptions": []
       }
     ],
     "required": false,
@@ -2010,9 +2617,14 @@ export const initialQuestions = [
     ],
     "placeholder": "",
     "guidance": {
-      "objective": "",
-      "details": "",
-      "tips": []
+      "objective": "Identifier les contenus soumis à droits (PI, droit d’auteur, droit des marques) et les contenus à risque promotionnel.",
+      "details": "Les logos, images, extraits de publications, contenus de sites web ou visuels créés par des tiers nécessitent des droits d’utilisation explicites. Les extraits de publications peuvent relever d’une licence (ex. CFC/BioMed) avec un périmètre à vérifier. Les contenus générés via IA requièrent une relecture humaine et une traçabilité des sources pour éviter erreurs, biais ou atteintes aux droits.",
+      "tips": [
+        "Pour les logos tiers : vérifiez les mentions légales/conditions d’usage ; à défaut, obtenez une autorisation écrite.",
+        "Pour les images/banques : vérifiez la licence pour l’usage envisagé (territoire, durée, support) et conservez la preuve.",
+        "Pour les publications : vérifiez si elles entrent dans le périmètre de la licence applicable et citez correctement les références ; sinon, obtenez l’autorisation.",
+        "Pour du contenu IA : exigez une validation scientifique/réglementaire humaine et gardez les sources/justificatifs."
+      ]
     },
     "extraCheckbox": {
       "enabled": false,
@@ -2049,14 +2661,26 @@ export const initialQuestions = [
     "question": "En quoi cette solution se distingue-t-elle des alternatives actuelles ?",
     "options": [],
     "required": false,
-    "conditions": [],
-    "conditionLogic": "all",
+    "conditions": [
+      {
+        "question": "ProjectType",
+        "operator": "equals",
+        "value": "Projet du LFB"
+      },
+      {
+        "question": "ProjectType",
+        "operator": "equals",
+        "value": "Projet co-construit entre le LFB et un partenaire"
+      }
+    ],
+    "conditionLogic": "any",
     "guidance": {
-      "objective": "Souligner la différenciation sans dénigrer la concurrence.",
-      "details": "Cette réponse apparaît dans la section “Solution” comme une comparaison subtile.",
+      "objective": "Mettre en avant la différenciation sans générer de risque de dénigrement ou d’allégation non étayée.",
+      "details": "Comparer la solution à des alternatives existantes peut améliorer la clarté du projet. En contexte pharmaceutique, les comparaisons doivent rester prudentes : éviter le dénigrement, les comparatifs implicites non prouvés et les allégations qui pourraient être perçues comme promotionnelles.",
       "tips": [
-        "Comparez-vous à un comportement ou à une solution existante plutôt qu’à un concurrent direct.",
-        "Appuyez-vous sur un bénéfice mesurable ou une expérience utilisateur plus fluide."
+        "Comparez plutôt à un ‘état actuel’ (process, parcours, outils) qu’à un concurrent ou un produit.",
+        "Appuyez-vous sur des critères vérifiables (délais, simplicité, accessibilité, qualité de service).",
+        "Évitez les superlatifs (‘unique’, ‘le meilleur’) et toute promesse clinique si elle n’est pas démontrée."
       ]
     },
     "showcase": {
@@ -2064,22 +2688,80 @@ export const initialQuestions = [
         "solution"
       ],
       "usage": "Bloc « Pourquoi c’est différent » dans la section solution."
-    }
+    },
+    "extraCheckbox": {
+      "enabled": false,
+      "label": ""
+    },
+    "otherOption": {
+      "enabled": false,
+      "label": "Autre",
+      "placeholder": ""
+    },
+    "placeholder": "",
+    "numberUnit": "",
+    "rankingConfig": {
+      "title": "Base de données",
+      "criteria": [
+        {
+          "id": "critere-1",
+          "label": "Critère 1"
+        },
+        {
+          "id": "critere-2",
+          "label": "Critère 2"
+        },
+        {
+          "id": "critere-3",
+          "label": "Critère 3"
+        }
+      ],
+      "entries": []
+    },
+    "conditionGroups": [
+      {
+        "logic": "any",
+        "conditions": [
+          {
+            "question": "ProjectType",
+            "operator": "equals",
+            "value": "Projet du LFB"
+          },
+          {
+            "question": "ProjectType",
+            "operator": "equals",
+            "value": "Projet co-construit entre le LFB et un partenaire"
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "solutionBenefits",
     "type": "long_text",
-    "question": "Quels bénéfices tangibles votre solution apporte-t-elle ?",
+    "question": "Quels bénéfices tangibles votre solution apporte-t-elle à votre cible ?",
     "options": [],
     "required": true,
-    "conditions": [],
-    "conditionLogic": "all",
+    "conditions": [
+      {
+        "question": "ProjectType",
+        "operator": "equals",
+        "value": "Projet du LFB"
+      },
+      {
+        "question": "ProjectType",
+        "operator": "equals",
+        "value": "Projet co-construit entre le LFB et un partenaire"
+      }
+    ],
+    "conditionLogic": "any",
     "guidance": {
-      "objective": "Mettre en avant les résultats obtenus plutôt que les fonctionnalités.",
-      "details": "Chaque ligne sera transformée en bénéfice clé dans la vitrine.",
+      "objective": "Rendre visibles les bénéfices concrets pour la cible (outcomes), base de décision business.",
+      "details": "Les décideurs attendent des bénéfices tangibles et mesurables. En environnement réglementé, il faut éviter les promesses non justifiées et distinguer bénéfices d’usage (expérience, accès, compréhension) des allégations médicales.",
       "tips": [
-        "Rédigez une phrase par bénéfice, orientée résultat (“Gain de 2h par semaine”).",
-        "Priorisez les bénéfices les plus différenciants pour votre audience."
+        "Une ligne par bénéfice, formulée ‘résultat’ (gain de temps, réduction d’erreurs, meilleure compréhension…).",
+        "Priorisez les 3–5 bénéfices les plus différenciants pour l’audience principale.",
+        "Si vous mentionnez un bénéfice ‘médical’, assurez-vous qu’il est étayé et qu’il ne constitue pas une allégation promotionnelle inappropriée."
       ]
     },
     "showcase": {
@@ -2087,7 +2769,53 @@ export const initialQuestions = [
         "solution"
       ],
       "usage": "Liste des bénéfices clés dans la section solution."
-    }
+    },
+    "extraCheckbox": {
+      "enabled": false,
+      "label": ""
+    },
+    "otherOption": {
+      "enabled": false,
+      "label": "Autre",
+      "placeholder": ""
+    },
+    "placeholder": "",
+    "numberUnit": "",
+    "rankingConfig": {
+      "title": "Base de données",
+      "criteria": [
+        {
+          "id": "critere-1",
+          "label": "Critère 1"
+        },
+        {
+          "id": "critere-2",
+          "label": "Critère 2"
+        },
+        {
+          "id": "critere-3",
+          "label": "Critère 3"
+        }
+      ],
+      "entries": []
+    },
+    "conditionGroups": [
+      {
+        "logic": "any",
+        "conditions": [
+          {
+            "question": "ProjectType",
+            "operator": "equals",
+            "value": "Projet du LFB"
+          },
+          {
+            "question": "ProjectType",
+            "operator": "equals",
+            "value": "Projet co-construit entre le LFB et un partenaire"
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "BUDGET",
@@ -2101,9 +2829,13 @@ export const initialQuestions = [
     "placeholder": "",
     "numberUnit": "K€",
     "guidance": {
-      "objective": "",
-      "details": "",
-      "tips": []
+      "objective": "Évaluer la faisabilité et l’arbitrage ressources/impact.",
+      "details": "Le budget conditionne la décision (go/no-go) et le choix des prestataires. Il doit couvrir non seulement la production (agence, tech) mais aussi les exigences induites : validations, hébergement/sécurité, adaptation locale, maintenance, et éventuelles obligations de conformité.",
+      "tips": [
+        "Renseignez une estimation réaliste en incluant : prestataires, licences/outils, production de contenus, maintenance.",
+        "Distinguez coûts one‑shot vs récurrents (ex. hébergement, analytics, modération).",
+        "Si incertitude, donnez une fourchette et mentionnez les postes majeurs."
+      ]
     },
     "showcase": {
       "sections": [
@@ -2121,10 +2853,12 @@ export const initialQuestions = [
     "conditions": [],
     "conditionLogic": "all",
     "guidance": {
-      "objective": "Identifier l'intérêt business du projet",
-      "details": "Cette réponse vous permet de mettre en avant la valeur générée du projet pour le LFB",
+      "objective": "Clarifier l’objectif business et stratégique du LFB derrière le projet.",
+      "details": "Au‑delà de la solution, il faut expliciter la valeur pour l’organisation : impact patient, scientifique, institutionnel, efficacité opérationnelle, conformité, réputation. Cette clarification aide aussi à démontrer la légitimité de certaines collaborations (besoin légitime, proportionnalité).",
       "tips": [
-        "Soyez précis dans la description de votre objectif"
+        "Formulez 1–3 objectifs prioritaires (ex. améliorer un parcours, renforcer une relation institutionnelle, optimiser un process).",
+        "Reliez chaque objectif à un ‘driver’ mesurable (KPIs, jalons).",
+        "Évitez une formulation purement promotionnelle ; privilégiez patient/société/science/qualité."
       ]
     },
     "showcase": {
@@ -2170,14 +2904,31 @@ export const initialQuestions = [
     "question": "Quels indicateurs allez-vous suivre pour mesurer l'impact du projet ?",
     "options": [],
     "required": false,
-    "conditions": [],
-    "conditionLogic": "all",
+    "conditions": [
+      {
+        "question": "ProjectType",
+        "operator": "equals",
+        "value": "Projet du LFB"
+      },
+      {
+        "question": "ProjectType",
+        "operator": "equals",
+        "value": "Projet co-construit entre le LFB et un partenaire"
+      },
+      {
+        "question": "q18_copy",
+        "operator": "equals",
+        "value": "Stand"
+      }
+    ],
+    "conditionLogic": "any",
     "guidance": {
-      "objective": "Montrer comment vous suivrez concrètement la création de valeur.",
-      "details": "Chaque indicateur s’affichera comme un point clé dans la section impact pour rassurer les parties prenantes.",
+      "objective": "Définir comment l’impact sera mesuré pour piloter et justifier le projet.",
+      "details": "Les indicateurs rassurent sur la capacité à démontrer la valeur. Attention : certains KPIs nécessitent de collecter des données personnelles (questionnaires, analytics). Il faut donc s’assurer que la collecte est proportionnée et conforme.",
       "tips": [
-        "Listez une métrique par ligne (quantitative ou qualitative).",
-        "Précisez la cible ou la fréquence de suivi lorsque c’est pertinent."
+        "Listez une métrique par ligne (quantitative ou qualitative) et la fréquence de suivi si possible.",
+        "Privilégiez des indicateurs directement liés à l’objectif (usage, satisfaction, délai, qualité).",
+        "Si un KPI implique des données personnelles, prévoyez une collecte minimisée et documentée."
       ]
     },
     "showcase": {
@@ -2185,48 +2936,18 @@ export const initialQuestions = [
         "impact"
       ],
       "usage": "Citation de conclusion dans la section impact."
-    }
-  },
-  {
-    "id": "q23",
-    "type": "multi_choice",
-    "question": "Comment allez-vous collecter ces indicateurs ?",
-    "options": [
-      {
-        "label": "Questionnaire de satisfaction",
-        "visibility": "always",
-        "conditionGroups": [],
-        "conditions": [],
-        "conditionLogic": "all"
-      },
-      {
-        "label": "Trackers digitaux (nombre d'ouverture, taux de lecture, ...)",
-        "visibility": "always",
-        "conditionGroups": [],
-        "conditions": [],
-        "conditionLogic": "all"
-      }
-    ],
-    "required": true,
-    "conditions": [],
-    "conditionLogic": "all",
-    "conditionGroups": [],
-    "placeholder": "",
-    "numberUnit": "",
-    "guidance": {
-      "objective": "",
-      "details": "",
-      "tips": []
     },
     "extraCheckbox": {
-      "enabled": true,
-      "label": "Ces données sont collectées et / ou analysées par une agence"
+      "enabled": false,
+      "label": ""
     },
     "otherOption": {
-      "enabled": true,
+      "enabled": false,
       "label": "Autre",
       "placeholder": ""
     },
+    "placeholder": "",
+    "numberUnit": "",
     "rankingConfig": {
       "title": "Base de données",
       "criteria": [
@@ -2244,59 +2965,46 @@ export const initialQuestions = [
         }
       ],
       "entries": []
-    }
+    },
+    "conditionGroups": [
+      {
+        "logic": "any",
+        "conditions": [
+          {
+            "question": "ProjectType",
+            "operator": "equals",
+            "value": "Projet du LFB"
+          },
+          {
+            "question": "ProjectType",
+            "operator": "equals",
+            "value": "Projet co-construit entre le LFB et un partenaire"
+          },
+          {
+            "question": "q18_copy",
+            "operator": "equals",
+            "value": "Stand"
+          }
+        ]
+      }
+    ]
   },
   {
-    "id": "q18_copy",
-    "type": "choice",
-    "question": "Pouvez-vous préciser le type de soutien dont il s'agit ?",
+    "id": "q23",
+    "type": "multi_choice",
+    "question": "Comment allez-vous collecter ces indicateurs ?",
     "options": [
       {
-        "label": "Parrainage d'événément",
+        "label": "Questionnaire de satisfaction",
         "visibility": "always",
-        "subType": "multi_choice",
-        "subOptions": [
-          {
-            "label": "Stand",
-            "visibility": "always",
-            "subType": null,
-            "subOptions": [],
-            "conditionGroups": [],
-            "conditions": [],
-            "conditionLogic": "all"
-          },
-          {
-            "label": "Autre soutien à un événément ",
-            "visibility": "always",
-            "subType": null,
-            "subOptions": [],
-            "conditionGroups": [],
-            "conditions": [],
-            "conditionLogic": "all"
-          }
-        ],
         "conditionGroups": [],
         "conditions": [],
-        "conditionLogic": "all"
-      },
-      {
-        "label": "Etude interventionnelle (IIS)",
-        "visibility": "always",
+        "conditionLogic": "all",
         "subType": null,
-        "subOptions": [
-          {
-            "label": "Avec administration de produit"
-          },
-          {
-            "label": "Sans administration de produit"
-          }
-        ],
-        "conditionGroups": [],
-        "conditions": [],
-        "conditionLogic": "all"
+        "subOptions": []
       },
       {
-        "label": "Etude non-interventionnelle (NIS)",
+        "label": "Trackers digitaux (nombre d'ouverture, taux de lecture, ...)",
         "visibility": "always",
         "conditionGroups": [],
         "conditions": [],
@@ -2310,7 +3018,12 @@ export const initialQuestions = [
       {
         "question": "ProjectType",
         "operator": "equals",
-        "value": "Projet d'un tiers soutenu par le LFB"
+        "value": "Projet du LFB"
+      },
+      {
+        "question": "ProjectType",
+        "operator": "equals",
+        "value": "Projet co-construit entre le LFB et un partenaire"
       }
     ],
     "conditionLogic": "all",
@@ -2321,7 +3034,12 @@ export const initialQuestions = [
           {
             "question": "ProjectType",
             "operator": "equals",
-            "value": "Projet d'un tiers soutenu par le LFB"
+            "value": "Projet du LFB"
+          },
+          {
+            "question": "ProjectType",
+            "operator": "equals",
+            "value": "Projet co-construit entre le LFB et un partenaire"
           }
         ]
       }
@@ -2329,16 +3047,20 @@ export const initialQuestions = [
     "placeholder": "",
     "numberUnit": "",
     "guidance": {
-      "objective": "",
-      "details": "",
-      "tips": []
+      "objective": "Comprendre les modalités de collecte des KPIs pour anticiper les exigences data privacy et méthodologiques.",
+      "details": "Les questionnaires impliquent une information des répondants et une minimisation des données. Les trackers digitaux (cookies, logs, analytics) requièrent souvent un paramétrage spécifique (consentement, durée, finalité). Si une agence collecte/analyse, il peut y avoir un rôle de sous‑traitant à encadrer contractuellement.",
+      "tips": [
+        "Indiquez si la collecte peut être anonyme/pseudonymisée et quelles données sont strictement nécessaires.",
+        "Pour les trackers : précisez (dans un doc joint si besoin) le type d’outils (analytics, pixels, taux d’ouverture…) et le périmètre.",
+        "Si une agence intervient, anticipez la revue DPO : accès aux données, hébergement, transferts hors UE, sécurité."
+      ]
     },
     "extraCheckbox": {
       "enabled": true,
-      "label": "Il s'agit d'un parrainage multi-sponsors (soutien d'autres laboratoires pharmaceutiques)"
+      "label": "Ces données sont collectées et / ou analysées par une agence"
     },
     "otherOption": {
-      "enabled": false,
+      "enabled": true,
       "label": "Autre",
       "placeholder": ""
     },
@@ -2390,9 +3112,13 @@ export const initialQuestions = [
     "placeholder": "Renseignez ici les informations détaillées...",
     "numberUnit": "",
     "guidance": {
-      "objective": "",
-      "details": "",
-      "tips": []
+      "objective": "Comparer un renouvellement à son ‘référentiel’ afin de déterminer si une nouvelle revue complète est nécessaire.",
+      "details": "Un projet déclaré ‘similaire’ peut parfois être traité en ‘prochaines étapes’ si aucune modification substantielle n’existe. À l’inverse, un changement de partenaires, de montant, d’audience, de pays, de contenu ou de données peut déclencher une nouvelle analyse (contrats, E&C, contrôle pub, DPO).",
+      "tips": [
+        "Indiquez la référence du projet/contrat historique (nom, date, référence interne) et listez les changements.",
+        "Pensez aux changements ‘invisibles’ : nouveaux canaux (réseaux sociaux), nouveaux pays, nouvelles données, nouvelle agence.",
+        "Soyez précis : ce champ sert de base pour décider rapidement du niveau de revue requis."
+      ]
     },
     "extraCheckbox": {
       "enabled": false,
@@ -2431,11 +3157,12 @@ export const initialQuestions = [
     "conditions": [],
     "conditionLogic": "all",
     "guidance": {
-      "objective": "Aligner toutes les parties prenantes sur la cible de lancement.",
-      "details": "Associée à la date de soumission compliance, cette information permet de vérifier la faisabilité du planning.",
+      "objective": "Aligner l’équipe sur la date cible et vérifier la compatibilité avec les délais incompressibles de validation.",
+      "details": "Certaines validations prennent du temps (ex. autorisation préalable pour certains contrats en France, relectures locales, revue DPO/contrôle pub). Fixer une date cible permet de calibrer le planning, d’identifier les dépendances et d’éviter un lancement non conforme.",
       "tips": [
-        "Renseignez la première date de mise en avant (événement, publication, annonce).",
-        "Si la date n’est pas figée, indiquez l’hypothèse la plus réaliste pour planifier les ressources."
+        "Indiquez la première date de mise en avant (go‑live, annonce, événement) plutôt que la fin du projet.",
+        "Prévoyez une marge pour les validations et la contractualisation, surtout si des tiers/professionnels de santé sont impliqués.",
+        "Si incertain, donnez une fenêtre (mois) et précisez le niveau de flexibilité."
       ]
     },
     "showcase": {
@@ -2454,11 +3181,12 @@ export const initialQuestions = [
     "conditions": [],
     "conditionLogic": "all",
     "guidance": {
-      "objective": "Poser le jalon officiel de passage en revue compliance.",
-      "details": "Cette date permet d’anticiper les échanges de validation et le temps de traitement.",
+      "objective": "Fixer le jalon de soumission compliance pour planifier la revue et les itérations.",
+      "details": "La compliance a besoin d’un dossier complet (périmètre, partenaires, contenus, données, planning) pour se positionner. Annoncer une date de soumission permet d’anticiper les échanges de clarification et d’éviter des retours tardifs (coûteux).",
       "tips": [
-        "Indiquez la date d’envoi du dossier complet à la compliance.",
-        "Mettez à jour la date dès qu’un nouveau créneau est confirmé."
+        "Indiquez la date d’envoi du dossier complet (et non une intention).",
+        "Si des contenus sont en cours, précisez ce qui sera ‘figé’ à la soumission (storyboard, synopsis, maquettes).",
+        "Mettez à jour la date dès qu’un nouveau créneau est confirmé pour maintenir un planning fiable."
       ]
     },
     "showcase": {
@@ -2474,14 +3202,26 @@ export const initialQuestions = [
     "question": "Quels jalons clés souhaitez-vous mettre en avant ?",
     "options": [],
     "required": false,
-    "conditions": [],
-    "conditionLogic": "all",
+    "conditions": [
+      {
+        "question": "ProjectType",
+        "operator": "equals",
+        "value": "Projet du LFB"
+      },
+      {
+        "question": "ProjectType",
+        "operator": "equals",
+        "value": "Projet co-construit entre le LFB et un partenaire"
+      }
+    ],
+    "conditionLogic": "any",
     "guidance": {
-      "objective": "Projeter les étapes majeures à venir pour synchroniser les parties prenantes.",
-      "details": "Chaque jalon affichera une date et un descriptif dans la section feuille de route de la vitrine.",
+      "objective": "Rendre visibles les étapes clés et les ‘gates’ de conformité.",
+      "details": "Les jalons permettent de synchroniser les équipes (business, juridique, E&C, DPO, contrôle pub, communication externe) et de matérialiser les dépendances : contractualisation, validations de contenus, paramétrage privacy, revue locale, lancement pilote.",
       "tips": [
-        "Utilisez un format AAAA-MM-JJ pour les dates afin de faciliter la lecture.",
-        "Formulez des descriptions actionnables : validation, lancement partiel, publication clé, etc."
+        "Ajoutez les jalons majeurs : cadrage, choix prestataire, signature contrat, validation contenus, validation privacy (si applicable), go‑live.",
+        "Formulez des jalons actionnables (ex. ‘dossier compliance complet transmis’, ‘contrat signé’, ‘contenu validé contrôle pub’).",
+        "Indiquez des dates réalistes ; si une date est incertaine, utilisez un jalon ‘mois/trim’ dans le descriptif."
       ]
     },
     "showcase": {
@@ -2489,7 +3229,53 @@ export const initialQuestions = [
         "timeline"
       ],
       "usage": "Liste de jalons personnalisés dans la section « Les prochains jalons »."
-    }
+    },
+    "extraCheckbox": {
+      "enabled": false,
+      "label": ""
+    },
+    "otherOption": {
+      "enabled": false,
+      "label": "Autre",
+      "placeholder": ""
+    },
+    "placeholder": "",
+    "numberUnit": "",
+    "rankingConfig": {
+      "title": "Base de données",
+      "criteria": [
+        {
+          "id": "critere-1",
+          "label": "Critère 1"
+        },
+        {
+          "id": "critere-2",
+          "label": "Critère 2"
+        },
+        {
+          "id": "critere-3",
+          "label": "Critère 3"
+        }
+      ],
+      "entries": []
+    },
+    "conditionGroups": [
+      {
+        "logic": "any",
+        "conditions": [
+          {
+            "question": "ProjectType",
+            "operator": "equals",
+            "value": "Projet du LFB"
+          },
+          {
+            "question": "ProjectType",
+            "operator": "equals",
+            "value": "Projet co-construit entre le LFB et un partenaire"
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "q15",
@@ -2503,9 +3289,13 @@ export const initialQuestions = [
     "placeholder": "Renseignez ici les informations détaillées...",
     "numberUnit": "",
     "guidance": {
-      "objective": "",
-      "details": "",
-      "tips": []
+      "objective": "Capturer toute information complémentaire utile à l’évaluation (risques, contraintes, hypothèses).",
+      "details": "Certaines informations ne rentrent pas dans les cases : hospitalité, contenus sensibles, contraintes IT, transferts de données, sujets réputationnels, gouvernance internationale, etc. Ce champ sert à prévenir les angles morts et à accélérer la prise de position des experts.",
+      "tips": [
+        "Mentionnez les éléments à risque : patients, PdS, agents publics, IA, réseaux sociaux, collecte de données, sujets sensibles.",
+        "Précisez les hypothèses (budget, pays, partenaires) et ce qui reste à confirmer.",
+        "Si vous avez déjà identifié des mesures de mitigation (modération Q&A, commentaires désactivés, anonymisation), indiquez-les."
+      ]
     },
     "extraCheckbox": {
       "enabled": false,
@@ -2547,101 +3337,13 @@ export const initialQuestions = [
     "placeholder": "",
     "numberUnit": "",
     "guidance": {
-      "objective": "",
-      "details": "",
+      "objective": "Permettre aux experts de se baser sur des éléments concrets (brief, maquettes, programme, contrat, contenu) pour un avis plus rapide.",
+      "details": "Les documents accélèrent la revue mais doivent rester conformes : éviter de partager des données personnelles inutiles (patients, PdS) ou des contenus protégés sans droit. Un document bien nommé et contextualisé facilite la traçabilité.",
       "tips": [
-        "Pensez à donner un nom intelligible à votre fichier"
+        "Donnez un nom explicite au fichier (type + projet + version + date).",
+        "Avant dépôt, retirez/anonymisez toute donnée personnelle ou information sensible non nécessaire.",
+        "Privilégiez des versions ‘revue’ (maquette, synopsis, programme) plutôt que des fichiers de travail incomplets."
       ]
-    },
-    "extraCheckbox": {
-      "enabled": false,
-      "label": ""
-    },
-    "otherOption": {
-      "enabled": false,
-      "label": "Autre",
-      "placeholder": ""
-    },
-    "rankingConfig": {
-      "title": "Base de données",
-      "criteria": [
-        {
-          "id": "critere-1",
-          "label": "Critère 1"
-        },
-        {
-          "id": "critere-2",
-          "label": "Critère 2"
-        },
-        {
-          "id": "critere-3",
-          "label": "Critère 3"
-        }
-      ],
-      "entries": []
-    }
-  },
-  {
-    "id": "q18",
-    "type": "choice",
-    "question": "Pouvez-vous préciser le type de don dont il s'agit ?",
-    "options": [
-      {
-        "label": "Don financier",
-        "visibility": "always",
-        "subType": "multi_choice",
-        "subOptions": [
-          {
-            "label": "Pour un projet défini"
-          },
-          {
-            "label": "Pour un projet non encore défini (appel à projets)"
-          },
-          {
-            "label": "Pour l'activité générale"
-          }
-        ],
-        "conditionGroups": [],
-        "conditions": [],
-        "conditionLogic": "all"
-      },
-      {
-        "label": "Don de produits",
-        "visibility": "always",
-        "subType": null,
-        "subOptions": [],
-        "conditionGroups": [],
-        "conditions": [],
-        "conditionLogic": "all"
-      }
-    ],
-    "required": true,
-    "conditions": [
-      {
-        "question": "ProjectType",
-        "operator": "equals",
-        "value": "Don / bourse / Appel à projets"
-      }
-    ],
-    "conditionLogic": "all",
-    "conditionGroups": [
-      {
-        "logic": "all",
-        "conditions": [
-          {
-            "question": "ProjectType",
-            "operator": "equals",
-            "value": "Don / bourse / Appel à projets"
-          }
-        ]
-      }
-    ],
-    "placeholder": "",
-    "numberUnit": "",
-    "guidance": {
-      "objective": "",
-      "details": "",
-      "tips": []
     },
     "extraCheckbox": {
       "enabled": false,
@@ -2686,11 +3388,12 @@ export const initialQuestions = [
     ],
     "conditionLogic": "all",
     "guidance": {
-      "objective": "Identifier rapidement l'agence qui correspond le mieux à vos attentes.",
-      "details": "Ordonnez les critères par importance et mettez de côté ceux qui n'ont aucune incidence pour vous.",
+      "objective": "Identifier les critères de sélection d’une agence adaptés au projet (compétences, budget, couverture, exigences compliance).",
+      "details": "Le tri des critères aide à recommander des prestataires pertinents : capacité à produire du contenu scientifique conforme, expérience internationale, créativité, coût. En pharma, la capacité à travailler avec des validations (contrôle pub, médical, E&C, DPO) et à documenter les sources est souvent déterminante.",
       "tips": [
-        "Pensez aux compétences clés attendues (scientifique, créativité, international...).",
-        "Marquez les critères non pertinents comme \"sans importance\" pour affiner la recommandation."
+        "Classez les critères selon ce qui est non‑négociable pour votre projet (ex. contenu scientifique vs international).",
+        "Si votre projet implique données personnelles ou digital, valorisez la maturité privacy/sécurité et la capacité à produire la documentation.",
+        "Utilisez ‘sans importance’ pour les critères non pertinents afin d’affiner la recommandation."
       ]
     },
     "rankingConfig": {
