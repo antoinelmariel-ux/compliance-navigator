@@ -43,7 +43,7 @@ import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.
 import { isShowcaseAccessBlockedByProjectType } from './utils/showcase.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.295';
+const APP_VERSION = 'v1.0.296';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -4463,8 +4463,10 @@ const updateProjectFilters = useCallback((updater) => {
             projects={projects}
             projectFilters={projectFilters}
             teamLeadOptions={teamLeadTeamOptions}
+            teams={teams}
             inspirationProjects={inspirationProjects}
             inspirationFilters={inspirationFilters}
+            validationCommitteeConfig={validationCommitteeConfig}
             currentUser={currentUser}
             homeView={homeView}
             onHomeViewChange={setHomeView}
