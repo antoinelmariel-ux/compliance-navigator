@@ -2656,90 +2656,9 @@ export const initialQuestions = [
     }
   },
   {
-    "id": "solutionComparison",
-    "type": "long_text",
-    "question": "En quoi cette solution se distingue-t-elle des alternatives actuelles ?",
-    "options": [],
-    "required": false,
-    "conditions": [
-      {
-        "question": "ProjectType",
-        "operator": "equals",
-        "value": "Projet du LFB"
-      },
-      {
-        "question": "ProjectType",
-        "operator": "equals",
-        "value": "Projet co-construit entre le LFB et un partenaire"
-      }
-    ],
-    "conditionLogic": "any",
-    "guidance": {
-      "objective": "Mettre en avant la différenciation sans générer de risque de dénigrement ou d’allégation non étayée.",
-      "details": "Comparer la solution à des alternatives existantes peut améliorer la clarté du projet. En contexte pharmaceutique, les comparaisons doivent rester prudentes : éviter le dénigrement, les comparatifs implicites non prouvés et les allégations qui pourraient être perçues comme promotionnelles.",
-      "tips": [
-        "Comparez plutôt à un ‘état actuel’ (process, parcours, outils) qu’à un concurrent ou un produit.",
-        "Appuyez-vous sur des critères vérifiables (délais, simplicité, accessibilité, qualité de service).",
-        "Évitez les superlatifs (‘unique’, ‘le meilleur’) et toute promesse clinique si elle n’est pas démontrée."
-      ]
-    },
-    "showcase": {
-      "sections": [
-        "solution"
-      ],
-      "usage": "Bloc « Pourquoi c’est différent » dans la section solution."
-    },
-    "extraCheckbox": {
-      "enabled": false,
-      "label": ""
-    },
-    "otherOption": {
-      "enabled": false,
-      "label": "Autre",
-      "placeholder": ""
-    },
-    "placeholder": "",
-    "numberUnit": "",
-    "rankingConfig": {
-      "title": "Base de données",
-      "criteria": [
-        {
-          "id": "critere-1",
-          "label": "Critère 1"
-        },
-        {
-          "id": "critere-2",
-          "label": "Critère 2"
-        },
-        {
-          "id": "critere-3",
-          "label": "Critère 3"
-        }
-      ],
-      "entries": []
-    },
-    "conditionGroups": [
-      {
-        "logic": "any",
-        "conditions": [
-          {
-            "question": "ProjectType",
-            "operator": "equals",
-            "value": "Projet du LFB"
-          },
-          {
-            "question": "ProjectType",
-            "operator": "equals",
-            "value": "Projet co-construit entre le LFB et un partenaire"
-          }
-        ]
-      }
-    ]
-  },
-  {
     "id": "solutionBenefits",
     "type": "long_text",
-    "question": "Quels bénéfices tangibles votre solution apporte-t-elle à votre cible ?",
+    "question": "Quels bénéfices tangibles et éléments de différenciation votre solution apporte-t-elle à votre cible ?",
     "options": [],
     "required": true,
     "conditions": [
@@ -2756,11 +2675,11 @@ export const initialQuestions = [
     ],
     "conditionLogic": "any",
     "guidance": {
-      "objective": "Rendre visibles les bénéfices concrets pour la cible (outcomes), base de décision business.",
-      "details": "Les décideurs attendent des bénéfices tangibles et mesurables. En environnement réglementé, il faut éviter les promesses non justifiées et distinguer bénéfices d’usage (expérience, accès, compréhension) des allégations médicales.",
+      "objective": "Rendre visibles en un seul bloc les bénéfices concrets et la différenciation de la solution.",
+      "details": "Les décideurs attendent des bénéfices tangibles et des éléments de différenciation vérifiables. En environnement réglementé, il faut éviter les promesses non justifiées, le dénigrement des alternatives et distinguer bénéfices d’usage (expérience, accès, compréhension) des allégations médicales.",
       "tips": [
-        "Une ligne par bénéfice, formulée ‘résultat’ (gain de temps, réduction d’erreurs, meilleure compréhension…).",
-        "Priorisez les 3–5 bénéfices les plus différenciants pour l’audience principale.",
+        "Une ligne par idée clé (bénéfice ou différenciation), formulée en résultat observable.",
+        "Comparez à un état actuel (processus, parcours, outils) plutôt qu’à un concurrent ou un produit.",
         "Si vous mentionnez un bénéfice ‘médical’, assurez-vous qu’il est étayé et qu’il ne constitue pas une allégation promotionnelle inappropriée."
       ]
     },
@@ -2768,7 +2687,7 @@ export const initialQuestions = [
       "sections": [
         "solution"
       ],
-      "usage": "Liste des bénéfices clés dans la section solution."
+      "usage": "Bloc « Différenciation & bénéfices » dans la section solution."
     },
     "extraCheckbox": {
       "enabled": false,
