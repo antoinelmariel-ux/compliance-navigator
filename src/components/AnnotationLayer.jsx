@@ -61,10 +61,16 @@ export const AnnotationLayer = ({
   onNoteChange,
   onNoteClose,
   onNoteReply,
+  onAddNoteLink,
+  onAddReplyLink,
+  onAddNoteDocument,
+  onAddReplyDocument,
   onAutoFocusComplete
 }) => {
   const [, setLayoutVersion] = useState(0);
   const [replyDrafts, setReplyDrafts] = useState({});
+  const [linkDrafts, setLinkDrafts] = useState({});
+  const [replyLinkDrafts, setReplyLinkDrafts] = useState({});
   const visibleNotes = useMemo(
     () => notes.filter(note => note && note.contextId === activeContextId),
     [activeContextId, notes]
@@ -87,6 +93,8 @@ export const AnnotationLayer = ({
   }, [visibleNotes]);
 
   const textareaRefs = useRef(new Map());
+  const noteFileInputsRef = useRef(new Map());
+  const replyFileInputsRef = useRef(new Map());
 
   const registerTextareaRef = (noteId) => (node) => {
     if (!noteId) {
@@ -97,6 +105,30 @@ export const AnnotationLayer = ({
       textareaRefs.current.set(noteId, node);
     } else {
       textareaRefs.current.delete(noteId);
+    }
+  };
+
+  const registerNoteFileInputRef = (noteId) => (node) => {
+    if (!noteId) {
+      return;
+    }
+
+    if (node) {
+      noteFileInputsRef.current.set(noteId, node);
+    } else {
+      noteFileInputsRef.current.delete(noteId);
+    }
+  };
+
+  const registerReplyFileInputRef = (noteId) => (node) => {
+    if (!noteId) {
+      return;
+    }
+
+    if (node) {
+      replyFileInputsRef.current.set(noteId, node);
+    } else {
+      replyFileInputsRef.current.delete(noteId);
     }
   };
 
@@ -227,6 +259,68 @@ export const AnnotationLayer = ({
     }));
   };
 
+  const normalizeUrl = (value) => {
+    if (typeof value !== 'string') {
+      return '';
+    }
+
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return '';
+    }
+
+    if (/^https?:\/\//i.test(trimmed)) {
+      return trimmed;
+    }
+
+    return `https://${trimmed}`;
+  };
+
+  const handleAddNoteLink = (noteId) => {
+    const normalized = normalizeUrl(linkDrafts[noteId] || '');
+    if (!normalized || typeof onAddNoteLink !== 'function') {
+      return;
+    }
+
+    onAddNoteLink(noteId, normalized);
+    setLinkDrafts(prev => ({
+      ...prev,
+      [noteId]: ''
+    }));
+  };
+
+  const handleAddReplyLink = (noteId) => {
+    const normalized = normalizeUrl(replyLinkDrafts[noteId] || '');
+    if (!normalized || typeof onAddReplyLink !== 'function') {
+      return;
+    }
+
+    onAddReplyLink(noteId, normalized);
+    setReplyLinkDrafts(prev => ({
+      ...prev,
+      [noteId]: ''
+    }));
+  };
+
+  const renderAttachment = (attachment) => {
+    if (!attachment?.url) {
+      return null;
+    }
+
+    const label = attachment?.name || attachment.url;
+    return (
+      <a
+        key={attachment.id || attachment.url}
+        href={attachment.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="feedback-note-attachment"
+      >
+        {label}
+      </a>
+    );
+  };
+
   if (!isActive) {
     return null;
   }
@@ -297,6 +391,7 @@ export const AnnotationLayer = ({
           const paletteKey = getFeedbackPaletteKey(note, sourcePalette);
           const isClosed = note?.status === 'closed';
           const replies = Array.isArray(note?.replies) ? note.replies : [];
+          const noteAttachments = Array.isArray(note?.attachments) ? note.attachments : [];
 
           return (
             <div
@@ -343,10 +438,66 @@ export const AnnotationLayer = ({
                   {note.closedAt ? ` · ${formatTimestamp(note.closedAt)}` : ''}
                 </p>
               ) : null}
+              {noteAttachments.length > 0 ? (
+                <div className="feedback-note-attachments" data-annotation-ui="true">
+                  {noteAttachments.map(renderAttachment)}
+                </div>
+              ) : null}
+              {!isClosed && (typeof onAddNoteLink === 'function' || typeof onAddNoteDocument === 'function') ? (
+                <div className="feedback-note-attachment-form" data-annotation-ui="true">
+                  {typeof onAddNoteLink === 'function' ? (
+                    <div className="feedback-note-attachment-inline">
+                      <input
+                        type="url"
+                        value={linkDrafts[note.id] || ''}
+                        onChange={(event) => setLinkDrafts(prev => ({ ...prev, [note.id]: event.target.value }))}
+                        className="feedback-note-link-input"
+                        placeholder="Ajouter un lien"
+                        data-annotation-ui="true"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleAddNoteLink(note.id)}
+                        className="feedback-note-attachment-submit"
+                        disabled={!linkDrafts[note.id] || linkDrafts[note.id].trim().length === 0}
+                        data-annotation-ui="true"
+                      >
+                        Ajouter lien
+                      </button>
+                    </div>
+                  ) : null}
+                  {typeof onAddNoteDocument === 'function' ? (
+                    <React.Fragment>
+                      <input
+                        type="file"
+                        ref={registerNoteFileInputRef(note.id)}
+                        className="sr-only"
+                        onChange={(event) => {
+                          const [file] = event.target.files || [];
+                          if (file) {
+                            onAddNoteDocument(note.id, file);
+                          }
+                          event.target.value = '';
+                        }}
+                        data-annotation-ui="true"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => noteFileInputsRef.current.get(note.id)?.click()}
+                        className="feedback-note-attachment-submit"
+                        data-annotation-ui="true"
+                      >
+                        Ajouter document
+                      </button>
+                    </React.Fragment>
+                  ) : null}
+                </div>
+              ) : null}
               {replies.length > 0 ? (
                 <div className="feedback-note-replies" data-annotation-ui="true">
                   {replies.map((reply) => {
                     const timestamp = formatTimestamp(reply?.createdAt);
+                    const replyAttachments = Array.isArray(reply?.attachments) ? reply.attachments : [];
                     return (
                       <div key={reply?.id || `${note.id}-${reply?.createdAt}`} className="feedback-note-reply">
                         <div className="feedback-note-reply__meta">
@@ -354,6 +505,11 @@ export const AnnotationLayer = ({
                           {timestamp ? <span>· {timestamp}</span> : null}
                         </div>
                         <p className="feedback-note-reply__text">{reply?.text}</p>
+                        {replyAttachments.length > 0 ? (
+                          <div className="feedback-note-attachments" data-annotation-ui="true">
+                            {replyAttachments.map(renderAttachment)}
+                          </div>
+                        ) : null}
                       </div>
                     );
                   })}
@@ -378,6 +534,56 @@ export const AnnotationLayer = ({
                   >
                     Répondre
                   </button>
+                  {(typeof onAddReplyLink === 'function' || typeof onAddReplyDocument === 'function') ? (
+                    <div className="feedback-note-attachment-form" data-annotation-ui="true">
+                      {typeof onAddReplyLink === 'function' ? (
+                        <div className="feedback-note-attachment-inline">
+                          <input
+                            type="url"
+                            value={replyLinkDrafts[note.id] || ''}
+                            onChange={(event) => setReplyLinkDrafts(prev => ({ ...prev, [note.id]: event.target.value }))}
+                            className="feedback-note-link-input"
+                            placeholder="Ajouter un lien à la réponse"
+                            data-annotation-ui="true"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleAddReplyLink(note.id)}
+                            className="feedback-note-attachment-submit"
+                            disabled={!replyLinkDrafts[note.id] || replyLinkDrafts[note.id].trim().length === 0}
+                            data-annotation-ui="true"
+                          >
+                            Ajouter lien
+                          </button>
+                        </div>
+                      ) : null}
+                      {typeof onAddReplyDocument === 'function' ? (
+                        <React.Fragment>
+                          <input
+                            type="file"
+                            ref={registerReplyFileInputRef(note.id)}
+                            className="sr-only"
+                            onChange={(event) => {
+                              const [file] = event.target.files || [];
+                              if (file) {
+                                onAddReplyDocument(note.id, file);
+                              }
+                              event.target.value = '';
+                            }}
+                            data-annotation-ui="true"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => replyFileInputsRef.current.get(note.id)?.click()}
+                            className="feedback-note-attachment-submit"
+                            data-annotation-ui="true"
+                          >
+                            Ajouter document
+                          </button>
+                        </React.Fragment>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
             </div>

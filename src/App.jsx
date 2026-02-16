@@ -43,7 +43,7 @@ import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.
 import { isShowcaseAccessBlockedByProjectType } from './utils/showcase.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.292';
+const APP_VERSION = 'v1.0.294';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -1270,6 +1270,7 @@ const updateProjectFilters = useCallback((updater) => {
         text: '💡 À montrer en mode Light pour aller droit au message.',
         status: 'open',
         replies: [],
+        attachments: [],
         color,
         contextId,
         projectId,
@@ -1286,6 +1287,7 @@ const updateProjectFilters = useCallback((updater) => {
         text: 'Ajouter une capture ici pour illustrer la solution.',
         status: 'open',
         replies: [],
+        attachments: [],
         color,
         contextId,
         projectId,
@@ -1302,6 +1304,7 @@ const updateProjectFilters = useCallback((updater) => {
         text: 'Timeline OK, prévoir une date de revue en plus.',
         status: 'open',
         replies: [],
+        attachments: [],
         color,
         contextId,
         projectId,
@@ -2188,6 +2191,7 @@ const updateProjectFilters = useCallback((updater) => {
         text: '',
         status: 'open',
         replies: [],
+        attachments: [],
         color,
         contextId: activeAnnotationContextKey,
         projectId: showcaseProjectContext.projectId || 'unknown',
@@ -2247,7 +2251,8 @@ const updateProjectFilters = useCallback((updater) => {
       id: createAnnotationId(),
       text: trimmed,
       author: currentUserDisplayName || 'Utilisateur',
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      attachments: []
     };
 
     setAnnotationNotes(prevNotes => prevNotes.map(note => {
@@ -2266,6 +2271,154 @@ const updateProjectFilters = useCallback((updater) => {
       };
     }));
   }, [currentUserDisplayName]);
+
+  const createLinkAttachment = useCallback((url) => ({
+    id: createAnnotationId(),
+    type: 'link',
+    name: url,
+    url,
+    createdAt: new Date().toISOString()
+  }), []);
+
+  const handleAddAnnotationNoteLink = useCallback((noteId, url) => {
+    if (typeof url !== 'string' || !url.trim()) {
+      return;
+    }
+
+    const attachment = createLinkAttachment(url.trim());
+    setAnnotationNotes(prevNotes => prevNotes.map(note => {
+      if (!note || note.id !== noteId || note.status === 'closed') {
+        return note;
+      }
+
+      const attachments = Array.isArray(note.attachments) ? note.attachments : [];
+      return {
+        ...note,
+        attachments: [...attachments, attachment]
+      };
+    }));
+  }, [createLinkAttachment]);
+
+  const handleAddAnnotationReplyLink = useCallback((noteId, url) => {
+    if (typeof url !== 'string' || !url.trim()) {
+      return;
+    }
+
+    const attachment = createLinkAttachment(url.trim());
+    setAnnotationNotes(prevNotes => prevNotes.map(note => {
+      if (!note || note.id !== noteId || note.status === 'closed') {
+        return note;
+      }
+
+      const replies = Array.isArray(note.replies) ? note.replies : [];
+      if (replies.length === 0) {
+        return note;
+      }
+
+      const lastReplyIndex = replies.length - 1;
+      const updatedReplies = replies.map((reply, index) => {
+        if (index !== lastReplyIndex) {
+          return reply;
+        }
+
+        const replyAttachments = Array.isArray(reply?.attachments) ? reply.attachments : [];
+        return {
+          ...reply,
+          attachments: [...replyAttachments, attachment]
+        };
+      });
+
+      return {
+        ...note,
+        replies: updatedReplies
+      };
+    }));
+  }, [createLinkAttachment]);
+
+  const readFileAsDataUrl = useCallback((file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+    reader.onerror = () => reject(reader.error || new Error('Lecture du fichier impossible.'));
+    reader.readAsDataURL(file);
+  }), []);
+
+  const createFileAttachment = useCallback(async (file) => {
+    const dataUrl = await readFileAsDataUrl(file);
+    if (!dataUrl) {
+      return null;
+    }
+
+    return {
+      id: createAnnotationId(),
+      type: 'file',
+      name: file.name || 'document',
+      url: dataUrl,
+      createdAt: new Date().toISOString()
+    };
+  }, [readFileAsDataUrl]);
+
+  const handleAddAnnotationNoteDocument = useCallback(async (noteId, file) => {
+    if (!file) {
+      return;
+    }
+
+    const attachment = await createFileAttachment(file);
+    if (!attachment) {
+      return;
+    }
+
+    setAnnotationNotes(prevNotes => prevNotes.map(note => {
+      if (!note || note.id !== noteId || note.status === 'closed') {
+        return note;
+      }
+
+      const attachments = Array.isArray(note.attachments) ? note.attachments : [];
+      return {
+        ...note,
+        attachments: [...attachments, attachment]
+      };
+    }));
+  }, [createFileAttachment]);
+
+  const handleAddAnnotationReplyDocument = useCallback(async (noteId, file) => {
+    if (!file) {
+      return;
+    }
+
+    const attachment = await createFileAttachment(file);
+    if (!attachment) {
+      return;
+    }
+
+    setAnnotationNotes(prevNotes => prevNotes.map(note => {
+      if (!note || note.id !== noteId || note.status === 'closed') {
+        return note;
+      }
+
+      const replies = Array.isArray(note.replies) ? note.replies : [];
+      if (replies.length === 0) {
+        return note;
+      }
+
+      const lastReplyIndex = replies.length - 1;
+      const updatedReplies = replies.map((reply, index) => {
+        if (index !== lastReplyIndex) {
+          return reply;
+        }
+
+        const replyAttachments = Array.isArray(reply?.attachments) ? reply.attachments : [];
+        return {
+          ...reply,
+          attachments: [...replyAttachments, attachment]
+        };
+      });
+
+      return {
+        ...note,
+        replies: updatedReplies
+      };
+    }));
+  }, [createFileAttachment]);
 
   const handleToggleAnnotationMode = useCallback(() => {
     setIsAnnotationModeEnabled(prev => {
@@ -2359,7 +2512,18 @@ const updateProjectFilters = useCallback((updater) => {
                   id: reply.id || createAnnotationId(),
                   text: reply.text.trim(),
                   author: typeof reply.author === 'string' ? reply.author : '',
-                  createdAt: reply.createdAt || null
+                  createdAt: reply.createdAt || null,
+                  attachments: Array.isArray(reply.attachments)
+                    ? reply.attachments
+                        .filter(attachment => attachment && typeof attachment.url === 'string' && attachment.url.trim().length > 0)
+                        .map(attachment => ({
+                          id: attachment.id || createAnnotationId(),
+                          type: attachment.type === 'file' ? 'file' : 'link',
+                          name: typeof attachment.name === 'string' ? attachment.name : (attachment.url || ''),
+                          url: attachment.url.trim(),
+                          createdAt: attachment.createdAt || null
+                        }))
+                    : []
                 }))
             : [];
 
@@ -2375,6 +2539,17 @@ const updateProjectFilters = useCallback((updater) => {
             closedAt: rawNote?.closedAt || null,
             closedBy: typeof rawNote?.closedBy === 'string' ? rawNote.closedBy : null,
             replies: normalizedReplies,
+            attachments: Array.isArray(rawNote?.attachments)
+              ? rawNote.attachments
+                  .filter(attachment => attachment && typeof attachment.url === 'string' && attachment.url.trim().length > 0)
+                  .map(attachment => ({
+                    id: attachment.id || createAnnotationId(),
+                    type: attachment.type === 'file' ? 'file' : 'link',
+                    name: typeof attachment.name === 'string' ? attachment.name : (attachment.url || ''),
+                    url: attachment.url.trim(),
+                    createdAt: attachment.createdAt || null
+                  }))
+              : [],
             color: sourceColor,
             contextId: rawNote?.contextId || activeAnnotationContextKey,
             projectId: rawNote?.projectId || showcaseProjectContext?.projectId || 'unknown',
@@ -3894,6 +4069,10 @@ const updateProjectFilters = useCallback((updater) => {
         onNoteChange={handleAnnotationTextChange}
         onNoteClose={handleCloseAnnotationNote}
         onNoteReply={handleAddAnnotationReply}
+        onAddNoteLink={handleAddAnnotationNoteLink}
+        onAddReplyLink={handleAddAnnotationReplyLink}
+        onAddNoteDocument={handleAddAnnotationNoteDocument}
+        onAddReplyDocument={handleAddAnnotationReplyDocument}
       />
 
       <input
