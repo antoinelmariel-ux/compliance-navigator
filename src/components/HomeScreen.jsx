@@ -20,6 +20,11 @@ import {
 import { VirtualizedList } from './VirtualizedList.jsx';
 import { normalizeProjectFilterConfig } from '../utils/projectFilters.js';
 import { normalizeInspirationFiltersConfig } from '../utils/inspirationConfig.js';
+import { normalizeTeamContacts } from '../utils/teamContacts.js';
+import {
+  getTriggeredValidationCommittees,
+  normalizeValidationCommitteeConfig
+} from '../utils/validationCommittee.js';
 
 const formatDate = (isoDate) => {
   if (!isoDate) {
@@ -59,6 +64,21 @@ const normalizeInspirationFieldValues = (value) => {
 
 const DEFAULT_SELECT_FILTER_VALUE = 'all';
 const DEFAULT_TEXT_FILTER_VALUE = '';
+const COMPLIANCE_COMMENTS_KEY = '__compliance_team_comments__';
+
+const normalizeComplianceComments = (value) => {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return {
+      teams: value.teams && typeof value.teams === 'object' ? value.teams : {},
+      committees: value.committees && typeof value.committees === 'object' ? value.committees : {}
+    };
+  }
+
+  return {
+    teams: {},
+    committees: {}
+  };
+};
 
 const PROJECT_FILTER_VALUE_EXTRACTORS = {
   projectName: (project) => {
@@ -244,7 +264,9 @@ export const HomeScreen = ({
   onDuplicateProject,
   isAdminMode = false,
   tourContext = null,
-  currentUser = null
+  currentUser = null,
+  teams = [],
+  validationCommitteeConfig = null
 }) => {
   const normalizedFilters = useMemo(
     () => normalizeProjectFilterConfig(projectFilters),
@@ -255,6 +277,7 @@ export const HomeScreen = ({
     [currentUser]
   );
   const currentUserFirstName = getSafeString(currentUser?.givenName).trim();
+  const [complianceProjectsView, setComplianceProjectsView] = useState('pending');
   const heroHeadline = currentUserFirstName.length > 0
     ? `${currentUserFirstName}, anticipez les besoins compliance de vos projets en quelques minutes`
     : 'Anticipez les besoins compliance de vos projets en quelques minutes';
@@ -296,6 +319,107 @@ export const HomeScreen = ({
       return ownerEmail === currentUserEmail || isShared;
     });
   }, [projects, isAdminMode, currentUserEmail]);
+
+  const normalizedValidationCommitteeConfig = useMemo(
+    () => normalizeValidationCommitteeConfig(validationCommitteeConfig),
+    [validationCommitteeConfig]
+  );
+
+  const isComplianceExpert = useMemo(() => {
+    if (!currentUserEmail) {
+      return false;
+    }
+
+    return teams.some((team) => {
+      const contacts = normalizeTeamContacts(team);
+      return contacts.some((contact) => normalizeEmail(contact) === currentUserEmail);
+    });
+  }, [currentUserEmail, teams]);
+
+  const isValidationCommitteeMember = useMemo(() => {
+    if (!currentUserEmail) {
+      return false;
+    }
+
+    return normalizedValidationCommitteeConfig.committees.some((committee) => {
+      const committeeEmails = Array.isArray(committee?.emails) ? committee.emails : [];
+      return committeeEmails.some((email) => normalizeEmail(email) === currentUserEmail);
+    });
+  }, [currentUserEmail, normalizedValidationCommitteeConfig.committees]);
+
+  const isComplianceActor = isComplianceExpert || isValidationCommitteeMember;
+
+  const complianceTriggeredProjects = useMemo(() => {
+    if (!currentUserEmail || !isComplianceActor) {
+      return [];
+    }
+
+    return accessibleProjects
+      .map((project) => {
+        const analysisTeamIds = Array.isArray(project?.analysis?.teams) ? project.analysis.teams : [];
+        const relevantTeams = teams.filter((team) => team?.id && analysisTeamIds.includes(team.id));
+
+        const triggeredTeams = relevantTeams
+          .filter((team) => {
+            const contacts = normalizeTeamContacts(team);
+            return contacts.some((contact) => normalizeEmail(contact) === currentUserEmail);
+          })
+          .map((team) => ({ id: team.id, name: team.name || team.id, type: 'team' }));
+
+        const triggeredCommittees = getTriggeredValidationCommittees(normalizedValidationCommitteeConfig, {
+          answers: project?.answers || {},
+          analysis: project?.analysis || {},
+          relevantTeams
+        })
+          .filter((committee) => {
+            const committeeEmails = Array.isArray(committee?.emails) ? committee.emails : [];
+            return committeeEmails.some((email) => normalizeEmail(email) === currentUserEmail);
+          })
+          .map((committee) => ({ id: committee.id, name: committee.name || committee.id, type: 'committee' }));
+
+        const triggeredPerimeters = [...triggeredTeams, ...triggeredCommittees];
+        if (triggeredPerimeters.length === 0) {
+          return null;
+        }
+
+        const comments = normalizeComplianceComments(project?.answers?.[COMPLIANCE_COMMENTS_KEY]);
+
+        const allValidated = triggeredPerimeters.every((entry) => {
+          const status = entry.type === 'committee'
+            ? comments.committees?.[entry.id]?.status
+            : comments.teams?.[entry.id]?.status;
+          return status === 'validated';
+        });
+
+        return {
+          project,
+          triggeredPerimeters,
+          allValidated
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => getProjectTimestamp(b.project) - getProjectTimestamp(a.project));
+  }, [
+    accessibleProjects,
+    currentUserEmail,
+    isComplianceActor,
+    normalizedValidationCommitteeConfig,
+    teams
+  ]);
+
+  const pendingComplianceProjects = useMemo(
+    () => complianceTriggeredProjects.filter((entry) => !entry.allValidated),
+    [complianceTriggeredProjects]
+  );
+
+  const treatedComplianceProjects = useMemo(
+    () => complianceTriggeredProjects.filter((entry) => entry.allValidated),
+    [complianceTriggeredProjects]
+  );
+
+  const displayedComplianceProjects = complianceProjectsView === 'treated'
+    ? treatedComplianceProjects
+    : pendingComplianceProjects;
 
   const closeDeleteDialog = useCallback(() => {
     setDeleteDialogState({ isOpen: false, project: null });
@@ -1267,6 +1391,104 @@ export const HomeScreen = ({
             </div>
           </div>
         </header>
+
+        {isComplianceActor && homeView !== 'inspiration' && (
+          <section
+            aria-labelledby="compliance-projects-heading"
+            className="bg-white border border-blue-100 rounded-3xl shadow-xl p-6 sm:p-8 hv-surface space-y-5"
+          >
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 id="compliance-projects-heading" className="text-2xl font-bold text-gray-900">
+                  Projets déclenchés pour vous
+                </h2>
+                <p className="mt-1 text-sm text-gray-600">
+                  Retrouvez les projets sur lesquels vous êtes sollicité(e) en tant qu'expert compliance ou membre de comité.
+                </p>
+              </div>
+              <div className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 p-1" role="group" aria-label="Filtre des projets déclenchés">
+                <button
+                  type="button"
+                  onClick={() => setComplianceProjectsView('pending')}
+                  className={`rounded-full px-4 py-2 text-xs font-semibold transition-colors ${
+                    complianceProjectsView === 'pending'
+                      ? 'bg-blue-600 text-white'
+                      : 'text-blue-700 hover:bg-blue-100'
+                  }`}
+                >
+                  À traiter ({pendingComplianceProjects.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setComplianceProjectsView('treated')}
+                  className={`rounded-full px-4 py-2 text-xs font-semibold transition-colors ${
+                    complianceProjectsView === 'treated'
+                      ? 'bg-blue-600 text-white'
+                      : 'text-blue-700 hover:bg-blue-100'
+                  }`}
+                >
+                  Traités ({treatedComplianceProjects.length})
+                </button>
+              </div>
+            </div>
+
+            {displayedComplianceProjects.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-blue-200 bg-blue-50/40 p-5 text-sm text-gray-600">
+                {complianceProjectsView === 'pending'
+                  ? "Aucun projet à traiter pour l'instant."
+                  : 'Aucun projet traité pour le moment.'}
+              </div>
+            ) : (
+              <div className="space-y-3" role="list" aria-label="Liste des projets déclenchés">
+                {displayedComplianceProjects.map(({ project, triggeredPerimeters, allValidated }) => (
+                  <article
+                    key={`compliance-trigger-${project.id}`}
+                    className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
+                    role="listitem"
+                  >
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="space-y-2">
+                        <h3 className="text-base font-semibold text-gray-900">
+                          {project.projectName || 'Projet sans nom'}
+                        </h3>
+                        <p className="text-xs text-gray-500">
+                          Dernière mise à jour : {formatDate(project.lastUpdated || project.submittedAt)}
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {triggeredPerimeters.map((entry) => (
+                            <span
+                              key={`${project.id}-${entry.type}-${entry.id}`}
+                              className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700"
+                            >
+                              {entry.type === 'committee' ? 'Comité' : 'Expert'} · {entry.name}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${
+                          allValidated
+                            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                            : 'bg-amber-50 border-amber-200 text-amber-700'
+                        }`}>
+                          {allValidated ? 'Validé' : 'À traiter'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => onOpenProject?.(project.id)}
+                          className="inline-flex items-center gap-2 rounded-lg border border-blue-200 px-3 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50"
+                        >
+                          <Eye className="h-4 w-4" aria-hidden="true" />
+                          Ouvrir
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
 
         <section aria-labelledby="projects-heading" className="space-y-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
