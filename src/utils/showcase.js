@@ -4,7 +4,8 @@ export const PROJECT_TYPE_QUESTION_ID = 'ProjectType';
 
 const BLOCKED_PROJECT_TYPES = new Set([
   "Projet d'un tiers soutenu par le LFB",
-  'Don / bourse / Appel à projets'
+  'Don / bourse / Appel à projets',
+  'Advisory Board non relié à un projet'
 ]);
 
 const normalizeString = (value) => (typeof value === 'string' ? value.trim() : '');
