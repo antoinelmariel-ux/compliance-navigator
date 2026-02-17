@@ -43,7 +43,53 @@ import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.
 import { isShowcaseAccessBlockedByProjectType } from './utils/showcase.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.301';
+const APP_VERSION = 'v1.0.302';
+
+class AdminBackOfficeErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error) {
+    if (typeof console !== 'undefined' && typeof console.error === 'function') {
+      console.error('Erreur lors du chargement du back-office :', error);
+    }
+  }
+
+  handleRecovery = () => {
+    this.setState({ hasError: false });
+    if (typeof this.props.onRecover === 'function') {
+      this.props.onRecover();
+    }
+  };
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="rounded-2xl border border-red-200 bg-white p-6 shadow-sm hv-surface">
+          <h2 className="text-lg font-semibold text-red-700">Impossible d’afficher le back-office.</h2>
+          <p className="mt-2 text-sm text-gray-600">
+            Une erreur est survenue pendant le chargement. Revenez à l’accueil puis réessayez.
+          </p>
+          <button
+            type="button"
+            onClick={this.handleRecovery}
+            className="mt-4 inline-flex items-center rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+          >
+            Retour à l’accueil
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
@@ -4460,42 +4506,44 @@ const updateProjectFilters = useCallback((updater) => {
             />
           </div>
         ) : isAdminBackOfficeView ? (
-          <Suspense
-            fallback={(
-              <LoadingFallback
-                label="Chargement du back-office…"
-                hint="Préparation des données administratives en cours."
+          <AdminBackOfficeErrorBoundary onRecover={handleReturnToProjectMode}>
+            <Suspense
+              fallback={(
+                <LoadingFallback
+                  label="Chargement du back-office…"
+                  hint="Préparation des données administratives en cours."
+                />
+              )}
+            >
+              <LazyBackOffice
+                projects={projects}
+                questions={questions}
+                setQuestions={setQuestions}
+                rules={rules}
+                setRules={setRules}
+                riskLevelRules={riskLevelRules}
+                setRiskLevelRules={setRiskLevelRules}
+                riskWeights={riskWeights}
+                setRiskWeights={setRiskWeights}
+                teams={teams}
+                setTeams={setTeams}
+                showcaseThemes={showcaseThemes}
+                setShowcaseThemes={setShowcaseThemes}
+                projectFilters={projectFilters}
+                setProjectFilters={updateProjectFilters}
+                inspirationFilters={inspirationFilters}
+                setInspirationFilters={updateInspirationFilters}
+                inspirationFormFields={inspirationFormFields}
+                setInspirationFormFields={updateInspirationFormFields}
+                onboardingTourConfig={onboardingTourConfig}
+                setOnboardingTourConfig={setOnboardingTourConfig}
+                validationCommitteeConfig={validationCommitteeConfig}
+                setValidationCommitteeConfig={setValidationCommitteeConfig}
+                adminEmails={adminEmails}
+                setAdminEmails={setAdminEmails}
               />
-            )}
-          >
-            <LazyBackOffice
-              projects={projects}
-              questions={questions}
-              setQuestions={setQuestions}
-              rules={rules}
-              setRules={setRules}
-              riskLevelRules={riskLevelRules}
-              setRiskLevelRules={setRiskLevelRules}
-              riskWeights={riskWeights}
-              setRiskWeights={setRiskWeights}
-              teams={teams}
-              setTeams={setTeams}
-              showcaseThemes={showcaseThemes}
-              setShowcaseThemes={setShowcaseThemes}
-              projectFilters={projectFilters}
-              setProjectFilters={updateProjectFilters}
-              inspirationFilters={inspirationFilters}
-              setInspirationFilters={updateInspirationFilters}
-              inspirationFormFields={inspirationFormFields}
-              setInspirationFormFields={updateInspirationFormFields}
-              onboardingTourConfig={onboardingTourConfig}
-              setOnboardingTourConfig={setOnboardingTourConfig}
-              validationCommitteeConfig={validationCommitteeConfig}
-              setValidationCommitteeConfig={setValidationCommitteeConfig}
-              adminEmails={adminEmails}
-              setAdminEmails={setAdminEmails}
-            />
-          </Suspense>
+            </Suspense>
+          </AdminBackOfficeErrorBoundary>
         ) : screen === 'home' ? (
           <HomeScreen
             projects={projects}
