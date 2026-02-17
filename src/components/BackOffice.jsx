@@ -647,7 +647,6 @@ export const BackOffice = ({
   const [complianceReviewAnswers, setComplianceReviewAnswers] = useState({});
   const [complianceReviewDisplayMode, setComplianceReviewDisplayMode] = useState('direct');
   const [complianceReviewActiveQuestionId, setComplianceReviewActiveQuestionId] = useState('');
-  const [isComplianceReviewFormModalOpen, setIsComplianceReviewFormModalOpen] = useState(false);
 
   useEffect(() => {
     if (selectedComplianceReviewTeamId) {
@@ -689,14 +688,6 @@ export const BackOffice = ({
 
     setComplianceReviewActiveQuestionId('');
   }, [complianceReviewActiveQuestionId, complianceReviewQuestionIndexById]);
-
-  useEffect(() => {
-    if (activeTab === 'complianceReview') {
-      return;
-    }
-
-    setIsComplianceReviewFormModalOpen(false);
-  }, [activeTab]);
 
   const complianceReviewScopedAnswers = useMemo(() => {
     if (!complianceReviewActiveQuestionId) {
@@ -7206,38 +7197,10 @@ export const BackOffice = ({
                 </select>
               </div>
 
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setIsComplianceReviewFormModalOpen(true)}
-                  className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg shadow-sm hover:bg-blue-700 hv-button hv-button-primary text-sm sm:text-base"
-                >
-                  Ouvrir le formulaire
-                </button>
-              </div>
-
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
-                {isComplianceReviewFormModalOpen && (
-                  <div
-                    className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 bg-black bg-opacity-50"
-                    role="dialog"
-                    aria-modal="true"
-                    aria-labelledby="compliance-review-modal-title"
-                  >
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full p-6 sm:p-8 space-y-4 hv-surface hv-modal-panel max-h-[90vh] overflow-y-auto">
-                      <div className="flex items-center justify-between gap-4">
-                        <h3 id="compliance-review-modal-title" className="text-lg font-semibold text-gray-800">
-                          Questionnaire projet (lecture guidée)
-                        </h3>
-                        <button
-                          type="button"
-                          onClick={() => setIsComplianceReviewFormModalOpen(false)}
-                          className="px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 hv-button"
-                        >
-                          Fermer
-                        </button>
-                      </div>
-                      <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+                <article className="rounded-xl border border-gray-200 bg-white p-4 space-y-4 hv-surface">
+                  <h3 className="text-lg font-semibold text-gray-800">Questionnaire projet (lecture guidée)</h3>
+                  <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
                     {complianceReviewQuestionnaire.map((question, index) => {
                       const answerValue = complianceReviewAnswers[question.id];
                       const optionLabels = Array.isArray(question.options)
@@ -7323,23 +7286,7 @@ export const BackOffice = ({
                         </div>
                       );
                     })}
-                      </div>
-                    </div>
                   </div>
-                )}
-
-                <article className="rounded-xl border border-gray-200 bg-white p-4 space-y-4 hv-surface">
-                  <h3 className="text-lg font-semibold text-gray-800">Questionnaire projet (lecture guidée)</h3>
-                  <p className="text-sm text-gray-500">
-                    Le formulaire s’ouvre dans une fenêtre modale identique au parcours porteur de projet.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setIsComplianceReviewFormModalOpen(true)}
-                    className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg shadow-sm hover:bg-blue-700 hv-button hv-button-primary text-sm w-full sm:w-auto"
-                  >
-                    Ouvrir le formulaire en modal
-                  </button>
                 </article>
 
                 <article className="rounded-xl border border-gray-200 bg-white p-4 space-y-4 hv-surface">
