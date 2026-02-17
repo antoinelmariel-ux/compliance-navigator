@@ -23,7 +23,14 @@ import { BackOfficeDashboard } from './BackOfficeDashboard.jsx';
 import { VirtualizedList } from './VirtualizedList.jsx';
 import { renderTextWithLinks } from '../utils/linkify.js';
 import { normalizeConditionGroups } from '../utils/conditionGroups.js';
-import { getConditionQuestionEntries, getQuestionOptionLabels, shouldShowQuestion } from '../utils/questions.js';
+import {
+  buildExtraCheckboxQuestionId,
+  getConditionQuestionEntries,
+  getQuestionOptionLabels,
+  normalizeQuestionOptions,
+  shouldShowOption,
+  shouldShowQuestion
+} from '../utils/questions.js';
 import { initialOnboardingTourConfig } from '../data/onboardingTour.js';
 import {
   analyzeAnswers,
@@ -250,6 +257,92 @@ const toDisplayText = (value) => {
   }
 
   return String(value);
+};
+
+const normalizeChoiceAnswer = (answer) => {
+  if (answer && typeof answer === 'object' && !Array.isArray(answer)) {
+    return {
+      value: typeof answer.value !== 'undefined'
+        ? answer.value
+        : typeof answer.label !== 'undefined'
+          ? answer.label
+          : '',
+      children: Array.isArray(answer.children) ? answer.children : [],
+      otherText: typeof answer.otherText === 'string' ? answer.otherText : '',
+      childrenOtherText: typeof answer.childrenOtherText === 'string' ? answer.childrenOtherText : ''
+    };
+  }
+
+  return {
+    value: typeof answer === 'string' ? answer : '',
+    children: [],
+    otherText: '',
+    childrenOtherText: ''
+  };
+};
+
+const normalizeMultiChoiceAnswer = (answer) => {
+  if (Array.isArray(answer)) {
+    return { values: answer, children: {}, otherText: '', childrenOtherText: {} };
+  }
+
+  if (answer && typeof answer === 'object') {
+    const values = Array.isArray(answer.values) ? answer.values : [];
+    const children = answer.children && typeof answer.children === 'object' ? answer.children : {};
+    const childrenOtherText = answer.childrenOtherText && typeof answer.childrenOtherText === 'object'
+      ? answer.childrenOtherText
+      : {};
+    return {
+      values,
+      children,
+      otherText: typeof answer.otherText === 'string' ? answer.otherText : '',
+      childrenOtherText
+    };
+  }
+
+  return { values: [], children: {}, otherText: '', childrenOtherText: {} };
+};
+
+const buildMultiChoiceAnswerPayload = (values, children, otherText, childrenOtherText = {}) => {
+  const sanitizedValues = Array.isArray(values) ? values.filter(Boolean) : [];
+  const sanitizedChildren = Object.entries(children || {})
+    .reduce((acc, [key, childValues]) => {
+      const normalized = Array.isArray(childValues)
+        ? childValues.filter(Boolean)
+        : [];
+      if (normalized.length > 0) {
+        acc[key] = normalized;
+      }
+      return acc;
+    }, {});
+
+  const sanitizedOtherText = typeof otherText === 'string' ? otherText : '';
+  const sanitizedChildrenOtherText = Object.entries(childrenOtherText || {})
+    .reduce((acc, [key, value]) => {
+      if (!sanitizedChildren[key]) {
+        return acc;
+      }
+      const normalized = typeof value === 'string' ? value.trim() : '';
+      if (normalized) {
+        acc[key] = normalized;
+      }
+      return acc;
+    }, {});
+
+  if (
+    Object.keys(sanitizedChildren).length === 0
+    && Object.keys(sanitizedChildrenOtherText).length === 0
+    && !sanitizedOtherText
+  ) {
+    return sanitizedValues;
+  }
+
+  return {
+    values: sanitizedValues,
+    children: sanitizedChildren,
+    otherText: sanitizedOtherText,
+    childrenOtherText: sanitizedChildrenOtherText
+  };
 };
 
 
@@ -3236,36 +3329,20 @@ export const BackOffice = ({
     [rules]
   );
 
-  const updateComplianceReviewAnswer = useCallback((questionId, value) => {
+  const updateComplianceReviewAnswer = useCallback((questionId, valueOrUpdater) => {
     if (!questionId) {
       return;
     }
 
-    setComplianceReviewAnswers((prev) => ({
-      ...prev,
-      [questionId]: value
-    }));
-    setComplianceReviewActiveQuestionId(questionId);
-  }, []);
-
-  const toggleComplianceReviewMultiChoice = useCallback((questionId, optionLabel, checked) => {
-    if (!questionId || !optionLabel) {
-      return;
-    }
-
     setComplianceReviewAnswers((prev) => {
-      const current = Array.isArray(prev[questionId]) ? prev[questionId] : [];
-      const hasOption = current.includes(optionLabel);
+      const nextValue = typeof valueOrUpdater === 'function'
+        ? valueOrUpdater(prev[questionId], prev)
+        : valueOrUpdater;
 
-      if (checked && !hasOption) {
-        return { ...prev, [questionId]: [...current, optionLabel] };
-      }
-
-      if (!checked && hasOption) {
-        return { ...prev, [questionId]: current.filter((value) => value !== optionLabel) };
-      }
-
-      return prev;
+      return {
+        ...prev,
+        [questionId]: nextValue
+      };
     });
     setComplianceReviewActiveQuestionId(questionId);
   }, []);
@@ -7255,7 +7332,7 @@ export const BackOffice = ({
               </div>
 
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
-                <article className="rounded-xl border border-gray-200 bg-white p-4 space-y-4 hv-surface">
+                <article className="rounded-xl border border-blue-200 bg-blue-50 p-4 space-y-4 hv-surface">
                   <h3 className="text-lg font-semibold text-gray-800">Questionnaire projet (lecture guidée)</h3>
 
                   {complianceReviewCurrentQuestion ? (
@@ -7326,14 +7403,18 @@ export const BackOffice = ({
                           </div>
                         )}
 
-                        <div className="rounded-lg border border-gray-200 p-3 space-y-3 bg-white">
+                        <div className="rounded-lg border border-blue-100 p-3 space-y-3 bg-white/90">
                           {(() => {
-                            const answerValue = complianceReviewAnswers[complianceReviewCurrentQuestion.id];
-                            const optionLabels = Array.isArray(complianceReviewCurrentQuestion.options)
-                              ? complianceReviewCurrentQuestion.options.map(getQuestionOptionLabel).filter(Boolean)
-                              : [];
+                            const question = complianceReviewCurrentQuestion;
+                            const answerValue = complianceReviewAnswers[question.id];
+                            const visibleOptions = normalizeQuestionOptions(question).filter((option) => shouldShowOption(option, complianceReviewAnswers));
+                            const choiceAnswerState = normalizeChoiceAnswer(answerValue);
+                            const multiAnswerState = normalizeMultiChoiceAnswer(answerValue);
+                            const extraCheckbox = question.extraCheckbox || { enabled: false, label: '' };
+                            const extraCheckboxId = buildExtraCheckboxQuestionId(question.id);
+                            const showExtraCheckbox = extraCheckbox?.enabled && extraCheckbox?.label?.trim();
 
-                            if (complianceReviewCurrentQuestion.type === 'text' || complianceReviewCurrentQuestion.type === 'long_text') {
+                            if (question.type === 'text' || question.type === 'long_text') {
                               return (
                                 <input
                                   type="text"
@@ -7346,70 +7427,343 @@ export const BackOffice = ({
                               );
                             }
 
-                            if (complianceReviewCurrentQuestion.type === 'choice') {
+                            if (question.type === 'choice') {
                               return (
-                                <select
-                                  value={typeof answerValue === 'string' ? answerValue : ''}
-                                  onChange={(event) => updateComplianceReviewAnswer(complianceReviewCurrentQuestion.id, event.target.value)}
-                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm hv-focus-ring"
-                                >
-                                  <option value="">Sélectionnez…</option>
-                                  {optionLabels.map((optionLabel) => (
-                                    <option key={optionLabel} value={optionLabel}>{optionLabel}</option>
-                                  ))}
-                                </select>
-                              );
-                            }
+                                <div className="space-y-3">
+                                  {visibleOptions.map((option, index) => {
+                                    const optionLabel = getQuestionOptionLabel(option);
+                                    if (!optionLabel) {
+                                      return null;
+                                    }
 
-                            if (complianceReviewCurrentQuestion.type === 'multi_choice') {
-                              const selectedValues = Array.isArray(answerValue) ? answerValue : [];
-                              return (
-                                <div className="space-y-2">
-                                  {optionLabels.map((optionLabel) => (
-                                    <label key={optionLabel} className="flex items-center gap-2 text-sm text-gray-700">
+                                    const optionId = `${question.id}-review-choice-${index}`;
+                                    const subOptions = Array.isArray(option.subOptions)
+                                      ? option.subOptions.filter((subOption) => shouldShowOption(subOption, complianceReviewAnswers))
+                                      : [];
+                                    const hasSubOptions = subOptions.length > 0;
+                                    const isOtherOption = option.isOther === true;
+                                    const isSelected = choiceAnswerState.value === optionLabel;
+                                    const childSelections = isSelected ? choiceAnswerState.children : [];
+                                    const subType = option.subType === 'multi_choice' ? 'multi_choice' : 'choice';
+
+                                    return (
+                                      <div key={optionId} className="rounded-lg border border-gray-200 bg-white p-3 space-y-2">
+                                        <label htmlFor={optionId} className="flex items-center gap-2 text-sm text-gray-700">
+                                          <input
+                                            id={optionId}
+                                            type="radio"
+                                            name={`review-choice-${question.id}`}
+                                            checked={isSelected}
+                                            onChange={() => {
+                                              if (hasSubOptions || isOtherOption) {
+                                                updateComplianceReviewAnswer(question.id, {
+                                                  value: optionLabel,
+                                                  children: [],
+                                                  otherText: ''
+                                                });
+                                                return;
+                                              }
+                                              updateComplianceReviewAnswer(question.id, optionLabel);
+                                            }}
+                                            className="h-4 w-4 text-blue-600 border-gray-300"
+                                          />
+                                          <span>{optionLabel}</span>
+                                        </label>
+
+                                        {isSelected && isOtherOption && (
+                                          <input
+                                            type="text"
+                                            value={choiceAnswerState.otherText}
+                                            onChange={(event) =>
+                                              updateComplianceReviewAnswer(question.id, {
+                                                value: optionLabel,
+                                                children: [],
+                                                otherText: event.target.value
+                                              })
+                                            }
+                                            placeholder="Précisez votre réponse"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm hv-focus-ring"
+                                          />
+                                        )}
+
+                                        {isSelected && hasSubOptions && !isOtherOption && (
+                                          <div className="space-y-2 pl-5">
+                                            {subOptions.map((subOption, subIndex) => {
+                                              const subLabel = getQuestionOptionLabel(subOption);
+                                              if (!subLabel) {
+                                                return null;
+                                              }
+
+                                              const subId = `${optionId}-sub-${subIndex}`;
+                                              const isSubSelected = childSelections.includes(subLabel);
+                                              const isSubOtherOption = subOption.isOther === true;
+
+                                              return (
+                                                <div key={subId} className="space-y-1">
+                                                  <label htmlFor={subId} className="flex items-center gap-2 text-sm text-gray-700">
+                                                    <input
+                                                      id={subId}
+                                                      type={subType === 'multi_choice' ? 'checkbox' : 'radio'}
+                                                      name={subType === 'multi_choice' ? subId : `${optionId}-sub-group`}
+                                                      checked={isSubSelected}
+                                                      onChange={(event) => {
+                                                        const nextChildren = subType === 'multi_choice'
+                                                          ? (event.target.checked
+                                                            ? [...childSelections, subLabel]
+                                                            : childSelections.filter((entry) => entry !== subLabel))
+                                                          : [subLabel];
+                                                        const isOtherSelected = nextChildren.includes(subLabel) && isSubOtherOption;
+                                                        updateComplianceReviewAnswer(question.id, {
+                                                          value: optionLabel,
+                                                          children: nextChildren,
+                                                          otherText: isOtherSelected ? choiceAnswerState.childrenOtherText : ''
+                                                        });
+                                                      }}
+                                                      className="h-4 w-4 text-blue-600 border-gray-300"
+                                                    />
+                                                    <span>{subLabel}</span>
+                                                  </label>
+                                                  {isSubSelected && isSubOtherOption && (
+                                                    <input
+                                                      type="text"
+                                                      value={choiceAnswerState.childrenOtherText}
+                                                      onChange={(event) =>
+                                                        updateComplianceReviewAnswer(question.id, {
+                                                          value: optionLabel,
+                                                          children: childSelections,
+                                                          otherText: event.target.value,
+                                                          childrenOtherText: event.target.value
+                                                        })
+                                                      }
+                                                      placeholder="Précisez votre réponse"
+                                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm hv-focus-ring"
+                                                    />
+                                                  )}
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                  {showExtraCheckbox && (
+                                    <label className="flex items-center gap-2 text-sm text-gray-700">
                                       <input
                                         type="checkbox"
-                                        checked={selectedValues.includes(optionLabel)}
-                                        onChange={(event) =>
-                                          toggleComplianceReviewMultiChoice(complianceReviewCurrentQuestion.id, optionLabel, event.target.checked)
-                                        }
+                                        checked={Boolean(complianceReviewAnswers[extraCheckboxId])}
+                                        onChange={(event) => updateComplianceReviewAnswer(extraCheckboxId, event.target.checked)}
                                         className="h-4 w-4 rounded border-gray-300 text-blue-600"
                                       />
-                                      <span>{optionLabel}</span>
+                                      <span>{extraCheckbox.label.trim()}</span>
                                     </label>
-                                  ))}
+                                  )}
                                 </div>
                               );
                             }
 
-                            if (complianceReviewCurrentQuestion.type === 'date') {
+                            if (question.type === 'multi_choice') {
+                              return (
+                                <div className="space-y-3">
+                                  {visibleOptions.map((option, index) => {
+                                    const optionLabel = getQuestionOptionLabel(option);
+                                    if (!optionLabel) {
+                                      return null;
+                                    }
+
+                                    const optionId = `${question.id}-review-multi-${index}`;
+                                    const isSelected = multiAnswerState.values.includes(optionLabel);
+                                    const isOtherOption = option.isOther === true;
+                                    const subOptions = Array.isArray(option.subOptions)
+                                      ? option.subOptions.filter((subOption) => shouldShowOption(subOption, complianceReviewAnswers))
+                                      : [];
+                                    const hasSubOptions = subOptions.length > 0;
+                                    const subType = option.subType === 'multi_choice' ? 'multi_choice' : 'choice';
+                                    const childSelections = Array.isArray(multiAnswerState.children[optionLabel])
+                                      ? multiAnswerState.children[optionLabel]
+                                      : [];
+                                    const childOtherText = typeof multiAnswerState.childrenOtherText[optionLabel] === 'string'
+                                      ? multiAnswerState.childrenOtherText[optionLabel]
+                                      : '';
+
+                                    return (
+                                      <div key={optionId} className="rounded-lg border border-gray-200 bg-white p-3 space-y-2">
+                                        <label htmlFor={optionId} className="flex items-center gap-2 text-sm text-gray-700">
+                                          <input
+                                            id={optionId}
+                                            type="checkbox"
+                                            checked={isSelected}
+                                            onChange={(event) => {
+                                              const nextValues = event.target.checked
+                                                ? [...multiAnswerState.values, optionLabel]
+                                                : multiAnswerState.values.filter((entry) => entry !== optionLabel);
+                                              const nextChildren = { ...multiAnswerState.children };
+                                              const nextChildrenOtherText = { ...multiAnswerState.childrenOtherText };
+                                              if (!event.target.checked) {
+                                                delete nextChildren[optionLabel];
+                                                delete nextChildrenOtherText[optionLabel];
+                                              }
+
+                                              const nextOtherText = option.isOther && !event.target.checked
+                                                ? ''
+                                                : multiAnswerState.otherText;
+
+                                              updateComplianceReviewAnswer(
+                                                question.id,
+                                                buildMultiChoiceAnswerPayload(nextValues, nextChildren, nextOtherText, nextChildrenOtherText)
+                                              );
+                                            }}
+                                            className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                                          />
+                                          <span>{optionLabel}</span>
+                                        </label>
+
+                                        {isSelected && isOtherOption && (
+                                          <input
+                                            type="text"
+                                            value={multiAnswerState.otherText}
+                                            onChange={(event) =>
+                                              updateComplianceReviewAnswer(
+                                                question.id,
+                                                buildMultiChoiceAnswerPayload(
+                                                  multiAnswerState.values,
+                                                  multiAnswerState.children,
+                                                  event.target.value,
+                                                  multiAnswerState.childrenOtherText
+                                                )
+                                              )
+                                            }
+                                            placeholder="Précisez votre réponse"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm hv-focus-ring"
+                                          />
+                                        )}
+
+                                        {isSelected && hasSubOptions && !isOtherOption && (
+                                          <div className="space-y-2 pl-5">
+                                            {subOptions.map((subOption, subIndex) => {
+                                              const subLabel = getQuestionOptionLabel(subOption);
+                                              if (!subLabel) {
+                                                return null;
+                                              }
+
+                                              const subId = `${optionId}-sub-${subIndex}`;
+                                              const isSubSelected = childSelections.includes(subLabel);
+                                              const isSubOtherOption = subOption.isOther === true;
+
+                                              return (
+                                                <div key={subId} className="space-y-1">
+                                                  <label htmlFor={subId} className="flex items-center gap-2 text-sm text-gray-700">
+                                                    <input
+                                                      id={subId}
+                                                      type={subType === 'multi_choice' ? 'checkbox' : 'radio'}
+                                                      name={subType === 'multi_choice' ? subId : `${optionId}-sub-group`}
+                                                      checked={isSubSelected}
+                                                      onChange={(event) => {
+                                                        const nextChildren = subType === 'multi_choice'
+                                                          ? (event.target.checked
+                                                            ? [...childSelections, subLabel]
+                                                            : childSelections.filter((entry) => entry !== subLabel))
+                                                          : [subLabel];
+                                                        const nextChildrenMap = {
+                                                          ...multiAnswerState.children,
+                                                          [optionLabel]: nextChildren
+                                                        };
+                                                        const nextChildrenOtherText = { ...multiAnswerState.childrenOtherText };
+                                                        if (!(isSubOtherOption && nextChildren.includes(subLabel))) {
+                                                          delete nextChildrenOtherText[optionLabel];
+                                                        }
+
+                                                        updateComplianceReviewAnswer(
+                                                          question.id,
+                                                          buildMultiChoiceAnswerPayload(
+                                                            multiAnswerState.values,
+                                                            nextChildrenMap,
+                                                            multiAnswerState.otherText,
+                                                            nextChildrenOtherText
+                                                          )
+                                                        );
+                                                      }}
+                                                      className="h-4 w-4 text-blue-600 border-gray-300"
+                                                    />
+                                                    <span>{subLabel}</span>
+                                                  </label>
+
+                                                  {isSubSelected && isSubOtherOption && (
+                                                    <input
+                                                      type="text"
+                                                      value={childOtherText}
+                                                      onChange={(event) => {
+                                                        updateComplianceReviewAnswer(
+                                                          question.id,
+                                                          buildMultiChoiceAnswerPayload(
+                                                            multiAnswerState.values,
+                                                            {
+                                                              ...multiAnswerState.children,
+                                                              [optionLabel]: childSelections
+                                                            },
+                                                            multiAnswerState.otherText,
+                                                            {
+                                                              ...multiAnswerState.childrenOtherText,
+                                                              [optionLabel]: event.target.value
+                                                            }
+                                                          )
+                                                        );
+                                                      }}
+                                                      placeholder="Précisez votre réponse"
+                                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm hv-focus-ring"
+                                                    />
+                                                  )}
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                  {showExtraCheckbox && (
+                                    <label className="flex items-center gap-2 text-sm text-gray-700">
+                                      <input
+                                        type="checkbox"
+                                        checked={Boolean(complianceReviewAnswers[extraCheckboxId])}
+                                        onChange={(event) => updateComplianceReviewAnswer(extraCheckboxId, event.target.checked)}
+                                        className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                                      />
+                                      <span>{extraCheckbox.label.trim()}</span>
+                                    </label>
+                                  )}
+                                </div>
+                              );
+                            }
+
+                            if (question.type === 'date') {
                               return (
                                 <input
                                   type="date"
                                   value={typeof answerValue === 'string' ? answerValue : ''}
-                                  onChange={(event) => updateComplianceReviewAnswer(complianceReviewCurrentQuestion.id, event.target.value)}
+                                  onChange={(event) => updateComplianceReviewAnswer(question.id, event.target.value)}
                                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm hv-focus-ring"
                                 />
                               );
                             }
 
-                            if (complianceReviewCurrentQuestion.type === 'number') {
+                            if (question.type === 'number') {
                               return (
                                 <input
                                   type="number"
                                   value={typeof answerValue === 'number' || typeof answerValue === 'string' ? answerValue : ''}
-                                  onChange={(event) => updateComplianceReviewAnswer(complianceReviewCurrentQuestion.id, event.target.value)}
+                                  onChange={(event) => updateComplianceReviewAnswer(question.id, event.target.value)}
                                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm hv-focus-ring"
                                 />
                               );
                             }
 
-                            if (complianceReviewCurrentQuestion.type === 'url' || complianceReviewCurrentQuestion.type === 'file' || complianceReviewCurrentQuestion.type === 'milestone_list') {
+                            if (question.type === 'url' || question.type === 'file' || question.type === 'milestone_list') {
                               return (
                                 <input
                                   type="text"
                                   value={toDisplayText(answerValue)}
-                                  onChange={(event) => updateComplianceReviewAnswer(complianceReviewCurrentQuestion.id, event.target.value)}
+                                  onChange={(event) => updateComplianceReviewAnswer(question.id, event.target.value)}
                                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm hv-focus-ring"
                                   placeholder="Réponse de démonstration"
                                 />
