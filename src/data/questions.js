@@ -228,7 +228,7 @@ export const initialQuestions = [
   },
   {
     "id": "ProjectType",
-    "type": "multi_choice",
+    "type": "choice",
     "question": "De quel type de projet s'agit-il ?",
     "options": [
       {
@@ -320,7 +320,7 @@ export const initialQuestions = [
   },
   {
     "id": "q18",
-    "type": "choice",
+    "type": "multi_choice",
     "question": "Pouvez-vous préciser le type de don dont il s'agit ?",
     "options": [
       {
@@ -329,13 +329,31 @@ export const initialQuestions = [
         "subType": "multi_choice",
         "subOptions": [
           {
-            "label": "Pour un projet défini"
+            "label": "Pour un projet défini",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
           },
           {
-            "label": "Pour un projet non encore défini (appel à projets)"
+            "label": "Pour un projet non encore défini (appel à projets)",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
           },
           {
-            "label": "Pour l'activité générale"
+            "label": "Pour l'activité générale",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
           }
         ],
         "conditionGroups": [],
@@ -410,7 +428,7 @@ export const initialQuestions = [
   },
   {
     "id": "q18_copy",
-    "type": "choice",
+    "type": "multi_choice",
     "question": "Pouvez-vous préciser le type de soutien dont il s'agit ?",
     "options": [
       {
@@ -422,7 +440,13 @@ export const initialQuestions = [
         "subType": null,
         "subOptions": [
           {
-            "label": "Pour une enquête / étude"
+            "label": "Pour une enquête / étude",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
           }
         ]
       },
@@ -1237,7 +1261,7 @@ export const initialQuestions = [
   },
   {
     "id": "q19",
-    "type": "choice",
+    "type": "multi_choice",
     "question": "Quelles sont les composantes du projet ?",
     "options": [
       {
@@ -1738,7 +1762,7 @@ export const initialQuestions = [
   },
   {
     "id": "q22",
-    "type": "choice",
+    "type": "multi_choice",
     "question": "Votre projet correspond  il a une de ces situations ?",
     "options": [
       {
@@ -1864,7 +1888,7 @@ export const initialQuestions = [
         "conditionLogic": "all"
       },
       {
-        "label": "Oui - Autre données sensibles (ex : origine ethnique, orientation sexuelle, ...)",
+        "label": "Oui - Autre données sensibles (ex : données génétiques, biométriques, ethnique, orientation sexuelle, ...)",
         "visibility": "always",
         "subType": null,
         "subOptions": [],
@@ -3111,8 +3135,11 @@ export const initialQuestions = [
     "numberUnit": "K€",
     "guidance": {
       "objective": "",
-      "details": "",
-      "tips": []
+      "details": "Prenez en compte l'ensemble du budget (développement ET déploiement / communication) pour le lancement du projet",
+      "tips": [
+        "Si vous ne savez pas encore le montant précis, indiquez un autre d'idée",
+        "Pensez également aux coûts des éventuelles mises à jour"
+      ]
     },
     "showcase": {
       "sections": [
