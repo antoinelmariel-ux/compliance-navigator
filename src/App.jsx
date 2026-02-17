@@ -43,7 +43,7 @@ import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.
 import { isShowcaseAccessBlockedByProjectType } from './utils/showcase.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.299';
+const APP_VERSION = 'v1.0.300';
 
 const resolveShowcaseDisplayMode = (value) => {
   if (value === 'light') {
