@@ -1707,7 +1707,7 @@ export const initialQuestions = [
     "question": "Votre projet correspond  il a une de ces situations ?",
     "options": [
       {
-        "label": "Un dispositif structuré d’accompagnement du patient pour l’accompagner dans l’usage du traitement (initiation, observance, gestion des effets indésirables, compréhension de la maladie, soutien pratique ou financier)",
+        "label": "Un dispositif structuré d’accompagnement du patient ou de son entourage (par ex. aidant) pour l’accompagner notamment dans la compréhension de sa pathologie, l’usage de son traitement (initiation, observance, gestion des effets indésirables, compréhension de la maladie, soutien pratique ou financier)",
         "visibility": "always",
         "subType": null,
         "subOptions": [],
