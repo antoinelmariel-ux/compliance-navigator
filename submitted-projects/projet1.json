@@ -52,7 +52,13 @@
           "description": "Lancement digital et relations presse"
         }
       ],
-      "teamCoreMembers": "Thomas Dubois - Responsable Communication Digitale\nInès Laurent - Relations Associations\nStudio Humanlink - Agence com"
+      "teamCoreMembers": "Thomas Dubois - Responsable Communication Digitale\nInès Laurent - Relations Associations\nStudio Humanlink - Agence com",
+      "q14": [
+        "Via les canaux digitaux du LFB",
+        "Via les canaux physiques du LFB"
+      ],
+      "q15": "Aucune information complémentaire à partager pour le moment.",
+      "q15_copy": "Sans objet"
     }
   }
 }
