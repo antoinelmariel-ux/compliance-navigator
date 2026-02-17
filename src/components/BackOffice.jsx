@@ -378,6 +378,14 @@ const collectRuleTeamIds = (rule) => {
     }
   });
 
+  const routingRules = Array.isArray(rule?.teamRoutingRules) ? rule.teamRoutingRules : [];
+  routingRules.forEach((route) => {
+    const targetTeamId = typeof route?.targetTeamId === 'string' ? route.targetTeamId.trim() : '';
+    if (targetTeamId !== '') {
+      teamIds.add(targetTeamId);
+    }
+  });
+
   if (rule?.questions && typeof rule.questions === 'object') {
     Object.keys(rule.questions).forEach((teamId) => {
       if (typeof teamId === 'string' && teamId.trim() !== '') {
