@@ -7885,7 +7885,7 @@ export const BackOffice = ({
                       ) : (
                         <ul className="mt-1 space-y-1 list-disc pl-5 text-sm text-gray-700">
                           {complianceReviewTeamQuestions.map((entry, index) => (
-                            <li key={`${entry?.text || 'question'}-${index}`}>{entry?.text || 'Question non renseignée'}</li>
+                            <li key={`${entry?.text || 'question'}-${index}`}>{renderTextWithLinks(entry?.text || 'Question non renseignée')}</li>
                           ))}
                         </ul>
                       )}
@@ -7899,9 +7899,9 @@ export const BackOffice = ({
                         <ul className="mt-1 space-y-2">
                           {complianceReviewTeamRisks.map((risk, index) => (
                             <li key={`${risk?.id || 'risk'}-${index}`} className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-                              <p className="font-semibold">{risk?.description || 'Risque non renseigné'}</p>
+                              <p className="font-semibold">{renderTextWithLinks(risk?.description || 'Risque non renseigné')}</p>
                               <p className="text-xs mt-1">Niveau : {risk?.level || 'N/A'} · Priorité : {risk?.priority || 'N/A'}</p>
-                              <p className="text-xs mt-1 text-amber-800">Détail : {risk?.mitigation || 'Aucun détail renseigné'}</p>
+                              <p className="text-xs mt-1 text-amber-800">Détail : {renderTextWithLinks(risk?.mitigation || 'Aucun détail renseigné')}</p>
                             </li>
                           ))}
                         </ul>

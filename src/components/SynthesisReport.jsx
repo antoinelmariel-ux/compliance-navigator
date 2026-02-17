@@ -15,6 +15,7 @@ import { formatAnswer } from '../utils/questions.js';
 import { computeRankingRecommendations, normalizeRankingConfig } from '../utils/ranking.js';
 import { renderTextWithLinks } from '../utils/linkify.js';
 import { ProjectShowcase } from './ProjectShowcase.jsx';
+import { RichTextEditor } from './RichTextEditor.jsx';
 import { extractProjectName } from '../utils/projects.js';
 import {
   buildProjectExport,
@@ -158,6 +159,24 @@ const isAnswerProvided = (value) => {
 const getCommentStatusMeta = (status) =>
   COMMENT_STATUS_OPTIONS.find((option) => option.value === status) || null;
 
+const normalizeCommentAttachments = (value) => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((attachment, index) => ({
+      id: typeof attachment?.id === 'string' && attachment.id.trim().length > 0
+        ? attachment.id
+        : `attachment-${index}`,
+      name: typeof attachment?.name === 'string' ? attachment.name : 'Pièce jointe',
+      url: typeof attachment?.url === 'string' ? attachment.url : '',
+      type: typeof attachment?.type === 'string' ? attachment.type : '',
+      size: Number.isFinite(Number(attachment?.size)) ? Number(attachment.size) : 0
+    }))
+    .filter((attachment) => attachment.url.trim().length > 0);
+};
+
 const normalizeCommentEntry = (entry) => {
   const comment = typeof entry?.comment === 'string' ? entry.comment : '';
   const statusCandidate = typeof entry?.status === 'string' ? entry.status : '';
@@ -173,7 +192,8 @@ const normalizeCommentEntry = (entry) => {
           message: typeof reply?.message === 'string' ? reply.message : '',
           authorName: typeof reply?.authorName === 'string' ? reply.authorName : '',
           authorEmail: typeof reply?.authorEmail === 'string' ? reply.authorEmail : '',
-          createdAt: typeof reply?.createdAt === 'string' ? reply.createdAt : ''
+          createdAt: typeof reply?.createdAt === 'string' ? reply.createdAt : '',
+          attachments: normalizeCommentAttachments(reply?.attachments)
         }))
         .filter((reply) => reply.message.trim().length > 0 || reply.authorName || reply.authorEmail)
     : [];
@@ -181,7 +201,19 @@ const normalizeCommentEntry = (entry) => {
   return {
     comment,
     status,
+    attachments: normalizeCommentAttachments(entry?.attachments),
     replies
+  };
+};
+
+const normalizeReplyDraft = (value) => {
+  if (!value || typeof value !== 'object') {
+    return { message: '', attachments: [] };
+  }
+
+  return {
+    message: typeof value.message === 'string' ? value.message : '',
+    attachments: normalizeCommentAttachments(value.attachments)
   };
 };
 
@@ -757,6 +789,7 @@ export const SynthesisReport = ({
   onUpdateComplianceComments,
   currentUser = null,
   sharedMembers = [],
+  adminEmails = [],
   onShareProjectMember,
   onRemoveProjectMember,
   onSubmitProject,
@@ -835,6 +868,14 @@ export const SynthesisReport = ({
     }
     return currentUserEmail;
   }, [currentUser, currentUserEmail]);
+  const normalizedAdminEmails = useMemo(
+    () => (Array.isArray(adminEmails) ? adminEmails.map(normalizeEmail).filter(Boolean) : []),
+    [adminEmails]
+  );
+  const canBypassCompliancePerimeter = useMemo(
+    () => isAdminMode && !!currentUserEmail && normalizedAdminEmails.includes(currentUserEmail),
+    [isAdminMode, currentUserEmail, normalizedAdminEmails]
+  );
   const complianceTeamIdsForUser = useMemo(() => {
     if (!currentUserEmail) {
       return new Set();
@@ -1073,7 +1114,8 @@ export const SynthesisReport = ({
       const nextEntry = {
         comment: trimmedDraft,
         status: currentEntry.status,
-        replies: Array.isArray(currentEntry.replies) ? currentEntry.replies : []
+        replies: Array.isArray(currentEntry.replies) ? currentEntry.replies : [],
+        attachments: normalizeCommentAttachments(currentEntry.attachments)
       };
 
       const nextComments = {
@@ -1109,7 +1151,7 @@ export const SynthesisReport = ({
 
       scheduleComplianceFeedback(
         `${targetType}-${targetId || 'committee'}`,
-        trimmedDraft.length > 0 ? 'Commentaire enregistré.' : 'Commentaire effacé.'
+        (trimmedDraft.length > 0 || normalizeCommentAttachments(currentEntry.attachments).length > 0) ? 'Commentaire enregistré.' : 'Commentaire effacé.'
       );
     },
     [
@@ -1154,11 +1196,135 @@ export const SynthesisReport = ({
     [complianceCommentFeedback]
   );
 
+  const readFileAsDataUrl = useCallback((file) => new Promise((resolve, reject) => {
+    if (typeof FileReader === 'undefined') {
+      reject(new Error('FileReader indisponible'));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+    reader.onerror = () => reject(new Error('Lecture de fichier impossible'));
+    reader.readAsDataURL(file);
+  }), []);
+
+
+
+  const handleComplianceCommentFilesChange = useCallback(async ({ targetId, targetType, files }) => {
+    const safeFiles = Array.isArray(files) ? files : Array.from(files || []);
+    if (safeFiles.length === 0) {
+      return;
+    }
+
+    const nextAttachments = await Promise.all(
+      safeFiles.map(async (file, index) => ({
+        id: `attachment-${Date.now()}-${index}`,
+        name: file.name || `piece-jointe-${index + 1}`,
+        type: file.type || '',
+        size: Number.isFinite(Number(file.size)) ? Number(file.size) : 0,
+        url: await readFileAsDataUrl(file)
+      }))
+    );
+
+    setComplianceCommentDrafts((prev) => {
+      const nextDrafts = {
+        ...prev,
+        teams: { ...(prev?.teams || {}) },
+        committees: { ...(prev?.committees || {}) }
+      };
+
+      if (targetType === 'committee' && targetId) {
+        const current = normalizeCommentEntry(prev?.committees?.[targetId]);
+        nextDrafts.committees[targetId] = {
+          ...current,
+          attachments: [...normalizeCommentAttachments(current.attachments), ...nextAttachments]
+        };
+      } else if (targetId) {
+        const current = normalizeCommentEntry(prev?.teams?.[targetId]);
+        nextDrafts.teams[targetId] = {
+          ...current,
+          attachments: [...normalizeCommentAttachments(current.attachments), ...nextAttachments]
+        };
+      }
+
+      return nextDrafts;
+    });
+  }, [readFileAsDataUrl]);
+
+  const handleComplianceCommentAttachmentRemove = useCallback(({ targetId, targetType, attachmentId }) => {
+    setComplianceCommentDrafts((prev) => {
+      const nextDrafts = {
+        ...prev,
+        teams: { ...(prev?.teams || {}) },
+        committees: { ...(prev?.committees || {}) }
+      };
+
+      if (targetType === 'committee' && targetId) {
+        const current = normalizeCommentEntry(prev?.committees?.[targetId]);
+        nextDrafts.committees[targetId] = {
+          ...current,
+          attachments: normalizeCommentAttachments(current.attachments).filter((attachment) => attachment.id !== attachmentId)
+        };
+      } else if (targetId) {
+        const current = normalizeCommentEntry(prev?.teams?.[targetId]);
+        nextDrafts.teams[targetId] = {
+          ...current,
+          attachments: normalizeCommentAttachments(current.attachments).filter((attachment) => attachment.id !== attachmentId)
+        };
+      }
+
+      return nextDrafts;
+    });
+  }, []);
+
   const handleComplianceReplyChange = useCallback((threadKey, value) => {
     setComplianceReplyDrafts(prev => ({
       ...prev,
-      [threadKey]: value
+      [threadKey]: {
+        ...normalizeReplyDraft(prev?.[threadKey]),
+        message: value
+      }
     }));
+  }, []);
+
+  const handleComplianceReplyFilesChange = useCallback(async (threadKey, files) => {
+    const safeFiles = Array.isArray(files) ? files : Array.from(files || []);
+    if (safeFiles.length === 0) {
+      return;
+    }
+
+    const nextAttachments = await Promise.all(
+      safeFiles.map(async (file, index) => ({
+        id: `attachment-${Date.now()}-${index}`,
+        name: file.name || `piece-jointe-${index + 1}`,
+        type: file.type || '',
+        size: Number.isFinite(Number(file.size)) ? Number(file.size) : 0,
+        url: await readFileAsDataUrl(file)
+      }))
+    );
+
+    setComplianceReplyDrafts((prev) => {
+      const current = normalizeReplyDraft(prev?.[threadKey]);
+      return {
+        ...prev,
+        [threadKey]: {
+          ...current,
+          attachments: [...current.attachments, ...nextAttachments]
+        }
+      };
+    });
+  }, [readFileAsDataUrl]);
+
+  const handleComplianceReplyAttachmentRemove = useCallback((threadKey, attachmentId) => {
+    setComplianceReplyDrafts((prev) => {
+      const current = normalizeReplyDraft(prev?.[threadKey]);
+      return {
+        ...prev,
+        [threadKey]: {
+          ...current,
+          attachments: current.attachments.filter((attachment) => attachment.id !== attachmentId)
+        }
+      };
+    });
   }, []);
 
   const handleComplianceReplySubmit = useCallback(
@@ -1168,10 +1334,10 @@ export const SynthesisReport = ({
       }
 
       const threadKey = `${targetType}-${targetId}`;
-      const draft = complianceReplyDrafts[threadKey] || '';
-      const trimmed = draft.trim();
+      const draft = normalizeReplyDraft(complianceReplyDrafts[threadKey]);
+      const trimmed = draft.message.trim();
 
-      if (!trimmed) {
+      if (!trimmed && draft.attachments.length === 0) {
         return;
       }
 
@@ -1184,7 +1350,8 @@ export const SynthesisReport = ({
         message: trimmed,
         authorName: currentUserDisplayName || 'Utilisateur',
         authorEmail: currentUserEmail,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        attachments: draft.attachments
       };
       const nextEntry = {
         ...normalizedEntry,
@@ -1210,7 +1377,7 @@ export const SynthesisReport = ({
 
       setComplianceReplyDrafts(prev => ({
         ...prev,
-        [threadKey]: ''
+        [threadKey]: { message: '', attachments: [] }
       }));
 
       scheduleComplianceFeedback(threadKey, 'Réponse ajoutée.');
@@ -1245,12 +1412,13 @@ export const SynthesisReport = ({
     const normalized = normalizeCommentEntry(entry);
     const messages = [];
 
-    if (normalized.comment.trim().length > 0) {
+    if (normalized.comment.trim().length > 0 || normalizeCommentAttachments(normalized.attachments).length > 0) {
       messages.push({
         id: `comment-${authorLabel || 'team'}`,
         message: normalized.comment,
         authorName: authorLabel || 'Équipe compliance',
-        createdAt: ''
+        createdAt: '',
+        attachments: normalizeCommentAttachments(normalized.attachments)
       });
     }
 
@@ -1259,7 +1427,8 @@ export const SynthesisReport = ({
         id: reply.id,
         message: reply.message,
         authorName: reply.authorName || reply.authorEmail || 'Utilisateur',
-        createdAt: reply.createdAt
+        createdAt: reply.createdAt,
+        attachments: normalizeCommentAttachments(reply.attachments)
       });
     });
 
@@ -1368,7 +1537,7 @@ export const SynthesisReport = ({
     [requiredValidationCommittees]
   );
   const committeesToDisplay = validationCommittees.filter((committee) => {
-    if (isAdminMode) {
+    if (canBypassCompliancePerimeter) {
       return true;
     }
     const hasComment = committeeCommentMap[committee.id]?.comment?.trim().length > 0;
@@ -1376,7 +1545,7 @@ export const SynthesisReport = ({
   });
   const shouldShowCommitteeSection = committeesToDisplay.length > 0;
   const shouldShowComplianceCommentsSection =
-    isAdminMode || relevantTeams.length > 0 || shouldShowCommitteeSection || hasLegacyComplianceComment;
+    canBypassCompliancePerimeter || relevantTeams.length > 0 || shouldShowCommitteeSection || hasLegacyComplianceComment;
 
   const getComplianceFeedbackMessage = useCallback(
     (targetId) => (complianceCommentFeedback?.targetId === targetId ? complianceCommentFeedback.message : null),
@@ -2013,12 +2182,15 @@ export const SynthesisReport = ({
                     {relevantTeams.map((team) => {
                       const storedEntry = normalizeCommentEntry(complianceComments.teams?.[team.id]);
                       const draftEntry = complianceCommentDrafts.teams?.[team.id] || storedEntry;
-                      const statusMeta = getCommentStatusMeta(isAdminMode ? draftEntry.status : storedEntry.status);
+                      const statusMeta = getCommentStatusMeta(canBypassCompliancePerimeter ? draftEntry.status : storedEntry.status);
                       const isDirty =
-                        draftEntry.comment !== storedEntry.comment || draftEntry.status !== storedEntry.status;
+                        draftEntry.comment !== storedEntry.comment
+                        || draftEntry.status !== storedEntry.status
+                        || JSON.stringify(normalizeCommentAttachments(draftEntry.attachments))
+                          !== JSON.stringify(normalizeCommentAttachments(storedEntry.attachments));
                       const feedbackMessage = getComplianceFeedbackMessage(`team-${team.id}`);
                       const teamContactLabel = formatTeamContacts(team, ' · ');
-                      const canEditTeamComment = isAdminMode || complianceTeamIdsForUser.has(team.id);
+                      const canEditTeamComment = canBypassCompliancePerimeter || complianceTeamIdsForUser.has(team.id);
                       const threadKey = `team-${team.id}`;
                       const threadMessages = getThreadMessages(storedEntry, team.name);
                       const isThreadExpanded = Boolean(expandedThreads[threadKey]);
@@ -2077,21 +2249,49 @@ export const SynthesisReport = ({
                                 <label className="block text-sm font-medium text-gray-700" htmlFor={`compliance-comment-${team.id}`}>
                                   Commentaire
                                 </label>
-                                <textarea
+                                <RichTextEditor
                                   id={`compliance-comment-${team.id}`}
-                                  rows={4}
-                                  className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                                  placeholder="Ajoutez ici vos recommandations ou points d'attention..."
+                                  compact
+                                  placeholder="Ajoutez ici vos recommandations, points d'attention et liens..."
                                   value={draftEntry.comment}
-                                  onChange={(event) =>
+                                  onChange={(value) =>
                                     handleComplianceCommentChange({
                                       targetId: team.id,
                                       targetType: 'team',
                                       field: 'comment',
-                                      value: event.target.value
+                                      value
                                     })
                                   }
                                 />
+                                <input
+                                  type="file"
+                                  multiple
+                                  className="mt-2 block w-full text-xs text-gray-600"
+                                  onChange={(event) => {
+                                    handleComplianceCommentFilesChange({
+                                      targetId: team.id,
+                                      targetType: 'team',
+                                      files: event.target.files
+                                    });
+                                    event.target.value = '';
+                                  }}
+                                />
+                                {normalizeCommentAttachments(draftEntry.attachments).length > 0 && (
+                                  <ul className="mt-2 space-y-1 text-xs">
+                                    {normalizeCommentAttachments(draftEntry.attachments).map((attachment) => (
+                                      <li key={attachment.id} className="flex items-center justify-between gap-2">
+                                        <a href={attachment.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                                          {attachment.name}
+                                        </a>
+                                        <button
+                                          type="button"
+                                          className="text-red-600"
+                                          onClick={() => handleComplianceCommentAttachmentRemove({ targetId: team.id, targetType: 'team', attachmentId: attachment.id })}
+                                        >Supprimer</button>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
                               </div>
                               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                 <p className="text-xs text-gray-500">
@@ -2135,6 +2335,17 @@ export const SynthesisReport = ({
                                       <p className="mt-2 text-sm text-gray-700 whitespace-pre-line">
                                         {renderTextWithLinks(preview)}
                                       </p>
+                                      {normalizeCommentAttachments(message.attachments).length > 0 && (
+                                        <ul className="mt-2 space-y-1 text-xs">
+                                          {normalizeCommentAttachments(message.attachments).map((attachment) => (
+                                            <li key={attachment.id}>
+                                              <a href={attachment.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                                                {attachment.name}
+                                              </a>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      )}
                                     </div>
                                   );
                                 })}
@@ -2157,25 +2368,49 @@ export const SynthesisReport = ({
                               <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">
                                 Répondre
                               </label>
-                              <textarea
-                                rows={3}
-                                value={complianceReplyDrafts[threadKey] || ''}
-                                onChange={(event) => handleComplianceReplyChange(threadKey, event.target.value)}
-                                className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                                placeholder="Votre réponse..."
+                              <RichTextEditor
+                                id={`${threadKey}-reply-editor`}
+                                compact
+                                value={normalizeReplyDraft(complianceReplyDrafts[threadKey]).message}
+                                onChange={(value) => handleComplianceReplyChange(threadKey, value)}
+                                placeholder="Votre réponse (texte riche et liens)..."
                               />
+                              <input
+                                type="file"
+                                multiple
+                                className="mt-2 block w-full text-xs text-gray-600"
+                                onChange={(event) => {
+                                  handleComplianceReplyFilesChange(threadKey, event.target.files);
+                                  event.target.value = '';
+                                }}
+                              />
+                              {normalizeReplyDraft(complianceReplyDrafts[threadKey]).attachments.length > 0 && (
+                                <ul className="mt-2 space-y-1 text-xs">
+                                  {normalizeReplyDraft(complianceReplyDrafts[threadKey]).attachments.map((attachment) => (
+                                    <li key={attachment.id} className="flex items-center justify-between gap-2">
+                                      <a href={attachment.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                                        {attachment.name}
+                                      </a>
+                                      <button type="button" className="text-red-600" onClick={() => handleComplianceReplyAttachmentRemove(threadKey, attachment.id)}>Supprimer</button>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
                               <div className="mt-2 flex items-center gap-3">
                                 <button
                                   type="button"
                                   onClick={() => handleComplianceReplySubmit({ targetId: team.id, targetType: 'team' })}
                                   className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
-                                    canSaveComplianceComment && (complianceReplyDrafts[threadKey] || '').trim().length > 0
+                                    canSaveComplianceComment
+                                    && (normalizeReplyDraft(complianceReplyDrafts[threadKey]).message.trim().length > 0
+                                      || normalizeReplyDraft(complianceReplyDrafts[threadKey]).attachments.length > 0)
                                       ? 'bg-blue-600 text-white hover:bg-blue-700'
                                       : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                   }`}
                                   disabled={
                                     !canSaveComplianceComment
-                                    || (complianceReplyDrafts[threadKey] || '').trim().length === 0
+                                    || (normalizeReplyDraft(complianceReplyDrafts[threadKey]).message.trim().length === 0
+                                      && normalizeReplyDraft(complianceReplyDrafts[threadKey]).attachments.length === 0)
                                   }
                                 >
                                   Envoyer la réponse
@@ -2211,12 +2446,14 @@ export const SynthesisReport = ({
                       const committeeDraft = complianceCommentDrafts.committees?.[committee.id] || committeeCommentEntry;
                       const feedbackMessage = getComplianceFeedbackMessage(`committee-${committee.id}`);
                       const committeeStatusMeta = getCommentStatusMeta(
-                        isAdminMode ? committeeDraft.status : committeeCommentEntry.status
+                        canBypassCompliancePerimeter ? committeeDraft.status : committeeCommentEntry.status
                       );
                       const isRequired = requiredCommitteeIds.has(committee.id);
                       const isDirty =
                         committeeDraft.comment !== committeeCommentEntry.comment
-                        || committeeDraft.status !== committeeCommentEntry.status;
+                        || committeeDraft.status !== committeeCommentEntry.status
+                        || JSON.stringify(normalizeCommentAttachments(committeeDraft.attachments))
+                          !== JSON.stringify(normalizeCommentAttachments(committeeCommentEntry.attachments));
                       const threadKey = `committee-${committee.id}`;
                       const threadMessages = getThreadMessages(committeeCommentEntry, committee.name);
                       const isThreadExpanded = Boolean(expandedThreads[threadKey]);
@@ -2243,7 +2480,7 @@ export const SynthesisReport = ({
                             )}
                           </div>
 
-                          {isAdminMode ? (
+                          {canBypassCompliancePerimeter ? (
                             <form
                               onSubmit={(event) =>
                                 handleComplianceCommentSubmit({
@@ -2289,21 +2526,49 @@ export const SynthesisReport = ({
                                 >
                                   Commentaire
                                 </label>
-                                <textarea
+                                <RichTextEditor
                                   id={`compliance-committee-comment-${committee.id}`}
-                                  rows={4}
-                                  className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                                  placeholder="Ajoutez ici les décisions ou arbitrages du comité..."
+                                  compact
+                                  placeholder="Ajoutez ici les décisions, arbitrages et liens du comité..."
                                   value={committeeDraft.comment}
-                                  onChange={(event) =>
+                                  onChange={(value) =>
                                     handleComplianceCommentChange({
                                       targetId: committee.id,
                                       targetType: 'committee',
                                       field: 'comment',
-                                      value: event.target.value
+                                      value
                                     })
                                   }
                                 />
+                                <input
+                                  type="file"
+                                  multiple
+                                  className="mt-2 block w-full text-xs text-gray-600"
+                                  onChange={(event) => {
+                                    handleComplianceCommentFilesChange({
+                                      targetId: committee.id,
+                                      targetType: 'committee',
+                                      files: event.target.files
+                                    });
+                                    event.target.value = '';
+                                  }}
+                                />
+                                {normalizeCommentAttachments(committeeDraft.attachments).length > 0 && (
+                                  <ul className="mt-2 space-y-1 text-xs">
+                                    {normalizeCommentAttachments(committeeDraft.attachments).map((attachment) => (
+                                      <li key={attachment.id} className="flex items-center justify-between gap-2">
+                                        <a href={attachment.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                                          {attachment.name}
+                                        </a>
+                                        <button
+                                          type="button"
+                                          className="text-red-600"
+                                          onClick={() => handleComplianceCommentAttachmentRemove({ targetId: committee.id, targetType: 'committee', attachmentId: attachment.id })}
+                                        >Supprimer</button>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
                               </div>
                               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                 <p className="text-xs text-gray-500">
@@ -2347,6 +2612,17 @@ export const SynthesisReport = ({
                                       <p className="mt-2 text-sm text-gray-700 whitespace-pre-line">
                                         {renderTextWithLinks(preview)}
                                       </p>
+                                      {normalizeCommentAttachments(message.attachments).length > 0 && (
+                                        <ul className="mt-2 space-y-1 text-xs">
+                                          {normalizeCommentAttachments(message.attachments).map((attachment) => (
+                                            <li key={attachment.id}>
+                                              <a href={attachment.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                                                {attachment.name}
+                                              </a>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      )}
                                     </div>
                                   );
                                 })}
@@ -2369,13 +2645,34 @@ export const SynthesisReport = ({
                               <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">
                                 Répondre
                               </label>
-                              <textarea
-                                rows={3}
-                                value={complianceReplyDrafts[threadKey] || ''}
-                                onChange={(event) => handleComplianceReplyChange(threadKey, event.target.value)}
-                                className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-800 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                                placeholder="Votre réponse..."
+                              <RichTextEditor
+                                id={`${threadKey}-reply-editor`}
+                                compact
+                                value={normalizeReplyDraft(complianceReplyDrafts[threadKey]).message}
+                                onChange={(value) => handleComplianceReplyChange(threadKey, value)}
+                                placeholder="Votre réponse (texte riche et liens)..."
                               />
+                              <input
+                                type="file"
+                                multiple
+                                className="mt-2 block w-full text-xs text-gray-600"
+                                onChange={(event) => {
+                                  handleComplianceReplyFilesChange(threadKey, event.target.files);
+                                  event.target.value = '';
+                                }}
+                              />
+                              {normalizeReplyDraft(complianceReplyDrafts[threadKey]).attachments.length > 0 && (
+                                <ul className="mt-2 space-y-1 text-xs">
+                                  {normalizeReplyDraft(complianceReplyDrafts[threadKey]).attachments.map((attachment) => (
+                                    <li key={attachment.id} className="flex items-center justify-between gap-2">
+                                      <a href={attachment.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                                        {attachment.name}
+                                      </a>
+                                      <button type="button" className="text-red-600" onClick={() => handleComplianceReplyAttachmentRemove(threadKey, attachment.id)}>Supprimer</button>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
                               <div className="mt-2 flex items-center gap-3">
                                 <button
                                   type="button"
@@ -2383,13 +2680,16 @@ export const SynthesisReport = ({
                                     handleComplianceReplySubmit({ targetId: committee.id, targetType: 'committee' })
                                   }
                                   className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
-                                    canSaveComplianceComment && (complianceReplyDrafts[threadKey] || '').trim().length > 0
+                                    canSaveComplianceComment
+                                    && (normalizeReplyDraft(complianceReplyDrafts[threadKey]).message.trim().length > 0
+                                      || normalizeReplyDraft(complianceReplyDrafts[threadKey]).attachments.length > 0)
                                       ? 'bg-blue-600 text-white hover:bg-blue-700'
                                       : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                   }`}
                                   disabled={
                                     !canSaveComplianceComment
-                                    || (complianceReplyDrafts[threadKey] || '').trim().length === 0
+                                    || (normalizeReplyDraft(complianceReplyDrafts[threadKey]).message.trim().length === 0
+                                      && normalizeReplyDraft(complianceReplyDrafts[threadKey]).attachments.length === 0)
                                   }
                                 >
                                   Envoyer la réponse

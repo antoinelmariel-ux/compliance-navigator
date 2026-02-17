@@ -43,7 +43,7 @@ import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.
 import { isShowcaseAccessBlockedByProjectType } from './utils/showcase.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.311';
+const APP_VERSION = 'v1.0.312';
 
 class AdminBackOfficeErrorBoundary extends React.Component {
   constructor(props) {
@@ -4655,6 +4655,7 @@ const updateProjectFilters = useCallback((updater) => {
               hasIncompleteAnswers={hasIncompleteAnswers}
               tourContext={tourContext}
               validationCommitteeConfig={validationCommitteeConfig}
+              adminEmails={adminEmails}
             />
         ) : screen === 'showcase' ? (
           showcaseProjectContext ? (
