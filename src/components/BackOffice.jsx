@@ -647,6 +647,7 @@ export const BackOffice = ({
   const [complianceReviewAnswers, setComplianceReviewAnswers] = useState({});
   const [complianceReviewDisplayMode, setComplianceReviewDisplayMode] = useState('direct');
   const [complianceReviewActiveQuestionId, setComplianceReviewActiveQuestionId] = useState('');
+  const [isComplianceReviewGuidanceOpen, setIsComplianceReviewGuidanceOpen] = useState(false);
 
   useEffect(() => {
     if (selectedComplianceReviewTeamId) {
@@ -677,6 +678,26 @@ export const BackOffice = ({
     return map;
   }, [complianceReviewQuestionnaire]);
 
+  const complianceReviewActiveQuestionIndex = useMemo(() => {
+    if (complianceReviewQuestionnaire.length === 0) {
+      return -1;
+    }
+
+    if (!complianceReviewActiveQuestionId) {
+      return 0;
+    }
+
+    const index = complianceReviewQuestionIndexById.get(complianceReviewActiveQuestionId);
+    return typeof index === 'number' ? index : 0;
+  }, [complianceReviewActiveQuestionId, complianceReviewQuestionIndexById, complianceReviewQuestionnaire]);
+
+  const complianceReviewCurrentQuestion =
+    complianceReviewActiveQuestionIndex >= 0
+      ? complianceReviewQuestionnaire[complianceReviewActiveQuestionIndex] || null
+      : null;
+
+  const complianceReviewEffectiveActiveQuestionId = complianceReviewCurrentQuestion?.id || '';
+
   useEffect(() => {
     if (!complianceReviewActiveQuestionId) {
       return;
@@ -690,22 +711,22 @@ export const BackOffice = ({
   }, [complianceReviewActiveQuestionId, complianceReviewQuestionIndexById]);
 
   const complianceReviewScopedAnswers = useMemo(() => {
-    if (!complianceReviewActiveQuestionId) {
+    if (!complianceReviewEffectiveActiveQuestionId) {
       return {};
     }
 
-    const activeQuestionIndex = complianceReviewQuestionIndexById.get(complianceReviewActiveQuestionId);
+    const activeQuestionIndex = complianceReviewQuestionIndexById.get(complianceReviewEffectiveActiveQuestionId);
     if (typeof activeQuestionIndex !== 'number') {
       return {};
     }
 
     if (complianceReviewDisplayMode === 'direct') {
-      if (!Object.prototype.hasOwnProperty.call(complianceReviewAnswers, complianceReviewActiveQuestionId)) {
+      if (!Object.prototype.hasOwnProperty.call(complianceReviewAnswers, complianceReviewEffectiveActiveQuestionId)) {
         return {};
       }
 
       return {
-        [complianceReviewActiveQuestionId]: complianceReviewAnswers[complianceReviewActiveQuestionId]
+        [complianceReviewEffectiveActiveQuestionId]: complianceReviewAnswers[complianceReviewEffectiveActiveQuestionId]
       };
     }
 
@@ -720,9 +741,9 @@ export const BackOffice = ({
 
     return nextAnswers;
   }, [
-    complianceReviewActiveQuestionId,
     complianceReviewAnswers,
     complianceReviewDisplayMode,
+    complianceReviewEffectiveActiveQuestionId,
     complianceReviewQuestionIndexById,
     complianceReviewQuestionnaire
   ]);
@@ -3248,6 +3269,42 @@ export const BackOffice = ({
     });
     setComplianceReviewActiveQuestionId(questionId);
   }, []);
+
+  const handleComplianceReviewPreviousQuestion = useCallback(() => {
+    if (complianceReviewActiveQuestionIndex <= 0) {
+      return;
+    }
+
+    const previousQuestion = complianceReviewQuestionnaire[complianceReviewActiveQuestionIndex - 1];
+    if (!previousQuestion?.id) {
+      return;
+    }
+
+    setComplianceReviewActiveQuestionId(previousQuestion.id);
+  }, [complianceReviewActiveQuestionIndex, complianceReviewQuestionnaire]);
+
+  const handleComplianceReviewNextQuestion = useCallback(() => {
+    if (complianceReviewActiveQuestionIndex < 0) {
+      return;
+    }
+
+    const nextQuestion = complianceReviewQuestionnaire[complianceReviewActiveQuestionIndex + 1];
+    if (!nextQuestion?.id) {
+      return;
+    }
+
+    setComplianceReviewActiveQuestionId(nextQuestion.id);
+  }, [complianceReviewActiveQuestionIndex, complianceReviewQuestionnaire]);
+
+  useEffect(() => {
+    setIsComplianceReviewGuidanceOpen(false);
+  }, [complianceReviewEffectiveActiveQuestionId]);
+
+  const complianceReviewGuidance = complianceReviewCurrentQuestion?.guidance || {};
+  const complianceReviewGuidanceHasContent =
+    (typeof complianceReviewGuidance.objective === 'string' && complianceReviewGuidance.objective.trim().length > 0) ||
+    (typeof complianceReviewGuidance.details === 'string' && complianceReviewGuidance.details.trim().length > 0) ||
+    (Array.isArray(complianceReviewGuidance.tips) && complianceReviewGuidance.tips.some((tip) => typeof tip === 'string' && tip.trim().length > 0));
 
   const tabDefinitions = [
     {
@@ -7200,93 +7257,194 @@ export const BackOffice = ({
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
                 <article className="rounded-xl border border-gray-200 bg-white p-4 space-y-4 hv-surface">
                   <h3 className="text-lg font-semibold text-gray-800">Questionnaire projet (lecture guidée)</h3>
-                  <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
-                    {complianceReviewQuestionnaire.map((question, index) => {
-                      const answerValue = complianceReviewAnswers[question.id];
-                      const optionLabels = Array.isArray(question.options)
-                        ? question.options.map(getQuestionOptionLabel).filter(Boolean)
-                        : [];
 
-                      return (
-                        <div key={question.id || index} className={`border rounded-lg p-3 space-y-2 ${complianceReviewActiveQuestionId === question.id ? 'border-blue-300 bg-blue-50/40' : 'border-gray-200'}`}>
-                          <p className="text-sm font-semibold text-gray-800">{index + 1}. {question.question || question.id}</p>
+                  {complianceReviewCurrentQuestion ? (
+                    <div className="space-y-5">
+                      <div>
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-2">
+                          <span className="text-sm font-medium text-gray-600" aria-live="polite">
+                            Question {complianceReviewActiveQuestionIndex + 1} sur {complianceReviewQuestionnaire.length}
+                          </span>
+                          <span className="text-sm font-medium text-blue-600" aria-live="polite">
+                            {Math.max(complianceReviewQuestionnaire.length - (complianceReviewActiveQuestionIndex + 1), 0)} questions restantes
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2" role="progressbar" aria-valuenow={Math.round(((complianceReviewActiveQuestionIndex + 1) / complianceReviewQuestionnaire.length) * 100)} aria-valuemin={0} aria-valuemax={100}>
+                          <span className="block bg-blue-600 h-2 rounded-full transition-all duration-300" style={{ width: `${((complianceReviewActiveQuestionIndex + 1) / complianceReviewQuestionnaire.length) * 100}%` }} />
+                        </div>
+                        {complianceReviewActiveQuestionIndex === 0 && (
+                          <p className="text-xs text-gray-500 mt-2 flex items-center">
+                            <Info className="w-3 h-3 mr-1" />
+                            Certaines questions peuvent apparaître en fonction de vos réponses
+                          </p>
+                        )}
+                      </div>
 
-                          {(question.type === 'text' || question.type === 'long_text') && (
-                            <input
-                              type="text"
-                              value={toDisplayText(answerValue)}
-                              disabled
-                              readOnly
-                              placeholder="Texte libre (non modifiable dans cette vue)"
-                              className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed"
-                            />
-                          )}
-
-                          {question.type === 'choice' && (
-                            <select
-                              value={typeof answerValue === 'string' ? answerValue : ''}
-                              onChange={(event) => updateComplianceReviewAnswer(question.id, event.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm hv-focus-ring"
+                      <div className="space-y-4">
+                        <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                          <p className="text-xl font-bold text-gray-800 sm:text-2xl">
+                            {complianceReviewCurrentQuestion.question || complianceReviewCurrentQuestion.id}
+                          </p>
+                          {complianceReviewGuidanceHasContent && (
+                            <button
+                              type="button"
+                              onClick={() => setIsComplianceReviewGuidanceOpen((prev) => !prev)}
+                              className="inline-flex items-center justify-center w-full sm:w-auto px-4 py-2 rounded-xl border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors font-medium"
                             >
-                              <option value="">Sélectionnez…</option>
-                              {optionLabels.map((optionLabel) => (
-                                <option key={optionLabel} value={optionLabel}>{optionLabel}</option>
-                              ))}
-                            </select>
-                          )}
-
-                          {question.type === 'multi_choice' && (
-                            <div className="space-y-2">
-                              {optionLabels.map((optionLabel) => {
-                                const selectedValues = Array.isArray(answerValue) ? answerValue : [];
-                                return (
-                                  <label key={optionLabel} className="flex items-center gap-2 text-sm text-gray-700">
-                                    <input
-                                      type="checkbox"
-                                      checked={selectedValues.includes(optionLabel)}
-                                      onChange={(event) =>
-                                        toggleComplianceReviewMultiChoice(question.id, optionLabel, event.target.checked)
-                                      }
-                                      className="h-4 w-4 rounded border-gray-300 text-blue-600"
-                                    />
-                                    <span>{optionLabel}</span>
-                                  </label>
-                                );
-                              })}
-                            </div>
-                          )}
-
-                          {question.type === 'date' && (
-                            <input
-                              type="date"
-                              value={typeof answerValue === 'string' ? answerValue : ''}
-                              onChange={(event) => updateComplianceReviewAnswer(question.id, event.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm hv-focus-ring"
-                            />
-                          )}
-
-                          {question.type === 'number' && (
-                            <input
-                              type="number"
-                              value={typeof answerValue === 'number' || typeof answerValue === 'string' ? answerValue : ''}
-                              onChange={(event) => updateComplianceReviewAnswer(question.id, event.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm hv-focus-ring"
-                            />
-                          )}
-
-                          {(question.type === 'url' || question.type === 'file' || question.type === 'milestone_list') && (
-                            <input
-                              type="text"
-                              value={toDisplayText(answerValue)}
-                              onChange={(event) => updateComplianceReviewAnswer(question.id, event.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm hv-focus-ring"
-                              placeholder="Réponse de démonstration"
-                            />
+                              <Info className="w-4 h-4 mr-2" />
+                              {isComplianceReviewGuidanceOpen ? "Masquer l'aide" : 'Comprendre cette question'}
+                            </button>
                           )}
                         </div>
-                      );
-                    })}
-                  </div>
+
+                        {isComplianceReviewGuidanceOpen && complianceReviewGuidanceHasContent && (
+                          <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 space-y-3 text-sm text-gray-700">
+                            {complianceReviewGuidance.objective && (
+                              <div>
+                                <h4 className="text-xs font-semibold uppercase tracking-wide text-blue-700">Objectif</h4>
+                                <p className="mt-1">{renderTextWithLinks(complianceReviewGuidance.objective)}</p>
+                              </div>
+                            )}
+                            {complianceReviewGuidance.details && (
+                              <div>
+                                <h4 className="text-xs font-semibold uppercase tracking-wide text-blue-700">Détails</h4>
+                                <p className="mt-1">{renderTextWithLinks(complianceReviewGuidance.details)}</p>
+                              </div>
+                            )}
+                            {Array.isArray(complianceReviewGuidance.tips) && complianceReviewGuidance.tips.filter((tip) => typeof tip === 'string' && tip.trim().length > 0).length > 0 && (
+                              <div>
+                                <h4 className="text-xs font-semibold uppercase tracking-wide text-blue-700">Conseils pratiques</h4>
+                                <ul className="mt-1 list-disc pl-5 space-y-1">
+                                  {complianceReviewGuidance.tips
+                                    .filter((tip) => typeof tip === 'string' && tip.trim().length > 0)
+                                    .map((tip, index) => (
+                                      <li key={`${complianceReviewCurrentQuestion.id || 'question'}-tip-${index}`}>{renderTextWithLinks(tip)}</li>
+                                    ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        <div className="rounded-lg border border-gray-200 p-3 space-y-3 bg-white">
+                          {(() => {
+                            const answerValue = complianceReviewAnswers[complianceReviewCurrentQuestion.id];
+                            const optionLabels = Array.isArray(complianceReviewCurrentQuestion.options)
+                              ? complianceReviewCurrentQuestion.options.map(getQuestionOptionLabel).filter(Boolean)
+                              : [];
+
+                            if (complianceReviewCurrentQuestion.type === 'text' || complianceReviewCurrentQuestion.type === 'long_text') {
+                              return (
+                                <input
+                                  type="text"
+                                  value={toDisplayText(answerValue)}
+                                  disabled
+                                  readOnly
+                                  placeholder="Texte libre (non modifiable dans cette vue)"
+                                  className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed"
+                                />
+                              );
+                            }
+
+                            if (complianceReviewCurrentQuestion.type === 'choice') {
+                              return (
+                                <select
+                                  value={typeof answerValue === 'string' ? answerValue : ''}
+                                  onChange={(event) => updateComplianceReviewAnswer(complianceReviewCurrentQuestion.id, event.target.value)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm hv-focus-ring"
+                                >
+                                  <option value="">Sélectionnez…</option>
+                                  {optionLabels.map((optionLabel) => (
+                                    <option key={optionLabel} value={optionLabel}>{optionLabel}</option>
+                                  ))}
+                                </select>
+                              );
+                            }
+
+                            if (complianceReviewCurrentQuestion.type === 'multi_choice') {
+                              const selectedValues = Array.isArray(answerValue) ? answerValue : [];
+                              return (
+                                <div className="space-y-2">
+                                  {optionLabels.map((optionLabel) => (
+                                    <label key={optionLabel} className="flex items-center gap-2 text-sm text-gray-700">
+                                      <input
+                                        type="checkbox"
+                                        checked={selectedValues.includes(optionLabel)}
+                                        onChange={(event) =>
+                                          toggleComplianceReviewMultiChoice(complianceReviewCurrentQuestion.id, optionLabel, event.target.checked)
+                                        }
+                                        className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                                      />
+                                      <span>{optionLabel}</span>
+                                    </label>
+                                  ))}
+                                </div>
+                              );
+                            }
+
+                            if (complianceReviewCurrentQuestion.type === 'date') {
+                              return (
+                                <input
+                                  type="date"
+                                  value={typeof answerValue === 'string' ? answerValue : ''}
+                                  onChange={(event) => updateComplianceReviewAnswer(complianceReviewCurrentQuestion.id, event.target.value)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm hv-focus-ring"
+                                />
+                              );
+                            }
+
+                            if (complianceReviewCurrentQuestion.type === 'number') {
+                              return (
+                                <input
+                                  type="number"
+                                  value={typeof answerValue === 'number' || typeof answerValue === 'string' ? answerValue : ''}
+                                  onChange={(event) => updateComplianceReviewAnswer(complianceReviewCurrentQuestion.id, event.target.value)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm hv-focus-ring"
+                                />
+                              );
+                            }
+
+                            if (complianceReviewCurrentQuestion.type === 'url' || complianceReviewCurrentQuestion.type === 'file' || complianceReviewCurrentQuestion.type === 'milestone_list') {
+                              return (
+                                <input
+                                  type="text"
+                                  value={toDisplayText(answerValue)}
+                                  onChange={(event) => updateComplianceReviewAnswer(complianceReviewCurrentQuestion.id, event.target.value)}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm hv-focus-ring"
+                                  placeholder="Réponse de démonstration"
+                                />
+                              );
+                            }
+
+                            return <p className="text-sm text-gray-500">Type de question non pris en charge dans cette vue.</p>;
+                          })()}
+                        </div>
+
+                        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <button
+                            type="button"
+                            onClick={handleComplianceReviewPreviousQuestion}
+                            disabled={complianceReviewActiveQuestionIndex <= 0}
+                            className="flex items-center justify-center px-4 py-2 rounded-lg font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all hv-button"
+                          >
+                            <ChevronLeft className="w-4 h-4 mr-1" />
+                            Précédent
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleComplianceReviewNextQuestion}
+                            disabled={complianceReviewActiveQuestionIndex >= complianceReviewQuestionnaire.length - 1}
+                            className="flex items-center justify-center px-4 py-2 rounded-lg font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all hv-button"
+                          >
+                            Suivant
+                            <ChevronRight className="w-4 h-4 ml-1" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">Aucune question disponible avec les réponses de démonstration actuelles.</p>
+                  )}
                 </article>
 
                 <article className="rounded-xl border border-gray-200 bg-white p-4 space-y-4 hv-surface">
@@ -7320,7 +7478,7 @@ export const BackOffice = ({
                     </div>
                   </div>
 
-                  {!complianceReviewActiveQuestionId && (
+                  {!complianceReviewEffectiveActiveQuestionId && (
                     <p className="text-sm text-gray-500">
                       Sélectionnez une option dans le questionnaire de gauche pour afficher les déclenchements, questions et risques.
                     </p>
