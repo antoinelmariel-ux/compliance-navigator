@@ -137,6 +137,13 @@ export const initialQuestions = [
         "conditionLogic": "all"
       },
       {
+        "label": "Médical DOF",
+        "visibility": "always",
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all"
+      },
+      {
         "label": "Affaires Publiques",
         "visibility": "always",
         "conditionGroups": [],
@@ -715,19 +722,49 @@ export const initialQuestions = [
         "subType": "multi_choice",
         "subOptions": [
           {
-            "label": "Allemagne"
+            "label": "Allemagne",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
           },
           {
-            "label": "Benelux"
+            "label": "Benelux",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
           },
           {
-            "label": "Espagne"
+            "label": "Espagne",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
           },
           {
-            "label": "Grande-Bretagne"
+            "label": "Grande-Bretagne",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
           },
           {
-            "label": "Mexique"
+            "label": "Mexique",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
           }
         ]
       },
@@ -736,7 +773,9 @@ export const initialQuestions = [
         "visibility": "always",
         "conditionGroups": [],
         "conditions": [],
-        "conditionLogic": "all"
+        "conditionLogic": "all",
+        "subType": null,
+        "subOptions": []
       }
     ],
     "required": true,
@@ -836,7 +875,7 @@ export const initialQuestions = [
         "subType": null,
         "subOptions": [
           {
-            "label": "Cevenfacta",
+            "label": "Alfalastin",
             "visibility": "always",
             "subType": null,
             "subOptions": [],
@@ -845,13 +884,31 @@ export const initialQuestions = [
             "conditionLogic": "all"
           },
           {
-            "label": "iQymune",
+            "label": "Iqymune / Clairyg100/Clairyg 5%",
             "visibility": "always",
             "subType": null,
             "subOptions": [],
             "conditionGroups": [],
             "conditions": [],
             "conditionLogic": "all"
+          },
+          {
+            "label": "Cevenfacta"
+          },
+          {
+            "label": "Clottafact/Fibclot"
+          },
+          {
+            "label": "Tegeline"
+          },
+          {
+            "label": "Vialebex"
+          },
+          {
+            "label": "Wilfactin/ Willfact"
+          },
+          {
+            "label": "Cross-produits"
           }
         ],
         "conditionGroups": [],
@@ -873,13 +930,19 @@ export const initialQuestions = [
             "conditionLogic": "all"
           },
           {
-            "label": "Soins intensifs",
+            "label": "Immunologie",
             "visibility": "always",
             "subType": null,
             "subOptions": [],
             "conditionGroups": [],
             "conditions": [],
             "conditionLogic": "all"
+          },
+          {
+            "label": "Pneumologie"
+          },
+          {
+            "label": "Soins intensifs"
           }
         ],
         "conditionGroups": [],
@@ -904,15 +967,7 @@ export const initialQuestions = [
     "guidance": {
       "objective": "Sélectionner la palette de couleurs qui servira de base à la vitrine du projet.",
       "details": "Chaque thème peut être ajusté dans le back-office grâce aux color-pickers (fond, dégradés, accents). Choisissez celui qui correspond le mieux à votre projet.",
-      "tips": [
-        "Universel : reprend l'identité visuelle actuelle de la vitrine.",
-        "Produit : palette solaire et contrastée pour valoriser une offre produit.",
-        "Cupertino : minimalisme lumineux inspiré d’Apple.",
-        "Lumen : dégradés néon et profondeur façon Stripe.",
-        "Voyage : chaleur AirBnB, accent corail et accueil doux.",
-        "Arena : contrastes sportifs et énergie Nike.",
-        "Prism : gradients vibrants inspirés d’Instagram."
-      ]
+      "tips": []
     },
     "showcase": {
       "sections": [
