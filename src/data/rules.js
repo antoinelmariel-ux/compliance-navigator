@@ -88,6 +88,14 @@ export const initialRules = [
           }
         },
         {
+          "text": "Est-il possible de limiter les données personnelles collectées tout en répondant à votre objectif ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
           "text": "Où sont hébergées les données ? hors Union Européenne ?",
           "timingConstraint": {
             "enabled": false,
@@ -97,7 +105,8 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": []
   },
   {
     "id": "rule6",
@@ -386,7 +395,7 @@ export const initialRules = [
     "questions": {
       "dpo": [
         {
-          "text": "Le prestataire va-t-il avoir accès / utiliser / collecter des données personnelles ? (y compris en transmettant des rapports, des KPIs, ...)",
+          "text": "Le prestataire va-t-il avoir accès / utiliser / collecter des données personnelles ? (y compris en transmettant des rapports, des KPIs, ...). Si oui, lesquelles ?",
           "timingConstraint": {
             "enabled": false,
             "startQuestion": "",
@@ -395,6 +404,14 @@ export const initialRules = [
         },
         {
           "text": "Où est situé le prestataire ? UE ou reste du monde ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Le prestataire a-t-il lui-même recours à d’autres prestataires/sous-traitants qui seraient amenés à avoir accès aux données ?",
           "timingConstraint": {
             "enabled": false,
             "startQuestion": "",
@@ -501,7 +518,7 @@ export const initialRules = [
             "type": "question",
             "question": "q3",
             "operator": "equals",
-            "value": "Oui - Autre données sensibles (ex : origine ethnique, orientation sexuelle, ...)"
+            "value": "Oui - Autre données sensibles (ex : données génétiques, biométriques, ethnique, orientation sexuelle, ...)"
           }
         ]
       }
