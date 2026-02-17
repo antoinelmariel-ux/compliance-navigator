@@ -59,10 +59,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "procurement"
+      "dpo"
     ],
     "questions": {
-      "procurement": [
+      "dpo": [
         {
           "text": "Quelles sont les personnes dont les données vont être collectées ?",
           "timingConstraint": {
@@ -159,10 +159,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "procurement"
+      "dpo"
     ],
     "questions": {
-      "procurement": [
+      "dpo": [
         {
           "text": "L'accès à l'interface digitale nécessite-t-il une connexion ?",
           "timingConstraint": {
@@ -217,10 +217,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "procurement"
+      "dpo"
     ],
     "questions": {
-      "procurement": [
+      "dpo": [
         {
           "text": "Comment avez-vous ou allez-vous obtenir les adresses email pour l'emailing ?",
           "timingConstraint": {
@@ -277,10 +277,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "procurement"
+      "dpo"
     ],
     "questions": {
-      "procurement": [
+      "dpo": [
         {
           "text": "Pouvez-vous décrire les KPIs de suivi ?",
           "timingConstraint": {
@@ -329,10 +329,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "procurement"
+      "dpo"
     ],
     "questions": {
-      "procurement": [
+      "dpo": [
         {
           "text": "Quelles sont les données sur le patient partagées dans le cas clinique ?",
           "timingConstraint": {
@@ -381,10 +381,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "procurement"
+      "dpo"
     ],
     "questions": {
-      "procurement": [
+      "dpo": [
         {
           "text": "Le prestataire va-t-il avoir accès / utiliser / collecter des données personnelles ? (y compris en transmettant des rapports, des KPIs, ...)",
           "timingConstraint": {
@@ -441,10 +441,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "procurement"
+      "dpo"
     ],
     "questions": {
-      "procurement": [
+      "dpo": [
         {
           "text": "Savez-vous si l'hébergeur des données est habilité à stocker des donnés de santé ?",
           "timingConstraint": {
@@ -461,7 +461,7 @@ export const initialRules = [
         "level": "Élevé",
         "mitigation": "Les projets avec des données de santé nécessitent une analyse approfondie des règles applicables selon les pays, des conditions d’hébergement, des transferts internationaux et des exigences de sécurité renforcées et peuvent être impossibles à mettre en œuvre pour des raisons légales ou avec des délais significatifs.",
         "priority": "A particulièrement anticiper",
-        "teamId": "procurement",
+        "teamId": "dpo",
         "timingConstraint": {
           "enabled": false,
           "startQuestion": "",
@@ -506,10 +506,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "procurement"
+      "dpo"
     ],
     "questions": {
-      "procurement": [
+      "dpo": [
         {
           "text": "Pourquoi avez-vous besoin de collecter ces données sensibles ? Sont-elles réellement indispensables ?",
           "timingConstraint": {
@@ -526,7 +526,7 @@ export const initialRules = [
         "level": "Élevé",
         "mitigation": "Les projets avec des données sensibles présentent un risque élevé pour les droits et libertés des personnes concernées et nécessitent une analyse approfondie en amont afin d’évaluer leur licéité, leur proportionnalité et les mesures de sécurité adaptées, et peuvent être impossibles à mettre en œuvre pour des raisons légales ou avec des délais significatifs.",
         "priority": "A particulièrement anticiper",
-        "teamId": "procurement",
+        "teamId": "dpo",
         "timingConstraint": {
           "enabled": false,
           "startQuestion": "",
@@ -582,10 +582,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "team2"
+      "achats"
     ],
     "questions": {
-      "team2": [
+      "achats": [
         {
           "text": "Si le budget envisagé avec l'agence qui vous accompagnera dépasse 5K, contactez les achats pour vous faire accompagner dans le processus de sélection",
           "timingConstraint": {
@@ -624,10 +624,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "com"
+      "communication_externe"
     ],
     "questions": {
-      "com": [
+      "communication_externe": [
         {
           "text": "Pour les communiqués de presse, rapprochez-vous du service Com Externe qui vous accompagnera dans la rédaction",
           "timingConstraint": {
@@ -678,10 +678,10 @@ export const initialRules = [
     ],
     "conditionLogic": "any",
     "teams": [
-      "com"
+      "communication_externe"
     ],
     "questions": {
-      "com": [
+      "communication_externe": [
         {
           "text": "Pour l'utilisation des réseaux sociaux du LFB, merci de suivre&nbsp;<a href=\"https://lfb1.sharepoint.com/sites/lfb-daily-life/fr-FR/toolbox/LFB%20-%20Documents%20Process/Forms/Ordre%20alpha.aspx?id=%2Fsites%2Flfb%2Ddaily%2Dlife%2Ffr%2DFR%2Ftoolbox%2FLFB%20%2D%20Documents%20Process%2FCommunication%20Aff%5FPubliques%2FCO07%5FFR%20Charte%20utilisation%20reseaux%20sociaux%2Epdf&amp;parent=%2Fsites%2Flfb%2Ddaily%2Dlife%2Ffr%2DFR%2Ftoolbox%2FLFB%20%2D%20Documents%20Process%2FCommunication%20Aff%5FPubliques\" target=\"_blank\" rel=\"noopener noreferrer\">notre charte d'utilisation des réseaux sociaux</a>",
           "timingConstraint": {
@@ -720,10 +720,10 @@ export const initialRules = [
     ],
     "conditionLogic": "any",
     "teams": [
-      "com"
+      "communication_externe"
     ],
     "questions": {
-      "com": [
+      "communication_externe": [
         {
           "text": "Rapprochez vous de la communication externe qui est en charge de la publication sur notre site internet corporate",
           "timingConstraint": {
@@ -762,10 +762,10 @@ export const initialRules = [
     ],
     "conditionLogic": "any",
     "teams": [
-      "com"
+      "communication_externe"
     ],
     "questions": {
-      "com": [
+      "communication_externe": [
         {
           "text": "Rapprochez vous des filiales qui ont la responsabilité de la publication sur leurs sites internet",
           "timingConstraint": {
@@ -804,10 +804,10 @@ export const initialRules = [
     ],
     "conditionLogic": "any",
     "teams": [
-      "com"
+      "communication_externe"
     ],
     "questions": {
-      "com": [
+      "communication_externe": [
         {
           "text": "Nous vous rappelons que nous disposons d'une banque d'images pouvant être utilisée librement :&nbsp;<a href=\"https://lfb1.sharepoint.com/sites/lfb-daily-life/fr-FR/toolbox/sitepages/Medias-and-Communication-ressources.aspx#Default=%7B%22r%22%3A%5B%7B%22k%22%3Afalse%2C%22m%22%3Anull%2C%22n%22%3A%22RefinableString104%22%2C%22o%22%3A%22or%22%2C%22t%22%3A%5B%22%C7%82%C7%8250617469656e7473%22%5D%7D%5D%7D\" target=\"_blank\" rel=\"noopener noreferrer\">Médiathèque</a>",
           "timingConstraint": {
@@ -846,10 +846,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "com"
+      "communication_externe"
     ],
     "questions": {
-      "com": [
+      "communication_externe": [
         {
           "text": "Pensez à bien respecter et partager aux éventuels prestataires notre chartre graphique et nos logos. Ces éléments sont disponibles ici :&nbsp;<a href=\"https://lfb1.sharepoint.com/sites/lfb-daily-life/fr-FR/toolbox/SitePages/Communication-tools.aspx#environnement-graphique%E2%80%8B%E2%80%8B%E2%80%8B%E2%80%8B\" target=\"_blank\" rel=\"noopener noreferrer\">Charte graphique corporate</a>",
           "timingConstraint": {
@@ -900,10 +900,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "com"
+      "communication_externe"
     ],
     "questions": {
-      "com": []
+      "communication_externe": []
     },
     "risks": [
       {
@@ -911,7 +911,7 @@ export const initialRules = [
         "level": "Moyen",
         "mitigation": "Certains sujets concernant le LFB peuvent être à risque en terme de communication : Un mauvais choix de terme peut amener à des interprétations erronées. Une relecture pour validation par la communication externe est donc requise",
         "priority": "A anticiper",
-        "teamId": "com",
+        "teamId": "communication_externe",
         "timingConstraint": {
           "enabled": false,
           "startQuestion": "",
@@ -946,10 +946,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "team1"
+      "pi"
     ],
     "questions": {
-      "team1": [
+      "pi": [
         {
           "text": "Contactez nous pour étudier la liberté d'exploitation sur le nom et/ou logo préssenti. Sur cette base, nous définirons ensemble la stratégie de protection (dépôt éventuel de marque par exemple)",
           "timingConstraint": {
@@ -988,10 +988,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "team1"
+      "pi"
     ],
     "questions": {
-      "team1": [
+      "pi": [
         {
           "text": "Pensez à bien faire signer à l'agence - une fois le logo / nom reçu - le contrat suivant : XXXXXXX (version française) ; XXXXX (version anglaise)",
           "timingConstraint": {
@@ -1030,10 +1030,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "team1"
+      "pi"
     ],
     "questions": {
-      "team1": [
+      "pi": [
         {
           "text": "Contactez-nous pour établir une étude de liberté d'exploitation des visuels créés pour le projet.&nbsp;<br>Si ce visuel a été créé par une personne externe au LFB, il conviendra de lui faire signer un contrat de cession de droit d'auteur : XXXXXX (version française) ; XXXX (version anglaise)",
           "timingConstraint": {
@@ -1072,10 +1072,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "team1"
+      "pi"
     ],
     "questions": {
-      "team1": [
+      "pi": [
         {
           "text": "Sur le partage d'informations sur nos procédés de fabrication, installations ou éléments techniques, suivez ces recommandations - du fait du caractère sensible de ces éléments",
           "timingConstraint": {
@@ -1122,10 +1122,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "team1"
+      "pi"
     ],
     "questions": {
-      "team1": []
+      "pi": []
     },
     "risks": [
       {
@@ -1133,7 +1133,7 @@ export const initialRules = [
         "level": "Moyen",
         "mitigation": "Les projets prévoyant des publications nécessitent un passage en CELLCOS",
         "priority": "A anticiper",
-        "teamId": "team1",
+        "teamId": "pi",
         "timingConstraint": {
           "enabled": false,
           "startQuestion": "",
@@ -1168,10 +1168,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "team1"
+      "pi"
     ],
     "questions": {
-      "team1": [
+      "pi": [
         {
           "text": "Pour l'utilisation de logo de tiers, pensez à obtenir leur autorisation écrite",
           "timingConstraint": {
@@ -1210,10 +1210,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "team1"
+      "pi"
     ],
     "questions": {
-      "team1": [
+      "pi": [
         {
           "text": "Vérifiez que les images utilisées dans le cadre du projet sont bien libre de droit pour l'utilisation envisagée (contrat et/ou mentions légales). Vous pouvez vous appuyer sur le pôle PI pour cette vérification",
           "timingConstraint": {
@@ -1252,10 +1252,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "team1"
+      "pi"
     ],
     "questions": {
-      "team1": [
+      "pi": [
         {
           "text": "Si les extraits de publications ont été intégrés tel quel sans modification ni paraphrase, vérifiez si la publication est intégré au périmètre de la licence CFC (Centre Français de Copie) / BioMed et les droits qui sont accordés, en utilisant&nbsp;<a href=\"https://v1.cfcopies.com/biomed/index.html\" target=\"_blank\" rel=\"noopener noreferrer\">ce lien</a><br>",
           "timingConstraint": {
@@ -1302,10 +1302,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "team1"
+      "pi"
     ],
     "questions": {
-      "team1": [
+      "pi": [
         {
           "text": "Vérifiez, en fonction d'une diffusion électronique ou physique de la publication partagée, si&nbsp; elle est intégrée au périmètre de la licence CFC (Centre Français de Copie) / BioMed et les droits qui sont accordés, en utilisant&nbsp;<a href=\"https://v1.cfcopies.com/biomed/index.html\" target=\"_blank\" rel=\"noopener noreferrer\">ce lien</a><br>",
           "timingConstraint": {
@@ -1344,10 +1344,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "team1"
+      "pi"
     ],
     "questions": {
-      "team1": [
+      "pi": [
         {
           "text": "Pour l'extrait du site internet, vérifiez que les mentions légales du dit site autorise la reproduction",
           "timingConstraint": {
@@ -1396,10 +1396,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "team1"
+      "pi"
     ],
     "questions": {
-      "team1": [
+      "pi": [
         {
           "text": "Contactez le pôle PI pour vérifier la disponibilité des noms de domaine s'il s'agit d'un nouveau site internet",
           "timingConstraint": {
@@ -1438,10 +1438,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "bpp"
+      "controle_pub"
     ],
     "questions": {
-      "bpp": [
+      "controle_pub": [
         {
           "text": "Est-ce qu'il y a mention dans le projet d'éléments hors AMM ?",
           "timingConstraint": {
@@ -1500,10 +1500,10 @@ export const initialRules = [
     ],
     "conditionLogic": "any",
     "teams": [
-      "bpp"
+      "controle_pub"
     ],
     "questions": {
-      "bpp": [
+      "controle_pub": [
         {
           "text": "En quoi consiste l'événement ?",
           "timingConstraint": {
@@ -1566,10 +1566,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "bpp"
+      "controle_pub"
     ],
     "questions": {
-      "bpp": [
+      "controle_pub": [
         {
           "text": "Qui est l'organisateur de l'événement ?",
           "timingConstraint": {
@@ -1632,10 +1632,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "bpp"
+      "controle_pub"
     ],
     "questions": {
-      "bpp": [
+      "controle_pub": [
         {
           "text": "Pouvez-vous décrire l'arborescence du site ?",
           "timingConstraint": {
@@ -1678,10 +1678,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "bpp"
+      "controle_pub"
     ],
     "questions": {
-      "bpp": [
+      "controle_pub": [
         {
           "text": "Comment vous assurez-vous que seuls les professionnels de santé habilités à prescrire puissent accéder aux informations promotionnelles ?",
           "timingConstraint": {
@@ -1768,10 +1768,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "Ethics"
+      "ethique_compliance"
     ],
     "questions": {
-      "Ethics": [
+      "ethique_compliance": [
         {
           "text": "Avec qui va-t-on contractualiser ? (statut exact du partenaire)",
           "timingConstraint": {
@@ -1826,10 +1826,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "Ethics"
+      "ethique_compliance"
     ],
     "questions": {
-      "Ethics": [
+      "ethique_compliance": [
         {
           "text": "Y-a-t-il des professionnels de santé dans le board de l'association ?",
           "timingConstraint": {
@@ -1868,10 +1868,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "Ethics"
+      "ethique_compliance"
     ],
     "questions": {
-      "Ethics": [
+      "ethique_compliance": [
         {
           "text": "Est-ce que le même type d'application est déjà disponible sur l'AppStore ? Si oui, est-elle gratuite ou payante ?",
           "timingConstraint": {
@@ -1910,10 +1910,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "Ethics"
+      "ethique_compliance"
     ],
     "questions": {
-      "Ethics": [
+      "ethique_compliance": [
         {
           "text": "Quel est le programme de l'événement ?",
           "timingConstraint": {
@@ -1976,10 +1976,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "Ethics"
+      "ethique_compliance"
     ],
     "questions": {
-      "Ethics": [
+      "ethique_compliance": [
         {
           "text": "Avec qui va-t-on contractualiser dans le cadre du parrainage ? (statut exact du partenaire) Présence de PS dans le board du parrainé ?",
           "timingConstraint": {
@@ -2062,10 +2062,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "Ethics"
+      "ethique_compliance"
     ],
     "questions": {
-      "Ethics": [
+      "ethique_compliance": [
         {
           "text": "Quel est le programme de l'événement ?",
           "timingConstraint": {
@@ -2128,10 +2128,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "Ethics"
+      "ethique_compliance"
     ],
     "questions": {
-      "Ethics": [
+      "ethique_compliance": [
         {
           "text": "Quel est le montant exact du don ?",
           "timingConstraint": {
@@ -2198,10 +2198,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "Ethics"
+      "ethique_compliance"
     ],
     "questions": {
-      "Ethics": [
+      "ethique_compliance": [
         {
           "text": "<br>",
           "timingConstraint": {
@@ -2218,7 +2218,7 @@ export const initialRules = [
         "level": "Moyen",
         "mitigation": "Si le contrat des professionnels de santé français est supérieur à 2K€, il convient en amont du début de la prestation d'obtenir l'autorisation de l'ordre auquel ils sont rattachés",
         "priority": "A anticiper",
-        "teamId": "Ethics",
+        "teamId": "ethique_compliance",
         "timingConstraint": {
           "enabled": false,
           "startQuestion": "",
@@ -2257,10 +2257,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "Ethics"
+      "ethique_compliance"
     ],
     "questions": {
-      "Ethics": [
+      "ethique_compliance": [
         {
           "text": "<br>",
           "timingConstraint": {
@@ -2277,7 +2277,7 @@ export const initialRules = [
         "level": "Moyen",
         "mitigation": "Si l'expert français sollicité (travaillant au sein d'un établissement public) n'est ni chercheur ni PdS, il ne pourra être rémunéré que s'il est inscrit à l'URSSAF ou dispose de sa propre société de conseil. A défaut, il ne pourra pas être rémunéré. Nous passerons alors par un contrat à titre gracieux ou avec un versement à son institution de rattachement",
         "priority": "A anticiper",
-        "teamId": "Ethics",
+        "teamId": "ethique_compliance",
         "timingConstraint": {
           "enabled": false,
           "startQuestion": "",
@@ -2336,10 +2336,10 @@ export const initialRules = [
     ],
     "conditionLogic": "any",
     "teams": [
-      "Ethics"
+      "ethique_compliance"
     ],
     "questions": {
-      "Ethics": [
+      "ethique_compliance": [
         {
           "text": "Pouvez-vous préciser comment l'IA est précisément intégrée dans votre projet ?",
           "timingConstraint": {
@@ -2402,10 +2402,10 @@ export const initialRules = [
     ],
     "conditionLogic": "any",
     "teams": [
-      "legal"
+      "juridique_france"
     ],
     "questions": {
-      "Ethics": [
+      "ethique_compliance": [
         {
           "text": "Quel type d’IA est utilisé pour le projet : Outil en ligne ? IA installé sur le système d'information du LFB ? Développement sur mesure ?<br>",
           "timingConstraint": {
@@ -2464,10 +2464,10 @@ export const initialRules = [
     ],
     "conditionLogic": "any",
     "teams": [
-      "Ethics"
+      "ethique_compliance"
     ],
     "questions": {
-      "Ethics": [
+      "ethique_compliance": [
         {
           "text": "Les contenus générés par IA doivent être indiqués comme tels",
           "timingConstraint": {
@@ -2518,10 +2518,10 @@ export const initialRules = [
     ],
     "conditionLogic": "any",
     "teams": [
-      "Ethics"
+      "ethique_compliance"
     ],
     "questions": {
-      "Ethics": [
+      "ethique_compliance": [
         {
           "text": "Comment fonctionne votre modèle d'IA ? Sur quoi se base-t-il ? Que permet il ?",
           "timingConstraint": {
@@ -2538,7 +2538,7 @@ export const initialRules = [
         "level": "Élevé",
         "mitigation": "L'utilisation de l'IA dans un outil doit amener une analyse fine afin de nous assurer de respecter les exigences de l'IA Act",
         "priority": "A particulièrement anticiper",
-        "teamId": "Ethics",
+        "teamId": "ethique_compliance",
         "timingConstraint": {
           "enabled": false,
           "startQuestion": "",
@@ -2601,10 +2601,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "privacy"
+      "juridique_international"
     ],
     "questions": {
-      "privacy": [
+      "juridique_international": [
         {
           "text": "Avec qui contracte-t-on ? Quelle est sa nature (association, société privée, …) ?",
           "timingConstraint": {
@@ -2668,10 +2668,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "legal"
+      "juridique_france"
     ],
     "questions": {
-      "privacy": [
+      "juridique_international": [
         {
           "text": "Avec qui contracte-t-on ? Quelle est sa nature (association, société privée, …) ?",
           "timingConstraint": {
@@ -2713,7 +2713,7 @@ export const initialRules = [
           }
         }
       ],
-      "legal": [
+      "juridique_france": [
         {
           "text": "Avec qui contracte-t-on ?<br>",
           "timingConstraint": {
@@ -2793,10 +2793,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "legal"
+      "juridique_france"
     ],
     "questions": {
-      "privacy": [
+      "juridique_international": [
         {
           "text": "Qui est le partenaire en charge du développement de l'application/ instrument/outil destiné à être utilisé à des fins médicales ?&nbsp;<br>",
           "timingConstraint": {
@@ -2830,7 +2830,7 @@ export const initialRules = [
           }
         }
       ],
-      "legal": [
+      "juridique_france": [
         {
           "text": "Qui est le partenaire (fabricant) en charge du développement du dispositif utilisé à des fins médicales ?",
           "timingConstraint": {
@@ -2871,7 +2871,7 @@ export const initialRules = [
         "level": "Moyen",
         "mitigation": "Si votre application/instrument/outil est qualifié de dispositif médical, de nombreuses obligations s'appliqueront. Il est donc essentiel d'identifier si votre projet tombe dans la qualification de dispositif médical",
         "priority": "A réaliser",
-        "teamId": "legal",
+        "teamId": "juridique_france",
         "timingConstraint": {
           "enabled": false,
           "startQuestion": "",
@@ -2906,11 +2906,11 @@ export const initialRules = [
     ],
     "conditionLogic": "any",
     "teams": [
-      "legal"
+      "juridique_france"
     ],
     "questions": {
-      "privacy": [],
-      "legal": [
+      "juridique_international": [],
+      "juridique_france": [
         {
           "text": "Ce projet est-il adossé à un programme d'ETP ?",
           "timingConstraint": {
@@ -2927,7 +2927,7 @@ export const initialRules = [
         "level": "Élevé",
         "mitigation": "Les actions d'accompagnement patient et les programmes d'éducation thérapeutique - s'ils sont qualifiés de tels - sont soumis à des règles très précises et contraignantes. Vérifiez avec le juridique la bonne qualification du projet",
         "priority": "A réaliser",
-        "teamId": "legal",
+        "teamId": "juridique_france",
         "timingConstraint": {
           "enabled": false,
           "startQuestion": "",
@@ -2938,7 +2938,7 @@ export const initialRules = [
     "teamRoutingRules": [
       {
         "id": "route_1771330027633_euae",
-        "targetTeamId": "privacy",
+        "targetTeamId": "juridique_international",
         "conditionGroups": [
           {
             "logic": "any",
@@ -3011,10 +3011,10 @@ export const initialRules = [
     ],
     "conditionLogic": "any",
     "teams": [
-      "legal"
+      "juridique_france"
     ],
     "questions": {
-      "privacy": [
+      "juridique_international": [
         {
           "text": "Qui est le partenaire en charge du développement de l'application/ instrument/outil destiné à être utilisé à des fins médicales ?&nbsp;<br>",
           "timingConstraint": {
@@ -3048,7 +3048,7 @@ export const initialRules = [
           }
         }
       ],
-      "legal": [
+      "juridique_france": [
         {
           "text": "Quel est le partenaire en charge de développement du site / app ? Agence de communication our SSII ?<br>",
           "timingConstraint": {
@@ -3115,10 +3115,10 @@ export const initialRules = [
     ],
     "conditionLogic": "any",
     "teams": [
-      "legal"
+      "juridique_france"
     ],
     "questions": {
-      "privacy": [
+      "juridique_international": [
         {
           "text": "Qui est le partenaire en charge du développement de l'application/ instrument/outil destiné à être utilisé à des fins médicales ?&nbsp;<br>",
           "timingConstraint": {
@@ -3159,7 +3159,7 @@ export const initialRules = [
         "level": "Moyen",
         "mitigation": "Attention, si vous étude est requalifiée d'étude clinique un process spécifique doit être suivi",
         "priority": "A réaliser",
-        "teamId": "legal",
+        "teamId": "juridique_france",
         "timingConstraint": {
           "enabled": false,
           "startQuestion": "",
@@ -3170,7 +3170,7 @@ export const initialRules = [
     "teamRoutingRules": [
       {
         "id": "route_1771329196642_yxa1",
-        "targetTeamId": "privacy",
+        "targetTeamId": "juridique_international",
         "conditionGroups": [
           {
             "logic": "all",
@@ -3219,10 +3219,10 @@ export const initialRules = [
     ],
     "conditionLogic": "any",
     "teams": [
-      "legal"
+      "juridique_france"
     ],
     "questions": {
-      "privacy": [
+      "juridique_international": [
         {
           "text": "Qui est le partenaire en charge du développement de l'application/ instrument/outil destiné à être utilisé à des fins médicales ?&nbsp;<br>",
           "timingConstraint": {
@@ -3256,7 +3256,7 @@ export const initialRules = [
           }
         }
       ],
-      "legal": [
+      "juridique_france": [
         {
           "text": "Qui a réceptionné la demande ? DAP, Médial, Marketing ?<br>",
           "timingConstraint": {
@@ -3289,7 +3289,7 @@ export const initialRules = [
         "level": "Élevé",
         "mitigation": "Le don de produits est particulièrement encadré : une validation du comité Don de Produits est nécessaire",
         "priority": "A anticiper",
-        "teamId": "legal",
+        "teamId": "juridique_france",
         "timingConstraint": {
           "enabled": false,
           "startQuestion": "",
@@ -3300,7 +3300,7 @@ export const initialRules = [
     "teamRoutingRules": [
       {
         "id": "route_1771329403892_64oz",
-        "targetTeamId": "privacy",
+        "targetTeamId": "juridique_international",
         "conditionGroups": [
           {
             "logic": "any",
@@ -3349,10 +3349,10 @@ export const initialRules = [
     ],
     "conditionLogic": "any",
     "teams": [
-      "legal"
+      "juridique_france"
     ],
     "questions": {
-      "privacy": [
+      "juridique_international": [
         {
           "text": "Qui est le partenaire en charge du développement de l'application/ instrument/outil destiné à être utilisé à des fins médicales ?&nbsp;<br>",
           "timingConstraint": {
@@ -3386,7 +3386,7 @@ export const initialRules = [
           }
         }
       ],
-      "legal": [
+      "juridique_france": [
         {
           "text": "De quel type d'étude s'agit-il ? (NI/RNI/In vitro/ Registre ) ?&nbsp;",
           "timingConstraint": {
@@ -3470,10 +3470,10 @@ export const initialRules = [
     ],
     "conditionLogic": "any",
     "teams": [
-      "pv"
+      "pharmacovigilance"
     ],
     "questions": {
-      "pv": [
+      "pharmacovigilance": [
         {
           "text": "Comment se déroule l'étude / l'enquête ? Qui sera en charge de la menée ? N'hésitez pas à partager un support de l'agence qui pourrait vous accompagner",
           "timingConstraint": {
@@ -3498,7 +3498,7 @@ export const initialRules = [
         "level": "Faible",
         "mitigation": "Si le prestataire qui réalise l'étude n'a pas été formé à la PV ou a été formé depuis plus d'un an, il doit réaliser une formation avant le début de l'étude / de l'enquête. Merci de transmettre le nom du prestataire et les mails des personnes concernées. Il faut compter 15 jours",
         "priority": "A réaliser",
-        "teamId": "pv",
+        "teamId": "pharmacovigilance",
         "timingConstraint": {
           "enabled": false,
           "startQuestion": "",
@@ -3533,10 +3533,10 @@ export const initialRules = [
     ],
     "conditionLogic": "any",
     "teams": [
-      "pv"
+      "pharmacovigilance"
     ],
     "questions": {
-      "pv": []
+      "pharmacovigilance": []
     },
     "risks": [
       {
@@ -3544,7 +3544,7 @@ export const initialRules = [
         "level": "Moyen",
         "mitigation": "Si le prestataire en charge de programme patient n'a pas été formé à la PV ou a été formé depuis plus d'un an, il doit réaliser une formation avant le début de l'étude / de l'enquête. Merci de transmettre le nom du prestataire et les mails des personnes concernées. Il faut compter 15 jours",
         "priority": "A réaliser",
-        "teamId": "pv",
+        "teamId": "pharmacovigilance",
         "timingConstraint": {
           "enabled": false,
           "startQuestion": "",
@@ -3579,10 +3579,10 @@ export const initialRules = [
     ],
     "conditionLogic": "any",
     "teams": [
-      "pv"
+      "pharmacovigilance"
     ],
     "questions": {
-      "pv": [
+      "pharmacovigilance": [
         {
           "text": "Pouvez-vous nous préciser les champs libres présents dans le cadre du projet ? Quels sont les intitulés ?",
           "timingConstraint": {
@@ -3621,10 +3621,10 @@ export const initialRules = [
     ],
     "conditionLogic": "any",
     "teams": [
-      "pv"
+      "pharmacovigilance"
     ],
     "questions": {
-      "pv": [
+      "pharmacovigilance": [
         {
           "text": "Pouvez-vous nous transmettre le synopsis de l'étude, le nombre de patients prévus et les pays concernées ?",
           "timingConstraint": {
@@ -3663,10 +3663,10 @@ export const initialRules = [
     ],
     "conditionLogic": "any",
     "teams": [
-      "pv"
+      "pharmacovigilance"
     ],
     "questions": {
-      "pv": [
+      "pharmacovigilance": [
         {
           "text": "Quel type de données sont utilisées dans le cadre de la NIS ? Données rétrospectives ?",
           "timingConstraint": {
@@ -3705,10 +3705,10 @@ export const initialRules = [
     ],
     "conditionLogic": "any",
     "teams": [
-      "pv"
+      "pharmacovigilance"
     ],
     "questions": {
-      "pv": [
+      "pharmacovigilance": [
         {
           "text": "Merci d'utiliser cette clause dans le cadre du contrat ISS : XXXXX",
           "timingConstraint": {
@@ -3757,10 +3757,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "it"
+      "affaires_publiques"
     ],
     "questions": {
-      "it": [
+      "affaires_publiques": [
         {
           "text": "Avec quelle association / patients allez-vous collaborer ?",
           "timingConstraint": {
@@ -3811,10 +3811,10 @@ export const initialRules = [
     ],
     "conditionLogic": "all",
     "teams": [
-      "it"
+      "affaires_publiques"
     ],
     "questions": {
-      "it": []
+      "affaires_publiques": []
     },
     "risks": [
       {
@@ -3822,7 +3822,7 @@ export const initialRules = [
         "level": "Faible",
         "mitigation": "Pour tout projet à destination de patients, nous vous incitons fortement à collaborer avec une association afin de vous assurer que votre projet correspond à un besoin réel ",
         "priority": "A réaliser",
-        "teamId": "it",
+        "teamId": "affaires_publiques",
         "timingConstraint": {
           "enabled": false,
           "startQuestion": "",
