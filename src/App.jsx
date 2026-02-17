@@ -43,7 +43,7 @@ import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.
 import { isShowcaseAccessBlockedByProjectType } from './utils/showcase.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.304';
+const APP_VERSION = 'v1.0.305';
 
 class AdminBackOfficeErrorBoundary extends React.Component {
   constructor(props) {
