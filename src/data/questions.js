@@ -223,7 +223,7 @@ export const initialQuestions = [
       ],
       "usage": "Liste « Collectif moteur » dans la section équipe."
     },
-    "placeholder": "Prénom Nom - Poste de la personne\nPrénom Nom - Poste de la personne",
+    "placeholder": "Prénom Nom - Poste de la personne (une par ligne)",
     "conditionGroups": []
   },
   {
