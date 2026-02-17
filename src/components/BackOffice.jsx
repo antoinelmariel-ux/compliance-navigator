@@ -3254,6 +3254,7 @@ export const BackOffice = ({
       conditionGroups: [],
       conditionLogic: 'all',
       teams: [],
+      teamRoutingRules: [],
       questions: {},
       risks: []
     };
