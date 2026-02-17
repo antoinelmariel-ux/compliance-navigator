@@ -41,7 +41,7 @@ export const initialTeams = [
     "contacts": [
       "c.spiesserlacombe@lfb.fr"
     ],
-    "expertise": "Le Délégué à la Protection des Données (DPO) vous accompagne dans la conception de projets respectueux de la vie privée, en garantissant la conformité au RGPD et aux réglementations locales applicables. "
+    "expertise": "Le Délégué à la Protection des Données (DPO) vous accompagne dans la conception de projets intégrant la protection des données personnelles, en garantissant la conformité au RGPD et aux autres réglementations applicables."
   },
   {
     "id": "pharmacovigilance",
