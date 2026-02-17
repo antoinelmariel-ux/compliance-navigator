@@ -6009,6 +6009,7 @@ export const BackOffice = ({
                                                   <span>{riskPriority}</span>
                                                 </span>
                                               </div>
+                                              <p className="text-xs text-gray-600 pl-4">Détail : {risk?.mitigation || 'Aucun détail renseigné'}</p>
                                             </li>
                                           );
                                         })}
@@ -6175,6 +6176,7 @@ export const BackOffice = ({
                                               <span>{riskPriority}</span>
                                             </span>
                                           </div>
+                                          <p className="text-xs text-gray-600 pl-4">Détail : {risk?.mitigation || 'Aucun détail renseigné'}</p>
                                         </li>
                                       );
                                     })}
@@ -7891,6 +7893,7 @@ export const BackOffice = ({
                             <li key={`${risk?.id || 'risk'}-${index}`} className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
                               <p className="font-semibold">{risk?.description || 'Risque non renseigné'}</p>
                               <p className="text-xs mt-1">Niveau : {risk?.level || 'N/A'} · Priorité : {risk?.priority || 'N/A'}</p>
+                              <p className="text-xs mt-1 text-amber-800">Détail : {risk?.mitigation || 'Aucun détail renseigné'}</p>
                             </li>
                           ))}
                         </ul>
