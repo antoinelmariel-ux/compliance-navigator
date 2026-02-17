@@ -1,47 +1,61 @@
 {
   "version": 1,
-  "generatedAt": "2025-10-22T09:31:35.530Z",
+  "generatedAt": "2026-02-17T10:30:00.000Z",
   "project": {
-    "name": "Les journées de l'hémophilie",
+    "name": "Les journées de l’hémophilie",
     "answers": {
-      "projectName": "Les journées de l'hémophilie",
-      "teamLead": "Maurice Laumore",
-      "teamLeadTeam": "Marketing",
+      "projectName": "Les journées de l’hémophilie",
+      "teamLead": "Claire Martin",
+      "teamLeadTeam": "Médical",
       "ProjectType": [
-        "Parrainage / Partenariat"
+        "Congrès / manifestation scientifique"
       ],
       "targetAudience": [
-        "Professionnels de santé"
+        "Professionnels de santé",
+        "Patients"
       ],
-      "projectSlogan": "Un don, mille destins : quand le plasma unit ceux qui donnent et ceux qui vivent",
-      "problemPainPoints": "Les donneurs de plasma ont souvent une perception abstraite du parcours du plasma et ne voient pas l’impact réel de leur geste.\nLe LFB a besoin d’incarner sa mission sociétale à travers des récits authentiques et humains, et pas uniquement techniques.",
-      "solutionDescription": "Vies Reliées est un site web narratif et immersif, construit comme une galerie de portraits croisés entre donneurs de plasma et patients dont la vie dépend de ces traitements.\nChaque histoire met en lumière le lien invisible qui les unit à travers le travail du LFB.\n\nLe site proposera :\n- Des vidéos documentaires courtes (2 à 3 min) montrant les deux visages d’un même don.\n- Des portraits photo et audio immersifs, racontés à la première personne.\n- Une carte interactive de France reliant les lieux de don, les sites industriels du LFB \n- Une section “Le saviez-vous ?” expliquant en termes simples la science derrière chaque traitement.\n- Un espace “Partage ton lien” où chacun peut témoigner ou remercier anonymement.",
+      "projectSlogan": "Faire progresser la prise en charge de l’hémophilie, ensemble sur le terrain",
+      "problemPainPoints": "Les parcours de soins des personnes hémophiles restent hétérogènes selon les territoires, avec des besoins de formation continue pour les équipes soignantes et d’information claire pour les patients.\nLe LFB souhaite structurer une présence utile sur un événement de référence afin de diffuser des contenus validés et favoriser les échanges entre experts, associations et professionnels de terrain.",
+      "solutionDescription": "Les journées de l’hémophilie sont un dispositif événementiel complet associant présence présentielle et contenus digitaux.\nLe projet comprend :\n- Un symposium scientifique LFB avec interventions d’experts hospitaliers.\n- Un stand pédagogique avec mini-ateliers sur le parcours patient et les innovations thérapeutiques.\n- Des supports d’information remis aux professionnels et aux associations de patients.\n- Une page de ressources post-événement regroupant replays, synthèses et FAQ validées médicalement.",
       "q11": [
         "Matériel environnement",
-        "Matériel promotionnel"
+        "Matériel promotionnel",
+        "Site internet"
       ],
-      "q13": "Non",
-      "solutionBenefits": "Humaniser la mission du LFB en donnant un visage aux chiffres et aux traitements.\nFédérer donneurs, patients et professionnels autour d’un récit commun.\nRenforcer la confiance et la fierté d’appartenance au modèle français du médicament dérivé du plasma.\nAccroître la notoriété institutionnelle du LFB grâce à un contenu émotionnel et partageable.",
+      "q13": "Oui",
+      "solutionBenefits": "Renforcer la visibilité scientifique du LFB dans un cadre conforme.\nAméliorer l’accès à des contenus pédagogiques fiables pour les professionnels et les patients.\nCréer un continuum d’information avant, pendant et après l’événement.\nDévelopper des collaborations durables avec les centres experts et les associations.",
       "q10": [
+        "Prestataire de service",
         "Professionnel de santé (via contrat à mettre en place)",
         "Société savante / association de PDS"
       ],
-      "BUDGET": "20",
-      "innovationProcess": "Sensibiliser le grand public à l’importance du don de plasma.\nValoriser la mission du LFB à travers des récits humains et concrets.\nSoutenir la communication institutionnelle et RH (fierté interne).\nCréer un outil digital inspirant, déclinable pour les événements, les salons ou les réseaux sociaux.",
-      "visionStatement": "Nombre de vues des vidéos et taux de complétion.\nTaux de partages sur les réseaux sociaux.\nNombre de témoignages reçus via le site.\nEngagement interne (utilisation du site en communication RH).\nRetombées presse ou partenariats associatifs.",
-      "campaignKickoffDate": "2025-10-20",
-      "launchDate": "2025-12-01",
+      "BUDGET": "28",
+      "innovationProcess": "Structurer une approche omnicanale de la communication scientifique.\nMettre en cohérence la prise de parole institutionnelle, médicale et terrain du LFB.\nCapitaliser sur les contenus produits pendant l’événement pour prolonger leur impact.",
+      "visionStatement": "Nombre de professionnels de santé présents au symposium.\nTaux de téléchargement des ressources post-événement.\nSatisfaction des participants (questionnaire).\nNombre de sollicitations de suivi reçues par l’équipe médicale.",
+      "campaignKickoffDate": "2026-03-02",
+      "launchDate": "2026-05-14",
       "roadmapMilestones": [
         {
-          "date": "2025-11-01",
-          "description": "Tournage des portraits"
+          "date": "2026-03-02",
+          "description": "Validation du programme scientifique et des partenaires"
         },
         {
-          "date": "2025-11-20",
-          "description": "Revue compliance et médicale"
+          "date": "2026-03-25",
+          "description": "Finalisation des contenus médicaux et juridiques"
+        },
+        {
+          "date": "2026-04-22",
+          "description": "Production des supports stand et des kits participants"
+        },
+        {
+          "date": "2026-05-14",
+          "description": "Tenue des journées et activation du hub de ressources"
         }
       ],
-      "teamCoreMembers": "Thomas Dubois - Responsable Communication Digitale\nInès Laurent - Relations Associations\nStudio Humanlink - Agence com"
+      "teamCoreMembers": "Lucie Bernard - Responsable Affaires Médicales\nNicolas Faure - Responsable Événementiel\nAssociation France Hémophilie - Partenaire patient\nAgence MedConnect - Coordination logistique",
+      "q3": [
+        "Oui - Données personnelles standard"
+      ]
     }
   }
 }
