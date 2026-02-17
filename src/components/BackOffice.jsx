@@ -650,7 +650,9 @@ export const BackOffice = ({
   validationCommitteeConfig,
   setValidationCommitteeConfig,
   adminEmails,
-  setAdminEmails
+  setAdminEmails,
+  currentUserEmail = '',
+  isCurrentUserAdmin = false
 }) => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [editingRule, setEditingRule] = useState(null);
@@ -743,6 +745,59 @@ export const BackOffice = ({
     () => (Array.isArray(adminEmails) ? adminEmails.filter(Boolean) : []),
     [adminEmails]
   );
+  const normalizedCurrentUserEmail = useMemo(
+    () => (typeof currentUserEmail === 'string' ? currentUserEmail.trim().toLowerCase() : ''),
+    [currentUserEmail]
+  );
+  const currentUserTeamIds = useMemo(
+    () => (Array.isArray(teams)
+      ? teams
+        .filter((team) => Array.isArray(team?.contacts) && team.contacts.some((contact) => String(contact || '').trim().toLowerCase() === normalizedCurrentUserEmail))
+        .map((team) => team?.id)
+        .filter(Boolean)
+      : []),
+    [normalizedCurrentUserEmail, teams]
+  );
+  const currentUserCommitteeIds = useMemo(
+    () => normalizedValidationCommitteeConfig.committees
+      .filter((committee) => Array.isArray(committee?.emails) && committee.emails.some((email) => String(email || '').trim().toLowerCase() === normalizedCurrentUserEmail))
+      .map((committee) => committee?.id)
+      .filter(Boolean),
+    [normalizedCurrentUserEmail, normalizedValidationCommitteeConfig]
+  );
+  const hasComplianceTeamScopedAccess = currentUserTeamIds.length > 0;
+  const hasValidationCommitteeScopedAccess = currentUserCommitteeIds.length > 0;
+  const hasScopedBackOfficeAccess = hasComplianceTeamScopedAccess || hasValidationCommitteeScopedAccess;
+  const allowedTabIds = useMemo(() => {
+    if (isCurrentUserAdmin || !hasScopedBackOfficeAccess) {
+      return null;
+    }
+
+    const ids = new Set(['dashboard']);
+
+    if (hasComplianceTeamScopedAccess) {
+      ids.add('teams');
+      ids.add('rules');
+      ids.add('complianceReview');
+    }
+
+    if (hasValidationCommitteeScopedAccess) {
+      ids.add('validationCommittee');
+    }
+
+    return ids;
+  }, [hasComplianceTeamScopedAccess, hasScopedBackOfficeAccess, hasValidationCommitteeScopedAccess, isCurrentUserAdmin]);
+
+  const ruleVisibilitySource = useMemo(() => {
+    if (!allowedTabIds || !allowedTabIds.has('rules')) {
+      return Array.isArray(rules) ? rules : [];
+    }
+
+    return (Array.isArray(rules) ? rules : []).filter((rule) => {
+      const associatedTeamIds = Array.from(collectRuleTeamIds(rule));
+      return associatedTeamIds.some((teamId) => currentUserTeamIds.includes(teamId));
+    });
+  }, [allowedTabIds, currentUserTeamIds, rules]);
 
   const [selectedComplianceReviewTeamId, setSelectedComplianceReviewTeamId] = useState('');
   const [complianceReviewAnswers, setComplianceReviewAnswers] = useState({});
@@ -751,15 +806,17 @@ export const BackOffice = ({
   const [isComplianceReviewGuidanceOpen, setIsComplianceReviewGuidanceOpen] = useState(false);
 
   useEffect(() => {
-    if (selectedComplianceReviewTeamId) {
+    const nextVisibleTeams = (!allowedTabIds || !allowedTabIds.has('teams'))
+      ? teams
+      : teams.filter((team) => currentUserTeamIds.includes(team?.id));
+
+    if (selectedComplianceReviewTeamId && nextVisibleTeams.some((team) => team?.id === selectedComplianceReviewTeamId)) {
       return;
     }
 
-    const firstTeamId = Array.isArray(teams) && teams.length > 0 ? (teams[0]?.id || '') : '';
-    if (firstTeamId) {
-      setSelectedComplianceReviewTeamId(firstTeamId);
-    }
-  }, [teams, selectedComplianceReviewTeamId]);
+    const firstTeamId = Array.isArray(nextVisibleTeams) && nextVisibleTeams.length > 0 ? (nextVisibleTeams[0]?.id || '') : '';
+    setSelectedComplianceReviewTeamId(firstTeamId);
+  }, [allowedTabIds, currentUserTeamIds, selectedComplianceReviewTeamId, teams]);
 
   const complianceReviewQuestionnaire = useMemo(() => {
     if (!Array.isArray(questions)) {
@@ -1525,7 +1582,7 @@ export const BackOffice = ({
 
   const questionTeamAssignments = useMemo(() => {
     const setMap = new Map();
-    const safeRules = Array.isArray(rules) ? rules : [];
+    const safeRules = ruleVisibilitySource;
 
     const addTeamsForQuestion = (questionId, teamIds) => {
       if (!questionId) {
@@ -1655,7 +1712,7 @@ export const BackOffice = ({
         Array.from(teamSet)
       ])
     );
-  }, [rules]);
+  }, [ruleVisibilitySource]);
 
   const availableTeamFilterOptions = useMemo(() => {
     const options = [];
@@ -1671,7 +1728,7 @@ export const BackOffice = ({
       seen.add(team.id);
     });
 
-    const safeRules = Array.isArray(rules) ? rules : [];
+    const safeRules = ruleVisibilitySource;
     safeRules.forEach((rule) => {
       collectRuleTeamIds(rule).forEach((teamId) => {
         if (!teamId || seen.has(teamId)) {
@@ -1684,7 +1741,7 @@ export const BackOffice = ({
     });
 
     return options;
-  }, [teams, rules]);
+  }, [teams, ruleVisibilitySource]);
 
   const visibleQuestionIds = useMemo(() => {
     const ids = [];
@@ -1748,7 +1805,7 @@ export const BackOffice = ({
   const visibleRuleIds = useMemo(() => {
     const ids = [];
     const normalizedTitle = ruleTitleFilter.trim().toLowerCase();
-    const safeRules = Array.isArray(rules) ? rules : [];
+    const safeRules = ruleVisibilitySource;
 
     safeRules.forEach((rule) => {
       if (!rule) {
@@ -1785,12 +1842,12 @@ export const BackOffice = ({
     });
 
     return ids;
-  }, [rules, ruleTitleFilter, ruleTeamFilter]);
+  }, [ruleVisibilitySource, ruleTitleFilter, ruleTeamFilter]);
 
   const visibleRuleIdSet = useMemo(() => new Set(visibleRuleIds), [visibleRuleIds]);
   const visibleRuleEntries = useMemo(() => {
     const entries = [];
-    const safeRules = Array.isArray(rules) ? rules : [];
+    const safeRules = ruleVisibilitySource;
 
     safeRules.forEach((rule) => {
       if (!rule || !visibleRuleIdSet.has(rule.id)) {
@@ -1801,7 +1858,7 @@ export const BackOffice = ({
     });
 
     return entries;
-  }, [rules, visibleRuleIdSet]);
+  }, [ruleVisibilitySource, visibleRuleIdSet]);
   const shouldVirtualizeRules = visibleRuleEntries.length > 8;
 
   useEffect(() => {
@@ -2521,7 +2578,7 @@ export const BackOffice = ({
 
   const dataIntegrityIssues = useMemo(() => {
     const safeQuestions = Array.isArray(questions) ? questions : [];
-    const safeRules = Array.isArray(rules) ? rules : [];
+    const safeRules = ruleVisibilitySource;
     const safeTeams = Array.isArray(teams) ? teams : [];
 
     const questionMap = new Map();
@@ -2843,7 +2900,7 @@ export const BackOffice = ({
     });
 
     return issues;
-  }, [questions, rules, teams]);
+  }, [questions, ruleVisibilitySource, teams]);
 
   const dataIntegritySummary = useMemo(() => {
     if (!dataIntegrityIssues || dataIntegrityIssues.length === 0) {
@@ -3396,6 +3453,20 @@ export const BackOffice = ({
     (typeof complianceReviewGuidance.details === 'string' && complianceReviewGuidance.details.trim().length > 0) ||
     (Array.isArray(complianceReviewGuidance.tips) && complianceReviewGuidance.tips.some((tip) => typeof tip === 'string' && tip.trim().length > 0));
 
+  const visibleTeams = useMemo(() => {
+    if (!allowedTabIds || !allowedTabIds.has('teams')) {
+      return teams;
+    }
+    return teams.filter((team) => currentUserTeamIds.includes(team?.id));
+  }, [allowedTabIds, currentUserTeamIds, teams]);
+
+  const visibleCommittees = useMemo(() => {
+    if (!allowedTabIds || !allowedTabIds.has('validationCommittee')) {
+      return normalizedValidationCommitteeConfig.committees;
+    }
+    return normalizedValidationCommitteeConfig.committees.filter((committee) => currentUserCommitteeIds.includes(committee?.id));
+  }, [allowedTabIds, currentUserCommitteeIds, normalizedValidationCommitteeConfig]);
+
   const tabDefinitions = [
     {
       id: 'dashboard',
@@ -3429,7 +3500,7 @@ export const BackOffice = ({
     },
     {
       id: 'rules',
-      label: `Règles (${rules.length})`,
+      label: `Règles (${ruleVisibilitySource.length})`,
       panelId: 'backoffice-tabpanel-rules'
     },
     {
@@ -3449,7 +3520,7 @@ export const BackOffice = ({
     },
     {
       id: 'teams',
-      label: `Équipes (${teams.length})`,
+      label: `Équipes (${visibleTeams.length})`,
       panelId: 'backoffice-tabpanel-teams'
     },
     {
@@ -3457,7 +3528,18 @@ export const BackOffice = ({
       label: 'Revue Compliance',
       panelId: 'backoffice-tabpanel-complianceReview'
     }
-  ];
+  ].filter((tab) => !allowedTabIds || allowedTabIds.has(tab.id));
+
+  useEffect(() => {
+    if (tabDefinitions.some((tab) => tab.id === activeTab)) {
+      return;
+    }
+
+    const fallbackTab = tabDefinitions[0]?.id || 'dashboard';
+    if (fallbackTab !== activeTab) {
+      setActiveTab(fallbackTab);
+    }
+  }, [activeTab, tabDefinitions]);
 
   const createDefaultQuestion = (existingQuestions) => ({
     id: getNextId(existingQuestions, 'q'),
@@ -5839,9 +5921,9 @@ export const BackOffice = ({
                   </div>
                   <div className="md:col-span-2 lg:col-span-1 flex items-end">
                     <p className="text-xs text-gray-500">
-                      {rules.length === 0
+                      {ruleVisibilitySource.length === 0
                         ? 'Aucune règle métier n\'est configurée.'
-                        : visibleRuleIds.length === rules.length
+                        : visibleRuleIds.length === ruleVisibilitySource.length
                           ? 'Toutes les règles sont affichées.'
                           : visibleRuleIds.length === 0
                             ? 'Aucune règle ne correspond aux filtres.'
@@ -5851,7 +5933,7 @@ export const BackOffice = ({
                 </div>
               </div>
 
-              {rules.length === 0 ? (
+              {ruleVisibilitySource.length === 0 ? (
                 <div className="border border-dashed border-gray-300 rounded-xl p-6 text-center text-gray-500">
                   Aucune règle métier n'est configurée.
                 </div>
@@ -6248,13 +6330,13 @@ export const BackOffice = ({
                   </button>
                 </div>
 
-                {normalizedValidationCommitteeConfig.committees.length === 0 ? (
+                {visibleCommittees.length === 0 ? (
                   <p className="text-sm text-gray-500">
                     Aucun comité n’est configuré. Ajoutez-en un pour définir ses règles.
                   </p>
                 ) : (
                   <div className="space-y-6">
-                    {normalizedValidationCommitteeConfig.committees.map((committee, index) => (
+                    {visibleCommittees.map((committee, index) => (
                       <article
                         key={committee.id}
                         className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-5"
@@ -7257,14 +7339,14 @@ export const BackOffice = ({
                 </button>
               </div>
 
-              {teams.length === 0 && (
+              {visibleTeams.length === 0 && (
                 <div className="border border-dashed border-gray-300 rounded-xl p-6 text-center text-gray-500">
                   Aucune équipe renseignée.
                 </div>
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {teams.map((team, index) => (
+                {visibleTeams.map((team, index) => (
                   <article key={team.id} className="border border-gray-200 rounded-xl p-6 bg-white shadow-sm hv-surface" aria-label={`Équipe ${team.name}`}>
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-4">
                       <input
@@ -7340,7 +7422,7 @@ export const BackOffice = ({
                   className="w-full md:max-w-md px-3 py-2 border border-gray-300 rounded-lg text-sm hv-focus-ring"
                 >
                   <option value="">Sélectionnez une équipe</option>
-                  {teams.map((team) => (
+                  {visibleTeams.map((team) => (
                     <option key={team.id} value={team.id}>{team.name || team.id}</option>
                   ))}
                 </select>

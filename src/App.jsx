@@ -43,7 +43,7 @@ import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.
 import { isShowcaseAccessBlockedByProjectType } from './utils/showcase.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.317';
+const APP_VERSION = 'v1.0.318';
 
 class AdminBackOfficeErrorBoundary extends React.Component {
   constructor(props) {
@@ -4541,6 +4541,8 @@ const updateProjectFilters = useCallback((updater) => {
                 setValidationCommitteeConfig={setValidationCommitteeConfig}
                 adminEmails={adminEmails}
                 setAdminEmails={setAdminEmails}
+                currentUserEmail={currentUserEmail}
+                isCurrentUserAdmin={isCurrentUserAdmin}
               />
             </Suspense>
           </AdminBackOfficeErrorBoundary>
