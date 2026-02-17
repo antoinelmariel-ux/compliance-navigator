@@ -3373,6 +3373,11 @@ export const BackOffice = ({
     setComplianceReviewActiveQuestionId(nextQuestion.id);
   }, [complianceReviewActiveQuestionIndex, complianceReviewQuestionnaire]);
 
+  const handleComplianceReviewResetQuestionnaire = useCallback(() => {
+    setComplianceReviewAnswers({});
+    setComplianceReviewActiveQuestionId('');
+  }, []);
+
   useEffect(() => {
     setIsComplianceReviewGuidanceOpen(false);
   }, [complianceReviewEffectiveActiveQuestionId]);
@@ -7774,25 +7779,36 @@ export const BackOffice = ({
                           })()}
                         </div>
 
-                        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                           <button
                             type="button"
-                            onClick={handleComplianceReviewPreviousQuestion}
-                            disabled={complianceReviewActiveQuestionIndex <= 0}
-                            className="flex items-center justify-center px-4 py-2 rounded-lg font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all hv-button"
+                            onClick={handleComplianceReviewResetQuestionnaire}
+                            disabled={Object.keys(complianceReviewAnswers).length === 0 && complianceReviewActiveQuestionIndex === 0}
+                            className="flex items-center justify-center px-4 py-2 rounded-lg font-medium text-red-700 bg-red-50 border border-red-200 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all hv-button"
                           >
-                            <ChevronLeft className="w-4 h-4 mr-1" />
-                            Précédent
+                            Réinitialiser
                           </button>
-                          <button
-                            type="button"
-                            onClick={handleComplianceReviewNextQuestion}
-                            disabled={complianceReviewActiveQuestionIndex >= complianceReviewQuestionnaire.length - 1}
-                            className="flex items-center justify-center px-4 py-2 rounded-lg font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all hv-button"
-                          >
-                            Suivant
-                            <ChevronRight className="w-4 h-4 ml-1" />
-                          </button>
+
+                          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end lg:flex-1">
+                            <button
+                              type="button"
+                              onClick={handleComplianceReviewPreviousQuestion}
+                              disabled={complianceReviewActiveQuestionIndex <= 0}
+                              className="flex items-center justify-center px-4 py-2 rounded-lg font-medium text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all hv-button"
+                            >
+                              <ChevronLeft className="w-4 h-4 mr-1" />
+                              Précédent
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleComplianceReviewNextQuestion}
+                              disabled={complianceReviewActiveQuestionIndex >= complianceReviewQuestionnaire.length - 1}
+                              className="flex items-center justify-center px-4 py-2 rounded-lg font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all hv-button"
+                            >
+                              Suivant
+                              <ChevronRight className="w-4 h-4 ml-1" />
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
