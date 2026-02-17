@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2025-10-22T09:32:54.345Z",
+  "generatedAt": "2026-02-17T10:35:00.000Z",
   "project": {
     "name": "Partenariat La Rochelle",
     "answers": {
@@ -11,37 +11,53 @@
         "Parrainage / Partenariat"
       ],
       "targetAudience": [
+        "Grand public",
+        "Patients",
         "Professionnels de santé"
       ],
-      "projectSlogan": "Un don, mille destins : quand le plasma unit ceux qui donnent et ceux qui vivent",
-      "problemPainPoints": "Les donneurs de plasma ont souvent une perception abstraite du parcours du plasma et ne voient pas l’impact réel de leur geste.\nLe LFB a besoin d’incarner sa mission sociétale à travers des récits authentiques et humains, et pas uniquement techniques.",
-      "solutionDescription": "Vies Reliées est un site web narratif et immersif, construit comme une galerie de portraits croisés entre donneurs de plasma et patients dont la vie dépend de ces traitements.\nChaque histoire met en lumière le lien invisible qui les unit à travers le travail du LFB.\n\nLe site proposera :\n- Des vidéos documentaires courtes (2 à 3 min) montrant les deux visages d’un même don.\n- Des portraits photo et audio immersifs, racontés à la première personne.\n- Une carte interactive de France reliant les lieux de don, les sites industriels du LFB \n- Une section “Le saviez-vous ?” expliquant en termes simples la science derrière chaque traitement.\n- Un espace “Partage ton lien” où chacun peut témoigner ou remercier anonymement.",
+      "projectSlogan": "Un partenariat territorial pour rapprocher le don, la pédagogie et l’accès aux soins",
+      "problemPainPoints": "À l’échelle locale, les acteurs de santé et le grand public manquent d’initiatives communes pour mieux comprendre le rôle du plasma et les enjeux de souveraineté en médicaments dérivés.\nLe LFB souhaite ancrer son action dans un territoire pilote en fédérant institutions, professionnels et associations autour d’un programme concret.",
+      "solutionDescription": "Partenariat La Rochelle est un programme de coopération locale sur 12 mois avec la ville, les acteurs hospitaliers et les associations.\nLe dispositif inclut :\n- Des conférences publiques de sensibilisation au don de plasma.\n- Un parcours pédagogique itinérant dans des lieux municipaux et universitaires.\n- Une campagne de communication locale (affichage, réseaux sociaux, presse régionale).\n- Un volet professionnel avec ateliers de formation pour les équipes de santé.",
       "q11": [
+        "Site internet",
+        "Communication sur les réseaux sociaux",
         "Matériel environnement",
         "Matériel promotionnel"
       ],
-      "q13": "Non",
-      "solutionBenefits": "Humaniser la mission du LFB en donnant un visage aux chiffres et aux traitements.\nFédérer donneurs, patients et professionnels autour d’un récit commun.\nRenforcer la confiance et la fierté d’appartenance au modèle français du médicament dérivé du plasma.\nAccroître la notoriété institutionnelle du LFB grâce à un contenu émotionnel et partageable.",
+      "q13": "Oui",
+      "solutionBenefits": "Créer une dynamique territoriale durable autour du don de plasma.\nAccroître la compréhension du rôle du LFB auprès des citoyens et des soignants.\nFavoriser la mobilisation locale via des formats concrets et participatifs.\nProduire un modèle réplicable dans d’autres régions.",
       "q10": [
+        "Prestataire de service",
         "Professionnel de santé (via contrat à mettre en place)",
         "Société savante / association de PDS"
       ],
-      "BUDGET": "20",
-      "innovationProcess": "Sensibiliser le grand public à l’importance du don de plasma.\nValoriser la mission du LFB à travers des récits humains et concrets.\nSoutenir la communication institutionnelle et RH (fierté interne).\nCréer un outil digital inspirant, déclinable pour les événements, les salons ou les réseaux sociaux.",
-      "visionStatement": "Nombre de vues des vidéos et taux de complétion.\nTaux de partages sur les réseaux sociaux.\nNombre de témoignages reçus via le site.\nEngagement interne (utilisation du site en communication RH).\nRetombées presse ou partenariats associatifs.",
-      "campaignKickoffDate": "2025-10-20",
-      "launchDate": "2026-02-14",
+      "BUDGET": "35",
+      "innovationProcess": "Tester un modèle de partenariat public-santé-industrie à l’échelle locale.\nArticuler sensibilisation citoyenne et formation professionnelle dans un même programme.\nMesurer l’impact territorial pour préparer un déploiement national.",
+      "visionStatement": "Nombre de participants aux actions locales.\nÉvolution du trafic vers les contenus pédagogiques en ligne.\nNombre de structures partenaires engagées sur 12 mois.\nIntention de reconduction du partenariat à l’issue du pilote.",
+      "campaignKickoffDate": "2026-03-10",
+      "launchDate": "2026-04-05",
       "roadmapMilestones": [
         {
-          "date": "2025-11-01",
-          "description": "Tournage des portraits"
+          "date": "2026-03-10",
+          "description": "Signature de la charte de partenariat avec les acteurs locaux"
         },
         {
-          "date": "2025-11-20",
-          "description": "Revue compliance et médicale"
+          "date": "2026-03-28",
+          "description": "Validation compliance des supports et messages territoriaux"
+        },
+        {
+          "date": "2026-04-05",
+          "description": "Lancement officiel du programme à La Rochelle"
+        },
+        {
+          "date": "2026-06-30",
+          "description": "Bilan intermédiaire et plan d’extension régionale"
         }
       ],
-      "teamCoreMembers": "Thomas Dubois - Responsable Communication Digitale\nInès Laurent - Relations Associations\nStudio Humanlink - Agence com"
+      "teamCoreMembers": "Thomas Dubois - Responsable Communication Digitale\nInès Laurent - Relations Associations\nCHU de La Rochelle - Référent médical local\nAgence Territoires Santé - Activation terrain",
+      "q3": [
+        "Oui - Données personnelles standard"
+      ]
     }
   }
 }
