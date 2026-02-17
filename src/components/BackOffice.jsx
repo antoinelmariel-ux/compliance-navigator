@@ -645,6 +645,8 @@ export const BackOffice = ({
 
   const [selectedComplianceReviewTeamId, setSelectedComplianceReviewTeamId] = useState('');
   const [complianceReviewAnswers, setComplianceReviewAnswers] = useState({});
+  const [complianceReviewDisplayMode, setComplianceReviewDisplayMode] = useState('direct');
+  const [complianceReviewActiveQuestionId, setComplianceReviewActiveQuestionId] = useState('');
 
   useEffect(() => {
     if (selectedComplianceReviewTeamId) {
@@ -665,9 +667,69 @@ export const BackOffice = ({
     return questions.filter((question) => shouldShowQuestion(question, complianceReviewAnswers));
   }, [questions, complianceReviewAnswers]);
 
+  const complianceReviewQuestionIndexById = useMemo(() => {
+    const map = new Map();
+    complianceReviewQuestionnaire.forEach((question, index) => {
+      if (question?.id) {
+        map.set(question.id, index);
+      }
+    });
+    return map;
+  }, [complianceReviewQuestionnaire]);
+
+  useEffect(() => {
+    if (!complianceReviewActiveQuestionId) {
+      return;
+    }
+
+    if (complianceReviewQuestionIndexById.has(complianceReviewActiveQuestionId)) {
+      return;
+    }
+
+    setComplianceReviewActiveQuestionId('');
+  }, [complianceReviewActiveQuestionId, complianceReviewQuestionIndexById]);
+
+  const complianceReviewScopedAnswers = useMemo(() => {
+    if (!complianceReviewActiveQuestionId) {
+      return {};
+    }
+
+    const activeQuestionIndex = complianceReviewQuestionIndexById.get(complianceReviewActiveQuestionId);
+    if (typeof activeQuestionIndex !== 'number') {
+      return {};
+    }
+
+    if (complianceReviewDisplayMode === 'direct') {
+      if (!Object.prototype.hasOwnProperty.call(complianceReviewAnswers, complianceReviewActiveQuestionId)) {
+        return {};
+      }
+
+      return {
+        [complianceReviewActiveQuestionId]: complianceReviewAnswers[complianceReviewActiveQuestionId]
+      };
+    }
+
+    const nextAnswers = {};
+    for (let index = 0; index <= activeQuestionIndex; index += 1) {
+      const questionId = complianceReviewQuestionnaire[index]?.id;
+      if (!questionId || !Object.prototype.hasOwnProperty.call(complianceReviewAnswers, questionId)) {
+        continue;
+      }
+      nextAnswers[questionId] = complianceReviewAnswers[questionId];
+    }
+
+    return nextAnswers;
+  }, [
+    complianceReviewActiveQuestionId,
+    complianceReviewAnswers,
+    complianceReviewDisplayMode,
+    complianceReviewQuestionIndexById,
+    complianceReviewQuestionnaire
+  ]);
+
   const complianceReviewAnalysis = useMemo(
-    () => analyzeAnswers(complianceReviewAnswers, Array.isArray(rules) ? rules : [], safeRiskLevelRules, normalizedRiskWeights),
-    [complianceReviewAnswers, rules, safeRiskLevelRules, normalizedRiskWeights]
+    () => analyzeAnswers(complianceReviewScopedAnswers, Array.isArray(rules) ? rules : [], safeRiskLevelRules, normalizedRiskWeights),
+    [complianceReviewScopedAnswers, rules, safeRiskLevelRules, normalizedRiskWeights]
   );
 
   const selectedComplianceReviewTeam = useMemo(
@@ -3162,6 +3224,7 @@ export const BackOffice = ({
       ...prev,
       [questionId]: value
     }));
+    setComplianceReviewActiveQuestionId(questionId);
   }, []);
 
   const toggleComplianceReviewMultiChoice = useCallback((questionId, optionLabel, checked) => {
@@ -3183,6 +3246,7 @@ export const BackOffice = ({
 
       return prev;
     });
+    setComplianceReviewActiveQuestionId(questionId);
   }, []);
 
   const tabDefinitions = [
@@ -7144,7 +7208,7 @@ export const BackOffice = ({
                         : [];
 
                       return (
-                        <div key={question.id || index} className="border border-gray-200 rounded-lg p-3 space-y-2">
+                        <div key={question.id || index} className={`border rounded-lg p-3 space-y-2 ${complianceReviewActiveQuestionId === question.id ? 'border-blue-300 bg-blue-50/40' : 'border-gray-200'}`}>
                           <p className="text-sm font-semibold text-gray-800">{index + 1}. {question.question || question.id}</p>
 
                           {(question.type === 'text' || question.type === 'long_text') && (
@@ -7226,7 +7290,41 @@ export const BackOffice = ({
                 </article>
 
                 <article className="rounded-xl border border-gray-200 bg-white p-4 space-y-4 hv-surface">
-                  <h3 className="text-lg font-semibold text-gray-800">Analyse pour {selectedComplianceReviewTeam?.name || 'l'équipe sélectionnée'}</h3>
+                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                    <h3 className="text-lg font-semibold text-gray-800">Analyse pour {selectedComplianceReviewTeam?.name || 'l'équipe sélectionnée'}</h3>
+                    <div className="inline-flex items-center rounded-lg border border-gray-300 bg-gray-50 p-1" role="group" aria-label="Mode d'analyse compliance">
+                      <button
+                        type="button"
+                        onClick={() => setComplianceReviewDisplayMode('direct')}
+                        className={`px-3 py-1.5 text-xs font-semibold rounded-md transition ${
+                          complianceReviewDisplayMode === 'direct'
+                            ? 'bg-white text-blue-700 shadow-sm border border-blue-100'
+                            : 'text-gray-600 hover:text-gray-800'
+                        }`}
+                        aria-pressed={complianceReviewDisplayMode === 'direct'}
+                      >
+                        Direct
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setComplianceReviewDisplayMode('cumulative')}
+                        className={`px-3 py-1.5 text-xs font-semibold rounded-md transition ${
+                          complianceReviewDisplayMode === 'cumulative'
+                            ? 'bg-white text-blue-700 shadow-sm border border-blue-100'
+                            : 'text-gray-600 hover:text-gray-800'
+                        }`}
+                        aria-pressed={complianceReviewDisplayMode === 'cumulative'}
+                      >
+                        Cumulé
+                      </button>
+                    </div>
+                  </div>
+
+                  {!complianceReviewActiveQuestionId && (
+                    <p className="text-sm text-gray-500">
+                      Sélectionnez une option dans le questionnaire de gauche pour afficher les déclenchements, questions et risques.
+                    </p>
+                  )}
 
                   <div className="space-y-3">
                     <div>
