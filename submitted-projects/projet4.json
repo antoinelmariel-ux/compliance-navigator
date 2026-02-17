@@ -2,9 +2,9 @@
   "version": 1,
   "generatedAt": "2026-02-17T10:40:00.000Z",
   "project": {
-    "name": "Plasma 360",
+    "name": "Fibrille",
     "answers": {
-      "projectName": "Plasma 360",
+      "projectName": "Fibrille",
       "teamLead": "Bertrand Darieux",
       "teamLeadTeam": "Marketing",
       "ProjectType": [
@@ -54,7 +54,13 @@
           "description": "Mise en ligne et lancement de la campagne de diffusion"
         }
       ],
-      "teamCoreMembers": "Julien Morel - Directeur du site de production de Lille\nClaire Martin - Responsable Médicale\nSophie Leclerc - Responsable Communication Digitale\nStudio Nova - Agence de communication scientifique et design interactif"
+      "teamCoreMembers": "Julien Morel - Directeur du site de production de Lille\nClaire Martin - Responsable Médicale\nSophie Leclerc - Responsable Communication Digitale\nStudio Nova - Agence de communication scientifique et design interactif",
+      "q14": [
+        "Via les canaux digitaux du LFB",
+        "Via les canaux physiques du LFB"
+      ],
+      "q15": "Aucune information complémentaire à partager pour le moment.",
+      "q15_copy": "Sans objet"
     }
   }
 }

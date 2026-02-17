@@ -55,7 +55,13 @@
       "teamCoreMembers": "Lucie Bernard - Responsable Affaires Médicales\nNicolas Faure - Responsable Événementiel\nAssociation France Hémophilie - Partenaire patient\nAgence MedConnect - Coordination logistique",
       "q3": [
         "Oui - Données personnelles standard"
-      ]
+      ],
+      "q14": [
+        "Via les canaux digitaux du LFB",
+        "Via les canaux physiques du LFB"
+      ],
+      "q15": "Aucune information complémentaire à partager pour le moment.",
+      "q15_copy": "Sans objet"
     }
   }
 }
