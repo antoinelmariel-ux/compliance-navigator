@@ -331,7 +331,49 @@ const normalizeTimingRequirement = (value) => {
   return {};
 };
 
-export const evaluateRule = (rule, answers) => {
+const evaluateRoutingRule = (routingRule, answers) => {
+  if (!routingRule || typeof routingRule !== 'object') {
+    return false;
+  }
+
+  const conditionGroups = normalizeConditionGroups(routingRule, sanitizeRuleCondition);
+  if (conditionGroups.length === 0) {
+    return false;
+  }
+
+  return conditionGroups.every((group) => {
+    const conditions = Array.isArray(group.conditions) ? group.conditions : [];
+    if (conditions.length === 0) {
+      return true;
+    }
+
+    const logic = group.logic === 'any' ? 'any' : 'all';
+    const results = conditions.map((condition) => matchesCondition(condition, answers));
+    return logic === 'any' ? results.some(Boolean) : results.every(Boolean);
+  });
+};
+
+const resolveRuleAssignedTeam = (rule, answers) => {
+  const baseTeams = Array.isArray(rule?.teams) ? rule.teams : [];
+  const primaryTeamId = baseTeams[0] || '';
+  const routingRules = Array.isArray(rule?.teamRoutingRules) ? rule.teamRoutingRules : [];
+
+  for (let index = 0; index < routingRules.length; index += 1) {
+    const route = routingRules[index];
+    const targetTeamId = typeof route?.targetTeamId === 'string' ? route.targetTeamId : '';
+
+    if (!targetTeamId || targetTeamId === primaryTeamId) {
+      continue;
+    }
+
+    if (evaluateRoutingRule(route, answers)) {
+      return targetTeamId;
+    }
+  }
+
+  return primaryTeamId;
+};
+const evaluateRule = (rule, answers) => {
   const timingContexts = [];
   const conditionGroups = normalizeConditionGroups(rule, sanitizeRuleCondition);
 
@@ -439,9 +481,22 @@ export const analyzeAnswers = (answers, rules, riskLevelRules, riskWeighting) =>
       return;
     }
 
-    rule.teams.forEach(teamId => teamsSet.add(teamId));
+    const ruleTeams = Array.isArray(rule?.teams) ? rule.teams : [];
+    const primaryTeamId = ruleTeams[0] || '';
+    const assignedTeamId = resolveRuleAssignedTeam(rule, answers);
 
-    Object.entries(rule.questions).forEach(([teamId, questions]) => {
+    if (assignedTeamId) {
+      teamsSet.add(assignedTeamId);
+    }
+
+    const primaryQuestions = primaryTeamId && rule.questions && typeof rule.questions === 'object'
+      ? rule.questions[primaryTeamId]
+      : [];
+    const sourceQuestions = assignedTeamId
+      ? { [assignedTeamId]: primaryQuestions }
+      : {};
+
+    Object.entries(sourceQuestions).forEach(([teamId, questions]) => {
       if (!teamId) {
         return;
       }
@@ -520,10 +575,7 @@ export const analyzeAnswers = (answers, rules, riskLevelRules, riskWeighting) =>
 
     const processedRisks = (Array.isArray(rule.risks) ? rule.risks : [])
       .map((risk, riskIndex) => {
-        const ruleTeams = Array.isArray(rule.teams) ? rule.teams : [];
-        const preferredTeam = typeof risk?.teamId === 'string' && risk.teamId
-          ? risk.teamId
-          : (ruleTeams[0] || '');
+        const preferredTeam = assignedTeamId;
         const timingConstraint = sanitizeRiskTimingConstraint(risk?.timingConstraint);
 
           const baseRisk = {

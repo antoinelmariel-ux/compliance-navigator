@@ -71,6 +71,24 @@ const normalizeRiskList = (risks, availableTeams = []) => {
   return risks.map((risk) => normalizeRiskEntry(risk, availableTeams));
 };
 
+const normalizeRoutingRuleEntry = (entry) => {
+  const source = entry && typeof entry === 'object' ? entry : {};
+
+  return {
+    id: source.id || `route_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    targetTeamId: typeof source.targetTeamId === 'string' ? source.targetTeamId : '',
+    conditionGroups: Array.isArray(source.conditionGroups) ? source.conditionGroups : []
+  };
+};
+
+const normalizeRoutingRules = (routingRules) => {
+  if (!Array.isArray(routingRules)) {
+    return [];
+  }
+
+  return routingRules.map(normalizeRoutingRuleEntry);
+};
+
 export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
   const overlayRef = useRef(null);
   const titleRef = useRef(null);
@@ -112,7 +130,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
   const buildRuleState = (source) => {
     const sanitizedSource = source || {};
     const { priority: _discardedPriority, ...rest } = sanitizedSource;
-    const teamsList = Array.isArray(rest.teams) ? rest.teams : [];
+    const teamsList = Array.isArray(rest.teams) ? rest.teams.slice(0, 1) : [];
 
     const base = {
       ...rest,
@@ -122,6 +140,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
         : [],
       conditionGroups: Array.isArray(rest.conditionGroups) ? rest.conditionGroups : [],
       teams: teamsList,
+      teamRoutingRules: normalizeRoutingRules(rest.teamRoutingRules),
       questions: sanitizeTeamQuestionsByTeam(rest.questions || {}),
       risks: normalizeRiskList(rest.risks, teamsList)
     };
@@ -131,6 +150,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
   };
 
   const [editedRule, setEditedRule] = useState(() => buildRuleState(rule));
+  const [routingModal, setRoutingModal] = useState({ index: null, groups: [] });
 
   useEffect(() => {
     setEditedRule(buildRuleState(rule));
@@ -237,13 +257,84 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
     });
   };
 
-  const toggleTeam = (teamId) => {
-    const currentTeams = Array.isArray(editedRule.teams) ? editedRule.teams : [];
-    const newTeams = currentTeams.includes(teamId)
-      ? currentTeams.filter(t => t !== teamId)
-      : [...currentTeams, teamId];
+  const setPrimaryTeam = (teamId) => {
+    const newTeams = teamId ? [teamId] : [];
     const normalizedRisks = normalizeRiskList(editedRule.risks, newTeams);
-    setEditedRule({ ...editedRule, teams: newTeams, risks: normalizedRisks });
+    setEditedRule(prev => ({
+      ...prev,
+      teams: newTeams,
+      risks: normalizedRisks,
+      teamRoutingRules: normalizeRoutingRules(prev.teamRoutingRules).filter((route) => route.targetTeamId !== teamId)
+    }));
+  };
+
+  const primaryTeamId = Array.isArray(editedRule.teams) ? (editedRule.teams[0] || '') : '';
+  const primaryTeamLabel = teams.find((team) => team.id === primaryTeamId)?.name || primaryTeamId;
+
+  const openRoutingModal = (index) => {
+    const route = normalizeRoutingRuleEntry((editedRule.teamRoutingRules || [])[index]);
+    const sanitizedGroups = sanitizeConditionGroups(normalizeRuleConditionGroups({
+      conditionGroups: route.conditionGroups
+    }));
+    setRoutingModal({ index, groups: sanitizedGroups });
+  };
+
+  const closeRoutingModal = () => {
+    setRoutingModal({ index: null, groups: [] });
+  };
+
+  const updateRoutingModalGroups = (updater) => {
+    setRoutingModal(prev => {
+      const currentGroups = Array.isArray(prev.groups) ? prev.groups : [];
+      const nextGroups = sanitizeConditionGroups(updater(currentGroups));
+      return { ...prev, groups: nextGroups };
+    });
+  };
+
+  const saveRoutingModal = () => {
+    const { index, groups } = routingModal;
+
+    if (index === null || index === undefined) {
+      return;
+    }
+
+    setEditedRule(prev => {
+      const routes = normalizeRoutingRules(prev.teamRoutingRules);
+      const current = normalizeRoutingRuleEntry(routes[index]);
+      routes[index] = {
+        ...current,
+        conditionGroups: sanitizeConditionGroups(groups)
+      };
+      return { ...prev, teamRoutingRules: routes };
+    });
+
+    closeRoutingModal();
+  };
+
+  const addRoutingRule = () => {
+    setEditedRule(prev => ({
+      ...prev,
+      teamRoutingRules: [
+        ...normalizeRoutingRules(prev.teamRoutingRules),
+        normalizeRoutingRuleEntry({ targetTeamId: '' })
+      ]
+    }));
+  };
+
+  const updateRoutingRule = (index, field, value) => {
+    setEditedRule(prev => {
+      const routes = normalizeRoutingRules(prev.teamRoutingRules);
+      const current = normalizeRoutingRuleEntry(routes[index]);
+      routes[index] = { ...current, [field]: value };
+      return { ...prev, teamRoutingRules: routes };
+    });
+  };
+
+  const deleteRoutingRule = (index) => {
+    setEditedRule(prev => ({
+      ...prev,
+      teamRoutingRules: normalizeRoutingRules(prev.teamRoutingRules).filter((_, idx) => idx !== index)
+    }));
   };
 
   const addQuestionForTeam = (teamId) => {
@@ -364,6 +455,8 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
   const conditionQuestionEntries = getConditionQuestionEntries(questions);
   const dateQuestions = questions.filter(q => (q.type || 'choice') === 'date');
   const dialogTitleId = 'rule-editor-title';
+  const routingConditionGroups = Array.isArray(routingModal.groups) ? routingModal.groups : [];
+  const isRoutingModalOpen = routingModal.index !== null;
 
   return (
     <div
@@ -814,26 +907,26 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
           <div>
             <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
               <Users className="w-5 h-5 text-blue-500" />
-              Équipes compliance à déclencher
+              Équipe compliance à déclencher
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {teams.map(team => (
                 <button
                   key={team.id}
-                  onClick={() => toggleTeam(team.id)}
+                  onClick={() => setPrimaryTeam(team.id)}
                   className={`p-4 rounded-lg border-2 text-left transition-all ${
-                    editedRule.teams.includes(team.id)
+                    primaryTeamId === team.id
                       ? 'border-blue-600 bg-blue-50'
                       : 'border-gray-200 hover:border-blue-300'
                   }`}
                 >
                   <div className="flex items-center">
                     <div className={`w-5 h-5 rounded border-2 mr-3 flex items-center justify-center ${
-                      editedRule.teams.includes(team.id)
+                      primaryTeamId === team.id
                         ? 'border-blue-600 bg-blue-600 text-white'
                         : 'border-gray-300'
                     }`}>
-                      {editedRule.teams.includes(team.id) && (
+                      {primaryTeamId === team.id && (
                         <CheckCircle className="w-4 h-4" />
                       )}
                     </div>
@@ -846,35 +939,110 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
             </div>
           </div>
 
+          <div>
+            <div className="flex justify-between items-center mb-4">
+              <div>
+                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                  <Target className="w-5 h-5 text-indigo-500" />
+                  Routage conditionnel d'équipe
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Déclenchez une autre équipe quand des conditions spécifiques sont remplies.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={addRoutingRule}
+                disabled={!primaryTeamId}
+                className="flex items-center px-3 py-2 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100 transition-all text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Ajouter une redirection
+              </button>
+            </div>
+            {!primaryTeamId ? (
+              <div className="text-sm text-gray-500 italic">
+                Sélectionnez d'abord une équipe principale.
+              </div>
+            ) : (editedRule.teamRoutingRules || []).length === 0 ? (
+              <div className="text-sm text-gray-500 italic">
+                Aucune redirection conditionnelle configurée.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {(editedRule.teamRoutingRules || []).map((route, idx) => {
+                  const normalizedRoute = normalizeRoutingRuleEntry(route);
+                  return (
+                    <div key={normalizedRoute.id} className="rounded-lg border border-indigo-200 bg-indigo-50/50 p-4 space-y-3">
+                      <div className="flex justify-between items-center">
+                        <p className="text-sm font-semibold text-indigo-900">Redirection {idx + 1}</p>
+                        <button
+                          type="button"
+                          onClick={() => deleteRoutingRule(idx)}
+                          className="p-1 text-indigo-700 hover:bg-indigo-100 rounded transition-all"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1">Équipe cible</label>
+                        <select
+                          value={normalizedRoute.targetTeamId}
+                          onChange={(e) => updateRoutingRule(idx, 'targetTeamId', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                        >
+                          <option value="">Sélectionner...</option>
+                          {teams
+                            .filter((team) => team.id !== primaryTeamId)
+                            .map((team) => (
+                              <option key={team.id} value={team.id}>{team.name}</option>
+                            ))}
+                        </select>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => openRoutingModal(idx)}
+                        className="inline-flex items-center px-3 py-2 bg-white border border-indigo-200 text-indigo-700 rounded-lg hover:bg-indigo-100 transition-all text-sm"
+                      >
+                        Gérer les conditions
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
           {/* Questions par équipe */}
           <div>
             <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
               <FileText className="w-5 h-5 text-blue-500" />
               Questions à préparer par équipe
             </h3>
-            {editedRule.teams.length === 0 ? (
+            {!primaryTeamId ? (
               <div className="text-sm text-gray-500 italic">
-                Sélectionnez au moins une équipe pour définir les questions.
+                Sélectionnez une équipe pour définir les questions.
               </div>
             ) : (
               <div className="space-y-4">
-                {editedRule.teams.map(teamId => (
-                  <div key={teamId} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <div key={primaryTeamId} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                     <div className="flex justify-between items-center mb-3">
                       <h4 className="text-sm font-semibold text-gray-700">
-                        {teams.find(team => team.id === teamId)?.name || teamId}
+                        {primaryTeamLabel}
                       </h4>
                       <button
-                        onClick={() => addQuestionForTeam(teamId)}
+                        onClick={() => addQuestionForTeam(primaryTeamId)}
                         className="flex items-center px-3 py-1 text-xs bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-all"
                       >
                         <Plus className="w-3 h-3 mr-1" />
                         Ajouter une question
                       </button>
                     </div>
-                    {(editedRule.questions[teamId] || []).length > 0 ? (
+                    {(editedRule.questions[primaryTeamId] || []).length > 0 ? (
                       <div className="space-y-2">
-                        {(editedRule.questions[teamId] || []).map((questionEntry, idx) => {
+                        {(editedRule.questions[primaryTeamId] || []).map((questionEntry, idx) => {
                           const sanitizedEntry = sanitizeTeamQuestionEntry(questionEntry);
                           const timingConstraint = sanitizeRiskTimingConstraint(
                             sanitizedEntry.timingConstraint
@@ -888,16 +1056,16 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                               <div className="flex items-center space-x-2">
                                 <div className="flex-1 min-w-0">
                                   <RichTextEditor
-                                    id={`team-question-${teamId}-${idx}`}
+                                    id={`team-question-${primaryTeamId}-${idx}`}
                                     value={sanitizedEntry.text}
-                                    onChange={(nextValue) => updateTeamQuestion(teamId, idx, nextValue)}
+                                    onChange={(nextValue) => updateTeamQuestion(primaryTeamId, idx, nextValue)}
                                     placeholder="Question pour l'équipe..."
                                     compact
                                     ariaLabel="Question pour l'équipe"
                                   />
                                 </div>
                                 <button
-                                  onClick={() => deleteTeamQuestion(teamId, idx)}
+                                  onClick={() => deleteTeamQuestion(primaryTeamId, idx)}
                                   className="p-2 text-red-600 hover:bg-red-50 rounded transition-all"
                                   aria-label="Supprimer la question"
                                 >
@@ -925,7 +1093,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                       checked={isToggleChecked}
                                       onChange={(event) =>
-                                        updateTeamQuestionTiming(teamId, idx, { enabled: event.target.checked })
+                                        updateTeamQuestionTiming(primaryTeamId, idx, { enabled: event.target.checked })
                                       }
                                       disabled={toggleDisabled}
                                     />
@@ -945,7 +1113,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                         <select
                                           value={timingConstraint.startQuestion}
                                           onChange={(e) =>
-                                            updateTeamQuestionTiming(teamId, idx, { startQuestion: e.target.value })
+                                            updateTeamQuestionTiming(primaryTeamId, idx, { startQuestion: e.target.value })
                                           }
                                           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                                         >
@@ -962,7 +1130,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                         <select
                                           value={timingConstraint.endQuestion}
                                           onChange={(e) =>
-                                            updateTeamQuestionTiming(teamId, idx, { endQuestion: e.target.value })
+                                            updateTeamQuestionTiming(primaryTeamId, idx, { endQuestion: e.target.value })
                                           }
                                           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                                         >
@@ -986,7 +1154,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                           value={timingConstraint.minimumWeeks ?? ''}
                                           onChange={(e) => {
                                             const rawValue = e.target.value;
-                                            updateTeamQuestionTiming(teamId, idx, {
+                                            updateTeamQuestionTiming(primaryTeamId, idx, {
                                               minimumWeeks: rawValue === '' ? undefined : Number(rawValue)
                                             });
                                           }}
@@ -1003,7 +1171,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                           value={timingConstraint.minimumDays ?? ''}
                                           onChange={(e) => {
                                             const rawValue = e.target.value;
-                                            updateTeamQuestionTiming(teamId, idx, {
+                                            updateTeamQuestionTiming(primaryTeamId, idx, {
                                               minimumDays: rawValue === '' ? undefined : Number(rawValue)
                                             });
                                           }}
@@ -1027,7 +1195,6 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                       <p className="text-sm text-gray-500 italic">Aucune question définie</p>
                     )}
                   </div>
-                ))}
               </div>
             )}
           </div>
@@ -1086,25 +1253,13 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
 
                         <div>
                           <label className="block text-xs font-medium text-gray-600 mb-1">Équipe référente</label>
-                          <select
-                            value={risk.teamId}
-                            onChange={(e) => updateRisk(idx, 'teamId', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-                            disabled={editedRule.teams.length === 0}
-                          >
-                            {editedRule.teams.length === 0 ? (
-                              <option value="">Aucune équipe disponible</option>
-                            ) : (
-                              <>
-                                {editedRule.teams.map(teamId => (
-                                  <option key={teamId} value={teamId}>
-                                    {teams.find(team => team.id === teamId)?.name || teamId}
-                                  </option>
-                                ))}
-                              </>
-                            )}
-                          </select>
-                          {editedRule.teams.length === 0 && (
+                          <input
+                            type="text"
+                            value={primaryTeamLabel || 'Aucune équipe sélectionnée'}
+                            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-100 text-gray-600"
+                            readOnly
+                          />
+                          {!primaryTeamId && (
                             <p className="text-xs text-gray-500 mt-1 italic">
                               Sélectionnez une équipe dans la section précédente pour associer ce risque.
                             </p>
@@ -1259,6 +1414,179 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
           </div>
         </div>
       </div>
+      {isRoutingModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 py-6">
+          <div className="absolute inset-0 bg-gray-900/50" onClick={closeRoutingModal} aria-hidden="true" />
+          <div className="relative w-full max-w-4xl rounded-2xl bg-white p-6 shadow-xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900">Conditions de redirection</h3>
+                <p className="mt-1 text-sm text-gray-500">
+                  L'équipe {primaryTeamLabel ? `« ${primaryTeamLabel} »` : 'principale'} basculera vers l'équipe cible si les conditions sont satisfaites.
+                </p>
+              </div>
+              <button type="button" onClick={closeRoutingModal} className="text-sm font-semibold text-gray-500 hover:text-gray-700">Fermer</button>
+            </div>
+
+            <div className="mt-6 space-y-4 max-h-[65vh] overflow-y-auto pr-1">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-semibold text-gray-700">Groupes de conditions</h4>
+                <button
+                  type="button"
+                  onClick={() => updateRoutingModalGroups(groups => ([...groups, { logic: 'all', conditions: [createEmptyQuestionCondition()] }]))}
+                  className="inline-flex items-center gap-2 rounded-lg bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100"
+                >
+                  <Plus className="h-4 w-4" />
+                  Ajouter un groupe
+                </button>
+              </div>
+
+              {routingConditionGroups.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4 text-sm text-gray-500">
+                  Aucun groupe défini. Ajoutez un groupe pour configurer les critères de redirection.
+                </div>
+              ) : (
+                routingConditionGroups.map((group, groupIdx) => (
+                  <div key={`routing-group-${groupIdx}`} className="rounded-xl border border-indigo-100 bg-indigo-50/40 p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 text-sm font-semibold text-indigo-900">Groupe {groupIdx + 1}</div>
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={group.logic === 'any' ? 'any' : 'all'}
+                          onChange={(e) => updateRoutingModalGroups(groups => {
+                            const updated = [...groups];
+                            const target = updated[groupIdx] || { logic: 'all', conditions: [] };
+                            updated[groupIdx] = { ...target, logic: e.target.value === 'any' ? 'any' : 'all' };
+                            return updated;
+                          })}
+                          className="rounded-lg border border-gray-300 px-2 py-1 text-xs"
+                        >
+                          <option value="all">Toutes les conditions (ET)</option>
+                          <option value="any">Au moins une condition (OU)</option>
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => updateRoutingModalGroups(groups => groups.filter((_, idx) => idx !== groupIdx))}
+                          className="inline-flex items-center rounded-md bg-white px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                        >
+                          <Trash2 className="mr-1 h-3.5 w-3.5" />
+                          Supprimer
+                        </button>
+                      </div>
+                    </div>
+
+                    {(Array.isArray(group.conditions) ? group.conditions : []).map((condition, idx) => {
+                      const selectedQuestion = conditionQuestionEntries.find((q) => q.id === condition.question);
+                      const selectedType = selectedQuestion?.type || 'choice';
+                      const usesOptions = selectedType === 'choice' || selectedType === 'multi_choice';
+                      const operatorOptions = getOperatorOptionsForType(selectedType);
+
+                      return (
+                        <div key={`routing-condition-${groupIdx}-${idx}`} className="rounded-lg border border-indigo-100 bg-white p-3 space-y-2">
+                          <div className="flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => updateRoutingModalGroups(groups => {
+                                const updated = [...groups];
+                                const target = updated[groupIdx] || { logic: 'all', conditions: [] };
+                                const conditions = Array.isArray(target.conditions)
+                                  ? target.conditions.filter((_, cIdx) => cIdx !== idx)
+                                  : [];
+                                updated[groupIdx] = { ...target, conditions };
+                                return updated;
+                              })}
+                              className="inline-flex items-center rounded-md bg-gray-50 px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                            >
+                              <Trash2 className="mr-1 h-3.5 w-3.5" />
+                              Retirer
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-1">Question</label>
+                              <select
+                                value={condition.question}
+                                onChange={(e) => updateRoutingModalGroups(groups => withUpdatedCondition(groups, groupIdx, idx, c => ({ ...c, question: e.target.value })))}
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                              >
+                                <option value="">Sélectionner...</option>
+                                {conditionQuestionEntries.map((q) => (<option key={q.id} value={q.id}>{q.question || q.id}</option>))}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-1">Opérateur</label>
+                              <select
+                                value={ensureOperatorForType(selectedType, condition.operator)}
+                                onChange={(e) => updateRoutingModalGroups(groups => withUpdatedCondition(groups, groupIdx, idx, c => ({ ...c, operator: e.target.value })))}
+                                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                              >
+                                {operatorOptions.map((option) => (<option key={option.value} value={option.value}>{option.label}</option>))}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-gray-600 mb-1">Valeur</label>
+                              {selectedType === 'boolean' ? (
+                                <select
+                                  value={condition.value}
+                                  onChange={(e) => updateRoutingModalGroups(groups => withUpdatedCondition(groups, groupIdx, idx, c => ({ ...c, value: e.target.value })))}
+                                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                >
+                                  <option value="">Sélectionner...</option>
+                                  <option value="true">Coché</option><option value="false">Non coché</option>
+                                </select>
+                              ) : usesOptions ? (
+                                <select
+                                  value={condition.value}
+                                  onChange={(e) => updateRoutingModalGroups(groups => withUpdatedCondition(groups, groupIdx, idx, c => ({ ...c, value: e.target.value })))}
+                                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                >
+                                  <option value="">Sélectionner...</option>
+                                  {getQuestionOptionLabels(selectedQuestion).map((opt, optIdx) => (<option key={optIdx} value={opt}>{opt}</option>))}
+                                </select>
+                              ) : (
+                                <input
+                                  type={selectedType === 'number' ? 'number' : 'text'}
+                                  value={condition.value}
+                                  onChange={(e) => updateRoutingModalGroups(groups => withUpdatedCondition(groups, groupIdx, idx, c => ({ ...c, value: e.target.value })))}
+                                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                                  placeholder={selectedType === 'date' ? 'AAAA-MM-JJ' : 'Valeur...'}
+                                />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => updateRoutingModalGroups(groups => {
+                          const updated = [...groups];
+                          const target = updated[groupIdx] || { logic: 'all', conditions: [] };
+                          const conditions = Array.isArray(target.conditions) ? [...target.conditions] : [];
+                          conditions.push(createEmptyQuestionCondition());
+                          updated[groupIdx] = { ...target, conditions };
+                          return updated;
+                        })}
+                        className="inline-flex items-center gap-2 rounded-lg bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Ajouter une condition
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button type="button" onClick={closeRoutingModal} className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Annuler</button>
+              <button type="button" onClick={saveRoutingModal} className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">Enregistrer</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
