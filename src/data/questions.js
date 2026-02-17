@@ -707,56 +707,36 @@ export const initialQuestions = [
     "question": "Dans quels pays ce projet sera-t-il déployé ?",
     "options": [
       {
+        "label": "Pays liés à des filiales hors France",
+        "visibility": "always",
+        "conditionGroups": [],
+        "conditions": [],
+        "conditionLogic": "all",
+        "subType": "multi_choice",
+        "subOptions": [
+          {
+            "label": "Allemagne"
+          },
+          {
+            "label": "Benelux"
+          },
+          {
+            "label": "Espagne"
+          },
+          {
+            "label": "Grande-Bretagne"
+          },
+          {
+            "label": "Mexique"
+          }
+        ]
+      },
+      {
         "label": "France",
         "visibility": "always",
-        "subType": null,
-        "subOptions": [],
         "conditionGroups": [],
         "conditions": [],
         "conditionLogic": "all"
-      },
-      {
-        "label": "Allemagne",
-        "visibility": "always",
-        "conditionGroups": [],
-        "conditions": [],
-        "conditionLogic": "all",
-        "subType": null,
-        "subOptions": []
-      },
-      {
-        "label": "Benelux",
-        "visibility": "always",
-        "conditionGroups": [],
-        "conditions": [],
-        "conditionLogic": "all",
-        "subType": null,
-        "subOptions": []
-      },
-      {
-        "label": "Espagne",
-        "visibility": "always",
-        "conditionGroups": [],
-        "conditions": [],
-        "conditionLogic": "all"
-      },
-      {
-        "label": "Grande-Bretagne",
-        "visibility": "always",
-        "subType": null,
-        "subOptions": [],
-        "conditionGroups": [],
-        "conditions": [],
-        "conditionLogic": "all"
-      },
-      {
-        "label": "Mexique",
-        "visibility": "always",
-        "conditionGroups": [],
-        "conditions": [],
-        "conditionLogic": "all",
-        "subType": null,
-        "subOptions": []
       }
     ],
     "required": true,
