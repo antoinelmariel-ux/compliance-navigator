@@ -2353,6 +2353,80 @@ export const initialRules = [
     "risks": []
   },
   {
+    "id": "rule15_copy_copy_copy_copy_copy_copy_copy_copy2",
+    "name": "IA - Juridique France IT",
+    "conditions": [
+      {
+        "type": "question",
+        "question": "q19",
+        "operator": "equals",
+        "value": "Bot IA"
+      },
+      {
+        "type": "question",
+        "question": "q24",
+        "operator": "equals",
+        "value": "Utiliser l'IA"
+      },
+      {
+        "type": "question",
+        "question": "q11",
+        "operator": "equals",
+        "value": "Contenu généré via de l'IA"
+      }
+    ],
+    "conditionGroups": [
+      {
+        "logic": "any",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "q19",
+            "operator": "equals",
+            "value": "Bot IA"
+          },
+          {
+            "type": "question",
+            "question": "q24",
+            "operator": "equals",
+            "value": "Utiliser l'IA"
+          },
+          {
+            "type": "question",
+            "question": "q11",
+            "operator": "equals",
+            "value": "Contenu généré via de l'IA"
+          }
+        ]
+      }
+    ],
+    "conditionLogic": "any",
+    "teams": [
+      "legal"
+    ],
+    "questions": {
+      "Ethics": [
+        {
+          "text": "Quel type d’IA est utilisé pour le projet : Outil en ligne ? IA installé sur le système d'information du LFB ? Développement sur mesure ?<br>",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Quel contenu sera traité par l’IA",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        }
+      ]
+    },
+    "risks": []
+  },
+  {
     "id": "rule15_copy_copy_copy_copy_copy_copy_copy_copy",
     "name": "Génération contenu IA  - E&C",
     "conditions": [
@@ -2731,6 +2805,40 @@ export const initialRules = [
             "endQuestion": ""
           }
         }
+      ],
+      "legal": [
+        {
+          "text": "Qui est le partenaire (fabricant) en charge du développement du dispositif utilisé à des fins médicales ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Quel est notre rôle dans le projet ? promotion ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Avez vous la volonté d'avoir la propriété du dispositif utilisé à des fins médicales ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Voulez vous proposer ce dispositif dans le cadre d’Appels d’Offre ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        }
       ]
     },
     "risks": [
@@ -2747,6 +2855,221 @@ export const initialRules = [
         }
       }
     ]
+  },
+  {
+    "id": "rule16_copy_copy3",
+    "name": "PSP - Juridique France IT",
+    "conditions": [],
+    "conditionGroups": [
+      {
+        "logic": "any",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "q22",
+            "operator": "equals",
+            "value": "Un dispositif structuré d’accompagnement du patient ou de son entourage (par ex. aidant) pour l’accompagner notamment dans la compréhension de sa pathologie, l’usage de son traitement (initiation, observance, gestion des effets indésirables, compréhension de la maladie, soutien pratique ou financier)"
+          }
+        ]
+      },
+      {
+        "logic": "all",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "teamLeadTeam",
+            "operator": "equals",
+            "value": "Marketing DOI"
+          },
+          {
+            "type": "question",
+            "question": "teamLeadTeam",
+            "operator": "equals",
+            "value": "Médical DOI"
+          }
+        ]
+      }
+    ],
+    "conditionLogic": "all",
+    "teams": [
+      "legal"
+    ],
+    "questions": {
+      "privacy": [
+        {
+          "text": "Qui est le partenaire en charge du développement de l'application/ instrument/outil destiné à être utilisé à des fins médicales ?&nbsp;<br>",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Quel est notre rôle dans le projet ? promotion ?&nbsp;",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Volonté d’acheter l'application/ instrument/outil destiné à être utilisé à des fins médicales ?&nbsp;",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Volonté de le proposer dans le cadre d’Appels d’Offre l'application/ instrument/outil destiné à être utilisé à des fins médicales ?&nbsp;",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        }
+      ],
+      "legal": [
+        {
+          "text": "Ce projet est-il adossé à un programme d'ETP ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        }
+      ]
+    },
+    "risks": [
+      {
+        "description": "Programme d'accompagnement patient",
+        "level": "Élevé",
+        "mitigation": "Les actions d'accompagnement patient et les programmes d'éducation thérapeutique - s'ils sont qualifiés de tels - sont soumis à des règles très précises et contraignantes. Vérifiez avec le juridique la bonne qualification du projet",
+        "priority": "A réaliser",
+        "teamId": "legal",
+        "timingConstraint": {
+          "enabled": false,
+          "startQuestion": "",
+          "endQuestion": ""
+        }
+      }
+    ]
+  },
+  {
+    "id": "rule16_copy_copy2",
+    "name": "Developpement IT - Juridique France IT",
+    "conditions": [
+      {
+        "type": "question",
+        "question": "q19",
+        "operator": "equals",
+        "value": "Applications mobiles"
+      },
+      {
+        "type": "question",
+        "question": "q19",
+        "operator": "equals",
+        "value": "Applications mobiles"
+      },
+      {
+        "type": "question",
+        "question": "q19",
+        "operator": "equals",
+        "value": "Bot IA"
+      }
+    ],
+    "conditionGroups": [
+      {
+        "logic": "any",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "q19",
+            "operator": "equals",
+            "value": "Applications mobiles"
+          },
+          {
+            "type": "question",
+            "question": "q19",
+            "operator": "equals",
+            "value": "Applications mobiles"
+          },
+          {
+            "type": "question",
+            "question": "q19",
+            "operator": "equals",
+            "value": "Bot IA"
+          }
+        ]
+      }
+    ],
+    "conditionLogic": "any",
+    "teams": [
+      "legal"
+    ],
+    "questions": {
+      "privacy": [
+        {
+          "text": "Qui est le partenaire en charge du développement de l'application/ instrument/outil destiné à être utilisé à des fins médicales ?&nbsp;<br>",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Quel est notre rôle dans le projet ? promotion ?&nbsp;",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Volonté d’acheter l'application/ instrument/outil destiné à être utilisé à des fins médicales ?&nbsp;",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Volonté de le proposer dans le cadre d’Appels d’Offre l'application/ instrument/outil destiné à être utilisé à des fins médicales ?&nbsp;",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        }
+      ],
+      "legal": [
+        {
+          "text": "Quel est le partenaire en charge de développement du site / app ? Agence de communication our SSII ?<br>",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Le site / app serait il hébergé sur les serveurs existants du LFB ?&nbsp;",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Quels droits sont les droits souhaités / autonomie du LFB par rapport à l'outil développé ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        }
+      ]
+    },
+    "risks": []
   },
   {
     "id": "rule16_copy_copy",
@@ -2840,6 +3163,229 @@ export const initialRules = [
     ]
   },
   {
+    "id": "rule16_copy_copy_copy",
+    "name": "Don de produits - Juridique France IT",
+    "conditions": [],
+    "conditionGroups": [
+      {
+        "logic": "any",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "q18",
+            "operator": "equals",
+            "value": "Don de produits"
+          }
+        ]
+      },
+      {
+        "logic": "any",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "teamLeadTeam",
+            "operator": "equals",
+            "value": "Marketing DOI"
+          },
+          {
+            "type": "question",
+            "question": "teamLeadTeam",
+            "operator": "equals",
+            "value": "Marketing DOF"
+          }
+        ]
+      }
+    ],
+    "conditionLogic": "all",
+    "teams": [
+      "legal"
+    ],
+    "questions": {
+      "privacy": [
+        {
+          "text": "Qui est le partenaire en charge du développement de l'application/ instrument/outil destiné à être utilisé à des fins médicales ?&nbsp;<br>",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Quel est notre rôle dans le projet ? promotion ?&nbsp;",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Volonté d’acheter l'application/ instrument/outil destiné à être utilisé à des fins médicales ?&nbsp;",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Volonté de le proposer dans le cadre d’Appels d’Offre l'application/ instrument/outil destiné à être utilisé à des fins médicales ?&nbsp;",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        }
+      ],
+      "legal": [
+        {
+          "text": "Qui a réceptionné la demande ? DAP, Médial, Marketing ?<br>",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Transmettez le courrier de sollicitation avec l’ensemble des éléments (quel produit (DCI) , quel dosage, quels hôpitaux / pays, si demandé par l’association quelle péremption, quel établissement pour le stockage des produits en attendant leur mise à disposition à un PdS habilité à administrer le produit) ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Est-ce que l’association est habilitée à solliciter et recevoir un don de produit ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        }
+      ]
+    },
+    "risks": [
+      {
+        "description": "Don de produits",
+        "level": "Élevé",
+        "mitigation": "Le don de produits est particulièrement encadré : une validation du comité Don de Produits est nécessaire",
+        "priority": "A anticiper",
+        "teamId": "legal",
+        "timingConstraint": {
+          "enabled": false,
+          "startQuestion": "",
+          "endQuestion": ""
+        }
+      }
+    ]
+  },
+  {
+    "id": "rule16_copy_copy_copy_copy",
+    "name": "ISS - Juridique France IT",
+    "conditions": [
+      {
+        "type": "question",
+        "question": "q18_copy",
+        "operator": "equals",
+        "value": "Etude interventionnelle (IIS)"
+      }
+    ],
+    "conditionGroups": [
+      {
+        "logic": "any",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "q18_copy",
+            "operator": "equals",
+            "value": "Etude interventionnelle (IIS)"
+          }
+        ]
+      }
+    ],
+    "conditionLogic": "any",
+    "teams": [
+      "legal"
+    ],
+    "questions": {
+      "privacy": [
+        {
+          "text": "Qui est le partenaire en charge du développement de l'application/ instrument/outil destiné à être utilisé à des fins médicales ?&nbsp;<br>",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Quel est notre rôle dans le projet ? promotion ?&nbsp;",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Volonté d’acheter l'application/ instrument/outil destiné à être utilisé à des fins médicales ?&nbsp;",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Volonté de le proposer dans le cadre d’Appels d’Offre l'application/ instrument/outil destiné à être utilisé à des fins médicales ?&nbsp;",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        }
+      ],
+      "legal": [
+        {
+          "text": "De quel type d'étude s'agit-il ? (NI/RNI/In vitro/ Registre ) ?&nbsp;",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Quel montant ou quantité de produits est demandé ? et sur quel durée ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Que représente le soutien du LFB vs les autres financeurs ? (en %)",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Souhaitez vous accéder aux résultats de l'étude ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Souhaitez-vous réutiliser les données ? et si oui, pour quoi ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        }
+      ]
+    },
+    "risks": []
+  },
+  {
     "id": "rule17",
     "name": "Enquête Etude - PV",
     "conditions": [
@@ -2922,7 +3468,7 @@ export const initialRules = [
         "type": "question",
         "question": "q22",
         "operator": "equals",
-        "value": "Un dispositif structuré d’accompagnement du patient pour l’accompagner dans l’usage du traitement (initiation, observance, gestion des effets indésirables, compréhension de la maladie, soutien pratique ou financier)"
+        "value": "Un dispositif structuré d’accompagnement du patient ou de son entourage (par ex. aidant) pour l’accompagner notamment dans la compréhension de sa pathologie, l’usage de son traitement (initiation, observance, gestion des effets indésirables, compréhension de la maladie, soutien pratique ou financier)"
       }
     ],
     "conditionGroups": [
@@ -2933,7 +3479,7 @@ export const initialRules = [
             "type": "question",
             "question": "q22",
             "operator": "equals",
-            "value": "Un dispositif structuré d’accompagnement du patient pour l’accompagner dans l’usage du traitement (initiation, observance, gestion des effets indésirables, compréhension de la maladie, soutien pratique ou financier)"
+            "value": "Un dispositif structuré d’accompagnement du patient ou de son entourage (par ex. aidant) pour l’accompagner notamment dans la compréhension de sa pathologie, l’usage de son traitement (initiation, observance, gestion des effets indésirables, compréhension de la maladie, soutien pratique ou financier)"
           }
         ]
       }
