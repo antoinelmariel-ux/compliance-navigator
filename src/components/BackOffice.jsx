@@ -7291,7 +7291,7 @@ export const BackOffice = ({
 
                 <article className="rounded-xl border border-gray-200 bg-white p-4 space-y-4 hv-surface">
                   <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                    <h3 className="text-lg font-semibold text-gray-800">Analyse pour {selectedComplianceReviewTeam?.name || 'l'équipe sélectionnée'}</h3>
+                    <h3 className="text-lg font-semibold text-gray-800">Analyse pour {selectedComplianceReviewTeam?.name || "l'équipe sélectionnée"}</h3>
                     <div className="inline-flex items-center rounded-lg border border-gray-300 bg-gray-50 p-1" role="group" aria-label="Mode d'analyse compliance">
                       <button
                         type="button"
