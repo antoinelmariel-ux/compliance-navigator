@@ -23,7 +23,7 @@ export const initialTeams = [
       "hantzbergk@lfb.fr",
       "vanessa.dealmeida@lfb.fr"
     ],
-    "expertise": "Le pôle juridique France accompagne les équipes dans la conception, la structuration et la sécurisation juridique des projets en France et des projets IT.\nSon rôle est d’anticiper les risques juridiques et de protéger le LFB contre une mauvaise exécution du contrat par le partenaire."
+    "expertise": "Le pôle juridique France accompagne les équipes DOF et Direction Corporate dans la conception, la structuration et la sécurisation juridique des projets en France dont ceux qui impliquent des impacts IT\nSon rôle est d’anticiper les risques juridiques et de protéger le LFB contre une mauvaise exécution du contrat par le partenaire."
   },
   {
     "id": "juridique_international",
