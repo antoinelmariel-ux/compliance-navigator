@@ -5,7 +5,7 @@ const ROOT_DIR = path.resolve(__dirname, '..');
 const SRC_DIR = path.join(ROOT_DIR, 'src');
 const OUTPUT_FILE = path.join(SRC_DIR, 'module-manifest.js');
 
-const ALLOWED_EXTENSIONS = new Set(['.js', '.jsx']);
+const ALLOWED_EXTENSIONS = new Set(['.js', '.jsx', '.json']);
 const EXCLUDED_SEGMENTS = ['vendor'];
 const EXCLUDED_FILES = ['module-manifest.js'];
 
