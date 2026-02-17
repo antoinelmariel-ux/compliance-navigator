@@ -368,7 +368,7 @@ export const initialRules = [
             "type": "question",
             "question": "q23__extra_checkbox",
             "operator": "equals",
-            "value": ""
+            "value": "true"
           },
           {
             "type": "question",
@@ -403,7 +403,8 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": []
   },
   {
     "id": "rule8",
@@ -468,7 +469,8 @@ export const initialRules = [
           "endQuestion": ""
         }
       }
-    ]
+    ],
+    "teamRoutingRules": []
   },
   {
     "id": "rule8_copy",
@@ -533,7 +535,8 @@ export const initialRules = [
           "endQuestion": ""
         }
       }
-    ]
+    ],
+    "teamRoutingRules": []
   },
   {
     "id": "rule9",
@@ -587,7 +590,7 @@ export const initialRules = [
     "questions": {
       "achats": [
         {
-          "text": "Si le budget envisagé avec l'agence qui vous accompagnera dépasse 5K, contactez les achats pour vous faire accompagner dans le processus de sélection",
+          "text": "Si le budget envisagé avec l'agence qui vous accompagnera dépasse 5K, contactez les achats pour vous faire accompagner dans le processus de sélection. Pour les montants supérieur à 20K, merci d'utiliser&nbsp;<a href=\"https://apps.powerapps.com/play/e/f54022e7-8f36-43e6-9d8e-d7d4a4cde7bf/a/f79d5a77-e547-463d-ab2e-673040672dad?tenantId=ec5406f0-238e-4d3f-b91c-73e26a5831e9&amp;hint=41f32323-9b10-4eba-81db-9e8b3efc1be4&amp;sourcetime=1758035097208&amp;source=portal\" target=\"_blank\" rel=\"noopener noreferrer\">EasyConsult</a>",
           "timingConstraint": {
             "enabled": false,
             "startQuestion": "",
@@ -596,7 +599,8 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": []
   },
   {
     "id": "rule10",
@@ -638,7 +642,8 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": []
   },
   {
     "id": "rule11",
@@ -692,7 +697,8 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": []
   },
   {
     "id": "rule11_copy2",
@@ -734,7 +740,8 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": []
   },
   {
     "id": "rule11_copy2_copy",
@@ -776,7 +783,8 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": []
   },
   {
     "id": "rule11_copy",
@@ -818,7 +826,8 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": []
   },
   {
     "id": "rule12",
@@ -860,7 +869,8 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": []
   },
   {
     "id": "rule12_copy",
@@ -881,7 +891,7 @@ export const initialRules = [
     ],
     "conditionGroups": [
       {
-        "logic": "all",
+        "logic": "any",
         "conditions": [
           {
             "type": "question",
@@ -898,12 +908,29 @@ export const initialRules = [
         ]
       }
     ],
-    "conditionLogic": "all",
+    "conditionLogic": "any",
     "teams": [
       "communication_externe"
     ],
     "questions": {
-      "communication_externe": []
+      "communication_externe": [
+        {
+          "text": "Quel est l'objectif de la communication sur des sujets sensibles concernant le LFB ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Sur ces communications, partez vous des éléments de communication institutionnels déjà validés ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        }
+      ]
     },
     "risks": [
       {
@@ -918,7 +945,8 @@ export const initialRules = [
           "endQuestion": ""
         }
       }
-    ]
+    ],
+    "teamRoutingRules": []
   },
   {
     "id": "rule13",
@@ -960,7 +988,8 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": []
   },
   {
     "id": "rule13_copy",
@@ -1002,7 +1031,8 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": []
   },
   {
     "id": "rule13_copy_copy",
@@ -1044,7 +1074,8 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": []
   },
   {
     "id": "rule13_copy_copy_copy",
@@ -1094,7 +1125,8 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": []
   },
   {
     "id": "rule13_copy_copy_copy_copy2",
@@ -1140,7 +1172,8 @@ export const initialRules = [
           "endQuestion": ""
         }
       }
-    ]
+    ],
+    "teamRoutingRules": []
   },
   {
     "id": "rule13_copy_copy_copy_copy",
@@ -1173,7 +1206,7 @@ export const initialRules = [
     "questions": {
       "pi": [
         {
-          "text": "Pour l'utilisation de logo de tiers, pensez à obtenir leur autorisation écrite",
+          "text": "Pour l'utilisation de logo de tiers, pensez à obtenir leur autorisation écrite. Concernant les associations de patients, voici la liste des associations nous permettant de communiquer sur notre soutien auprès d'elles pour l'année en cours : XXXXX",
           "timingConstraint": {
             "enabled": false,
             "startQuestion": "",
@@ -1182,7 +1215,8 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": []
   },
   {
     "id": "rule13_copy_copy_copy_copy_copy_copy2",
@@ -1224,7 +1258,8 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": []
   },
   {
     "id": "rule13_copy_copy_copy_copy_copy_copy",
@@ -1274,7 +1309,8 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": []
   },
   {
     "id": "rule13_copy_copy_copy_copy_copy_copy_copy2",
@@ -1316,7 +1352,8 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": []
   },
   {
     "id": "rule13_copy_copy_copy_copy_copy_copy_copy",
@@ -1358,7 +1395,8 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": []
   },
   {
     "id": "rule13_copy_copy_copy_copy_copy_copy_copy_copy",
@@ -1410,7 +1448,8 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": []
   },
   {
     "id": "rule14",
@@ -1731,7 +1770,7 @@ export const initialRules = [
     ],
     "conditionGroups": [
       {
-        "logic": "all",
+        "logic": "any",
         "conditions": [
           {
             "type": "question",
@@ -1766,7 +1805,7 @@ export const initialRules = [
         ]
       }
     ],
-    "conditionLogic": "all",
+    "conditionLogic": "any",
     "teams": [
       "ethique_compliance"
     ],
@@ -1781,7 +1820,7 @@ export const initialRules = [
           }
         },
         {
-          "text": "Une rémunération des partenaires est-elle prévue ? Comment se répartit-elle ? Comment justifiez-vous le montant / nombre d'heures ?",
+          "text": "Une rémunération des partenaires est-elle prévue ? Comment se répartit-elle ? Comment justifiez-vous le montant / nombre d'heures ? Pour connaitre le taux horaire adapté, vous pouvez utiliser FMV Navigator<br>",
           "timingConstraint": {
             "enabled": false,
             "startQuestion": "",
@@ -1798,7 +1837,8 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": []
   },
   {
     "id": "rule15_copy",
@@ -1840,7 +1880,8 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": []
   },
   {
     "id": "rule15_copy_copy2",
@@ -1882,7 +1923,8 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": []
   },
   {
     "id": "rule15_copy_copy2_copy",
@@ -1948,7 +1990,8 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": []
   },
   {
     "id": "rule15_copy_copy",
@@ -1989,7 +2032,7 @@ export const initialRules = [
           }
         },
         {
-          "text": "Pouvez-vous nous fournir les statuts du parrainé ?",
+          "text": "Pouvez-vous nous fournir les statuts du parrainé ? Vous pouvez trouver&nbsp;<a href=\"https://www.pappers.fr/\" target=\"_blank\" rel=\"noopener noreferrer\">ce type de document ici</a>",
           "timingConstraint": {
             "enabled": false,
             "startQuestion": "",
@@ -2022,7 +2065,8 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": []
   },
   {
     "id": "rule15_copy_copy_copy",
@@ -2100,7 +2144,8 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": []
   },
   {
     "id": "rule15_copy_copy_copy_copy",
@@ -2157,7 +2202,7 @@ export const initialRules = [
           }
         },
         {
-          "text": "Qui communiquera sur le projet et selon quelles modalités ?",
+          "text": "Qui est à l'origine du contact avec le demandeur du don ?",
           "timingConstraint": {
             "enabled": false,
             "startQuestion": "",
@@ -2166,7 +2211,8 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": []
   },
   {
     "id": "rule15_copy_copy_copy_copy_copy",
@@ -2203,7 +2249,7 @@ export const initialRules = [
     "questions": {
       "ethique_compliance": [
         {
-          "text": "<br>",
+          "text": "Quel est le statut des Pds ? PH / PUPH ?",
           "timingConstraint": {
             "enabled": false,
             "startQuestion": "",
@@ -2225,7 +2271,8 @@ export const initialRules = [
           "endQuestion": ""
         }
       }
-    ]
+    ],
+    "teamRoutingRules": []
   },
   {
     "id": "rule15_copy_copy_copy_copy_copy_copy",
@@ -2284,7 +2331,8 @@ export const initialRules = [
           "endQuestion": ""
         }
       }
-    ]
+    ],
+    "teamRoutingRules": []
   },
   {
     "id": "rule15_copy_copy_copy_copy_copy_copy_copy",
@@ -2350,7 +2398,8 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": []
   },
   {
     "id": "rule15_copy_copy_copy_copy_copy_copy_copy_copy2",
@@ -2424,7 +2473,8 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": []
   },
   {
     "id": "rule15_copy_copy_copy_copy_copy_copy_copy_copy",
@@ -2469,7 +2519,7 @@ export const initialRules = [
     "questions": {
       "ethique_compliance": [
         {
-          "text": "Les contenus générés par IA doivent être indiqués comme tels",
+          "text": "Les contenus générés par IA doivent être indiqués comme ayant été générés via de tels outils",
           "timingConstraint": {
             "enabled": false,
             "startQuestion": "",
@@ -2478,7 +2528,8 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": []
   },
   {
     "id": "rule15_copy_copy_copy_copy_copy_copy_copy_copy_copy",
@@ -2545,7 +2596,8 @@ export const initialRules = [
           "endQuestion": ""
         }
       }
-    ]
+    ],
+    "teamRoutingRules": []
   },
   {
     "id": "rule16",
@@ -2765,7 +2817,31 @@ export const initialRules = [
       ]
     },
     "risks": [],
-    "teamRoutingRules": []
+    "teamRoutingRules": [
+      {
+        "id": "route_1771362249252_cg79",
+        "targetTeamId": "juridique_international",
+        "conditionGroups": [
+          {
+            "logic": "any",
+            "conditions": [
+              {
+                "type": "question",
+                "question": "q27",
+                "operator": "equals",
+                "value": "Pays liés à des filiales hors France"
+              },
+              {
+                "type": "question",
+                "question": "q27",
+                "operator": "equals",
+                "value": "Autre"
+              }
+            ]
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "rule16_copy",
@@ -2878,7 +2954,8 @@ export const initialRules = [
           "endQuestion": ""
         }
       }
-    ]
+    ],
+    "teamRoutingRules": []
   },
   {
     "id": "rule16_copy_copy3",
@@ -2912,7 +2989,7 @@ export const initialRules = [
       "juridique_international": [],
       "juridique_france": [
         {
-          "text": "Ce projet est-il adossé à un programme d'ETP ?",
+          "text": "Ce projet est-il adossé à un programme d'éducation thérapeutique ?",
           "timingConstraint": {
             "enabled": false,
             "startQuestion": "",
@@ -2963,7 +3040,7 @@ export const initialRules = [
   },
   {
     "id": "rule16_copy_copy2",
-    "name": "Developpement IT - Juridique France IT",
+    "name": "App / Site / Bot - Juridique France X International",
     "conditions": [
       {
         "type": "question",
@@ -2975,7 +3052,7 @@ export const initialRules = [
         "type": "question",
         "question": "q19",
         "operator": "equals",
-        "value": "Applications mobiles"
+        "value": "Site internet"
       },
       {
         "type": "question",
@@ -2998,7 +3075,7 @@ export const initialRules = [
             "type": "question",
             "question": "q19",
             "operator": "equals",
-            "value": "Applications mobiles"
+            "value": "Site internet"
           },
           {
             "type": "question",
@@ -3075,7 +3152,32 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": [
+      {
+        "id": "route_1771362458226_y1kl",
+        "targetTeamId": "juridique_international",
+        "conditionGroups": [
+          {
+            "logic": "any",
+            "conditions": [
+              {
+                "type": "question",
+                "question": "q27",
+                "operator": "equals",
+                "value": "Pays liés à des filiales hors France"
+              },
+              {
+                "type": "question",
+                "question": "q27",
+                "operator": "equals",
+                "value": "Autre"
+              }
+            ]
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "rule16_copy_copy",
@@ -3089,9 +3191,15 @@ export const initialRules = [
       },
       {
         "type": "question",
-        "question": "q18_copy",
+        "question": "q19",
         "operator": "equals",
-        "value": "Pour une enquête / étude"
+        "value": "Liée aux pratiques médicales"
+      },
+      {
+        "type": "question",
+        "question": "q19",
+        "operator": "equals",
+        "value": "Liée à la vie avec la maladie"
       }
     ],
     "conditionGroups": [
@@ -3106,9 +3214,15 @@ export const initialRules = [
           },
           {
             "type": "question",
-            "question": "q18_copy",
+            "question": "q19",
             "operator": "equals",
-            "value": "Pour une enquête / étude"
+            "value": "Liée aux pratiques médicales"
+          },
+          {
+            "type": "question",
+            "question": "q19",
+            "operator": "equals",
+            "value": "Liée à la vie avec la maladie"
           }
         ]
       }
@@ -3151,6 +3265,16 @@ export const initialRules = [
             "endQuestion": ""
           }
         }
+      ],
+      "juridique_france": [
+        {
+          "text": "Pouvez-vous nous décrire les modalités de l'étude et ses finalités ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        }
       ]
     },
     "risks": [
@@ -3167,6 +3291,107 @@ export const initialRules = [
         }
       }
     ],
+    "teamRoutingRules": [
+      {
+        "id": "route_1771329196642_yxa1",
+        "targetTeamId": "juridique_international",
+        "conditionGroups": [
+          {
+            "logic": "all",
+            "conditions": [
+              {
+                "type": "question",
+                "question": "q27",
+                "operator": "equals",
+                "value": "Pays liés à des filiales hors France"
+              },
+              {
+                "type": "question",
+                "question": "q27",
+                "operator": "equals",
+                "value": "Autre"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "rule16_copy_copy_copy2",
+    "name": "Etude NDA - Juridique France X International",
+    "conditions": [
+      {
+        "type": "question",
+        "question": "q19",
+        "operator": "equals",
+        "value": "Enquête / étude de marché"
+      }
+    ],
+    "conditionGroups": [
+      {
+        "logic": "any",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "q19",
+            "operator": "equals",
+            "value": "Enquête / étude de marché"
+          }
+        ]
+      }
+    ],
+    "conditionLogic": "any",
+    "teams": [
+      "juridique_france"
+    ],
+    "questions": {
+      "juridique_international": [
+        {
+          "text": "Qui est le partenaire en charge du développement de l'application/ instrument/outil destiné à être utilisé à des fins médicales ?&nbsp;<br>",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Quel est notre rôle dans le projet ? promotion ?&nbsp;",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Volonté d’acheter l'application/ instrument/outil destiné à être utilisé à des fins médicales ?&nbsp;",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Volonté de le proposer dans le cadre d’Appels d’Offre l'application/ instrument/outil destiné à être utilisé à des fins médicales ?&nbsp;",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        }
+      ],
+      "juridique_france": [
+        {
+          "text": "Si pertinent, avant de partager des informations sensibles avec un tiers en charge d'une de marché, pensez à lui faire signer un NDA (disponible en self service sur Legisway)",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        }
+      ]
+    },
+    "risks": [],
     "teamRoutingRules": [
       {
         "id": "route_1771329196642_yxa1",
@@ -3332,6 +3557,12 @@ export const initialRules = [
         "question": "q18_copy",
         "operator": "equals",
         "value": "Etude interventionnelle (IIS)"
+      },
+      {
+        "type": "question",
+        "question": "q18_copy",
+        "operator": "equals",
+        "value": "Etude non-interventionnelle (NIS)"
       }
     ],
     "conditionGroups": [
@@ -3343,6 +3574,12 @@ export const initialRules = [
             "question": "q18_copy",
             "operator": "equals",
             "value": "Etude interventionnelle (IIS)"
+          },
+          {
+            "type": "question",
+            "question": "q18_copy",
+            "operator": "equals",
+            "value": "Etude non-interventionnelle (NIS)"
           }
         ]
       }
@@ -3388,7 +3625,7 @@ export const initialRules = [
       ],
       "juridique_france": [
         {
-          "text": "De quel type d'étude s'agit-il ? (NI/RNI/In vitro/ Registre ) ?&nbsp;",
+          "text": "De quel type d'étude s'agit-il ? (NI/RNI/In vitro/ Registre) ?&nbsp;",
           "timingConstraint": {
             "enabled": false,
             "startQuestion": "",
@@ -3431,6 +3668,130 @@ export const initialRules = [
     },
     "risks": [],
     "teamRoutingRules": []
+  },
+  {
+    "id": "rule16_copy_copy_copy_copy_copy",
+    "name": "Publication - Juridique France IT ",
+    "conditions": [],
+    "conditionGroups": [
+      {
+        "logic": "all",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "q19",
+            "operator": "equals",
+            "value": "Rédaction d’abstract / de poster / articles scientifiques"
+          }
+        ]
+      },
+      {
+        "logic": "any",
+        "conditions": [
+          {
+            "type": "question",
+            "question": "q10",
+            "operator": "equals",
+            "value": "Professionnel de santé (hors France) (ou association de PdS / Société savante)"
+          },
+          {
+            "type": "question",
+            "question": "q10",
+            "operator": "equals",
+            "value": "Professionnel de santé français (ou association de PdS / Société savante)"
+          }
+        ]
+      }
+    ],
+    "conditionLogic": "all",
+    "teams": [
+      "juridique_france"
+    ],
+    "questions": {
+      "juridique_international": [
+        {
+          "text": "Qui est le partenaire en charge du développement de l'application/ instrument/outil destiné à être utilisé à des fins médicales ?&nbsp;<br>",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Quel est notre rôle dans le projet ? promotion ?&nbsp;",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Volonté d’acheter l'application/ instrument/outil destiné à être utilisé à des fins médicales ?&nbsp;",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Volonté de le proposer dans le cadre d’Appels d’Offre l'application/ instrument/outil destiné à être utilisé à des fins médicales ?&nbsp;",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        }
+      ],
+      "juridique_france": [
+        {
+          "text": "Quel est le rôle du / des PS dans le cadre de la rédaction de l'article / abstract / poster ?",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        }
+      ]
+    },
+    "risks": [
+      {
+        "description": "Indépendance de l'expert",
+        "level": "Faible",
+        "mitigation": "Si l'article / abstract / poster est rédigé par un Medical Writter, le travail de relecture par le PS devra être réalisé à titre gracieux",
+        "priority": "A réaliser",
+        "teamId": "juridique_france",
+        "timingConstraint": {
+          "enabled": false,
+          "startQuestion": "",
+          "endQuestion": ""
+        }
+      }
+    ],
+    "teamRoutingRules": [
+      {
+        "id": "route_1771363595274_yype",
+        "targetTeamId": "juridique_international",
+        "conditionGroups": [
+          {
+            "logic": "all",
+            "conditions": [
+              {
+                "type": "question",
+                "question": "q27",
+                "operator": "equals",
+                "value": "Pays liés à des filiales hors France"
+              },
+              {
+                "type": "question",
+                "question": "q27",
+                "operator": "equals",
+                "value": "Autre"
+              }
+            ]
+          }
+        ]
+      }
+    ]
   },
   {
     "id": "rule17",
@@ -3505,7 +3866,8 @@ export const initialRules = [
           "endQuestion": ""
         }
       }
-    ]
+    ],
+    "teamRoutingRules": []
   },
   {
     "id": "rule17_copy",
@@ -3542,7 +3904,7 @@ export const initialRules = [
       {
         "description": "Formation PV du prestataire éventuel",
         "level": "Moyen",
-        "mitigation": "Si le prestataire en charge de programme patient n'a pas été formé à la PV ou a été formé depuis plus d'un an, il doit réaliser une formation avant le début de l'étude / de l'enquête. Merci de transmettre le nom du prestataire et les mails des personnes concernées. Il faut compter 15 jours",
+        "mitigation": "Si le projet est qualité de PSP, le prestataire en charge de programme patient n'a pas été formé à la PV ou a été formé depuis plus d'un an, il doit réaliser une formation avant le début de l'étude / de l'enquête. Merci de transmettre le nom du prestataire et les mails des personnes concernées. Il faut compter 15 jours",
         "priority": "A réaliser",
         "teamId": "pharmacovigilance",
         "timingConstraint": {
@@ -3551,7 +3913,8 @@ export const initialRules = [
           "endQuestion": ""
         }
       }
-    ]
+    ],
+    "teamRoutingRules": []
   },
   {
     "id": "rule17_copy_copy",
@@ -3593,7 +3956,8 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": []
   },
   {
     "id": "rule17_copy_copy_copy",
@@ -3635,7 +3999,8 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": []
   },
   {
     "id": "rule17_copy_copy_copy_copy",
@@ -3677,7 +4042,8 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": []
   },
   {
     "id": "rule17_copy_copy_copy_copy_copy",
@@ -3719,7 +4085,8 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": []
   },
   {
     "id": "rule19",
@@ -3771,7 +4138,8 @@ export const initialRules = [
         }
       ]
     },
-    "risks": []
+    "risks": [],
+    "teamRoutingRules": []
   },
   {
     "id": "rule19_copy",
@@ -3829,6 +4197,7 @@ export const initialRules = [
           "endQuestion": ""
         }
       }
-    ]
+    ],
+    "teamRoutingRules": []
   }
 ];
