@@ -1864,7 +1864,7 @@ export const SynthesisReport = ({
                       return (
                         <p
                           className={`font-semibold whitespace-pre-line ${
-                            isMissingInfo ? 'text-rose-600' : 'text-gray-900'
+                            isMissingInfo ? 'text-rose-400' : 'text-gray-900'
                           }`}
                         >
                           {renderTextWithLinks(resolvedValue)}
@@ -1906,7 +1906,7 @@ export const SynthesisReport = ({
                 <p>En attente de l’ensemble des informations sur le projet pour une évaluation complète.</p>
               </div>
             )}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               {relevantTeams.map(team => {
                 const teamPriority = getTeamPriority(analysis, team.id);
                 const teamQuestions = analysis.questions?.[team.id];
@@ -1952,6 +1952,146 @@ export const SynthesisReport = ({
                             );
                           })}
                         </ul>
+                      </div>
+                    )}
+
+                    {shouldShowComplianceCommentsSection && (
+                      <div className="mt-6 border-t border-gray-200 pt-4 space-y-3">
+                        <h4 className="text-sm font-semibold text-gray-800">Commentaire des experts sujets</h4>
+                        {(() => {
+                          const storedEntry = normalizeCommentEntry(complianceComments.teams?.[team.id]);
+                          const draftEntry = complianceCommentDrafts.teams?.[team.id] || storedEntry;
+                          const statusMeta = getCommentStatusMeta(canBypassCompliancePerimeter ? draftEntry.status : storedEntry.status);
+                          const isDirty =
+                            draftEntry.comment !== storedEntry.comment
+                            || draftEntry.status !== storedEntry.status
+                            || JSON.stringify(normalizeCommentAttachments(draftEntry.attachments))
+                              !== JSON.stringify(normalizeCommentAttachments(storedEntry.attachments));
+                          const feedbackMessage = getComplianceFeedbackMessage(`team-${team.id}`);
+                          const canEditTeamComment = canBypassCompliancePerimeter || complianceTeamIdsForUser.has(team.id);
+                          const threadKey = `team-${team.id}`;
+                          const threadMessages = getThreadMessages(storedEntry, team.name);
+                          const isThreadExpanded = Boolean(expandedThreads[threadKey]);
+                          const shouldCollapse = !isThreadExpanded && shouldCollapseThread(threadMessages);
+                          const visibleMessages = shouldCollapse ? threadMessages.slice(0, 2) : threadMessages;
+
+                          return (
+                            <>
+                              <div className="flex items-start justify-between gap-2">
+                                <p className="text-xs text-gray-500">Suivi des échanges avec l'équipe {team.name}.</p>
+                                {statusMeta && (
+                                  <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${statusMeta.badgeClass}`}>
+                                    {statusMeta.label}
+                                  </span>
+                                )}
+                              </div>
+                              {canEditTeamComment ? (
+                                <form
+                                  onSubmit={(event) =>
+                                    handleComplianceCommentSubmit({ event, targetId: team.id, targetType: 'team' })
+                                  }
+                                  className="space-y-3"
+                                >
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700" htmlFor={`compliance-status-${team.id}`}>
+                                      Statut
+                                    </label>
+                                    <select
+                                      id={`compliance-status-${team.id}`}
+                                      value={draftEntry.status}
+                                      onChange={(event) =>
+                                        handleComplianceCommentChange({
+                                          targetId: team.id,
+                                          targetType: 'team',
+                                          field: 'status',
+                                          value: event.target.value
+                                        })
+                                      }
+                                      className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                    >
+                                      <option value="">Sélectionner un statut</option>
+                                      {COMMENT_STATUS_OPTIONS.map((option) => (
+                                        <option key={`status-${team.id}-${option.value}`} value={option.value}>
+                                          {option.label}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700" htmlFor={`compliance-comment-${team.id}`}>
+                                      Commentaire
+                                    </label>
+                                    <RichTextEditor
+                                      id={`compliance-comment-${team.id}`}
+                                      compact
+                                      placeholder="Ajoutez ici vos recommandations, points d'attention et liens..."
+                                      value={draftEntry.comment}
+                                      onChange={(value) =>
+                                        handleComplianceCommentChange({
+                                          targetId: team.id,
+                                          targetType: 'team',
+                                          field: 'comment',
+                                          value
+                                        })
+                                      }
+                                    />
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <button
+                                      type="submit"
+                                      className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+                                        canSaveComplianceComment && isDirty
+                                          ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                          : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                      }`}
+                                      disabled={!canSaveComplianceComment || !isDirty}
+                                    >
+                                      Enregistrer le commentaire
+                                    </button>
+                                    {feedbackMessage && (
+                                      <span className="text-xs font-medium text-emerald-700">
+                                        {feedbackMessage}
+                                      </span>
+                                    )}
+                                  </div>
+                                </form>
+                              ) : null}
+                              <div className="space-y-3">
+                                {visibleMessages.length > 0 ? (
+                                  <div className="space-y-3">
+                                    {visibleMessages.map((message) => {
+                                      const trimmedMessage = message.message.trim();
+                                      const isTruncated = shouldCollapse && trimmedMessage.length > 240;
+                                      const preview = isTruncated ? `${trimmedMessage.slice(0, 240)}…` : trimmedMessage;
+
+                                      return (
+                                        <div key={message.id} className="rounded-lg border border-gray-200 bg-white p-3">
+                                          <p className="text-xs font-semibold text-gray-500">
+                                            {message.authorName || message.authorEmail || 'Équipe compliance'}
+                                          </p>
+                                          <p className="mt-1 text-sm text-gray-700 whitespace-pre-line">
+                                            {renderTextWithLinks(preview)}
+                                          </p>
+                                        </div>
+                                      );
+                                    })}
+                                    {shouldCollapse && (
+                                      <button
+                                        type="button"
+                                        onClick={() => toggleThreadExpanded(threadKey)}
+                                        className="text-xs font-semibold text-blue-600 hover:text-blue-700"
+                                      >
+                                        Voir plus
+                                      </button>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <p className="text-sm text-gray-500">Aucun commentaire communiqué pour le moment.</p>
+                                )}
+                              </div>
+                            </>
+                          );
+                        })()}
                       </div>
                     )}
                   </div>
@@ -2173,261 +2313,9 @@ export const SynthesisReport = ({
                   </h2>
                 </div>
 
-                {relevantTeams.length === 0 ? (
-                  <p className="text-sm text-gray-500">
-                    Aucune équipe compliance n’est sollicitée pour ce projet.
-                  </p>
-                ) : (
-                  <div className="space-y-4">
-                    {relevantTeams.map((team) => {
-                      const storedEntry = normalizeCommentEntry(complianceComments.teams?.[team.id]);
-                      const draftEntry = complianceCommentDrafts.teams?.[team.id] || storedEntry;
-                      const statusMeta = getCommentStatusMeta(canBypassCompliancePerimeter ? draftEntry.status : storedEntry.status);
-                      const isDirty =
-                        draftEntry.comment !== storedEntry.comment
-                        || draftEntry.status !== storedEntry.status
-                        || JSON.stringify(normalizeCommentAttachments(draftEntry.attachments))
-                          !== JSON.stringify(normalizeCommentAttachments(storedEntry.attachments));
-                      const feedbackMessage = getComplianceFeedbackMessage(`team-${team.id}`);
-                      const teamContactLabel = formatTeamContacts(team, ' · ');
-                      const canEditTeamComment = canBypassCompliancePerimeter || complianceTeamIdsForUser.has(team.id);
-                      const threadKey = `team-${team.id}`;
-                      const threadMessages = getThreadMessages(storedEntry, team.name);
-                      const isThreadExpanded = Boolean(expandedThreads[threadKey]);
-                      const shouldCollapse = !isThreadExpanded && shouldCollapseThread(threadMessages);
-                      const visibleMessages = shouldCollapse ? threadMessages.slice(0, 2) : threadMessages;
-
-                      return (
-                        <article key={`compliance-comment-${team.id}`} className="rounded-xl border border-gray-200 p-4 bg-gray-50">
-                          <div className="flex flex-wrap items-start justify-between gap-2">
-                            <div>
-                              <h3 className="text-base font-semibold text-gray-800">{team.name}</h3>
-                              {teamContactLabel && (
-                                <p className="text-xs text-gray-500">{teamContactLabel}</p>
-                              )}
-                            </div>
-                            {statusMeta && (
-                              <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${statusMeta.badgeClass}`}>
-                                {statusMeta.label}
-                              </span>
-                            )}
-                          </div>
-
-                          {canEditTeamComment ? (
-                            <form
-                              onSubmit={(event) =>
-                                handleComplianceCommentSubmit({ event, targetId: team.id, targetType: 'team' })
-                              }
-                              className="mt-4 space-y-3"
-                            >
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700" htmlFor={`compliance-status-${team.id}`}>
-                                  Statut
-                                </label>
-                                <select
-                                  id={`compliance-status-${team.id}`}
-                                  value={draftEntry.status}
-                                  onChange={(event) =>
-                                    handleComplianceCommentChange({
-                                      targetId: team.id,
-                                      targetType: 'team',
-                                      field: 'status',
-                                      value: event.target.value
-                                    })
-                                  }
-                                  className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                                >
-                                  <option value="">Sélectionner un statut</option>
-                                  {COMMENT_STATUS_OPTIONS.map((option) => (
-                                    <option key={`status-${team.id}-${option.value}`} value={option.value}>
-                                      {option.label}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700" htmlFor={`compliance-comment-${team.id}`}>
-                                  Commentaire
-                                </label>
-                                <RichTextEditor
-                                  id={`compliance-comment-${team.id}`}
-                                  compact
-                                  placeholder="Ajoutez ici vos recommandations, points d'attention et liens..."
-                                  value={draftEntry.comment}
-                                  onChange={(value) =>
-                                    handleComplianceCommentChange({
-                                      targetId: team.id,
-                                      targetType: 'team',
-                                      field: 'comment',
-                                      value
-                                    })
-                                  }
-                                />
-                                <input
-                                  type="file"
-                                  multiple
-                                  className="mt-2 block w-full text-xs text-gray-600"
-                                  onChange={(event) => {
-                                    handleComplianceCommentFilesChange({
-                                      targetId: team.id,
-                                      targetType: 'team',
-                                      files: event.target.files
-                                    });
-                                    event.target.value = '';
-                                  }}
-                                />
-                                {normalizeCommentAttachments(draftEntry.attachments).length > 0 && (
-                                  <ul className="mt-2 space-y-1 text-xs">
-                                    {normalizeCommentAttachments(draftEntry.attachments).map((attachment) => (
-                                      <li key={attachment.id} className="flex items-center justify-between gap-2">
-                                        <a href={attachment.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
-                                          {attachment.name}
-                                        </a>
-                                        <button
-                                          type="button"
-                                          className="text-red-600"
-                                          onClick={() => handleComplianceCommentAttachmentRemove({ targetId: team.id, targetType: 'team', attachmentId: attachment.id })}
-                                        >Supprimer</button>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                )}
-                              </div>
-                              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                <p className="text-xs text-gray-500">
-                                  Ces commentaires sont enregistrés dans le rapport compliance du projet.
-                                </p>
-                                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                                  <button
-                                    type="submit"
-                                    className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all hv-button ${
-                                      canSaveComplianceComment && isDirty
-                                        ? 'bg-blue-600 text-white hover:bg-blue-700 hv-button-primary'
-                                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                    }`}
-                                    disabled={!canSaveComplianceComment || !isDirty}
-                                  >
-                                    Enregistrer le commentaire
-                                  </button>
-                                  {feedbackMessage && (
-                                    <span className="text-xs font-medium text-emerald-700">
-                                      {feedbackMessage}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            </form>
-                          ) : null}
-
-                          <div className="mt-4 space-y-3">
-                            {visibleMessages.length > 0 ? (
-                              <div className="space-y-3">
-                                {visibleMessages.map((message) => {
-                                  const trimmedMessage = message.message.trim();
-                                  const isTruncated = shouldCollapse && trimmedMessage.length > 240;
-                                  const preview = isTruncated ? `${trimmedMessage.slice(0, 220)}…` : trimmedMessage;
-                                  return (
-                                    <div key={message.id} className="rounded-lg bg-white border border-gray-200 p-3">
-                                      <div className="flex items-center justify-between gap-2 text-xs text-gray-500">
-                                        <span className="font-semibold text-gray-700">{message.authorName}</span>
-                                        {message.createdAt && <span>{formatTimestamp(message.createdAt)}</span>}
-                                      </div>
-                                      <p className="mt-2 text-sm text-gray-700 whitespace-pre-line">
-                                        {renderTextWithLinks(preview)}
-                                      </p>
-                                      {normalizeCommentAttachments(message.attachments).length > 0 && (
-                                        <ul className="mt-2 space-y-1 text-xs">
-                                          {normalizeCommentAttachments(message.attachments).map((attachment) => (
-                                            <li key={attachment.id}>
-                                              <a href={attachment.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
-                                                {attachment.name}
-                                              </a>
-                                            </li>
-                                          ))}
-                                        </ul>
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                                {shouldCollapse && (
-                                  <button
-                                    type="button"
-                                    onClick={() => toggleThreadExpanded(threadKey)}
-                                    className="text-xs font-semibold text-blue-600 hover:text-blue-700"
-                                  >
-                                    Voir plus
-                                  </button>
-                                )}
-                              </div>
-                            ) : (
-                              <p className="text-sm text-gray-500">
-                                Aucun commentaire communiqué pour le moment.
-                              </p>
-                            )}
-                            <div className="border-t border-gray-200 pt-3">
-                              <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                                Répondre
-                              </label>
-                              <RichTextEditor
-                                id={`${threadKey}-reply-editor`}
-                                compact
-                                value={normalizeReplyDraft(complianceReplyDrafts[threadKey]).message}
-                                onChange={(value) => handleComplianceReplyChange(threadKey, value)}
-                                placeholder="Votre réponse (texte riche et liens)..."
-                              />
-                              <input
-                                type="file"
-                                multiple
-                                className="mt-2 block w-full text-xs text-gray-600"
-                                onChange={(event) => {
-                                  handleComplianceReplyFilesChange(threadKey, event.target.files);
-                                  event.target.value = '';
-                                }}
-                              />
-                              {normalizeReplyDraft(complianceReplyDrafts[threadKey]).attachments.length > 0 && (
-                                <ul className="mt-2 space-y-1 text-xs">
-                                  {normalizeReplyDraft(complianceReplyDrafts[threadKey]).attachments.map((attachment) => (
-                                    <li key={attachment.id} className="flex items-center justify-between gap-2">
-                                      <a href={attachment.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
-                                        {attachment.name}
-                                      </a>
-                                      <button type="button" className="text-red-600" onClick={() => handleComplianceReplyAttachmentRemove(threadKey, attachment.id)}>Supprimer</button>
-                                    </li>
-                                  ))}
-                                </ul>
-                              )}
-                              <div className="mt-2 flex items-center gap-3">
-                                <button
-                                  type="button"
-                                  onClick={() => handleComplianceReplySubmit({ targetId: team.id, targetType: 'team' })}
-                                  className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
-                                    canSaveComplianceComment
-                                    && (normalizeReplyDraft(complianceReplyDrafts[threadKey]).message.trim().length > 0
-                                      || normalizeReplyDraft(complianceReplyDrafts[threadKey]).attachments.length > 0)
-                                      ? 'bg-blue-600 text-white hover:bg-blue-700'
-                                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                  }`}
-                                  disabled={
-                                    !canSaveComplianceComment
-                                    || (normalizeReplyDraft(complianceReplyDrafts[threadKey]).message.trim().length === 0
-                                      && normalizeReplyDraft(complianceReplyDrafts[threadKey]).attachments.length === 0)
-                                  }
-                                >
-                                  Envoyer la réponse
-                                </button>
-                                {feedbackMessage && (
-                                  <span className="text-xs font-medium text-emerald-700">
-                                    {feedbackMessage}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </article>
-                      );
-                    })}
-                  </div>
-                )}
+                <p className="text-sm text-gray-500">
+                  Les commentaires des équipes sont désormais disponibles sous chaque bloc dans « Équipes à solliciter ».
+                </p>
 
                 {shouldShowCommitteeSection && (
                   <div className="space-y-4">
