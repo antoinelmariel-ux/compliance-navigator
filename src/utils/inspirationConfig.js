@@ -92,7 +92,7 @@ const DEFAULT_INSPIRATION_FORM_FIELDS = {
     },
     {
       id: 'visibility',
-      label: 'Portée de l'inspiration',
+      label: "Portée de l'inspiration",
       type: 'select',
       required: true,
       enabled: true,
