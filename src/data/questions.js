@@ -908,7 +908,7 @@ export const initialQuestions = [
             "conditionLogic": "all"
           },
           {
-            "label": "Iqymune / Clairyg100/Clairyg 5%",
+            "label": "Iqymune / Clairyg",
             "visibility": "always",
             "subType": null,
             "subOptions": [],
@@ -917,22 +917,68 @@ export const initialQuestions = [
             "conditionLogic": "all"
           },
           {
-            "label": "Cevenfacta"
+            "label": "Cevenfacta",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
           },
           {
-            "label": "Clottafact/Fibclot"
+            "label": "Clottafact/Fibclot",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
           },
           {
-            "label": "Tegeline"
+            "label": "Vialebex",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
           },
           {
-            "label": "Vialebex"
+            "label": "Wilfactin/ Willfact",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
           },
           {
-            "label": "Wilfactin/ Willfact"
+            "label": "Cross-produits",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
           },
           {
-            "label": "Cross-produits"
+            "label": "Autre produit",
+            "isOther": true,
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
+          },
+          {
+            "label": "Pharmaciens",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
           }
         ],
         "conditionGroups": [],
@@ -963,10 +1009,40 @@ export const initialQuestions = [
             "conditionLogic": "all"
           },
           {
-            "label": "Pneumologie"
+            "label": "Pneumologie",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
           },
           {
-            "label": "Soins intensifs"
+            "label": "Soins intensifs",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
+          },
+          {
+            "label": "Cross aires thérapeutiques",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
+          },
+          {
+            "label": "Pharmaciens",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
           }
         ],
         "conditionGroups": [],
@@ -2100,7 +2176,7 @@ export const initialQuestions = [
             "conditionLogic": "all"
           },
           {
-            "label": "Equipe médical",
+            "label": "Equipe médicale",
             "visibility": "always",
             "subType": null,
             "subOptions": [],
@@ -2109,13 +2185,16 @@ export const initialQuestions = [
             "conditionLogic": "all"
           },
           {
-            "label": "Evénements (via stand, kakémono, ...)",
+            "label": "Equipe RGC",
             "visibility": "always",
             "subType": null,
             "subOptions": [],
             "conditionGroups": [],
             "conditions": [],
             "conditionLogic": "all"
+          },
+          {
+            "label": "Evénements (via stand, kakémono, ...)"
           }
         ],
         "conditionGroups": [],
@@ -2962,7 +3041,6 @@ export const initialQuestions = [
       "entries": []
     }
   },
-
   {
     "id": "solutionBenefits",
     "type": "long_text",
