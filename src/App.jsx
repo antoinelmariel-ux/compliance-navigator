@@ -43,7 +43,7 @@ import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.
 import { isShowcaseAccessBlockedByProjectType } from './utils/showcase.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.318';
+const APP_VERSION = 'v1.0.319';
 
 class AdminBackOfficeErrorBoundary extends React.Component {
   constructor(props) {
@@ -316,6 +316,22 @@ const isAnswerProvided = (value) => {
   }
 
   return value !== null && value !== undefined;
+};
+
+const computeMandatoryProgress = (questions = [], answers = {}) => {
+  const mandatoryQuestions = Array.isArray(questions)
+    ? questions.filter(question => question?.required)
+    : [];
+
+  const totalMandatoryQuestions = mandatoryQuestions.length;
+  const answeredMandatoryQuestions = mandatoryQuestions.filter(
+    question => question?.id && isAnswerProvided(answers[question.id])
+  ).length;
+
+  return {
+    totalMandatoryQuestions,
+    answeredMandatoryQuestions
+  };
 };
 
 const areAnswersEqual = (previousValue, nextValue) => {
@@ -1379,8 +1395,10 @@ const updateProjectFilters = useCallback((updater) => {
 
       const analysisResult = analyzeAnswers(answers, rules, riskLevelRules, riskWeights);
       const visibleQuestions = questions.filter(question => shouldShowQuestion(question, answers));
-      const totalQuestions = visibleQuestions.length > 0 ? visibleQuestions.length : questions.length;
-      const answeredQuestions = visibleQuestions.filter(question => isAnswerProvided(answers[question.id])).length;
+      const {
+        totalMandatoryQuestions: totalQuestions,
+        answeredMandatoryQuestions: answeredQuestions
+      } = computeMandatoryProgress(visibleQuestions, answers);
       const status = config.status || 'draft';
 
       return {
@@ -2739,9 +2757,10 @@ const updateProjectFilters = useCallback((updater) => {
     setAnalysis(updatedAnalysis);
 
     const relevantQuestions = questions.filter(question => shouldShowQuestion(question, nextAnswersSnapshot));
-    const answeredQuestionsCount = relevantQuestions.length > 0
-      ? relevantQuestions.filter(question => isAnswerProvided(nextAnswersSnapshot[question.id])).length
-      : Object.keys(nextAnswersSnapshot).length;
+    const {
+      totalMandatoryQuestions: totalMandatoryQuestionsCount,
+      answeredMandatoryQuestions: answeredQuestionsCount
+    } = computeMandatoryProgress(relevantQuestions, nextAnswersSnapshot);
     const inferredName = extractProjectName(nextAnswersSnapshot, questions);
     const normalizedInferredName = typeof inferredName === 'string' ? inferredName.trim() : '';
 
@@ -2762,9 +2781,7 @@ const updateProjectFilters = useCallback((updater) => {
           return prevProjects;
         }
 
-        const totalQuestions = relevantQuestions.length > 0
-          ? relevantQuestions.length
-          : project.totalQuestions || questions.length || 0;
+        const totalQuestions = totalMandatoryQuestionsCount;
         const sanitizedName = normalizedInferredName.length > 0
           ? normalizedInferredName
           : project.projectName;
@@ -2847,12 +2864,10 @@ const updateProjectFilters = useCallback((updater) => {
           }
 
           const relevantQuestions = questions.filter(question => shouldShowQuestion(question, sanitizedResult));
-          const totalQuestions = relevantQuestions.length > 0
-            ? relevantQuestions.length
-            : project.totalQuestions || questions.length || 0;
-          const answeredQuestionsCount = relevantQuestions.length > 0
-            ? relevantQuestions.filter(question => isAnswerProvided(sanitizedResult[question.id])).length
-            : Object.keys(sanitizedResult).length;
+          const {
+            totalMandatoryQuestions: totalQuestions,
+            answeredMandatoryQuestions: answeredQuestionsCount
+          } = computeMandatoryProgress(relevantQuestions, sanitizedResult);
           const inferredName = extractProjectName(sanitizedResult, questions);
           const sanitizedName = inferredName && inferredName.trim().length > 0
             ? inferredName.trim()
@@ -3330,11 +3345,11 @@ const updateProjectFilters = useCallback((updater) => {
     const derivedAnalysis = Object.keys(projectAnswers).length > 0
       ? analyzeAnswers(projectAnswers, rules, riskLevelRules, riskWeights)
       : null;
-    const answeredQuestionsCount = derivedQuestions.length > 0
-      ? derivedQuestions.filter(question => isAnswerProvided(projectAnswers[question.id])).length
-      : Object.keys(projectAnswers).length;
+    const {
+      totalMandatoryQuestions: totalQuestions,
+      answeredMandatoryQuestions: answeredQuestionsCount
+    } = computeMandatoryProgress(derivedQuestions, projectAnswers);
     const missingMandatory = derivedQuestions.filter(question => question.required && !isAnswerProvided(projectAnswers[question.id]));
-    const totalQuestions = derivedQuestions.length;
     const rawIndex = typeof project.lastQuestionIndex === 'number' ? project.lastQuestionIndex : 0;
     const sanitizedIndex = totalQuestions > 0 ? Math.min(Math.max(rawIndex, 0), totalQuestions - 1) : 0;
     const firstMissingId = missingMandatory[0]?.id;
@@ -3457,17 +3472,21 @@ const updateProjectFilters = useCallback((updater) => {
       }
 
       const relevantQuestions = questions.filter(question => shouldShowQuestion(question, answersClone));
-      const totalQuestions = relevantQuestions.length > 0
-        ? relevantQuestions.length
+      const {
+        totalMandatoryQuestions: derivedTotalQuestions,
+        answeredMandatoryQuestions: derivedAnsweredQuestions
+      } = computeMandatoryProgress(relevantQuestions, answersClone);
+      const totalQuestions = derivedTotalQuestions > 0
+        ? derivedTotalQuestions
         : typeof sourceProject.totalQuestions === 'number' && sourceProject.totalQuestions > 0
           ? sourceProject.totalQuestions
-          : questions.length;
+          : 0;
 
-      const answeredQuestionsCount = relevantQuestions.length > 0
-        ? relevantQuestions.filter(question => isAnswerProvided(answersClone[question.id])).length
+      const answeredQuestionsCount = derivedTotalQuestions > 0
+        ? derivedAnsweredQuestions
         : typeof sourceProject.answeredQuestions === 'number'
           ? Math.min(sourceProject.answeredQuestions, totalQuestions || sourceProject.answeredQuestions)
-          : Object.keys(answersClone).length;
+          : 0;
 
       const computedAnalysis = Object.keys(answersClone).length > 0
         ? analyzeAnswers(answersClone, rules, riskLevelRules, riskWeights)
@@ -3545,9 +3564,10 @@ const updateProjectFilters = useCallback((updater) => {
       : 'Projet sans nom';
     const resolvedStatus = providedStatus || project?.status || 'draft';
 
-    const answeredQuestionsCount = visibleQuestions.length > 0
-      ? visibleQuestions.filter(question => isAnswerProvided(answersSource[question.id])).length
-      : Object.keys(answersSource).length;
+    const {
+      totalMandatoryQuestions: totalQuestions,
+      answeredMandatoryQuestions: answeredQuestionsCount
+    } = computeMandatoryProgress(visibleQuestions, answersSource);
 
     const hasShowcaseIncompleteAnswers = visibleQuestions.length > 0
       ? visibleQuestions.some(
@@ -3555,9 +3575,6 @@ const updateProjectFilters = useCallback((updater) => {
       )
       : Object.keys(answersSource).length === 0;
 
-    const totalQuestions = visibleQuestions.length > 0
-      ? visibleQuestions.length
-      : project?.totalQuestions || questions.length || 0;
 
     if (projectId) {
       setProjects(prevProjects => prevProjects.map(entry => {
@@ -3748,12 +3765,10 @@ const updateProjectFilters = useCallback((updater) => {
       hasProjectChanges = true;
 
       const relevantQuestions = questions.filter(question => shouldShowQuestion(question, nextAnswers));
-      const totalQuestions = relevantQuestions.length > 0
-        ? relevantQuestions.length
-        : project.totalQuestions || questions.length || 0;
-      const answeredQuestions = relevantQuestions.length > 0
-        ? relevantQuestions.filter(question => isAnswerProvided(nextAnswers[question.id])).length
-        : Object.keys(nextAnswers).length;
+      const {
+        totalMandatoryQuestions: totalQuestions,
+        answeredMandatoryQuestions: answeredQuestions
+      } = computeMandatoryProgress(relevantQuestions, nextAnswers);
 
       const updatedAnalysis = analyzeAnswers(nextAnswers, rules, riskLevelRules, riskWeights);
       const timelineDetails = updatedAnalysis?.timeline?.details || [];
@@ -3842,21 +3857,14 @@ const updateProjectFilters = useCallback((updater) => {
     const projectId = activeProjectId || payload.id || `project-${Date.now()}`;
     const relevantQuestions = questions.filter(question => shouldShowQuestion(question, sanitizedAnswers));
     const existingProject = projects.find(project => project?.id === projectId);
-    const computedTotalQuestions = payload.totalQuestions
-      || (relevantQuestions.length > 0 ? relevantQuestions.length : activeQuestions.length);
-    const totalQuestions = computedTotalQuestions > 0 ? computedTotalQuestions : activeQuestions.length;
-    const answeredQuestionsCount = relevantQuestions.length > 0
-      ? relevantQuestions.filter(question => {
-        const value = sanitizedAnswers[question.id];
-        if (Array.isArray(value)) {
-          return value.length > 0;
-        }
-        if (typeof value === 'string') {
-          return value.trim().length > 0;
-        }
-        return value !== null && value !== undefined;
-      }).length
-      : Object.keys(sanitizedAnswers).length;
+    const {
+      totalMandatoryQuestions: derivedTotalQuestions,
+      answeredMandatoryQuestions: answeredQuestionsCount
+    } = computeMandatoryProgress(relevantQuestions, sanitizedAnswers);
+    const computedTotalQuestions = typeof payload.totalQuestions === 'number'
+      ? payload.totalQuestions
+      : derivedTotalQuestions;
+    const totalQuestions = computedTotalQuestions > 0 ? computedTotalQuestions : 0;
     const now = new Date().toISOString();
 
     let computedAnalysis = null;

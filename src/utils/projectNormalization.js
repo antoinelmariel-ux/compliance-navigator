@@ -34,25 +34,24 @@ export const normalizeProjectEntry = (
 
     return shouldShowQuestion(question, answers);
   });
-  const derivedTotalQuestions = visibleQuestions.length;
-  const derivedAnsweredQuestions = visibleQuestions.length > 0
-    ? visibleQuestions.filter(question => {
+  const mandatoryVisibleQuestions = visibleQuestions.filter(question => question?.required);
+  const derivedTotalQuestions = mandatoryVisibleQuestions.length;
+  const derivedAnsweredQuestions = mandatoryVisibleQuestions.length > 0
+    ? mandatoryVisibleQuestions.filter(question => {
       if (!question || typeof question.id === 'undefined') {
         return false;
       }
 
       return isAnswerProvided(answers[question.id]);
     }).length
-    : Object.keys(answers).length;
+    : 0;
 
   const computedTotalQuestions =
     typeof project.totalQuestions === 'number' && project.totalQuestions > 0
       ? project.totalQuestions
       : derivedTotalQuestions > 0
         ? derivedTotalQuestions
-        : fallbackQuestionsLength > 0
-          ? fallbackQuestionsLength
-          : Object.keys(answers).length;
+        : 0;
 
   const answeredQuestionsCount =
     typeof project.answeredQuestions === 'number'
@@ -98,4 +97,3 @@ export const normalizeProjectsCollection = (
 
   return projects.map(project => normalizeProjectEntry(project, fallbackQuestionsLength));
 };
-
