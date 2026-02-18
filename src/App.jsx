@@ -43,7 +43,7 @@ import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.
 import { isShowcaseAccessBlockedByProjectType } from './utils/showcase.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.320';
+const APP_VERSION = 'v1.0.321';
 
 class AdminBackOfficeErrorBoundary extends React.Component {
   constructor(props) {
@@ -4606,7 +4606,7 @@ const updateProjectFilters = useCallback((updater) => {
             onBack={handleBack}
             allQuestions={questions}
             onNavigateToQuestion={handleNavigateToQuestion}
-            onSaveDraft={isOnboardingActive ? noop : handleSaveDraft}
+            onSaveDraft={undefined}
             saveFeedback={saveFeedback}
             onDismissSaveFeedback={handleDismissSaveFeedback}
             validationError={validationError}
@@ -4643,18 +4643,13 @@ const updateProjectFilters = useCallback((updater) => {
               onUpdateComplianceComments={activeProjectId ? handleUpdateComplianceComments : undefined}
               currentUser={currentUser}
               sharedMembers={activeProject?.sharedWith || []}
+              ownerEmail={activeProject?.ownerEmail || ''}
               onShareProjectMember={activeProjectId ? handleAddSharedMember : undefined}
               onRemoveProjectMember={activeProjectId ? handleRemoveSharedMember : undefined}
               onSubmitProject={handleSubmitProject}
               onNavigateToQuestion={handleNavigateToQuestionFromReport}
               isExistingProject={Boolean(activeProjectId)}
-              onSaveDraft={
-                isOnboardingActive
-                  ? noop
-                  : isActiveProjectEditable
-                    ? handleSaveDraft
-                    : undefined
-              }
+              onSaveDraft={undefined}
               saveFeedback={saveFeedback}
               onDismissSaveFeedback={handleDismissSaveFeedback}
               isAdminMode={isAdminMode}

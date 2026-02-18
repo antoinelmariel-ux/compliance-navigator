@@ -91,6 +91,14 @@ const DEFAULT_INSPIRATION_FORM_FIELDS = {
       options: ['France', 'Europe', 'États-Unis', 'Autre']
     },
     {
+      id: 'visibility',
+      label: 'Portée de l'inspiration',
+      type: 'select',
+      required: true,
+      enabled: true,
+      options: ['personal', 'shared']
+    },
+    {
       id: 'description',
       label: 'Description du projet',
       type: 'long_text',

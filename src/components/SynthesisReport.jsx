@@ -789,6 +789,7 @@ export const SynthesisReport = ({
   onUpdateComplianceComments,
   currentUser = null,
   sharedMembers = [],
+  ownerEmail = '',
   adminEmails = [],
   onShareProjectMember,
   onRemoveProjectMember,
@@ -895,6 +896,16 @@ export const SynthesisReport = ({
     () => (Array.isArray(sharedMembers) ? sharedMembers.filter(Boolean) : []),
     [sharedMembers]
   );
+  const normalizedOwnerEmail = useMemo(() => normalizeEmail(ownerEmail), [ownerEmail]);
+  const canReplyAsProjectContributor = useMemo(() => {
+    if (!currentUserEmail) {
+      return false;
+    }
+
+    const isOwner = normalizedOwnerEmail.length > 0 && normalizedOwnerEmail === currentUserEmail;
+    const isCoOwner = normalizedSharedMembers.some((member) => normalizeEmail(member) === currentUserEmail);
+    return isOwner || isCoOwner;
+  }, [currentUserEmail, normalizedOwnerEmail, normalizedSharedMembers]);
   const normalizedValidationCommitteeConfig = useMemo(
     () => normalizeValidationCommitteeConfig(validationCommitteeConfig),
     [validationCommitteeConfig]
@@ -1969,6 +1980,7 @@ export const SynthesisReport = ({
                               !== JSON.stringify(normalizeCommentAttachments(storedEntry.attachments));
                           const feedbackMessage = getComplianceFeedbackMessage(`team-${team.id}`);
                           const canEditTeamComment = canBypassCompliancePerimeter || complianceTeamIdsForUser.has(team.id);
+                          const canReplyTeamThread = canEditTeamComment || canReplyAsProjectContributor;
                           const threadKey = `team-${team.id}`;
                           const threadMessages = getThreadMessages(storedEntry, team.name);
                           const isThreadExpanded = Boolean(expandedThreads[threadKey]);
@@ -2089,6 +2101,68 @@ export const SynthesisReport = ({
                                   <p className="text-sm text-gray-500">Aucun commentaire communiqué pour le moment.</p>
                                 )}
                               </div>
+                              {canReplyTeamThread && (
+                                <div className="border-t border-gray-200 pt-3">
+                                  <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                                    Répondre
+                                  </label>
+                                  <RichTextEditor
+                                    id={`${threadKey}-reply-editor`}
+                                    compact
+                                    value={normalizeReplyDraft(complianceReplyDrafts[threadKey]).message}
+                                    onChange={(value) => handleComplianceReplyChange(threadKey, value)}
+                                    placeholder="Votre réponse (texte riche et liens)..."
+                                  />
+                                  <input
+                                    type="file"
+                                    multiple
+                                    className="mt-2 block w-full text-xs text-gray-600"
+                                    onChange={(event) => {
+                                      handleComplianceReplyFilesChange(threadKey, event.target.files);
+                                      event.target.value = '';
+                                    }}
+                                  />
+                                  {normalizeReplyDraft(complianceReplyDrafts[threadKey]).attachments.length > 0 && (
+                                    <ul className="mt-2 space-y-1 text-xs">
+                                      {normalizeReplyDraft(complianceReplyDrafts[threadKey]).attachments.map((attachment) => (
+                                        <li key={attachment.id} className="flex items-center justify-between gap-2">
+                                          <a href={attachment.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                                            {attachment.name}
+                                          </a>
+                                          <button type="button" className="text-red-600" onClick={() => handleComplianceReplyAttachmentRemove(threadKey, attachment.id)}>Supprimer</button>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  )}
+                                  <div className="mt-2 flex items-center gap-3">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleComplianceReplySubmit({ targetId: team.id, targetType: 'team' })
+                                      }
+                                      className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
+                                        canSaveComplianceComment
+                                        && (normalizeReplyDraft(complianceReplyDrafts[threadKey]).message.trim().length > 0
+                                          || normalizeReplyDraft(complianceReplyDrafts[threadKey]).attachments.length > 0)
+                                          ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                          : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                      }`}
+                                      disabled={
+                                        !canSaveComplianceComment
+                                        || (normalizeReplyDraft(complianceReplyDrafts[threadKey]).message.trim().length === 0
+                                          && normalizeReplyDraft(complianceReplyDrafts[threadKey]).attachments.length === 0)
+                                      }
+                                    >
+                                      Envoyer la réponse
+                                    </button>
+                                    {feedbackMessage && (
+                                      <span className="text-xs font-medium text-emerald-700">
+                                        {feedbackMessage}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
                             </>
                           );
                         })()}

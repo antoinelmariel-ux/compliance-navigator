@@ -227,7 +227,7 @@ export const InspirationForm = ({
       return acc;
     }, {});
 
-    payload.visibility = 'personal';
+    payload.visibility = payload.visibility === 'shared' ? 'shared' : 'personal';
     payload.createdAt = now;
     payload.updatedAt = now;
 
