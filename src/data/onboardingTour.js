@@ -217,6 +217,26 @@ export const initialOnboardingTourConfig = {
       "actions": []
     },
     {
+      "id": "showcase-usage-mode-selection",
+      "target": "[data-tour-id=\"showcase-display-modes\"]",
+      "title": "Sélection du mode d'utilisation",
+      "content": "Ce bloc vous permet de configurer l'affichage de la vitrine du projet (mode Light ou complet) pour masquer certains éléments pendant une présentation à une équipe.",
+      "placement": "",
+      "highlightScope": "target",
+      "showDefaultButtons": true,
+      "actions": []
+    },
+    {
+      "id": "showcase-share",
+      "target": "[data-tour-id=\"showcase-share-trigger\"]",
+      "title": "Partager la vitrine du projet",
+      "content": "Cliquez sur ce bouton pour partager la vitrine du projet avec vos collaborateurs.",
+      "placement": "",
+      "highlightScope": "target",
+      "showDefaultButtons": true,
+      "actions": []
+    },
+    {
       "id": "showcase-display-modes",
       "target": "[data-tour-id=\"showcase-display-modes\"]",
       "title": "Choisir l’affichage & activer les commentaires",
@@ -230,7 +250,7 @@ export const initialOnboardingTourConfig = {
       "id": "showcase-comments",
       "target": "[data-tour-id=\"showcase-hero\"]",
       "title": "Les commentaires",
-      "content": "La vitrine peut être commentée : les post-its s’affichent directement sur la vitrine pour recueillir les retours des parties prenantes.",
+      "content": "Pour commenter la vitrine projet, le visiteur doit d'abord cliquer sur le bouton « Activer le mode annotation ». Les post-its s’affichent ensuite directement sur la vitrine pour recueillir les retours des parties prenantes.",
       "placement": "bottom",
       "highlightScope": "target",
       "showDefaultButtons": true,
@@ -261,6 +281,16 @@ export const initialOnboardingTourConfig = {
       "target": "[data-tour-id=\"home-filters\"]",
       "title": "Découvrir les projets",
       "content": "Filtrez les initiatives par nom, équipe ou date et laissez vous inspirer.",
+      "placement": "",
+      "highlightScope": "target",
+      "showDefaultButtons": true,
+      "actions": []
+    },
+    {
+      "id": "project-inspiration",
+      "target": "[data-tour-id=\"home-inspiration-toggle\"]",
+      "title": "Voir et ajouter des projets inspirants",
+      "content": "Passez sur l'onglet Inspiration pour consulter des projets inspirants et utilisez le bouton dédié pour en ajouter un nouveau.",
       "placement": "",
       "highlightScope": "target",
       "showDefaultButtons": true,

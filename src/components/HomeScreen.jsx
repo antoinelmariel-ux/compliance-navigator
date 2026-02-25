@@ -1616,6 +1616,7 @@ export const HomeScreen = ({
                       ? 'bg-blue-600 text-white'
                       : 'text-blue-700 hover:bg-blue-100'
                   }`}
+                  data-tour-id="home-inspiration-toggle"
                 >
                   Inspiration
                 </button>
@@ -1625,6 +1626,7 @@ export const HomeScreen = ({
                   type="button"
                   onClick={onStartInspirationProject}
                   className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                  data-tour-id="home-add-inspiration"
                 >
                   <Plus className="w-4 h-4" aria-hidden="true" />
                   Ajouter un projet inspirant

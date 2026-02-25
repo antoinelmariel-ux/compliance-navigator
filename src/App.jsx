@@ -43,7 +43,7 @@ import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.
 import { isShowcaseAccessBlockedByProjectType } from './utils/showcase.js';
 import currentUser from './data/graph-current-user.json';
 
-const APP_VERSION = 'v1.0.322';
+const APP_VERSION = 'v1.0.323';
 
 class AdminBackOfficeErrorBoundary extends React.Component {
   constructor(props) {
@@ -4217,6 +4217,7 @@ const updateProjectFilters = useCallback((updater) => {
                     }`}
                     aria-label="Partager la vitrine du projet"
                     title={showcaseProjectId ? 'Partager la vitrine du projet' : 'Aucun projet vitrine disponible'}
+                    data-tour-id="showcase-share-trigger"
                     disabled={!showcaseProjectId}
                   >
                     <Link className="h-5 w-5" />
