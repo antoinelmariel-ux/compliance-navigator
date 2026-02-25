@@ -70,6 +70,47 @@ Pour les mises à jour simultanées :
 
 ## Phase 2 — Mise en service (API obtenue)
 
+## Informations à me fournir dès que vous avez la clé API
+
+Pour que je puisse implémenter rapidement l’intégration Graph avec Codex, merci de préparer les éléments suivants :
+
+### 1) Accès et authentification
+- Tenant ID (Entra ID).
+- Client ID de l’application enregistrée.
+- Mode d’authentification attendu (SPA + PKCE recommandé, ou autre contrainte interne).
+- URI(s) de redirection autorisées (dev, recette, prod).
+- Environnements disponibles et URL SharePoint associées.
+
+### 2) Cible SharePoint
+- URL du site SharePoint cible.
+- Identifiants/noms exacts des listes à utiliser (`Projects`, `ProjectEdits`, `InspirationItems`, etc.).
+- Schéma de chaque liste : nom interne des colonnes, type, obligatoire/non, valeurs autorisées.
+- Bibliothèque documentaire cible (nom, arborescence attendue, convention de nommage).
+
+### 3) Permissions Graph et sécurité
+- Permissions Graph accordées (ex. `User.Read`, `Sites.ReadWrite.All`, `Files.ReadWrite.All`) et état du consentement admin.
+- Règles d’autorisation métier (qui peut lire/éditer/valider).
+- Contraintes sécurité/compliance (rétention, masquage, journalisation, DLP éventuelle).
+
+### 4) Contrats fonctionnels à figer
+- Mapping final entre les champs UI actuels et les colonnes SharePoint.
+- Règles de gestion sur les statuts et transitions.
+- Politique de gestion des conflits (rechargement, fusion, écrasement autorisé ou non).
+- Stratégie de versionnage (ETag uniquement ou champ fonctionnel complémentaire).
+
+### 5) Exploitation et observabilité
+- Stratégie d’environnements (feature flag, pilote, généralisation).
+- Niveau de logs attendu (technique + audit métier).
+- Politique de retry/timeouts et gestion du throttling.
+- Contact(s) référent(s) IT/Sécu pour lever rapidement les blocages.
+
+### 6) Données de test minimales
+- 2–3 utilisateurs de test avec rôles différents.
+- Un jeu de données SharePoint de test (projets, inspirations, pièces jointes).
+- 1 scénario de conflit d’édition reproductible.
+
+Avec ces éléments, je pourrai coder la couche `dataProvider` Graph, brancher l’authentification, implémenter les accès listes/fichiers et activer la gestion de concurrence avec un plan de bascule maîtrisé.
+
 ### 1) Enregistrement applicatif Azure AD / Entra ID
 - Créer l’application.
 - Configurer les URI de redirection.
