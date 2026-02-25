@@ -50,6 +50,19 @@ const demoProjectAnswers = {
   q3: ['Oui - Données personnelles standard'],
   q13: 'Oui',
   q10: ['Prestataire de service', 'Professionnel de santé (via contrat à mettre en place)'],
+  q14: {
+    values: ['Via les canaux digitaux du LFB', 'Communiqué de presse'],
+    children: {
+      'Via les canaux digitaux du LFB': ['Site internet corporate du LFB', 'Réseaux sociaux du LFB']
+    }
+  },
+  q15:
+    'Le projet prévoit un point d\'étape trimestriel avec les équipes Médical, Communication et Compliance pour ajuster les contenus selon les retours terrain.',
+  q15_copy: {
+    name: 'plasma360-note-cadrage.pdf',
+    size: 248000,
+    type: 'application/pdf'
+  },
   BUDGET: '30'
 };
 
