@@ -1,0 +1,20 @@
+[
+  {
+    "InspirationId": "insp-001",
+    "Title": "Aurora Care Hub",
+    "LabName": "Laboratoire Aurora",
+    "Target": "Patient",
+    "Typology": "Digital",
+    "TherapeuticArea": "Immunologie",
+    "Country": "France",
+    "Description": "Programme digital de suivi.",
+    "Link": "https://example.com/aurora-care",
+    "Review": "Bonne pratique de parcours patient.",
+    "Visibility": "Shared",
+    "DocumentsJson": [],
+    "RowVersion": 1,
+    "CreatedByEmail": "owner@entreprise.com",
+    "UpdatedByEmail": "owner@entreprise.com",
+    "UpdatedAt": "2026-01-10T09:20:00.000Z"
+  }
+]
