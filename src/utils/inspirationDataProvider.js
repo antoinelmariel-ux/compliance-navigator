@@ -12,25 +12,42 @@ const cloneDeep = (value) => {
   }
 };
 
-const toInspirationEntry = (item) => ({
-  id: item.InspirationId,
-  title: item.Title || 'Inspiration importée',
-  labName: item.LabName || '',
-  target: item.Target || '',
-  typology: item.Typology || '',
-  therapeuticArea: item.TherapeuticArea || '',
-  country: item.Country || '',
-  description: item.Description || '',
-  link: item.Link || '',
-  review: item.Review || '',
-  visibility: item.Visibility === 'Shared' ? 'shared' : 'personal',
-  documents: Array.isArray(item.DocumentsJson) ? item.DocumentsJson : [],
-  createdAt: item.CreatedAt || item.UpdatedAt || new Date().toISOString(),
-  updatedAt: item.UpdatedAt || new Date().toISOString(),
-  rowVersion: Number(item.RowVersion) || 1,
-  ownerEmail: item.CreatedByEmail || '',
-  lastModifiedBy: item.UpdatedByEmail || item.CreatedByEmail || ''
-});
+const parseInspirationJson = (item) => {
+  const payload = item?.InspirationJson;
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    return {};
+  }
+  return payload;
+};
+
+const toInspirationEntry = (item) => {
+  const inspirationJson = parseInspirationJson(item);
+
+  return {
+    id: item.InspirationId,
+    title: item.Title || inspirationJson.title || 'Inspiration importée',
+    labName: inspirationJson.labName || item.LabName || '',
+    target: inspirationJson.target || item.Target || '',
+    typology: inspirationJson.typology || item.Typology || '',
+    therapeuticArea: inspirationJson.therapeuticArea || item.TherapeuticArea || '',
+    country: inspirationJson.country || item.Country || '',
+    description: inspirationJson.description || item.Description || '',
+    link: inspirationJson.link || item.Link || '',
+    review: inspirationJson.review || item.Review || '',
+    visibility:
+      (inspirationJson.visibility || '').toLowerCase() === 'shared' || item.Visibility === 'Shared'
+        ? 'shared'
+        : 'personal',
+    documents: Array.isArray(inspirationJson.documents)
+      ? inspirationJson.documents
+      : (Array.isArray(item.DocumentsJson) ? item.DocumentsJson : []),
+    createdAt: item.CreatedAt || inspirationJson.createdAt || item.UpdatedAt || new Date().toISOString(),
+    updatedAt: item.UpdatedAt || new Date().toISOString(),
+    rowVersion: Number(item.RowVersion) || 1,
+    ownerEmail: item.CreatedByEmail || '',
+    lastModifiedBy: item.UpdatedByEmail || item.CreatedByEmail || ''
+  };
+};
 
 class MockInspirationProvider {
   constructor() {

@@ -11,3 +11,4 @@ Project Navigator aide les équipes projets et compliance à qualifier rapidemen
  Pour démarrer, ouvrez `index.html` dans votre navigateur : l'application est entièrement autonome, ne nécessite aucune installation supplémentaire et peut désormais fonctionner en local sans serveur HTTP.
 
 - **Source de vérité mocks SharePoint** : les données `mock-sharepoint-lists/*.json` sont la référence migration; les modules `src/data/mockSharePoint*.js` sont auto-générés pour le runtime local (mode fichier). Utiliser `node scripts/sync-mock-sharepoint-data.js` après modification des JSON.
+- **Stockage flexible des inspirations** : comme les projets (`AnswersJson`), les inspirations sont désormais portées par une colonne JSON (`InspirationJson`) afin de limiter le nombre de colonnes SharePoint et de faciliter l’évolution du schéma.

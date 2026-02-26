@@ -112,10 +112,8 @@ Fichiers mock recommandés (et fournis dans ce repo) :
 ### B. `Inspirations`
 - `InspirationId`
 - `Title`
-- `LabName`, `Target`, `Typology`, `TherapeuticArea`, `Country`
-- `Description`, `Link`, `Review`
 - `Visibility` (Personal / Shared)
-- `DocumentsJson` (références DriveItem)
+- `InspirationJson` (multiline JSON : labName, target, typology, therapeuticArea, country, description, link, review, documents, etc.)
 - `RowVersion`
 - `CreatedByEmail`, `UpdatedByEmail`, `UpdatedAt`
 
