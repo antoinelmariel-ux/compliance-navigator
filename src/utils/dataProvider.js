@@ -1,3 +1,5 @@
+import { initialMockSharePointProjects } from '../data/mockSharePointProjects.js';
+
 const cloneDeep = (value) => {
   if (value === null || value === undefined) {
     return value;
@@ -25,24 +27,7 @@ export class ConflictError extends Error {
   }
 }
 
-const DEFAULT_PROJECTS = [
-  {
-    ProjectId: 'proj-001',
-    Title: 'Projet Hémostase 2026',
-    Status: 'Draft',
-    OwnerEmail: 'chef.projet@entreprise.com',
-    CurrentEditorEmail: 'chef.projet@entreprise.com',
-    AnswersJson: {},
-    AnalysisJson: {},
-    ProgressAnswered: 0,
-    ProgressTotal: 42,
-    SubmissionDate: null,
-    LastAutosaveAt: '2026-01-10T09:20:00.000Z',
-    RowVersion: 1,
-    CreatedByEmail: 'chef.projet@entreprise.com',
-    UpdatedByEmail: 'chef.projet@entreprise.com'
-  }
-];
+const DEFAULT_PROJECTS = initialMockSharePointProjects;
 
 const toProjectEntry = (item) => {
   const answers = item?.AnswersJson && typeof item.AnswersJson === 'object' ? item.AnswersJson : {};
@@ -92,6 +77,10 @@ class MockSharePointProvider {
   }
 
   async listProjects() {
+    return Array.from(this.projects.values()).map(toProjectEntry);
+  }
+
+  listProjectsSync() {
     return Array.from(this.projects.values()).map(toProjectEntry);
   }
 

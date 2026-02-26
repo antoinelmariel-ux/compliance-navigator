@@ -13,7 +13,6 @@ import { initialRiskLevelRules } from './data/riskLevelRules.js';
 import { initialRiskWeights } from './data/riskWeights.js';
 import { initialTeams } from './data/teams.js';
 import { initialShowcaseThemes } from './data/showcaseThemes.js';
-import { initialInspirationProjects } from './data/inspirationProjects.js';
 import { initialOnboardingTourConfig } from './data/onboardingTour.js';
 import { initialValidationCommitteeConfig } from './data/validationCommitteeConfig.js';
 import { initialAdminEmails } from './data/adminEmails.js';
@@ -25,8 +24,6 @@ import { createDemoProject, demoProjectAnswersSnapshot } from './data/demoProjec
 import { exportProjectToFile } from './utils/projectExport.js';
 import { normalizeRiskWeighting } from './utils/risk.js';
 import { normalizeProjectEntry, normalizeProjectsCollection } from './utils/projectNormalization.js';
-import { loadSubmittedProjectsFromDirectory } from './utils/externalProjectsLoader.js';
-import { loadSubmittedInspirationsFromDirectory } from './utils/externalInspirationsLoader.js';
 import {
   createDefaultProjectFiltersConfig,
   normalizeProjectFilterConfig
@@ -43,9 +40,10 @@ import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.
 import { isShowcaseAccessBlockedByProjectType } from './utils/showcase.js';
 import currentUser from './data/graph-current-user.json';
 import { dataProvider } from './utils/dataProvider.js';
+import { inspirationDataProvider } from './utils/inspirationDataProvider.js';
 import { createAutosaveQueue } from './utils/autosaveQueue.js';
 
-const APP_VERSION = 'v1.0.330';
+const APP_VERSION = 'v1.0.332';
 
 class AdminBackOfficeErrorBoundary extends React.Component {
   constructor(props) {
@@ -633,7 +631,7 @@ const buildInitialInspirationProjectsState = () => {
     return cloneDeep(savedState.inspirationProjects);
   }
 
-  return cloneDeep(initialInspirationProjects);
+  return cloneDeep(inspirationDataProvider.listInspirationsSync());
 };
 
 const buildInitialOnboardingConfig = () => {
@@ -1035,148 +1033,6 @@ const updateProjectFilters = useCallback((updater) => {
       return nextQuestions;
     });
   }, [setQuestions, showcaseThemes]);
-
-  const synchronizeExternalProjects = useCallback(async () => {
-    const existingProjects = Array.isArray(projectsRef.current) ? projectsRef.current : [];
-
-    const fallbackQuestionsLength = questions.length;
-
-    const externalProjects = await loadSubmittedProjectsFromDirectory({
-      questions,
-      rules,
-      riskLevelRules,
-      riskWeights,
-      fallbackQuestionsLength,
-      existingProjects
-    });
-
-    const externalSources = new Set(externalProjects.map(entry => entry.sourceId));
-
-    setProjects(prevProjects => {
-      const baseProjects = Array.isArray(prevProjects) ? prevProjects : [];
-      const preserved = baseProjects.filter(project => (
-        !project?.externalSourceId || externalSources.has(project.externalSourceId)
-      ));
-
-      const bySource = new Map();
-      preserved.forEach(project => {
-        if (project && project.externalSourceId) {
-          bySource.set(project.externalSourceId, project);
-        }
-      });
-
-      let changed = preserved.length !== baseProjects.length;
-      const nextProjects = preserved.slice();
-
-      externalProjects.forEach(entry => {
-        const { project, sourceId, checksum } = entry;
-        if (!project || !sourceId) {
-          return;
-        }
-
-        const existing = bySource.get(sourceId);
-        if (!existing) {
-          nextProjects.push(project);
-          changed = true;
-          return;
-        }
-
-        const existingChecksum = existing.externalSourceChecksum;
-        if (existingChecksum && existingChecksum === checksum) {
-          return;
-        }
-
-        const index = nextProjects.findIndex(item => item?.externalSourceId === sourceId);
-        if (index !== -1) {
-          nextProjects[index] = project;
-        } else {
-          nextProjects.push(project);
-        }
-        changed = true;
-      });
-
-      return changed ? nextProjects : baseProjects;
-    });
-  }, [questions, riskLevelRules, riskWeights, rules]);
-
-  const synchronizeExternalInspirations = useCallback(async () => {
-    const externalInspirations = await loadSubmittedInspirationsFromDirectory();
-    const externalSources = new Set(externalInspirations.map(entry => entry.sourceId));
-
-    setInspirationProjects(prevProjects => {
-      const baseProjects = Array.isArray(prevProjects) ? prevProjects : [];
-      const preserved = baseProjects.filter(project => (
-        !project?.externalSourceId || externalSources.has(project.externalSourceId)
-      ));
-
-      const bySource = new Map();
-      preserved.forEach(project => {
-        if (project?.externalSourceId) {
-          bySource.set(project.externalSourceId, project);
-        }
-      });
-
-      let changed = preserved.length !== baseProjects.length;
-      const nextProjects = preserved.slice();
-
-      externalInspirations.forEach(entry => {
-        const { project, sourceId, checksum } = entry;
-        if (!project || !sourceId) {
-          return;
-        }
-
-        const existing = bySource.get(sourceId);
-        if (!existing) {
-          nextProjects.push(project);
-          changed = true;
-          return;
-        }
-
-        const existingChecksum = existing.externalSourceChecksum;
-        if (existingChecksum && existingChecksum === checksum) {
-          return;
-        }
-
-        const index = nextProjects.findIndex(item => item?.externalSourceId === sourceId);
-        if (index !== -1) {
-          nextProjects[index] = project;
-        } else {
-          nextProjects.push(project);
-        }
-        changed = true;
-      });
-
-      return changed ? nextProjects : baseProjects;
-    });
-  }, []);
-
-  useEffect(() => {
-    const loadExternal = async () => {
-      try {
-        await synchronizeExternalProjects();
-      } catch (error) {
-        if (typeof console !== 'undefined' && typeof console.warn === 'function') {
-          console.warn('Impossible de synchroniser les projets externes :', error);
-        }
-      }
-    };
-
-    loadExternal();
-  }, [synchronizeExternalProjects]);
-
-  useEffect(() => {
-    const loadExternalInspirations = async () => {
-      try {
-        await synchronizeExternalInspirations();
-      } catch (error) {
-        if (typeof console !== 'undefined' && typeof console.warn === 'function') {
-          console.warn('Impossible de synchroniser les inspirations externes :', error);
-        }
-      }
-    };
-
-    loadExternalInspirations();
-  }, [synchronizeExternalInspirations]);
 
   useEffect(() => {
     try {

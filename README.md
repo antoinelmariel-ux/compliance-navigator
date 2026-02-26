@@ -9,3 +9,5 @@ Project Navigator aide les équipes projets et compliance à qualifier rapidemen
 - **Export et suivi des dossiers** : les projets validés sont conservés dans le dossier `submitted-projects/` pour faciliter le partage, les audits et les analyses ultérieures.
 
  Pour démarrer, ouvrez `index.html` dans votre navigateur : l'application est entièrement autonome, ne nécessite aucune installation supplémentaire et peut désormais fonctionner en local sans serveur HTTP.
+
+- **Source de vérité mocks SharePoint** : les données `mock-sharepoint-lists/*.json` sont la référence migration; les modules `src/data/mockSharePoint*.js` sont auto-générés pour le runtime local (mode fichier). Utiliser `node scripts/sync-mock-sharepoint-data.js` après modification des JSON.

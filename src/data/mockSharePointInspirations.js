@@ -1,4 +1,5 @@
-[
+/* Auto-generated from mock-sharepoint-lists. Do not edit manually. */
+export const initialMockSharePointInspirations = [
   {
     "InspirationId": "insp-001",
     "Title": "Aurora Care Hub",
@@ -90,4 +91,4 @@
     "UpdatedByEmail": "owner@entreprise.com",
     "UpdatedAt": "2025-02-08T17:10:00.000Z"
   }
-]
+];

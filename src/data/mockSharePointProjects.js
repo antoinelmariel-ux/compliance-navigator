@@ -1,4 +1,5 @@
-[
+/* Auto-generated from mock-sharepoint-lists. Do not edit manually. */
+export const initialMockSharePointProjects = [
   {
     "ProjectId": "proj-001",
     "Title": "Vies Reliées",
@@ -297,4 +298,4 @@
     "CreatedByEmail": "chef.projet@entreprise.com",
     "UpdatedByEmail": "chef.projet@entreprise.com"
   }
-]
+];
