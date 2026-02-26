@@ -17,7 +17,7 @@ import { initialInspirationProjects } from './data/inspirationProjects.js';
 import { initialOnboardingTourConfig } from './data/onboardingTour.js';
 import { initialValidationCommitteeConfig } from './data/validationCommitteeConfig.js';
 import { initialAdminEmails } from './data/adminEmails.js';
-import { loadPersistedState, persistState } from './utils/storage.js';
+import { loadPersistedState } from './utils/storage.js';
 import { shouldShowQuestion } from './utils/questions.js';
 import { analyzeAnswers } from './utils/rules.js';
 import { extractProjectName } from './utils/projects.js';
@@ -42,8 +42,10 @@ import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
 import { isShowcaseAccessBlockedByProjectType } from './utils/showcase.js';
 import currentUser from './data/graph-current-user.json';
+import { dataProvider } from './utils/dataProvider.js';
+import { createAutosaveQueue } from './utils/autosaveQueue.js';
 
-const APP_VERSION = 'v1.0.329';
+const APP_VERSION = 'v1.0.330';
 
 class AdminBackOfficeErrorBoundary extends React.Component {
   constructor(props) {
@@ -242,6 +244,30 @@ const createAnnotationId = () => {
   }
 
   return `note-${Date.now()}-${Math.round(Math.random() * 100000)}`;
+};
+
+
+const formatSyncStatusLabel = (syncStatus) => {
+  const state = syncStatus?.state;
+  if (state === 'syncing') return 'Synchronisation…';
+  if (state === 'offline') return 'Hors ligne';
+  if (state === 'conflict') return 'Conflit';
+  return 'Synchronisé';
+};
+
+const formatSyncMeta = (syncStatus) => {
+  if (!syncStatus?.updatedAt) return '';
+
+  const date = new Date(syncStatus.updatedAt);
+  const time = Number.isNaN(date.getTime())
+    ? ''
+    : date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+  if (!time) return '';
+  if (syncStatus.updatedBy) {
+    return `Dernière modification par ${syncStatus.updatedBy} à ${time}`;
+  }
+  return `Dernière modification à ${time}`;
 };
 
 const createInspirationId = () => {
@@ -680,6 +706,7 @@ export const App = () => {
   const [saveFeedback, setSaveFeedback] = useState(null);
   const [showcaseProjectContext, setShowcaseProjectContext] = useState(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [syncStatus, setSyncStatus] = useState({ state: 'synced', updatedAt: null, updatedBy: '' });
   const [returnToSynthesisAfterEdit, setReturnToSynthesisAfterEdit] = useState(false);
   const [isOnboardingActive, setIsOnboardingActive] = useState(false);
   const [onboardingStepId, setOnboardingStepId] = useState(null);
@@ -746,7 +773,6 @@ export const App = () => {
   const [showcaseShareCommentsEnabled, setShowcaseShareCommentsEnabled] = useState(false);
   const [isShowcaseSharedView, setIsShowcaseSharedView] = useState(false);
   const [showcaseCommentsEnabled, setShowcaseCommentsEnabled] = useState(false);
-  const persistTimeoutRef = useRef(null);
   const previousScreenRef = useRef(null);
   const pendingShowcaseDisplayModeRef = useRef(null);
   const [isAnnotationModeEnabled, setIsAnnotationModeEnabled] = useState(false);
@@ -765,6 +791,8 @@ export const App = () => {
   const pendingShowcaseProjectIdRef = useRef(null);
   const pendingShowcaseSharedRef = useRef(false);
   const pendingShowcaseCommentsRef = useRef(false);
+  const autosaveQueueRef = useRef(null);
+  const autosaveTimeoutRef = useRef(null);
 
   const ensureStylesheetLoaded = useCallback((href) => {
     if (typeof document === 'undefined' || !href) {
@@ -1957,83 +1985,44 @@ const updateProjectFilters = useCallback((updater) => {
   }, []);
 
   useEffect(() => {
-    return () => {
-      if (persistTimeoutRef.current) {
-        clearTimeout(persistTimeoutRef.current);
-        persistTimeoutRef.current = null;
+    autosaveQueueRef.current = createAutosaveQueue({
+      processItem: async (item) => {
+        const expectedRowVersion = item?.expectedRowVersion;
+        return dataProvider.upsertProject(item.project, {
+          expectedRowVersion,
+          userEmail: currentUserEmail
+        });
+      },
+      onStatusChange: (state, details = {}) => {
+        setSyncStatus({
+          state,
+          updatedAt: details.updatedAt || null,
+          updatedBy: details.updatedBy || ''
+        });
+
+        if (state === 'synced' && details.projectId && details.updatedAt) {
+          setProjects((prevProjects) => prevProjects.map((project) => {
+            if (project.id !== details.projectId) {
+              return project;
+            }
+            return {
+              ...project,
+              rowVersion: project.rowVersion ? project.rowVersion + 1 : 1,
+              lastUpdated: details.updatedAt
+            };
+          }));
+        }
       }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!isHydrated || isOnboardingActive) return undefined;
-
-    if (persistTimeoutRef.current) {
-      clearTimeout(persistTimeoutRef.current);
-    }
-
-    persistTimeoutRef.current = setTimeout(() => {
-      const modeToPersist = mode === 'admin' ? 'user' : mode;
-
-      persistState({
-        mode: modeToPersist,
-        screen,
-        currentQuestionIndex,
-        answers,
-        analysis,
-        questions,
-        rules,
-        riskLevelRules,
-        riskWeights,
-        teams,
-        showcaseThemes,
-        projects,
-        activeProjectId,
-        projectFilters: normalizeProjectFilterConfig(projectFilters),
-        inspirationProjects,
-        inspirationFilters: normalizeInspirationFiltersConfig(inspirationFilters),
-        inspirationFormFields: normalizeInspirationFormConfig(inspirationFormFields),
-        onboardingTourConfig: normalizedOnboardingConfig,
-        validationCommitteeConfig: normalizeValidationCommitteeConfig(validationCommitteeConfig),
-        adminEmails,
-        homeView,
-        activeInspirationId
-      });
-      persistTimeoutRef.current = null;
-    }, 200);
+    });
 
     return () => {
-      if (persistTimeoutRef.current) {
-        clearTimeout(persistTimeoutRef.current);
-        persistTimeoutRef.current = null;
+      if (autosaveTimeoutRef.current) {
+        clearTimeout(autosaveTimeoutRef.current);
       }
     };
-  }, [
-    mode,
-    screen,
-    currentQuestionIndex,
-    answers,
-    analysis,
-    questions,
-    rules,
-    riskLevelRules,
-    riskWeights,
-    teams,
-    showcaseThemes,
-    projects,
-    activeProjectId,
-    projectFilters,
-    inspirationProjects,
-    inspirationFilters,
-    inspirationFormFields,
-    normalizedOnboardingConfig,
-    validationCommitteeConfig,
-    adminEmails,
-    homeView,
-    activeInspirationId,
-    isHydrated,
-    isOnboardingActive
-  ]);
+  }, [currentUserEmail]);
+
+
 
   const tourContext = useMemo(
     () => (isOnboardingActive ? { isActive: true, activeStep: onboardingStepId } : null),
@@ -2108,6 +2097,51 @@ const updateProjectFilters = useCallback((updater) => {
 
     return extractProjectName(answers, questions);
   }, [activeProject, answers, questions]);
+
+  useEffect(() => {
+    if (!isHydrated || isOnboardingActive || !autosaveQueueRef.current) {
+      return undefined;
+    }
+
+    if (autosaveTimeoutRef.current) {
+      clearTimeout(autosaveTimeoutRef.current);
+    }
+
+    const projectToSync = activeProject || projects[0];
+    if (!projectToSync) {
+      return undefined;
+    }
+
+    autosaveTimeoutRef.current = setTimeout(() => {
+      const expectedRowVersion = typeof projectToSync.rowVersion === 'number'
+        ? projectToSync.rowVersion
+        : undefined;
+
+      autosaveQueueRef.current.enqueue({
+        project: projectToSync,
+        expectedRowVersion
+      });
+    }, 700);
+
+    return () => {
+      if (autosaveTimeoutRef.current) {
+        clearTimeout(autosaveTimeoutRef.current);
+        autosaveTimeoutRef.current = null;
+      }
+    };
+  }, [
+    activeProject,
+    projects,
+    isHydrated,
+    isOnboardingActive,
+    answers,
+    analysis,
+    currentQuestionIndex,
+    inspirationProjects,
+    adminView,
+    screen,
+    mode
+  ]);
 
   const activeShowcaseProjectId = showcaseProjectContext?.projectId || null;
   const activeShowcaseProject = useMemo(
@@ -3940,6 +3974,14 @@ const updateProjectFilters = useCallback((updater) => {
   ]);
 
   const handleSubmitProject = useCallback((payload = {}) => {
+    if (autosaveQueueRef.current && autosaveQueueRef.current.size() > 0) {
+      setSaveFeedback({
+        status: 'error',
+        message: 'Synchronisation en cours : veuillez patienter avant de soumettre.'
+      });
+      return null;
+    }
+
     if (unansweredMandatoryQuestions.length > 0) {
       setSaveFeedback({
         status: 'error',
@@ -4035,6 +4077,9 @@ const updateProjectFilters = useCallback((updater) => {
   const handleProceedToSynthesis = useCallback(() => {
     navigateToSynthesis();
   }, [navigateToSynthesis]);
+
+  const syncStatusLabel = formatSyncStatusLabel(syncStatus);
+  const syncStatusMeta = formatSyncMeta(syncStatus);
 
   const showcaseProjectId = showcaseProjectContext?.projectId || '';
   const buildShowcaseShareUrl = useCallback((shareMode) => {
@@ -4732,7 +4777,7 @@ const updateProjectFilters = useCallback((updater) => {
 
     <footer className="bg-white border-t border-gray-200 mt-10" aria-label="Pied de page">
       <p className="text-xs text-gray-400 text-center py-4">
-        Project Navigator · Version {APP_VERSION} ·{' '}
+        Project Navigator · Version {APP_VERSION} · {syncStatusLabel}{syncStatusMeta ? ` · ${syncStatusMeta}` : ''} ·{' '}
         <a
           href="./mentions-legales.html"
           target="_blank"
