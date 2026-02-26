@@ -1402,8 +1402,8 @@ export const HomeScreen = ({
                 >
                   <Upload className="w-5 h-5" aria-hidden="true" />
                   <span className="flex flex-col leading-tight text-left">
-                    <span>Charger</span>
-                    <span>un projet</span>
+                    <span>Importer</span>
+                    <span>une archive</span>
                   </span>
                 </button>
               </div>
