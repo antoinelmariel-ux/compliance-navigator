@@ -95,81 +95,81 @@ Fichiers mock recommandés (et fournis dans ce repo) :
 ## 4.1 Listes SharePoint à créer
 
 ### A. `Projects`
-- `ProjectId` (texte unique)
-- `Title`
-- `Status` (Draft / Submitted / InReview / Approved / Rejected)
-- `OwnerEmail`
-- `CurrentEditorEmail`
-- `AnswersJson` (multiline JSON)
-- `AnalysisJson` (multiline JSON)
-- `ProgressAnswered`
-- `ProgressTotal`
-- `SubmissionDate`
-- `LastAutosaveAt`
-- `RowVersion`
-- `CreatedByEmail`, `UpdatedByEmail`
+- `ProjectId` (**Single line of text**, valeur unique)
+- `Title` (**Single line of text**)
+- `Status` (**Choice** : Draft / Submitted / InReview / Approved / Rejected)
+- `OwnerEmail` (**Single line of text**)
+- `CurrentEditorEmail` (**Single line of text**)
+- `AnswersJson` (**Multiple lines of text** en texte brut JSON)
+- `AnalysisJson` (**Multiple lines of text** en texte brut JSON)
+- `ProgressAnswered` (**Number** entier)
+- `ProgressTotal` (**Number** entier)
+- `SubmissionDate` (**Date and Time**)
+- `LastAutosaveAt` (**Date and Time**)
+- `RowVersion` (**Number** entier)
+- `CreatedByEmail` (**Single line of text**), `UpdatedByEmail` (**Single line of text**)
 
 ### B. `Inspirations`
-- `InspirationId`
-- `Title`
-- `Visibility` (Personal / Shared)
-- `InspirationJson` (multiline JSON : labName, target, typology, therapeuticArea, country, description, link, review, documents, etc.)
-- `RowVersion`
-- `CreatedByEmail`, `UpdatedByEmail`, `UpdatedAt`
+- `InspirationId` (**Single line of text**, valeur unique)
+- `Title` (**Single line of text**)
+- `Visibility` (**Choice** : Personal / Shared)
+- `InspirationJson` (**Multiple lines of text** en texte brut JSON : labName, target, typology, therapeuticArea, country, description, link, review, documents, etc.)
+- `RowVersion` (**Number** entier)
+- `CreatedByEmail` (**Single line of text**), `UpdatedByEmail` (**Single line of text**), `UpdatedAt` (**Date and Time**)
 
 ### C. `ShowcaseStickyNotes`
-- `StickyId`
-- `ProjectId`
-- `ShowcaseSection`
-- `AnchorJson` (position/zone)
-- `Content`
-- `Color`
-- `Resolved` (bool)
-- `RowVersion`
-- `CreatedByEmail`, `UpdatedByEmail`, `UpdatedAt`
+- `StickyId` (**Single line of text**, valeur unique)
+- `ProjectId` (**Single line of text**)
+- `ShowcaseSection` (**Single line of text**)
+- `AnchorJson` (**Multiple lines of text** en texte brut JSON position/zone)
+- `Content` (**Multiple lines of text**)
+- `Color` (**Single line of text**)
+- `Resolved` (**Yes/No**)
+- `RowVersion` (**Number** entier)
+- `CreatedByEmail` (**Single line of text**), `UpdatedByEmail` (**Single line of text**), `UpdatedAt` (**Date and Time**)
 
 ### D. `ComplianceComments`
-- `CommentId`
-- `ProjectId`
-- `SectionKey`
-- `Message`
-- `CommentType` (Question / Recommendation / Blocking)
-- `ThreadId` (si fil)
-- `Resolved`
-- `RowVersion`
-- `CreatedByEmail`, `UpdatedByEmail`, `UpdatedAt`
+- `CommentId` (**Single line of text**, valeur unique)
+- `ProjectId` (**Single line of text**)
+- `SectionKey` (**Single line of text**)
+- `Message` (**Multiple lines of text**)
+- `CommentType` (**Choice** : Question / Recommendation / Blocking)
+- `ThreadId` (**Single line of text**, optionnel si fil)
+- `Resolved` (**Yes/No**)
+- `RowVersion` (**Number** entier)
+- `CreatedByEmail` (**Single line of text**), `UpdatedByEmail` (**Single line of text**), `UpdatedAt` (**Date and Time**)
 
 ### E. `ProjectDiscussions`
-- `MessageId`
-- `ProjectId`
-- `ThreadId`
-- `SenderEmail`
-- `RecipientRole`
-- `Message`
-- `AttachmentsJson`
-- `RowVersion`
-- `CreatedAt`, `UpdatedAt`
+- `MessageId` (**Single line of text**, valeur unique)
+- `ProjectId` (**Single line of text**)
+- `ThreadId` (**Single line of text**)
+- `SenderEmail` (**Single line of text**)
+- `RecipientRole` (**Choice** ou **Single line of text** selon gouvernance des rôles)
+- `Message` (**Multiple lines of text**)
+- `AttachmentsJson` (**Multiple lines of text** en texte brut JSON)
+- `RowVersion` (**Number** entier)
+- `CreatedAt` (**Date and Time**), `UpdatedAt` (**Date and Time**)
 
 ### F. `ProjectMembers`
-- `EntryId`
-- `ProjectId`
-- `MemberEmail`
-- `Role` (Owner / Contributor / Compliance / Viewer)
-- `CanSubmit` (bool)
+- `EntryId` (**Single line of text**, valeur unique)
+- `ProjectId` (**Single line of text**)
+- `MemberEmail` (**Single line of text**)
+- `Role` (**Choice** : Owner / Contributor / Compliance / Viewer)
+- `CanSubmit` (**Yes/No**)
 
 ### G. `BackofficeChanges`
-- `ChangeId`
-- `EntityType` (Rule, Question, Team, Config…)
-- `EntityId`
-- `PayloadJson`
-- `ChangeType` (Create / Update / Delete)
-- `RequiresValidation`
-- `RowVersion`
-- `CreatedByEmail`, `UpdatedByEmail`, `UpdatedAt`
+- `ChangeId` (**Single line of text**, valeur unique)
+- `EntityType` (**Choice** : Rule, Question, Team, Config…)
+- `EntityId` (**Single line of text**)
+- `PayloadJson` (**Multiple lines of text** en texte brut JSON)
+- `ChangeType` (**Choice** : Create / Update / Delete)
+- `RequiresValidation` (**Yes/No**)
+- `RowVersion` (**Number** entier)
+- `CreatedByEmail` (**Single line of text**), `UpdatedByEmail` (**Single line of text**), `UpdatedAt` (**Date and Time**)
 
 ### H. Bibliothèque `ProjectFiles`
 - Arborescence par `ProjectId` / `InspirationId`
-- Métadonnées : `EntityType`, `EntityId`, `UploadedBy`, `UploadedAt`, `Checksum`
+- Métadonnées : `EntityType` (**Choice**), `EntityId` (**Single line of text**), `UploadedBy` (**Single line of text**), `UploadedAt` (**Date and Time**), `Checksum` (**Single line of text**)
 
 ## 4.2 Informations à partager à ChatGPT Codex quand vous recevez la clé API
 
@@ -262,4 +262,3 @@ Nouveau comportement :
 
 - Ce document de migration : `docs/migration-sharepoint-graph.md`
 - Mocks de listes SharePoint dans : `mock-sharepoint-lists/`
-
