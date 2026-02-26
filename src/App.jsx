@@ -43,7 +43,7 @@ import { dataProvider } from './utils/dataProvider.js';
 import { inspirationDataProvider } from './utils/inspirationDataProvider.js';
 import { createAutosaveQueue } from './utils/autosaveQueue.js';
 
-const APP_VERSION = 'v1.0.332';
+const APP_VERSION = 'v1.0.333';
 
 class AdminBackOfficeErrorBoundary extends React.Component {
   constructor(props) {
