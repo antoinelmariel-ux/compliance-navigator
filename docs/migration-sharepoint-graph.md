@@ -323,3 +323,40 @@ Conserver la même interface `dataProvider` pour éviter les impacts UI.
 - Plan de migration (ce document).
 - Mocks de listes SharePoint dans `sharepoint-mocks/lists/`.
 - Mock current user déjà présent dans `src/data/graph-current-user.json`.
+
+## Stratégie de coédition pour les post-its et showcases
+
+Pour les usages collaboratifs dans SharePoint (post-its, commentaires de showcase, annotations), privilégier un modèle **event-sourcing léger** au lieu d'écraser un bloc JSON entier :
+
+1. **Granularité par item**
+   - 1 post-it = 1 item de liste (`ShowcaseNotes`) avec ses métadonnées (auteur, position, couleur, statut).
+   - Les showcases portent seulement la vue agrégée (pas le contenu éditorial complet des notes).
+
+2. **Concurrence optimiste native**
+   - Utiliser l'`ETag` SharePoint sur chaque note pour les updates.
+   - Envoyer `If-Match` sur PATCH ; en cas de `412 Precondition Failed`, recharger et proposer fusion.
+
+3. **Verrouillage fonctionnel court (soft lock)**
+   - Lorsqu'un utilisateur édite une note, écrire `editingBy` + `editingUntil` (TTL court, ex. 90s).
+   - Les autres voient « en cours d'édition » mais peuvent forcer la reprise si TTL expiré.
+
+4. **Journal d'événements**
+   - Créer une liste append-only `ShowcaseNoteEvents` (create, move, edit, resolve, delete).
+   - Permet audit, restauration et résolution des conflits par rejeu chronologique.
+
+5. **Fusion guidée côté UI**
+   - Si conflit: afficher « votre version » vs « version distante » avec options:
+     - conserver distante,
+     - remplacer distante,
+     - fusionner champs non conflictuels (ex. position + texte).
+
+6. **Temps réel pragmatique**
+   - Polling court (5–10s) sur la liste des notes + webhook/notification Graph si disponible.
+   - Mettre en évidence les changements entrants (badge « mis à jour »).
+
+7. **Règles métier anti-collision**
+   - Interdire les mises à jour massives de showcase si des notes sont en édition active.
+   - Préférer des opérations atomiques (déplacer une note, résoudre une note) au lieu de sauvegardes globales.
+
+Cette approche limite les collisions, garde un historique exploitable et reste compatible avec les mécanismes SharePoint/Graph standards sans infrastructure temps réel lourde.
+
