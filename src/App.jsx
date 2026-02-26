@@ -43,7 +43,7 @@ import { dataProvider } from './utils/dataProvider.js';
 import { inspirationDataProvider } from './utils/inspirationDataProvider.js';
 import { createAutosaveQueue } from './utils/autosaveQueue.js';
 
-const APP_VERSION = 'v1.0.335';
+const APP_VERSION = 'v1.0.336';
 
 class AdminBackOfficeErrorBoundary extends React.Component {
   constructor(props) {
@@ -596,7 +596,15 @@ const resolveFallbackQuestionsLength = (savedState, currentQuestionsLength = ini
 const buildInitialProjectsState = () => {
   const savedState = loadPersistedState();
 
+  const providerProjects = typeof dataProvider?.listProjectsSync === 'function'
+    ? normalizeProjectsCollection(dataProvider.listProjectsSync(), initialQuestions.length)
+    : [];
+
   if (!savedState) {
+    if (Array.isArray(providerProjects) && providerProjects.length > 0) {
+      return providerProjects;
+    }
+
     return [createDemoProject()];
   }
 
@@ -615,6 +623,10 @@ const buildInitialProjectsState = () => {
 
   if (normalizedProjects && normalizedProjects.length > 0) {
     return normalizedProjects;
+  }
+
+  if (Array.isArray(providerProjects) && providerProjects.length > 0) {
+    return providerProjects;
   }
 
   return [createDemoProject({
