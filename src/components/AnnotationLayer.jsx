@@ -51,6 +51,8 @@ export const AnnotationLayer = ({
   hideToolbar = false,
   notes = [],
   canCloseNotes = false,
+  noteVisibilityMode = 'all',
+  currentSourceId = '',
   activeContextId = '',
   projectName = '',
   autoFocusNoteId = null,
@@ -65,9 +67,22 @@ export const AnnotationLayer = ({
 }) => {
   const [, setLayoutVersion] = useState(0);
   const [replyDrafts, setReplyDrafts] = useState({});
+  const normalizedCurrentSourceId =
+    typeof currentSourceId === 'string' ? currentSourceId.trim().toLowerCase() : '';
   const visibleNotes = useMemo(
-    () => notes.filter(note => note && note.contextId === activeContextId),
-    [activeContextId, notes]
+    () => notes.filter((note) => {
+      if (!note || note.contextId !== activeContextId) {
+        return false;
+      }
+
+      if (noteVisibilityMode !== 'mine') {
+        return true;
+      }
+
+      const noteSourceId = typeof note.sourceId === 'string' ? note.sourceId.trim().toLowerCase() : '';
+      return normalizedCurrentSourceId.length > 0 && noteSourceId === normalizedCurrentSourceId;
+    }),
+    [activeContextId, noteVisibilityMode, notes, normalizedCurrentSourceId]
   );
   const sourcePalette = useMemo(() => {
     const palette = new Map();
