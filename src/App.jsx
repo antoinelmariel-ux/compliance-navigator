@@ -43,7 +43,7 @@ import { dataProvider } from './utils/dataProvider.js';
 import { inspirationDataProvider } from './utils/inspirationDataProvider.js';
 import { createAutosaveQueue } from './utils/autosaveQueue.js';
 
-const APP_VERSION = 'v1.0.340';
+const APP_VERSION = 'v1.0.341';
 
 class AdminBackOfficeErrorBoundary extends React.Component {
   constructor(props) {
@@ -4368,8 +4368,8 @@ const updateProjectFilters = useCallback((updater) => {
         {!isHydrated ? (
           <div className="flex min-h-[60vh] items-center justify-center">
             <LoadingFallback
-              label="Chargement de l’accueil…"
-              hint="Préparation de votre espace."
+              label="Chargement de l\u2019accueil\u2026"
+              hint="Pr\u00e9paration de votre espace."
             />
           </div>
         ) : isAdminBackOfficeView ? (
@@ -4377,8 +4377,8 @@ const updateProjectFilters = useCallback((updater) => {
             <Suspense
               fallback={(
                 <LoadingFallback
-                  label="Chargement du back-office…"
-                  hint="Préparation des données administratives en cours."
+                  label="Chargement du back-office\u2026"
+                  hint="Pr\u00e9paration des donn\u00e9es administratives en cours."
                 />
               )}
             >
@@ -4533,7 +4533,7 @@ const updateProjectFilters = useCallback((updater) => {
               <Suspense
                 fallback={(
                   <LoadingFallback
-                    label="Chargement de la vitrine du projet…"
+                    label="Chargement de la vitrine du projet\u2026"
                     hint="Nous construisons la synthèse visuelle du projet."
                   />
                 )}
