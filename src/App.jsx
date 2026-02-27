@@ -43,7 +43,7 @@ import { dataProvider } from './utils/dataProvider.js';
 import { inspirationDataProvider } from './utils/inspirationDataProvider.js';
 import { createAutosaveQueue } from './utils/autosaveQueue.js';
 
-const APP_VERSION = 'v1.0.341';
+const APP_VERSION = 'v1.0.342';
 
 class AdminBackOfficeErrorBoundary extends React.Component {
   constructor(props) {
@@ -3052,20 +3052,76 @@ const updateProjectFilters = useCallback((updater) => {
   }, [resetProjectState]);
 
   const handleStartInspirationProject = useCallback(() => {
-    setScreen('inspiration-form');
-  }, []);
+    const now = new Date().toISOString();
+    const draftId = createInspirationId();
 
-  const handleSaveInspirationProject = useCallback((payload) => {
-    const project = {
-      id: createInspirationId(),
-      ...payload,
+    setInspirationProjects((prev) => [{
+      id: draftId,
+      title: '',
+      labName: '',
+      target: '',
+      typology: '',
+      therapeuticArea: '',
+      country: '',
+      description: '',
+      link: '',
+      review: '',
+      documents: [],
+      visibility: 'personal',
+      createdAt: now,
+      updatedAt: now,
       ownerEmail: currentUserEmail || '',
       teamLead: currentUserDisplayName || ''
-    };
-    setInspirationProjects((prev) => [project, ...(Array.isArray(prev) ? prev : [])]);
-    setHomeView('inspiration');
-    setScreen('home');
+    }, ...(Array.isArray(prev) ? prev : [])]);
+
+    setActiveInspirationId(draftId);
+    setScreen('inspiration-form');
   }, [currentUserDisplayName, currentUserEmail]);
+
+  const handleAutosaveInspirationProject = useCallback((projectId, updates) => {
+    if (!projectId || !updates) {
+      return;
+    }
+
+    setInspirationProjects((prev) => (Array.isArray(prev) ? prev : []).map((project) => {
+      if (!project || project.id !== projectId) {
+        return project;
+      }
+
+      return {
+        ...project,
+        ...updates,
+        updatedAt: new Date().toISOString()
+      };
+    }));
+  }, []);
+
+  const handleCancelInspirationForm = useCallback(() => {
+    if (activeInspirationProject) {
+      const hasContent = [
+        activeInspirationProject.title,
+        activeInspirationProject.labName,
+        activeInspirationProject.target,
+        activeInspirationProject.typology,
+        activeInspirationProject.therapeuticArea,
+        activeInspirationProject.country,
+        activeInspirationProject.description,
+        activeInspirationProject.link,
+        activeInspirationProject.review
+      ].some((value) => typeof value === 'string' && value.trim().length > 0)
+        || (Array.isArray(activeInspirationProject.documents)
+          && activeInspirationProject.documents.length > 0);
+
+      if (!hasContent) {
+        setInspirationProjects((prev) =>
+          (Array.isArray(prev) ? prev : []).filter((project) => project?.id !== activeInspirationProject.id)
+        );
+      }
+    }
+
+    setScreen('home');
+    setHomeView('inspiration');
+  }, [activeInspirationProject]);
 
   const handleOpenInspirationProject = useCallback((projectId) => {
     if (!projectId) {
@@ -4439,13 +4495,11 @@ const updateProjectFilters = useCallback((updater) => {
           />
         ) : screen === 'inspiration-form' ? (
           <InspirationForm
+            project={activeInspirationProject}
             formConfig={inspirationFormFields}
             existingProjects={inspirationProjects}
-            onSubmit={handleSaveInspirationProject}
-            onCancel={() => {
-              setScreen('home');
-              setHomeView('inspiration');
-            }}
+            onAutosave={handleAutosaveInspirationProject}
+            onCancel={handleCancelInspirationForm}
           />
         ) : screen === 'inspiration-detail' ? (
           <InspirationDetail
