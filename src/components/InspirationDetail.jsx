@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from '../react.js';
-import { Edit, Save, Close, Download, Link as LinkIcon } from './icons.js';
+import { Edit, Close, Download, Link as LinkIcon } from './icons.js';
 import { normalizeInspirationFormConfig } from '../utils/inspirationConfig.js';
 import { RichTextEditor } from './RichTextEditor.jsx';
 import { renderRichText } from '../utils/richText.js';
@@ -73,27 +73,24 @@ export const InspirationDetail = ({
 
   const handleFieldChange = (fieldId, value) => {
     setDraft((prev) => ({ ...prev, [fieldId]: value }));
-  };
 
-  const handleSaveField = (field) => {
-    if (typeof onUpdate !== 'function') {
-      toggleFieldEditing(field.id, false);
-      return;
+    if (typeof onUpdate === 'function') {
+      const field = enabledFields.find((item) => item.id === fieldId);
+      if (!field) {
+        return;
+      }
+
+      const normalizedValue = field.type === 'documents'
+        ? normalizeDocuments(value)
+        : field.type === 'multi_select'
+          ? normalizeMultiSelect(value)
+          : value;
+
+      onUpdate(project.id, {
+        [fieldId]: normalizedValue,
+        updatedAt: new Date().toISOString()
+      });
     }
-
-    const fieldId = field.id;
-    const fieldType = field.type;
-    const nextValue = draft[fieldId];
-    const updates = {
-      [fieldId]: fieldType === 'documents'
-        ? normalizeDocuments(nextValue)
-        : fieldType === 'multi_select'
-          ? normalizeMultiSelect(nextValue)
-          : nextValue,
-      updatedAt: new Date().toISOString()
-    };
-    onUpdate(project.id, updates);
-    toggleFieldEditing(fieldId, false);
   };
 
   const renderField = (field, content) => (
@@ -110,11 +107,11 @@ export const InspirationDetail = ({
             <>
               <button
                 type="button"
-                onClick={() => handleSaveField(field)}
+                onClick={() => toggleFieldEditing(field.id, false)}
                 className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700"
               >
-                <Save className="h-4 w-4" aria-hidden="true" />
-                Sauvegarder
+                <Close className="h-4 w-4" aria-hidden="true" />
+                Terminer
               </button>
               <button
                 type="button"

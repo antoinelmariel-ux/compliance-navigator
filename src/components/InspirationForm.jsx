@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from '../react.js';
-import { Plus, Save, Close } from './icons.js';
+import { Plus, Close } from './icons.js';
 import { normalizeInspirationFormConfig } from '../utils/inspirationConfig.js';
 import { RichTextEditor } from './RichTextEditor.jsx';
 
@@ -54,9 +54,10 @@ const renderFieldLabel = (field) => {
 };
 
 export const InspirationForm = ({
+  project,
   formConfig,
   existingProjects = [],
-  onSubmit,
+  onAutosave,
   onCancel
 }) => {
   const normalizedConfig = useMemo(
@@ -64,8 +65,8 @@ export const InspirationForm = ({
     [formConfig]
   );
   const formTopRef = useRef(null);
+  const autosaveTimeoutRef = useRef(null);
   const [formState, setFormState] = useState(() => buildInitialFormState(normalizedConfig));
-  const [errors, setErrors] = useState({});
 
   const labSuggestions = useMemo(() => {
     const suggestions = new Set();
@@ -79,9 +80,9 @@ export const InspirationForm = ({
   }, [existingProjects]);
 
   useEffect(() => {
-    setFormState((prev) => {
+    setFormState(() => {
       const baseState = buildInitialFormState(normalizedConfig);
-      const merged = { ...baseState, ...prev };
+      const merged = { ...baseState, ...(project || {}) };
 
       normalizedConfig.fields.forEach((field) => {
         if (field.type !== 'documents') {
@@ -98,7 +99,59 @@ export const InspirationForm = ({
 
       return merged;
     });
-  }, [normalizedConfig]);
+  }, [normalizedConfig, project?.id]);
+
+  useEffect(() => {
+    if (!project?.id || typeof onAutosave !== 'function') {
+      return undefined;
+    }
+
+    if (autosaveTimeoutRef.current) {
+      clearTimeout(autosaveTimeoutRef.current);
+    }
+
+    autosaveTimeoutRef.current = setTimeout(() => {
+      const now = new Date().toISOString();
+      const payload = normalizedConfig.fields.reduce((acc, field) => {
+        if (!field.enabled) {
+          return acc;
+        }
+
+        if (field.type === 'documents') {
+          acc[field.id] = normalizeDocuments(formState[field.id]);
+          return acc;
+        }
+
+        if (field.type === 'multi_select') {
+          acc[field.id] = normalizeMultiSelect(formState[field.id]);
+          return acc;
+        }
+
+        const value = formState[field.id];
+        if (typeof value === 'string') {
+          acc[field.id] = value.trim();
+          return acc;
+        }
+
+        acc[field.id] = value ?? '';
+        return acc;
+      }, {});
+
+      payload.visibility = payload.visibility === 'shared' ? 'shared' : 'personal';
+      if (!project?.createdAt) {
+        payload.createdAt = now;
+      }
+
+      onAutosave(project.id, payload);
+    }, 500);
+
+    return () => {
+      if (autosaveTimeoutRef.current) {
+        clearTimeout(autosaveTimeoutRef.current);
+        autosaveTimeoutRef.current = null;
+      }
+    };
+  }, [formState, normalizedConfig.fields, onAutosave, project?.createdAt, project?.id]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -161,81 +214,6 @@ export const InspirationForm = ({
     });
   };
 
-  const validate = () => {
-    const nextErrors = {};
-
-    normalizedConfig.fields.forEach((field) => {
-      if (!field.enabled || !field.required) {
-        return;
-      }
-
-      const value = formState[field.id];
-      if (field.type === 'documents') {
-        const normalizedDocs = normalizeDocuments(value);
-        if (normalizedDocs.length === 0) {
-          nextErrors[field.id] = 'Veuillez renseigner au moins un document.';
-        }
-        return;
-      }
-
-      if (field.type === 'multi_select') {
-        const normalizedSelections = normalizeMultiSelect(value);
-        if (normalizedSelections.length === 0) {
-          nextErrors[field.id] = 'Veuillez sélectionner au moins une option.';
-        }
-        return;
-      }
-
-      if (value == null || (typeof value === 'string' && value.trim().length === 0)) {
-        nextErrors[field.id] = 'Ce champ est requis.';
-      }
-    });
-
-    setErrors(nextErrors);
-    return Object.keys(nextErrors).length === 0;
-  };
-
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    if (!validate()) {
-      return;
-    }
-
-    const now = new Date().toISOString();
-    const payload = normalizedConfig.fields.reduce((acc, field) => {
-      if (!field.enabled) {
-        return acc;
-      }
-
-      if (field.type === 'documents') {
-        acc[field.id] = normalizeDocuments(formState[field.id]);
-        return acc;
-      }
-
-      if (field.type === 'multi_select') {
-        acc[field.id] = normalizeMultiSelect(formState[field.id]);
-        return acc;
-      }
-
-      const value = formState[field.id];
-      if (typeof value === 'string') {
-        acc[field.id] = value.trim();
-        return acc;
-      }
-
-      acc[field.id] = value ?? '';
-      return acc;
-    }, {});
-
-    payload.visibility = payload.visibility === 'shared' ? 'shared' : 'personal';
-    payload.createdAt = now;
-    payload.updatedAt = now;
-
-    if (typeof onSubmit === 'function') {
-      onSubmit(payload);
-    }
-  };
-
   return (
     <div
       ref={formTopRef}
@@ -264,9 +242,12 @@ export const InspirationForm = ({
         </header>
 
         <form
-          onSubmit={handleSubmit}
+          onSubmit={(event) => event.preventDefault()}
           className="space-y-6 rounded-3xl border border-gray-200 bg-white p-6 shadow-lg"
         >
+          <p className="rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-700">
+            Enregistrement automatique activé : vos modifications sont sauvegardées en continu.
+          </p>
           <p className="text-xs italic text-gray-400">
             Le LFB traite les données recueillies pour gérer les projets à soumettre aux équipes compliance.{' '}
             <a
@@ -302,7 +283,6 @@ export const InspirationForm = ({
                           </option>
                         ))}
                       </select>
-                      {errors[field.id] && <span className="text-xs text-red-600">{errors[field.id]}</span>}
                     </label>
                   );
                 }
@@ -328,7 +308,6 @@ export const InspirationForm = ({
                           </option>
                         ))}
                       </select>
-                      {errors[field.id] && <span className="text-xs text-red-600">{errors[field.id]}</span>}
                     </label>
                   );
                 }
@@ -349,7 +328,6 @@ export const InspirationForm = ({
                         className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                         placeholder={placeholder}
                       />
-                      {errors[field.id] && <span className="text-xs text-red-600">{errors[field.id]}</span>}
                     </label>
                   );
                 }
@@ -371,7 +349,6 @@ export const InspirationForm = ({
                       className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                       placeholder={inputPlaceholder}
                     />
-                    {errors[field.id] && <span className="text-xs text-red-600">{errors[field.id]}</span>}
                   </label>
                 );
               })}
@@ -396,7 +373,6 @@ export const InspirationForm = ({
                   }
                   compact
                 />
-                {errors[field.id] && <span className="text-xs text-red-600">{errors[field.id]}</span>}
               </label>
             ))}
 
@@ -453,7 +429,6 @@ export const InspirationForm = ({
                     </div>
                   ))}
                 </div>
-                {errors[field.id] && <span className="text-xs text-red-600">{errors[field.id]}</span>}
               </div>
             ))}
 
@@ -470,13 +445,6 @@ export const InspirationForm = ({
               className="inline-flex items-center justify-center rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50"
             >
               Annuler
-            </button>
-            <button
-              type="submit"
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-            >
-              <Save className="h-4 w-4" aria-hidden="true" />
-              Enregistrer le projet
             </button>
           </div>
         </form>
