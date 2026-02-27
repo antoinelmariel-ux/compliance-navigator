@@ -43,7 +43,7 @@ import { dataProvider } from './utils/dataProvider.js';
 import { inspirationDataProvider } from './utils/inspirationDataProvider.js';
 import { createAutosaveQueue } from './utils/autosaveQueue.js';
 
-const APP_VERSION = 'v1.0.336';
+const APP_VERSION = 'v1.0.337';
 
 class AdminBackOfficeErrorBoundary extends React.Component {
   constructor(props) {
@@ -781,8 +781,10 @@ export const App = () => {
   const [showcaseDisplayModeLock, setShowcaseDisplayModeLock] = useState(null);
   const [showcaseShareMode, setShowcaseShareMode] = useState('full');
   const [showcaseShareCommentsEnabled, setShowcaseShareCommentsEnabled] = useState(false);
+  const [showcaseShareAnnotationVisibility, setShowcaseShareAnnotationVisibility] = useState('all');
   const [isShowcaseSharedView, setIsShowcaseSharedView] = useState(false);
   const [showcaseCommentsEnabled, setShowcaseCommentsEnabled] = useState(false);
+  const [showcaseAnnotationVisibilityMode, setShowcaseAnnotationVisibilityMode] = useState('all');
   const previousScreenRef = useRef(null);
   const pendingShowcaseDisplayModeRef = useRef(null);
   const [isAnnotationModeEnabled, setIsAnnotationModeEnabled] = useState(false);
@@ -801,6 +803,7 @@ export const App = () => {
   const pendingShowcaseProjectIdRef = useRef(null);
   const pendingShowcaseSharedRef = useRef(false);
   const pendingShowcaseCommentsRef = useRef(false);
+  const pendingShowcaseAnnotationVisibilityRef = useRef('all');
   const autosaveQueueRef = useRef(null);
   const autosaveTimeoutRef = useRef(null);
 
@@ -871,8 +874,10 @@ export const App = () => {
     const resolvedShowcaseMode = resolveShowcaseDisplayMode(rawShowcaseMode);
     const rawShowcaseShared = params.get('showcaseShared');
     const rawShowcaseComments = params.get('showcaseComments');
+    const rawShowcaseAnnotationVisibility = params.get('showcaseAnnotationVisibility');
     const isSharedView = rawShowcaseShared === '1' || rawShowcaseShared === 'true';
     const hasCommentsEnabled = rawShowcaseComments === '1' || rawShowcaseComments === 'true';
+    const hasMineOnlyAnnotationVisibility = rawShowcaseAnnotationVisibility === 'mine';
 
     if (!projectId && typeof hash === 'string' && hash.length > 1) {
       const normalizedHash = hash.slice(1);
@@ -897,6 +902,10 @@ export const App = () => {
 
     if (hasCommentsEnabled) {
       pendingShowcaseCommentsRef.current = true;
+    }
+
+    if (hasMineOnlyAnnotationVisibility) {
+      pendingShowcaseAnnotationVisibilityRef.current = 'mine';
     }
   }, []);
 
@@ -1635,6 +1644,7 @@ const updateProjectFilters = useCallback((updater) => {
         openDemoShowcase();
         setShowcaseShareMode(showcaseDisplayMode === 'light' ? 'light' : 'full');
         setShowcaseShareCommentsEnabled(false);
+        setShowcaseShareAnnotationVisibility('all');
         setIsShowcaseShareOpen(true);
         setShowcaseShareFeedback('');
         setIsAnnotationModeEnabled(false);
@@ -2016,22 +2026,29 @@ const updateProjectFilters = useCallback((updater) => {
     () => projects.find(project => project?.id === activeShowcaseProjectId) || null,
     [activeShowcaseProjectId, projects]
   );
-  const canCloseAnnotationNotes = useMemo(() => {
-    if (!activeShowcaseProject) {
+  const canManageProject = useCallback((project) => {
+    if (!project) {
       return false;
     }
 
-    const ownerEmail = normalizeEmail(activeShowcaseProject.ownerEmail || '');
-    const sharedWith = Array.isArray(activeShowcaseProject.sharedWith)
-      ? activeShowcaseProject.sharedWith
-      : [];
-    const sharedMatches = sharedWith.some(entry => normalizeEmail(entry) === currentUserEmail);
+    if (isAdminMode) {
+      return true;
+    }
 
-    return (
-      Boolean(currentUserEmail)
-      && (ownerEmail === currentUserEmail || sharedMatches || isAdminMode)
-    );
-  }, [activeShowcaseProject, currentUserEmail, isAdminMode]);
+    if (!currentUserEmail) {
+      return false;
+    }
+
+    const ownerEmail = normalizeEmail(project.ownerEmail || '');
+    const sharedWith = Array.isArray(project.sharedWith) ? project.sharedWith : [];
+    const isCoOwner = sharedWith.some(entry => normalizeEmail(entry) === currentUserEmail);
+
+    return ownerEmail === currentUserEmail || isCoOwner;
+  }, [currentUserEmail, isAdminMode]);
+  const canCloseAnnotationNotes = useMemo(
+    () => canManageProject(activeShowcaseProject),
+    [activeShowcaseProject, canManageProject]
+  );
 
   const activeAnnotationContextKey = useMemo(
     () => buildAnnotationContextKey({
@@ -2582,7 +2599,9 @@ const updateProjectFilters = useCallback((updater) => {
   const isAdminMode = mode === 'admin';
   const isAdminHomeView = isAdminMode && adminView === 'home';
   const isAdminBackOfficeView = isAdminMode && adminView === 'back-office';
-  const isActiveProjectEditable = isAdminMode || !activeProject || activeProject.status === 'draft';
+  const isActiveProjectEditable = !activeProject
+    || (canManageProject(activeProject) && activeProject.status === 'draft')
+    || isAdminMode;
   const annotationOffsetClass = isAnnotationModeEnabled && screen === 'showcase'
     ? 'pt-20 lg:pt-24'
     : '';
@@ -3376,6 +3395,7 @@ const updateProjectFilters = useCallback((updater) => {
     const resolvedShowcaseMode = resolveShowcaseDisplayMode(pendingShowcaseMode) || 'full';
     const pendingSharedView = Boolean(pendingShowcaseSharedRef.current);
     const pendingComments = Boolean(pendingShowcaseCommentsRef.current);
+    const pendingAnnotationVisibility = pendingShowcaseAnnotationVisibilityRef.current === 'mine' ? 'mine' : 'all';
     const resolvedDisplayModeLock = pendingSharedView
       ? resolvedShowcaseMode
       : resolvedShowcaseMode === 'light'
@@ -3385,10 +3405,12 @@ const updateProjectFilters = useCallback((updater) => {
     pendingShowcaseDisplayModeRef.current = null;
     pendingShowcaseSharedRef.current = false;
     pendingShowcaseCommentsRef.current = false;
+    pendingShowcaseAnnotationVisibilityRef.current = 'all';
     setShowcaseDisplayMode(resolvedShowcaseMode);
     setShowcaseDisplayModeLock(resolvedDisplayModeLock);
     setIsShowcaseSharedView(pendingSharedView);
     setShowcaseCommentsEnabled(pendingComments);
+    setShowcaseAnnotationVisibilityMode(pendingAnnotationVisibility);
 
     setShowcaseProjectContext({
       projectId: projectId || null,
@@ -3476,6 +3498,7 @@ const updateProjectFilters = useCallback((updater) => {
     setShowcaseDisplayModeLock(null);
     setIsShowcaseSharedView(false);
     setShowcaseCommentsEnabled(false);
+    setShowcaseAnnotationVisibilityMode('all');
     if (previousScreenRef.current) {
       setScreen(previousScreenRef.current);
     } else {
@@ -3490,6 +3513,7 @@ const updateProjectFilters = useCallback((updater) => {
       setShowcaseProjectContext(null);
       setIsShowcaseSharedView(false);
       setShowcaseCommentsEnabled(false);
+      setShowcaseAnnotationVisibilityMode('all');
       previousScreenRef.current = null;
       handleOpenProject(projectId, { view: 'synthesis' });
       return;
@@ -3498,6 +3522,7 @@ const updateProjectFilters = useCallback((updater) => {
     setShowcaseProjectContext(null);
     setIsShowcaseSharedView(false);
     setShowcaseCommentsEnabled(false);
+    setShowcaseAnnotationVisibilityMode('all');
 
     if (previousScreenRef.current) {
       setScreen(previousScreenRef.current);
@@ -3513,6 +3538,7 @@ const updateProjectFilters = useCallback((updater) => {
       !showcaseProjectContext ||
       !showcaseProjectContext.projectId ||
       (showcaseProjectContext.status !== 'draft' && !isAdminMode)
+      || !canManageProject(projects.find(entry => entry.id === showcaseProjectContext.projectId))
     ) {
       return;
     }
@@ -3605,9 +3631,11 @@ const updateProjectFilters = useCallback((updater) => {
     }
   }, [
     analyzeAnswers,
+    canManageProject,
     extractProjectName,
     isAdminMode,
     setHasUnsavedChanges,
+    projects,
     questions,
     riskLevelRules,
     riskWeights,
@@ -3826,6 +3854,14 @@ const updateProjectFilters = useCallback((updater) => {
   const syncStatusMeta = formatSyncMeta(syncStatus);
 
   const showcaseProjectId = showcaseProjectContext?.projectId || '';
+  const canShareActiveProjectShowcase = useMemo(
+    () => !isShowcaseSharedView && canManageProject(activeShowcaseProject),
+    [activeShowcaseProject, canManageProject, isShowcaseSharedView]
+  );
+  const canConfigureActiveProjectShowcaseModes = useMemo(
+    () => !isShowcaseSharedView && canManageProject(activeShowcaseProject),
+    [activeShowcaseProject, canManageProject, isShowcaseSharedView]
+  );
   const buildShowcaseShareUrl = useCallback((shareMode) => {
     if (!showcaseProjectId || typeof window === 'undefined') {
       return '';
@@ -3836,8 +3872,14 @@ const updateProjectFilters = useCallback((updater) => {
     url.searchParams.set('showcaseShared', '1');
     if (showcaseShareCommentsEnabled) {
       url.searchParams.set('showcaseComments', '1');
+      if (showcaseShareAnnotationVisibility === 'mine') {
+        url.searchParams.set('showcaseAnnotationVisibility', 'mine');
+      } else {
+        url.searchParams.delete('showcaseAnnotationVisibility');
+      }
     } else {
       url.searchParams.delete('showcaseComments');
+      url.searchParams.delete('showcaseAnnotationVisibility');
     }
     if (shareMode === 'light') {
       url.searchParams.set('showcaseMode', 'light');
@@ -3846,7 +3888,7 @@ const updateProjectFilters = useCallback((updater) => {
     }
     url.hash = `showcase=${showcaseProjectId}`;
     return url.toString();
-  }, [showcaseProjectId, showcaseShareCommentsEnabled]);
+  }, [showcaseProjectId, showcaseShareAnnotationVisibility, showcaseShareCommentsEnabled]);
 
   const showcaseShareUrl = useMemo(
     () => buildShowcaseShareUrl(showcaseShareMode),
@@ -3854,15 +3896,16 @@ const updateProjectFilters = useCallback((updater) => {
   );
 
   const handleOpenShowcaseShare = useCallback(() => {
-    if (!showcaseProjectId) {
+    if (!showcaseProjectId || !canShareActiveProjectShowcase) {
       return;
     }
 
     setShowcaseShareMode(showcaseDisplayMode === 'light' ? 'light' : 'full');
     setShowcaseShareCommentsEnabled(false);
+        setShowcaseShareAnnotationVisibility('all');
     setIsShowcaseShareOpen(true);
     setShowcaseShareFeedback('');
-  }, [showcaseDisplayMode, showcaseProjectId]);
+  }, [canShareActiveProjectShowcase, showcaseDisplayMode, showcaseProjectId]);
 
   const handleCloseShowcaseShare = useCallback(() => {
     setIsShowcaseShareOpen(false);
@@ -3943,6 +3986,8 @@ const updateProjectFilters = useCallback((updater) => {
         autoFocusNoteId={autoFocusAnnotationId}
         onAutoFocusComplete={() => setAutoFocusAnnotationId(null)}
         canCloseNotes={canCloseAnnotationNotes}
+        noteVisibilityMode={isShowcaseSharedView ? showcaseAnnotationVisibilityMode : 'all'}
+        currentSourceId={currentUserDisplayName || ''}
         onTogglePause={handleToggleAnnotationPause}
         onRequestSave={handleSaveAnnotationNotes}
         onRequestLoad={handleRequestAnnotationFile}
@@ -3983,36 +4028,33 @@ const updateProjectFilters = useCallback((updater) => {
               aria-label="Sélection du mode d'utilisation"
             >
               {screen === 'showcase' && (
-                <>
-                  <button
-                    type="button"
-                    onClick={handleToggleAnnotationMode}
-                    className={`order-first self-start sm:order-last sm:self-center inline-flex h-10 px-4 items-center justify-center rounded-full border text-blue-700 shadow-sm transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-                      isAnnotationModeEnabled ? 'bg-blue-50 border-blue-200' : 'bg-white border-blue-100'
-                    }`}
-                    aria-pressed={isAnnotationModeEnabled}
-                    aria-label={isAnnotationModeEnabled ? 'Désactiver le mode annotation' : 'Activer le mode annotation'}
-                    title={isAnnotationModeEnabled ? 'Désactiver le mode annotation' : 'Activer le mode annotation'}
-                    data-annotation-ui="true"
-                  >
-                    <MessageSquare className="h-5 w-5" />
-                    <span className="sr-only">Annotation</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleOpenShowcaseShare}
-                    className={`order-first self-start sm:order-last sm:self-center inline-flex h-10 px-4 items-center justify-center rounded-full border text-blue-700 shadow-sm transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-                      showcaseProjectId ? 'bg-white border-blue-100' : 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed'
-                    }`}
-                    aria-label="Partager la vitrine du projet"
-                    title={showcaseProjectId ? 'Partager la vitrine du projet' : 'Aucun projet vitrine disponible'}
-                    data-tour-id="showcase-share-trigger"
-                    disabled={!showcaseProjectId}
-                  >
-                    <Link className="h-5 w-5" />
-                    <span className="sr-only">Partager</span>
-                  </button>
-                </>
+                <button
+                  type="button"
+                  onClick={handleToggleAnnotationMode}
+                  className={`order-first self-start sm:order-last sm:self-center inline-flex h-10 px-4 items-center justify-center rounded-full border text-blue-700 shadow-sm transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                    isAnnotationModeEnabled ? 'bg-blue-50 border-blue-200' : 'bg-white border-blue-100'
+                  }`}
+                  aria-pressed={isAnnotationModeEnabled}
+                  aria-label={isAnnotationModeEnabled ? 'Désactiver le mode annotation' : 'Activer le mode annotation'}
+                  title={isAnnotationModeEnabled ? 'Désactiver le mode annotation' : 'Activer le mode annotation'}
+                  data-annotation-ui="true"
+                >
+                  <MessageSquare className="h-5 w-5" />
+                  <span className="sr-only">Annotation</span>
+                </button>
+              )}
+              {screen === 'showcase' && canShareActiveProjectShowcase && (
+                <button
+                  type="button"
+                  onClick={handleOpenShowcaseShare}
+                  className="order-first self-start sm:order-last sm:self-center inline-flex h-10 px-4 items-center justify-center rounded-full border bg-white border-blue-100 text-blue-700 shadow-sm transition hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  aria-label="Partager la vitrine du projet"
+                  title="Partager la vitrine du projet"
+                  data-tour-id="showcase-share-trigger"
+                >
+                  <Link className="h-5 w-5" />
+                  <span className="sr-only">Partager</span>
+                </button>
               )}
               {mode === 'user' && screen === 'showcase' && showcaseProjectContext && (
                 <button
@@ -4127,7 +4169,7 @@ const updateProjectFilters = useCallback((updater) => {
         </div>
       </nav>
 
-      {isShowcaseShareOpen && (
+      {isShowcaseShareOpen && canShareActiveProjectShowcase && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6 bg-black bg-opacity-50"
           role="dialog"
@@ -4204,6 +4246,37 @@ const updateProjectFilters = useCallback((updater) => {
               <p className="text-xs text-gray-500">
                 Active un bouton de commentaires flottant pour lancer le module de post-it.
               </p>
+              {showcaseShareCommentsEnabled && (
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-600">Visibilité des post-its</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowcaseShareAnnotationVisibility('all')}
+                      className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                        showcaseShareAnnotationVisibility === 'all'
+                          ? 'border-blue-200 bg-blue-50 text-blue-700'
+                          : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                      }`}
+                      aria-pressed={showcaseShareAnnotationVisibility === 'all'}
+                    >
+                      Tous les post-its
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowcaseShareAnnotationVisibility('mine')}
+                      className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                        showcaseShareAnnotationVisibility === 'mine'
+                          ? 'border-blue-200 bg-blue-50 text-blue-700'
+                          : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                      }`}
+                      aria-pressed={showcaseShareAnnotationVisibility === 'mine'}
+                    >
+                      Seulement mes post-its
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
               <button
@@ -4433,8 +4506,8 @@ const updateProjectFilters = useCallback((updater) => {
               currentUser={currentUser}
               sharedMembers={activeProject?.sharedWith || []}
               ownerEmail={activeProject?.ownerEmail || ''}
-              onShareProjectMember={activeProjectId ? handleAddSharedMember : undefined}
-              onRemoveProjectMember={activeProjectId ? handleRemoveSharedMember : undefined}
+              onShareProjectMember={activeProjectId && canManageProject(activeProject) ? handleAddSharedMember : undefined}
+              onRemoveProjectMember={activeProjectId && canManageProject(activeProject) ? handleRemoveSharedMember : undefined}
               onSubmitProject={handleSubmitProject}
               onNavigateToQuestion={handleNavigateToQuestionFromReport}
               isExistingProject={Boolean(activeProjectId)}
@@ -4478,6 +4551,7 @@ const updateProjectFilters = useCallback((updater) => {
                   initialDisplayMode={showcaseDisplayMode}
                   displayModeLock={showcaseDisplayModeLock}
                   hideEditBar={isShowcaseSharedView}
+                  canConfigureDisplayModes={canConfigureActiveProjectShowcaseModes}
                   hideNotice={isShowcaseSharedView}
                   onUpdateAnswers={
                     isShowcaseSharedView

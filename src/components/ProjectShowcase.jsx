@@ -1530,7 +1530,8 @@ export const ProjectShowcase = ({
   displayModeLock = null,
   onDisplayModeChange = null,
   hideEditBar = false,
-  hideNotice = false
+  hideNotice = false,
+  canConfigureDisplayModes = true
 }) => {
   const rawProjectName = typeof projectName === 'string' ? projectName.trim() : '';
   const safeProjectName = rawProjectName.length > 0 ? rawProjectName : MISSING_INFO_LABEL;
@@ -4726,7 +4727,7 @@ export const ProjectShowcase = ({
     </div>
   ) : null;
 
-  const modeSelectionPanel = resolvedDisplayModeLock ? null : (
+  const modeSelectionPanel = resolvedDisplayModeLock || !canConfigureDisplayModes ? null : (
     <div
       className="mb-6 rounded-2xl border border-gray-200 bg-white/80 shadow-sm backdrop-blur"
       data-tour-id="showcase-display-modes"
