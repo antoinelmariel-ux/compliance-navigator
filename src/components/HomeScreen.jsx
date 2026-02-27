@@ -912,6 +912,30 @@ export const HomeScreen = ({
       return true;
     });
   }, [inspirationProjects, normalizedInspirationFilters.fields, inspirationFiltersState]);
+
+  const submittedProjects = useMemo(() => {
+    if (!Array.isArray(projects)) {
+      return [];
+    }
+
+    const sourceProjects = isComplianceActor || isAdminMode ? projects : accessibleProjects;
+
+    return sourceProjects
+      .filter((project) => project?.status === 'submitted')
+      .slice()
+      .sort((a, b) => getProjectTimestamp(b) - getProjectTimestamp(a));
+  }, [projects, isComplianceActor, isAdminMode, accessibleProjects]);
+
+  const submittedInspirationProjects = useMemo(() => {
+    if (!Array.isArray(inspirationProjects)) {
+      return [];
+    }
+
+    return inspirationProjects
+      .filter((project) => project?.visibility === 'shared')
+      .slice()
+      .sort((a, b) => getProjectTimestamp(b) - getProjectTimestamp(a));
+  }, [inspirationProjects]);
   const projectRows = useMemo(() => {
     const rows = [];
     for (let index = 0; index < filteredProjects.length; index += 2) {
@@ -923,8 +947,10 @@ export const HomeScreen = ({
 
   const hasProjects = accessibleProjects.length > 0;
   const hasFilteredProjects = filteredProjects.length > 0;
+  const hasSubmittedProjects = submittedProjects.length > 0;
   const hasInspirationProjects = inspirationProjects.length > 0;
   const hasFilteredInspirationProjects = filteredInspirationProjects.length > 0;
+  const hasSubmittedInspirations = submittedInspirationProjects.length > 0;
   const pendingDeletionProjectName = useMemo(() => {
     if (!deleteDialogState.project) {
       return '';
@@ -1776,6 +1802,29 @@ export const HomeScreen = ({
                   )}
                 </div>
               )}
+
+              <section className="space-y-4" aria-labelledby="submitted-projects-heading">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 id="submitted-projects-heading" className="text-xl font-bold text-gray-900">
+                    Projets soumis
+                  </h3>
+                  {hasSubmittedProjects && (
+                    <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                      {submittedProjects.length} projet{submittedProjects.length > 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
+
+                {hasSubmittedProjects ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6" role="list">
+                    {submittedProjects.map((project) => renderProjectCard(project))}
+                  </div>
+                ) : (
+                  <div className="bg-white border border-dashed border-emerald-200 rounded-3xl p-6 text-center text-gray-600 hv-surface">
+                    <p className="text-lg font-medium text-gray-800">Aucun projet soumis pour le moment.</p>
+                  </div>
+                )}
+              </section>
             </>
           )}
 
@@ -1920,6 +1969,29 @@ export const HomeScreen = ({
                   )}
                 </div>
               )}
+
+              <section className="space-y-4" aria-labelledby="submitted-inspirations-heading">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 id="submitted-inspirations-heading" className="text-xl font-bold text-gray-900">
+                    Inspirations soumises
+                  </h3>
+                  {hasSubmittedInspirations && (
+                    <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                      {submittedInspirationProjects.length} inspiration{submittedInspirationProjects.length > 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
+
+                {hasSubmittedInspirations ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6" role="list">
+                    {submittedInspirationProjects.map((project) => renderInspirationCard(project))}
+                  </div>
+                ) : (
+                  <div className="bg-white border border-dashed border-emerald-200 rounded-3xl p-6 text-center text-gray-600 hv-surface">
+                    <p className="text-lg font-medium text-gray-800">Aucune inspiration soumise pour le moment.</p>
+                  </div>
+                )}
+              </section>
             </>
           )}
         </section>
