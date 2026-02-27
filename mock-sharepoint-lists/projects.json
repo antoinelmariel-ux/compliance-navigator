@@ -296,5 +296,73 @@
     "RowVersion": 1,
     "CreatedByEmail": "chef.projet@entreprise.com",
     "UpdatedByEmail": "chef.projet@entreprise.com"
+  },
+  {
+    "ProjectId": "proj-005",
+    "Title": "Migration SharePoint Antoine Lassauge",
+    "Status": "Draft",
+    "OwnerEmail": "antoine.lassauge@lfb.fr",
+    "CurrentEditorEmail": "antoine.lassauge@lfb.fr",
+    "AnswersJson": {
+      "projectName": "Migration SharePoint Antoine Lassauge",
+      "teamLead": "Antoine Lassauge",
+      "teamLeadTeam": "Digital",
+      "ProjectType": [
+        "Site internet"
+      ],
+      "targetAudience": [
+        "Interne LFB"
+      ],
+      "projectSlogan": "Préparer la migration vers SharePoint avec API",
+      "problemPainPoints": "Le projet nécessite une migration structurée vers SharePoint dès que l’API key sera disponible.",
+      "solutionDescription": "Mise en place d’un plan de migration des contenus avec mapping des métadonnées et validation des droits d’accès.",
+      "q11": [
+        "Site internet"
+      ],
+      "q3": [
+        "Non"
+      ],
+      "q13": "Non",
+      "q10": [
+        "Prestataire de service"
+      ],
+      "BUDGET": "10",
+      "innovationProcess": "Automatiser l’import et fiabiliser la reprise des données.",
+      "visionStatement": "Migration complète sans perte de données et validation métier.",
+      "campaignKickoffDate": "2026-03-15",
+      "launchDate": "2026-04-30",
+      "roadmapMilestones": [
+        {
+          "date": "2026-03-15",
+          "description": "Cadrage et inventaire des contenus"
+        },
+        {
+          "date": "2026-03-25",
+          "description": "Configuration API SharePoint"
+        },
+        {
+          "date": "2026-04-10",
+          "description": "Migration pilote"
+        },
+        {
+          "date": "2026-04-30",
+          "description": "Bascule finale"
+        }
+      ],
+      "teamCoreMembers": "Antoine Lassauge - Owner\nEquipe Digital LFB - Support",
+      "q14": [
+        "Via les canaux digitaux du LFB"
+      ],
+      "q15": "Projet créé à la demande pour préparer la migration SharePoint.",
+      "q15_copy": "Sans objet"
+    },
+    "AnalysisJson": {},
+    "ProgressAnswered": 18,
+    "ProgressTotal": 42,
+    "SubmissionDate": "2026-02-27T09:00:00.000Z",
+    "LastAutosaveAt": "2026-02-27T09:00:00.000Z",
+    "RowVersion": 1,
+    "CreatedByEmail": "antoine.lassauge@lfb.fr",
+    "UpdatedByEmail": "antoine.lassauge@lfb.fr"
   }
 ]
