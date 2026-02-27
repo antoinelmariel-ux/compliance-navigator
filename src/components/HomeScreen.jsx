@@ -936,6 +936,14 @@ export const HomeScreen = ({
       .slice()
       .sort((a, b) => getProjectTimestamp(b) - getProjectTimestamp(a));
   }, [inspirationProjects]);
+  const personalInspirationProjects = useMemo(
+    () => filteredInspirationProjects.filter((project) => project?.visibility !== 'shared'),
+    [filteredInspirationProjects]
+  );
+  const sharedInspirationProjects = useMemo(
+    () => filteredInspirationProjects.filter((project) => project?.visibility === 'shared'),
+    [filteredInspirationProjects]
+  );
   const projectRows = useMemo(() => {
     const rows = [];
     for (let index = 0; index < filteredProjects.length; index += 2) {
@@ -950,6 +958,8 @@ export const HomeScreen = ({
   const hasSubmittedProjects = submittedProjects.length > 0;
   const hasInspirationProjects = inspirationProjects.length > 0;
   const hasFilteredInspirationProjects = filteredInspirationProjects.length > 0;
+  const hasPersonalInspirations = personalInspirationProjects.length > 0;
+  const hasSharedInspirations = sharedInspirationProjects.length > 0;
   const hasSubmittedInspirations = submittedInspirationProjects.length > 0;
   const pendingDeletionProjectName = useMemo(() => {
     if (!deleteDialogState.project) {
@@ -1947,8 +1957,52 @@ export const HomeScreen = ({
               )}
 
               {hasFilteredInspirationProjects ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6" role="list">
-                  {filteredInspirationProjects.map(project => renderInspirationCard(project))}
+                <div className="space-y-8">
+                  <section className="space-y-4" aria-labelledby="personal-inspirations-heading">
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 id="personal-inspirations-heading" className="text-xl font-bold text-gray-900">
+                        Inspirations personnelles
+                      </h3>
+                      {hasPersonalInspirations && (
+                        <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                          {personalInspirationProjects.length} inspiration{personalInspirationProjects.length > 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </div>
+
+                    {hasPersonalInspirations ? (
+                      <div className="grid grid-cols-1 gap-6 md:grid-cols-2" role="list">
+                        {personalInspirationProjects.map((project) => renderInspirationCard(project))}
+                      </div>
+                    ) : (
+                      <div className="rounded-3xl border border-dashed border-blue-200 bg-white p-6 text-center text-gray-600 hv-surface">
+                        <p className="text-lg font-medium text-gray-800">Aucune inspiration personnelle ne correspond à vos filtres.</p>
+                      </div>
+                    )}
+                  </section>
+
+                  <section className="space-y-4" aria-labelledby="shared-inspirations-heading">
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 id="shared-inspirations-heading" className="text-xl font-bold text-gray-900">
+                        Inspirations partagées
+                      </h3>
+                      {hasSharedInspirations && (
+                        <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                          {sharedInspirationProjects.length} inspiration{sharedInspirationProjects.length > 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </div>
+
+                    {hasSharedInspirations ? (
+                      <div className="grid grid-cols-1 gap-6 md:grid-cols-2" role="list">
+                        {sharedInspirationProjects.map((project) => renderInspirationCard(project))}
+                      </div>
+                    ) : (
+                      <div className="rounded-3xl border border-dashed border-emerald-200 bg-white p-6 text-center text-gray-600 hv-surface">
+                        <p className="text-lg font-medium text-gray-800">Aucune inspiration partagée ne correspond à vos filtres.</p>
+                      </div>
+                    )}
+                  </section>
                 </div>
               ) : (
                 <div
