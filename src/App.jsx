@@ -38,12 +38,13 @@ import {
 import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
 import { isShowcaseAccessBlockedByProjectType } from './utils/showcase.js';
+import { normalizeTeamContacts } from './utils/teamContacts.js';
 import currentUser from './data/graph-current-user.json';
 import { dataProvider } from './utils/dataProvider.js';
 import { inspirationDataProvider } from './utils/inspirationDataProvider.js';
 import { createAutosaveQueue } from './utils/autosaveQueue.js';
 
-const APP_VERSION = 'v1.0.342';
+const APP_VERSION = 'v1.0.343';
 
 class AdminBackOfficeErrorBoundary extends React.Component {
   constructor(props) {
@@ -199,6 +200,28 @@ const verifyBackOfficePassword = async (value) => {
 };
 
 const normalizeEmail = (value) => (typeof value === 'string' ? value.trim().toLowerCase() : '');
+
+const COMPLIANCE_COMMENTS_KEY = '__compliance_team_comments__';
+const SHOWCASE_COMMENT_EDIT_DEBOUNCE_MS = 1200;
+
+const buildMailSubject = (projectName, actionType) => {
+  const safeProjectName =
+    typeof projectName === 'string' && projectName.trim().length > 0 ? projectName.trim() : 'Projet sans nom';
+  const safeActionType =
+    typeof actionType === 'string' && actionType.trim().length > 0 ? actionType.trim() : 'Notification';
+  return `[Project Navigator] ${safeProjectName} - ${safeActionType}`;
+};
+
+const normalizeRecipientList = (emails = []) => {
+  const unique = new Set();
+  (Array.isArray(emails) ? emails : []).forEach((email) => {
+    const normalized = normalizeEmail(email);
+    if (normalized) {
+      unique.add(normalized);
+    }
+  });
+  return Array.from(unique);
+};
 
 const cloneDeep = (value) => {
   if (value === null || value === undefined) {
@@ -806,6 +829,62 @@ export const App = () => {
   const pendingShowcaseAnnotationVisibilityRef = useRef('all');
   const autosaveQueueRef = useRef(null);
   const autosaveTimeoutRef = useRef(null);
+  const showcaseCommentNotificationTimeoutsRef = useRef(new Map());
+
+  const sendGraphNotificationEmail = useCallback((mailObject) => {
+    if (!mailObject || !mailObject.to || mailObject.to.length === 0) {
+      return;
+    }
+
+    // Prévu pour le futur connecteur Graph (/me/sendMail ou /users/{id}/sendMail).
+    if (typeof console !== 'undefined' && typeof console.info === 'function') {
+      console.info('[NotificationEmail][pending-graph]', mailObject);
+    }
+  }, []);
+
+  const buildOwnerNotificationRecipients = useCallback((project) => {
+    const owner = normalizeEmail(project?.ownerEmail);
+    const sharedWith = Array.isArray(project?.sharedWith) ? project.sharedWith : [];
+    const coOwners = normalizeRecipientList(sharedWith).filter((email) => email !== owner);
+
+    return {
+      to: owner ? [owner] : [],
+      cc: coOwners
+    };
+  }, []);
+
+  const notifyOwnerAndCoOwners = useCallback((project, actionType, bodyLines = []) => {
+    if (!project) {
+      return;
+    }
+
+    const recipients = buildOwnerNotificationRecipients(project);
+    if (recipients.to.length === 0 && recipients.cc.length === 0) {
+      return;
+    }
+
+    sendGraphNotificationEmail({
+      subject: buildMailSubject(project.projectName, actionType),
+      to: recipients.to,
+      cc: recipients.cc,
+      body: bodyLines.join('\n').trim()
+    });
+  }, [buildOwnerNotificationRecipients, sendGraphNotificationEmail]);
+
+  const notifyThreadLastAuthor = useCallback((payload = {}) => {
+    const targetEmail = normalizeEmail(payload.targetEmail);
+    if (!targetEmail || targetEmail === currentUserEmail) {
+      return;
+    }
+
+    sendGraphNotificationEmail({
+      subject: buildMailSubject(payload.projectName, payload.actionType || 'Réponse à votre commentaire'),
+      to: [targetEmail],
+      cc: [],
+      body: (payload.body || '').trim()
+    });
+  }, [currentUserEmail, sendGraphNotificationEmail]);
+
 
   const ensureStylesheetLoaded = useCallback((href) => {
     if (typeof document === 'undefined' || !href) {
@@ -837,6 +916,13 @@ export const App = () => {
     }
 
     return false;
+  }, []);
+
+  useEffect(() => () => {
+    showcaseCommentNotificationTimeoutsRef.current.forEach((timeoutId) => {
+      clearTimeout(timeoutId);
+    });
+    showcaseCommentNotificationTimeoutsRef.current.clear();
   }, []);
 
   useEffect(() => {
@@ -2199,7 +2285,44 @@ const updateProjectFilters = useCallback((updater) => {
         ? (note.status === 'closed' ? note : { ...note, text })
         : note
     )));
-  }, []);
+
+    const timeoutKey = `${showcaseProjectContext?.projectId || 'showcase'}:${noteId}`;
+    const existingTimeout = showcaseCommentNotificationTimeoutsRef.current.get(timeoutKey);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+    }
+
+    const timeoutId = setTimeout(() => {
+      const note = (annotationNotesRef.current || []).find((entry) => entry?.id === noteId);
+      const commentText = typeof note?.text === 'string' ? note.text.trim() : '';
+      if (!commentText) {
+        return;
+      }
+
+      const project = projects.find((entry) => entry?.id === showcaseProjectContext?.projectId)
+        || (showcaseProjectContext
+          ? {
+            id: showcaseProjectContext.projectId,
+            projectName: showcaseProjectContext.projectName,
+            ownerEmail: showcaseProjectContext.ownerEmail || '',
+            sharedWith: Array.isArray(showcaseProjectContext.sharedWith) ? showcaseProjectContext.sharedWith : []
+          }
+          : null);
+
+      notifyOwnerAndCoOwners(project, 'Showcase commenté', [
+        `${currentUserDisplayName || 'Utilisateur'} a modifié un commentaire de showcase.`,
+        commentText
+      ]);
+      showcaseCommentNotificationTimeoutsRef.current.delete(timeoutKey);
+    }, SHOWCASE_COMMENT_EDIT_DEBOUNCE_MS);
+
+    showcaseCommentNotificationTimeoutsRef.current.set(timeoutKey, timeoutId);
+  }, [
+    currentUserDisplayName,
+    notifyOwnerAndCoOwners,
+    projects,
+    showcaseProjectContext
+  ]);
 
   const handleCloseAnnotationNote = useCallback((noteId) => {
     setAnnotationNotes(prevNotes => prevNotes.map(note => {
@@ -2230,10 +2353,13 @@ const updateProjectFilters = useCallback((updater) => {
       return;
     }
 
+    let lastReplyAuthor = '';
+
     const reply = {
       id: createAnnotationId(),
       text: trimmed,
       author: currentUserDisplayName || 'Utilisateur',
+      authorEmail: currentUserEmail,
       createdAt: new Date().toISOString(),
       attachments: []
     };
@@ -2248,12 +2374,27 @@ const updateProjectFilters = useCallback((updater) => {
       }
 
       const existingReplies = Array.isArray(note.replies) ? note.replies : [];
+      const previousReply = existingReplies.length > 0 ? existingReplies[existingReplies.length - 1] : null;
+      lastReplyAuthor = normalizeEmail(previousReply?.authorEmail || '');
       return {
         ...note,
         replies: [...existingReplies, reply]
       };
     }));
-  }, [currentUserDisplayName]);
+
+    notifyThreadLastAuthor({
+      targetEmail: lastReplyAuthor,
+      projectName: showcaseProjectContext?.projectName || activeProjectName,
+      actionType: 'Réponse à votre commentaire',
+      body: `${currentUserDisplayName || 'Utilisateur'} a répondu à votre commentaire sur le showcase.`
+    });
+  }, [
+    activeProjectName,
+    currentUserDisplayName,
+    currentUserEmail,
+    notifyThreadLastAuthor,
+    showcaseProjectContext
+  ]);
 
   const createLinkAttachment = useCallback((url) => ({
     id: createAnnotationId(),
@@ -2849,6 +2990,47 @@ const updateProjectFilters = useCallback((updater) => {
     });
 
     if (sanitizedResult) {
+      const project = projects.find((entry) => entry?.id === activeProjectId);
+      const nextComments = sanitizedResult?.[COMPLIANCE_COMMENTS_KEY];
+
+      if (project && nextComments && typeof nextComments === 'object' && !Array.isArray(nextComments)) {
+        const isOwnerOrCoOwner = normalizeEmail(project.ownerEmail) === currentUserEmail
+          || (Array.isArray(project.sharedWith)
+            && project.sharedWith.some((email) => normalizeEmail(email) === currentUserEmail));
+
+        const teamEntries = nextComments.teams && typeof nextComments.teams === 'object' ? nextComments.teams : {};
+        const committeeEntries = nextComments.committees && typeof nextComments.committees === 'object' ? nextComments.committees : {};
+
+        if (isOwnerOrCoOwner) {
+          const teamRecipients = Object.keys(teamEntries)
+            .flatMap((teamId) => {
+              const team = teams.find((entry) => entry?.id === teamId);
+              return normalizeTeamContacts(team);
+            });
+          const committeeRecipients = Object.keys(committeeEntries)
+            .flatMap((committeeId) => {
+              const committee = normalizeValidationCommitteeConfig(validationCommitteeConfig).committees
+                .find((entry) => entry?.id === committeeId);
+              return Array.isArray(committee?.emails) ? committee.emails : [];
+            });
+          const recipients = normalizeRecipientList([...teamRecipients, ...committeeRecipients])
+            .filter((email) => email !== currentUserEmail);
+
+          if (recipients.length > 0) {
+            sendGraphNotificationEmail({
+              subject: buildMailSubject(project.projectName, 'Commentaire rapport de synthèse'),
+              to: recipients,
+              cc: [],
+              body: `${currentUserDisplayName || 'Utilisateur'} a édité un commentaire sur le rapport de synthèse.`
+            });
+          }
+        } else {
+          notifyOwnerAndCoOwners(project, 'Commentaire rapport de synthèse', [
+            `${currentUserDisplayName || 'Utilisateur'} a édité un commentaire sur le rapport de synthèse.`
+          ]);
+        }
+      }
+
       setHasUnsavedChanges(true);
       setProjects(prevProjects => {
         const projectIndex = prevProjects.findIndex(project => project.id === activeProjectId);
@@ -2856,13 +3038,13 @@ const updateProjectFilters = useCallback((updater) => {
           return prevProjects;
         }
 
-        const project = prevProjects[projectIndex];
-        if (!project) {
+        const currentProject = prevProjects[projectIndex];
+        if (!currentProject) {
           return prevProjects;
         }
 
         const updatedProject = {
-          ...project,
+          ...currentProject,
           answers: sanitizedResult,
           lastUpdated: new Date().toISOString()
         };
@@ -2872,7 +3054,31 @@ const updateProjectFilters = useCallback((updater) => {
         return nextProjects;
       });
     }
-  }, [activeProjectId, setHasUnsavedChanges]);
+  }, [
+    activeProjectId,
+    currentUserDisplayName,
+    currentUserEmail,
+    notifyOwnerAndCoOwners,
+    projects,
+    sendGraphNotificationEmail,
+    setHasUnsavedChanges,
+    teams,
+    validationCommitteeConfig
+  ]);
+
+  const handleComplianceReplyNotification = useCallback((payload = {}) => {
+    const targetEmail = normalizeEmail(payload.lastAuthorEmail);
+    if (!targetEmail || targetEmail === currentUserEmail) {
+      return;
+    }
+
+    sendGraphNotificationEmail({
+      subject: buildMailSubject(payload.projectName, 'Réponse à votre commentaire'),
+      to: [targetEmail],
+      cc: [],
+      body: `${currentUserDisplayName || 'Utilisateur'} a répondu à votre commentaire.`
+    });
+  }, [currentUserDisplayName, currentUserEmail, sendGraphNotificationEmail]);
 
   const handleAddSharedMember = useCallback((email) => {
     if (!activeProjectId) {
@@ -3270,7 +3476,7 @@ const updateProjectFilters = useCallback((updater) => {
       }
 
       const answers = project.answers && typeof project.answers === 'object' ? project.answers : {};
-      const rawComments = answers.__compliance_team_comments__;
+      const rawComments = answers[COMPLIANCE_COMMENTS_KEY];
       const comments = rawComments && typeof rawComments === 'object' && !Array.isArray(rawComments)
         ? rawComments
         : {};
@@ -3282,11 +3488,15 @@ const updateProjectFilters = useCallback((updater) => {
         ? forcedCommitteeIds
         : [...forcedCommitteeIds, committeeId];
 
+      notifyOwnerAndCoOwners(project, 'Réintégration en comité de validation', [
+        `${currentUserDisplayName || 'Utilisateur'} a repêché le projet vers le comité ${committeeId}.`
+      ]);
+
       return {
         ...project,
         answers: {
           ...answers,
-          __compliance_team_comments__: {
+          [COMPLIANCE_COMMENTS_KEY]: {
             ...comments,
             forcedCommitteeIds: nextForcedCommitteeIds
           }
@@ -3294,7 +3504,7 @@ const updateProjectFilters = useCallback((updater) => {
         lastUpdated: new Date().toISOString()
       };
     }));
-  }, []);
+  }, [currentUserDisplayName, notifyOwnerAndCoOwners]);
 
   const handleDeleteProject = useCallback((projectId) => {
     if (!projectId) {
@@ -4557,6 +4767,7 @@ const updateProjectFilters = useCallback((updater) => {
               onBack={isActiveProjectEditable ? handleBackToQuestionnaire : undefined}
               onUpdateAnswers={isActiveProjectEditable ? handleUpdateAnswers : undefined}
               onUpdateComplianceComments={activeProjectId ? handleUpdateComplianceComments : undefined}
+              onComplianceReplyNotification={handleComplianceReplyNotification}
               currentUser={currentUser}
               sharedMembers={activeProject?.sharedWith || []}
               ownerEmail={activeProject?.ownerEmail || ''}

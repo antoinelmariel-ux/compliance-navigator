@@ -787,6 +787,7 @@ export const SynthesisReport = ({
   onBack,
   onUpdateAnswers,
   onUpdateComplianceComments,
+  onComplianceReplyNotification,
   currentUser = null,
   sharedMembers = [],
   ownerEmail = '',
@@ -1167,6 +1168,7 @@ export const SynthesisReport = ({
     },
     [
       canSaveComplianceComment,
+      effectiveProjectName,
       complianceCommentDrafts,
       complianceComments,
       updateComplianceComments,
@@ -1386,6 +1388,19 @@ export const SynthesisReport = ({
         [COMPLIANCE_COMMENTS_KEY]: nextComments
       });
 
+      if (typeof onComplianceReplyNotification === 'function') {
+        const lastExistingReply = Array.isArray(normalizedEntry.replies) && normalizedEntry.replies.length > 0
+          ? normalizedEntry.replies[normalizedEntry.replies.length - 1]
+          : null;
+        onComplianceReplyNotification({
+          targetId,
+          targetType,
+          projectName: effectiveProjectName,
+          lastAuthorEmail: lastExistingReply?.authorEmail || '',
+          lastAuthorName: lastExistingReply?.authorName || ''
+        });
+      }
+
       setComplianceReplyDrafts(prev => ({
         ...prev,
         [threadKey]: { message: '', attachments: [] }
@@ -1399,6 +1414,8 @@ export const SynthesisReport = ({
       complianceReplyDrafts,
       currentUserDisplayName,
       currentUserEmail,
+      effectiveProjectName,
+      onComplianceReplyNotification,
       updateComplianceComments,
       scheduleComplianceFeedback
     ]
