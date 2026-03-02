@@ -44,7 +44,7 @@ import { dataProvider } from './utils/dataProvider.js';
 import { inspirationDataProvider } from './utils/inspirationDataProvider.js';
 import { createAutosaveQueue } from './utils/autosaveQueue.js';
 
-const APP_VERSION = 'v1.0.343';
+const APP_VERSION = 'v1.0.344';
 
 class AdminBackOfficeErrorBoundary extends React.Component {
   constructor(props) {
@@ -1564,9 +1564,9 @@ const updateProjectFilters = useCallback((updater) => {
         try {
           if (window.location) {
             if (typeof window.location.assign === 'function') {
-              window.location.assign('./index.html');
+              window.location.assign('./index.aspx');
             } else {
-              window.location.href = './index.html';
+              window.location.href = './index.aspx';
             }
           }
         } catch (error) {
