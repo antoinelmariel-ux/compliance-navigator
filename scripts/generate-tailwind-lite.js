@@ -19,7 +19,7 @@ function walk(dir) {
 }
 
 const filesToScan = walk(path.join(repoRoot, 'src'));
-filesToScan.push(path.join(repoRoot, 'index.html'));
+filesToScan.push(path.join(repoRoot, 'index.aspx'));
 filesToScan.push(path.join(repoRoot, 'mentions-legales.html'));
 
 const rawClasses = new Set();
