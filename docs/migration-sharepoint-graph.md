@@ -100,8 +100,8 @@ Fichiers mock recommandés (et fournis dans ce repo) :
 - `Status` (**Choice** : Draft / Submitted / InReview / Approved / Rejected)
 - `OwnerEmail` (**Single line of text**)
 - `CurrentEditorEmail` (**Single line of text**)
-- `AnswersJson` (**Multiple lines of text** en texte brut JSON)
-- `AnalysisJson` (**Multiple lines of text** en texte brut JSON)
+- `AnswersJson` (**Multiple lines of text** en texte rich JSON)
+- `AnalysisJson` (**Multiple lines of text** en texte rich JSON)
 - `ProgressAnswered` (**Number** entier)
 - `ProgressTotal` (**Number** entier)
 - `SubmissionDate` (**Date and Time**)
@@ -113,7 +113,7 @@ Fichiers mock recommandés (et fournis dans ce repo) :
 - `InspirationId` (**Single line of text**, valeur unique)
 - `Title` (**Single line of text**)
 - `Visibility` (**Choice** : Personal / Shared)
-- `InspirationJson` (**Multiple lines of text** en texte brut JSON : labName, target, typology, therapeuticArea, country, description, link, review, documents, etc.)
+- `InspirationJson` (**Multiple lines of text** en texte rich JSON : labName, target, typology, therapeuticArea, country, description, link, review, documents, etc.)
 - `RowVersion` (**Number** entier)
 - `CreatedByEmail` (**Single line of text**), `UpdatedByEmail` (**Single line of text**), `UpdatedAt` (**Date and Time**)
 
@@ -121,7 +121,7 @@ Fichiers mock recommandés (et fournis dans ce repo) :
 - `StickyId` (**Single line of text**, valeur unique)
 - `ProjectId` (**Single line of text**)
 - `ShowcaseSection` (**Single line of text**)
-- `AnchorJson` (**Multiple lines of text** en texte brut JSON position/zone)
+- `AnchorJson` (**Multiple lines of text** en texte rich JSON position/zone)
 - `Content` (**Multiple lines of text**)
 - `Color` (**Single line of text**)
 - `Resolved` (**Yes/No**)
@@ -134,7 +134,7 @@ Fichiers mock recommandés (et fournis dans ce repo) :
 - `SectionKey` (**Single line of text**)
 - `Message` (**Multiple lines of text**)
 - `CommentType` (**Choice** : Question / Recommendation / Blocking)
-- `ThreadId` (**Single line of text**, optionnel si fil)
+- `ThreadId` (**Single line of text**)
 - `Resolved` (**Yes/No**)
 - `RowVersion` (**Number** entier)
 - `CreatedByEmail` (**Single line of text**), `UpdatedByEmail` (**Single line of text**), `UpdatedAt` (**Date and Time**)
@@ -144,9 +144,9 @@ Fichiers mock recommandés (et fournis dans ce repo) :
 - `ProjectId` (**Single line of text**)
 - `ThreadId` (**Single line of text**)
 - `SenderEmail` (**Single line of text**)
-- `RecipientRole` (**Choice** ou **Single line of text** selon gouvernance des rôles)
+- `RecipientRole` (**Single line of text**)
 - `Message` (**Multiple lines of text**)
-- `AttachmentsJson` (**Multiple lines of text** en texte brut JSON)
+- `AttachmentsJson` (**Multiple lines of text** en texte rich JSON)
 - `RowVersion` (**Number** entier)
 - `CreatedAt` (**Date and Time**), `UpdatedAt` (**Date and Time**)
 
@@ -161,7 +161,7 @@ Fichiers mock recommandés (et fournis dans ce repo) :
 - `ChangeId` (**Single line of text**, valeur unique)
 - `EntityType` (**Choice** : Rule, Question, Team, Config…)
 - `EntityId` (**Single line of text**)
-- `PayloadJson` (**Multiple lines of text** en texte brut JSON)
+- `PayloadJson` (**Multiple lines of text** en texte rich JSON)
 - `ChangeType` (**Choice** : Create / Update / Delete)
 - `RequiresValidation` (**Yes/No**)
 - `RowVersion` (**Number** entier)
@@ -171,17 +171,30 @@ Fichiers mock recommandés (et fournis dans ce repo) :
 - Arborescence par `ProjectId` / `InspirationId`
 - Métadonnées : `EntityType` (**Choice**), `EntityId` (**Single line of text**), `UploadedBy` (**Single line of text**), `UploadedAt` (**Date and Time**), `Checksum` (**Single line of text**)
 
+Les GUID des listes et des colonnes sont précisés dans le fichier SharePoint_Referentiel_Listes_GUID.md
+
 ## 4.2 Informations à partager à ChatGPT Codex quand vous recevez la clé API
 
 Préparer ce “pack d’onboarding” :
-1. `tenantId`, `clientId`, (éventuellement `clientSecret` si app confidentielle côté serveur).
-2. Type d’app : SPA pure, backend API, ou hybride.
+1. `tenantId`, `clientId`
+2. Type d’app : SPA pure
 3. URL site SharePoint + `siteId` + nom/ID des listes créées.
 4. Permissions Graph validées (delegated/app permissions) + consentement admin.
 5. Règles de sécurité : qui peut lire/écrire/soumettre/envoyer les mails.
-6. Adresse(s) de destination des e-mails de soumission.
-7. Politique de rétention et exigences d’audit.
-8. Mapping final UI → colonnes SharePoint (fichier de mapping).
+
+Voici les informations 
+- tenantId : 72f988bf-86f1-41af-91ab-2d7cd011db47
+- tenant name : lfb1
+- clientId : a3f6c2d1-9b7e-4e5a-8c21-5f9b3d4e6a12
+- Méthode d’auth finale : MSAL PKCE
+- Pas de clientSecret
+- ID du site : d0694d91-5626-4dc4-b738-0c61730474d4
+- URL complete du sharepint : https://lfb1.sharepoint.com/sites/ProjectNavigator_DEV/
+- URL vers le fichier index.aspx :  https://lfb1.sharepoint.com/sites/ProjectNavigator_DEV/Documents%20partages/app/index.aspx
+- URL de la bibliothèque des projets / inspirations : https://lfb1.sharepoint.com/sites/ProjectNavigator_DEV/ProjectFiles/
+- Méthode d’auth finale : MSAL PKCE
+- Liste finale des permissions accordées : Delegated
+- Admin consent pour : User.Read / Sites.ReadWrite.All / Mail.Send / Files.ReadWrite.All
 
 ## 4.3 Configuration de la clé / App Microsoft Graph
 
