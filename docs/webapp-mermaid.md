@@ -9,13 +9,13 @@ flowchart TD
     A --> S[SynthesisReport]
     A --> I[InspirationForm]
     A --> ID[InspirationDetail]
-    A --> PS[ProjectShowcase\n(lazy)]
-    A --> BO[BackOffice\n(lazy)]
+    A --> PSC["ProjectShowcase<br/>(lazy)"]
+    A --> BKO["BackOffice<br/>(lazy)"]
     A --> AL[AnnotationLayer]
 
     H -->|Ouvrir / créer projet| Q
     Q -->|Continuer| S
-    S -->|Ouvrir vitrine| PS
+    S -->|Ouvrir vitrine| PSC
     H -->|Mode inspiration| I
     I --> ID
 
@@ -38,12 +38,12 @@ flowchart TD
 
     A --> FOOTER[Footer\nVersion + statut sync + mentions légales]
 
-    BO --> QED[QuestionEditor]
-    BO --> RED[RuleEditor]
-    BO --> BOD[BackOfficeDashboard]
+    BKO --> QED[QuestionEditor]
+    BKO --> RED[RuleEditor]
+    BKO --> BOD[BackOfficeDashboard]
 
-    PS --> VC[VirtualizedList]
-    PS --> RTE[RichTextEditor]
+    PSC --> VC[VirtualizedList]
+    PSC --> RTE[RichTextEditor]
 ```
 
 ## Notes
