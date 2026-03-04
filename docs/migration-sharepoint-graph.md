@@ -40,6 +40,38 @@ Migrer la webapp pour :
   - sinon créer un état “conflit” avec proposition de résolution.
 - **Traçabilité** : journal d’édition (qui, quand, quoi) pour audit compliance.
 
+### 2.3 Diagramme Mermaid — structure du projet après migration SharePoint
+
+```mermaid
+flowchart TB
+    U[Utilisateur] --> FE[Frontend Compliance Navigator\nReact + autosave + gestion des conflits]
+    BO[Équipe Backoffice] --> FE
+
+    FE -->|Authentification MSAL PKCE| GAuth[Microsoft Graph\n/me]
+    FE -->|CRUD listes| GLists[Microsoft Graph\n/sites/{siteId}/lists]
+    FE -->|Fichiers| GFiles[Microsoft Graph\n/drives/ProjectFiles]
+    FE -->|Soumission projet| GMail[Microsoft Graph\n/sendMail]
+
+    GLists --> SPLists[(SharePoint Lists)]
+    GFiles --> SPDocs[(SharePoint Library\nProjectFiles)]
+
+    subgraph SPListsDetail[Référentiel listes SharePoint]
+        L1[Projects]
+        L2[Inspirations]
+        L3[ShowcaseStickyNotes]
+        L4[ComplianceComments]
+        L5[ProjectDiscussions]
+        L6[ProjectMembers]
+        L7[BackofficeChanges]
+    end
+
+    SPLists --> SPListsDetail
+
+    FE --> Q[(Queue offline + retry)]
+    Q --> FE
+    FE --> C[(Résolution de conflits\nrowVersion/eTag)]
+```
+
 ---
 
 ## 3) Phase de pré-lancement (sans clé API)
