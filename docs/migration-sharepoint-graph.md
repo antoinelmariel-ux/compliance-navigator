@@ -48,7 +48,7 @@ flowchart TB
     BO[Équipe Backoffice] --> FE
 
     FE -->|Authentification MSAL PKCE| GAuth[Microsoft Graph\n/me]
-    FE -->|CRUD listes| GLists[Microsoft Graph\n/sites/{siteId}/lists]
+    FE -->|CRUD listes| GLists[Microsoft Graph\n/sites/:siteId/lists]
     FE -->|Fichiers| GFiles[Microsoft Graph\n/drives/ProjectFiles]
     FE -->|Soumission projet| GMail[Microsoft Graph\n/sendMail]
 
