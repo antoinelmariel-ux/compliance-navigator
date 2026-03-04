@@ -17,7 +17,7 @@ flowchart LR
 
     %% Couche d'accès API
     subgraph ApiLayer[Couche d'intégration Microsoft 365]
-      GraphClient[Graph client / Auth MSAL\n(adapter applicatif)]
+      GraphClient["Graph client / Auth MSAL\n(adapter applicatif)"]
       GraphAPI[(Microsoft Graph API)]
     end
 
