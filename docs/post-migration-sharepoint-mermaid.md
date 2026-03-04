@@ -22,7 +22,7 @@ flowchart LR
     end
 
     %% Objets SharePoint
-    subgraph SharePoint[SharePoint Online (site Compliance Navigator)]
+    subgraph SharePoint["SharePoint Online (site Compliance Navigator)"]
       SPLProjects[(Liste SP: Projects)]
       SPLInspirations[(Liste SP: Inspirations)]
       SPLMembers[(Liste SP: ProjectMembers)]
