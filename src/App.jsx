@@ -44,7 +44,7 @@ import { dataProvider } from './utils/dataProvider.js';
 import { inspirationDataProvider } from './utils/inspirationDataProvider.js';
 import { createAutosaveQueue } from './utils/autosaveQueue.js';
 
-const APP_VERSION = 'v1.0.352';
+const APP_VERSION = 'v1.0.353';
 
 class AdminBackOfficeErrorBoundary extends React.Component {
   constructor(props) {
@@ -4129,12 +4129,12 @@ const updateProjectFilters = useCallback((updater) => {
 
   const showcaseProjectId = showcaseProjectContext?.projectId || '';
   const canShareActiveProjectShowcase = useMemo(
-    () => !isShowcaseSharedView && canManageProject(activeShowcaseProject),
-    [activeShowcaseProject, canManageProject, isShowcaseSharedView]
+    () => !isShowcaseSharedView && (isOnboardingActive || canManageProject(activeShowcaseProject)),
+    [activeShowcaseProject, canManageProject, isOnboardingActive, isShowcaseSharedView]
   );
   const canConfigureActiveProjectShowcaseModes = useMemo(
-    () => !isShowcaseSharedView && canManageProject(activeShowcaseProject),
-    [activeShowcaseProject, canManageProject, isShowcaseSharedView]
+    () => !isShowcaseSharedView && (isOnboardingActive || canManageProject(activeShowcaseProject)),
+    [activeShowcaseProject, canManageProject, isOnboardingActive, isShowcaseSharedView]
   );
   const buildShowcaseShareUrl = useCallback((shareMode) => {
     if (!showcaseProjectId || typeof window === 'undefined') {
