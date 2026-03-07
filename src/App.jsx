@@ -44,7 +44,7 @@ import { dataProvider } from './utils/dataProvider.js';
 import { inspirationDataProvider } from './utils/inspirationDataProvider.js';
 import { createAutosaveQueue } from './utils/autosaveQueue.js';
 
-const APP_VERSION = 'v1.0.357';
+const APP_VERSION = 'v1.0.358';
 
 class AdminBackOfficeErrorBoundary extends React.Component {
   constructor(props) {
@@ -660,7 +660,7 @@ const buildInitialProjectsState = () => {
   })];
 };
 
-const buildInitialInspirationProjectsState = () => {
+const getStoredInspirationProjects = () => {
   const savedState = loadPersistedState();
   if (savedState && Array.isArray(savedState.inspirationProjects)) {
     return cloneDeep(savedState.inspirationProjects);
@@ -731,7 +731,8 @@ export const App = () => {
   const [analysis, setAnalysis] = useState(null);
   const [projects, setProjects] = useState(buildInitialProjectsState);
   const projectsRef = useRef(projects);
-  const [inspirationProjects, setInspirationProjects] = useState(buildInitialInspirationProjectsState);
+  const [inspirationProjects, setInspirationProjects] = useState(() => []);
+  const [hasLoadedInspirationProjects, setHasLoadedInspirationProjects] = useState(false);
   const [onboardingTourConfig, setOnboardingTourConfig] = useState(buildInitialOnboardingConfig);
   const [activeInspirationId, setActiveInspirationId] = useState(null);
   const [activeProjectId, setActiveProjectId] = useState(null);
@@ -830,6 +831,23 @@ export const App = () => {
   const autosaveQueueRef = useRef(null);
   const autosaveTimeoutRef = useRef(null);
   const showcaseCommentNotificationTimeoutsRef = useRef(new Map());
+
+  const loadInspirationProjectsIfNeeded = useCallback(() => {
+    if (hasLoadedInspirationProjects) {
+      return;
+    }
+
+    setInspirationProjects(getStoredInspirationProjects());
+    setHasLoadedInspirationProjects(true);
+  }, [hasLoadedInspirationProjects]);
+
+  const handleHomeViewChange = useCallback((nextHomeView) => {
+    if (nextHomeView === 'inspiration') {
+      loadInspirationProjectsIfNeeded();
+    }
+
+    setHomeView(nextHomeView);
+  }, [loadInspirationProjectsIfNeeded]);
 
   const sendGraphNotificationEmail = useCallback((mailObject) => {
     if (!mailObject || !mailObject.to || mailObject.to.length === 0) {
@@ -1210,9 +1228,6 @@ const updateProjectFilters = useCallback((updater) => {
       if (savedState && typeof savedState.projectFilters === 'object') {
         setProjectFiltersState(normalizeProjectFilterConfig(savedState.projectFilters));
       }
-      if (Array.isArray(savedState.inspirationProjects)) {
-        setInspirationProjects(cloneDeep(savedState.inspirationProjects));
-      }
       if (savedState && typeof savedState.inspirationFilters === 'object') {
         setInspirationFilters(normalizeInspirationFiltersConfig(savedState.inspirationFilters));
       }
@@ -1230,6 +1245,12 @@ const updateProjectFilters = useCallback((updater) => {
       setIsHydrated(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (homeView === 'inspiration' || screen === 'inspiration-form' || screen === 'inspiration-detail') {
+      loadInspirationProjectsIfNeeded();
+    }
+  }, [homeView, screen, loadInspirationProjectsIfNeeded]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -3268,8 +3289,11 @@ const updateProjectFilters = useCallback((updater) => {
   const handleStartInspirationProject = useCallback(() => {
     const now = new Date().toISOString();
     const draftId = createInspirationId();
+    const baseInspirationProjects = hasLoadedInspirationProjects
+      ? inspirationProjects
+      : getStoredInspirationProjects();
 
-    setInspirationProjects((prev) => [{
+    setInspirationProjects([{
       id: draftId,
       title: '',
       labName: '',
@@ -3286,11 +3310,12 @@ const updateProjectFilters = useCallback((updater) => {
       updatedAt: now,
       ownerEmail: currentUserEmail || '',
       teamLead: currentUserDisplayName || ''
-    }, ...(Array.isArray(prev) ? prev : [])]);
+    }, ...(Array.isArray(baseInspirationProjects) ? baseInspirationProjects : [])]);
+    setHasLoadedInspirationProjects(true);
 
     setActiveInspirationId(draftId);
     setScreen('inspiration-form');
-  }, [currentUserDisplayName, currentUserEmail]);
+  }, [currentUserDisplayName, currentUserEmail, hasLoadedInspirationProjects, inspirationProjects]);
 
   const handleAutosaveInspirationProject = useCallback((projectId, updates) => {
     if (!projectId || !updates) {
@@ -3334,8 +3359,8 @@ const updateProjectFilters = useCallback((updater) => {
     }
 
     setScreen('home');
-    setHomeView('inspiration');
-  }, [activeInspirationProject]);
+    handleHomeViewChange('inspiration');
+  }, [activeInspirationProject, handleHomeViewChange]);
 
   const handleOpenInspirationProject = useCallback((projectId) => {
     if (!projectId) {
@@ -4699,7 +4724,7 @@ const updateProjectFilters = useCallback((updater) => {
             validationCommitteeConfig={validationCommitteeConfig}
             currentUser={currentUser}
             homeView={homeView}
-            onHomeViewChange={setHomeView}
+            onHomeViewChange={handleHomeViewChange}
             onStartInspirationProject={handleStartInspirationProject}
             onOpenInspirationProject={handleOpenInspirationProject}
             onStartNewProject={handleCreateNewProject}
@@ -4726,7 +4751,7 @@ const updateProjectFilters = useCallback((updater) => {
             formConfig={inspirationFormFields}
             onBack={() => {
               setScreen('home');
-              setHomeView('inspiration');
+              handleHomeViewChange('inspiration');
             }}
             onUpdate={handleUpdateInspirationProject}
             onExport={handleExportInspirationProject}
