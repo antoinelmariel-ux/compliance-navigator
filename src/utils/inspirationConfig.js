@@ -96,7 +96,7 @@ const DEFAULT_INSPIRATION_FORM_FIELDS = {
       type: 'select',
       required: true,
       enabled: true,
-      options: ['personal', 'shared']
+      options: ['Personnel', 'Partagé']
     },
     {
       id: 'description',
