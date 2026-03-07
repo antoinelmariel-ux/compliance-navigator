@@ -1,9 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from './react.js';
-import { QuestionnaireScreen } from './components/QuestionnaireScreen.jsx';
-import { SynthesisReport } from './components/SynthesisReport.jsx';
-import { HomeScreen } from './components/HomeScreen.jsx';
-import { InspirationForm } from './components/InspirationForm.jsx';
-import { InspirationDetail } from './components/InspirationDetail.jsx';
 import { AnnotationLayer } from './components/AnnotationLayer.jsx';
 import { CheckCircle, Link, Lock, MessageSquare, Settings, Sparkles } from './components/icons.js';
 import { MandatoryQuestionsSummary } from './components/MandatoryQuestionsSummary.jsx';
@@ -44,7 +39,7 @@ import { dataProvider } from './utils/dataProvider.js';
 import { inspirationDataProvider } from './utils/inspirationDataProvider.js';
 import { createAutosaveQueue } from './utils/autosaveQueue.js';
 
-const APP_VERSION = 'v1.0.358';
+const APP_VERSION = 'v1.0.360';
 
 class AdminBackOfficeErrorBoundary extends React.Component {
   constructor(props) {
@@ -114,6 +109,59 @@ const loadModule = (modulePath) => {
   return window.ModuleLoader.import(modulePath);
 };
 
+
+const loadScript = (src) => {
+  if (typeof document === 'undefined') {
+    return Promise.reject(new Error('Document indisponible.'));
+  }
+
+  const existingScript = document.querySelector(`script[data-lazy-src="${src}"]`);
+  if (existingScript) {
+    if (existingScript.dataset.loaded === 'true') {
+      return Promise.resolve();
+    }
+
+    return new Promise((resolve, reject) => {
+      existingScript.addEventListener('load', () => resolve(), { once: true });
+      existingScript.addEventListener('error', () => reject(new Error(`Impossible de charger ${src}.`)), { once: true });
+    });
+  }
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.async = true;
+    script.dataset.lazySrc = src;
+    script.addEventListener('load', () => {
+      script.dataset.loaded = 'true';
+      resolve();
+    }, { once: true });
+    script.addEventListener('error', () => reject(new Error(`Impossible de charger ${src}.`)), { once: true });
+    document.head.appendChild(script);
+  });
+};
+
+const ensureTourGuideAssets = async () => {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  if (window.TourGuideClient) {
+    return true;
+  }
+
+  if (typeof document !== 'undefined' && !document.querySelector('link[data-tourguide-css="true"]')) {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = './src/styles/tourguide.css';
+    link.dataset.tourguideCss = 'true';
+    document.head.appendChild(link);
+  }
+
+  await loadScript('./src/vendor/tourguide.js');
+  return typeof window.TourGuideClient === 'function';
+};
+
 const LazyBackOffice = lazy(() =>
   Promise.resolve().then(() => ({
     default: loadModule('./src/components/BackOffice.jsx').BackOffice
@@ -123,6 +171,36 @@ const LazyBackOffice = lazy(() =>
 const LazyProjectShowcase = lazy(() =>
   Promise.resolve().then(() => ({
     default: loadModule('./src/components/ProjectShowcase.jsx').ProjectShowcase
+  }))
+);
+
+const LazyHomeScreen = lazy(() =>
+  Promise.resolve().then(() => ({
+    default: loadModule('./src/components/HomeScreen.jsx').HomeScreen
+  }))
+);
+
+const LazyInspirationForm = lazy(() =>
+  Promise.resolve().then(() => ({
+    default: loadModule('./src/components/InspirationForm.jsx').InspirationForm
+  }))
+);
+
+const LazyInspirationDetail = lazy(() =>
+  Promise.resolve().then(() => ({
+    default: loadModule('./src/components/InspirationDetail.jsx').InspirationDetail
+  }))
+);
+
+const LazyQuestionnaireScreen = lazy(() =>
+  Promise.resolve().then(() => ({
+    default: loadModule('./src/components/QuestionnaireScreen.jsx').QuestionnaireScreen
+  }))
+);
+
+const LazySynthesisReport = lazy(() =>
+  Promise.resolve().then(() => ({
+    default: loadModule('./src/components/SynthesisReport.jsx').SynthesisReport
   }))
 );
 
@@ -1259,31 +1337,44 @@ const updateProjectFilters = useCallback((updater) => {
 
     let disposed = false;
 
-    const updateStatus = () => {
-      if (disposed) {
-        return;
-      }
-      setIsTourGuideReady(Boolean(window.TourGuideClient));
+    const preloadTourGuide = () => {
+      ensureTourGuideAssets()
+        .then((isReady) => {
+          if (!disposed) {
+            setIsTourGuideReady(Boolean(isReady));
+          }
+        })
+        .catch(() => {
+          if (!disposed) {
+            setIsTourGuideReady(false);
+          }
+        });
     };
 
-    updateStatus();
-
     if (window.TourGuideClient) {
+      setIsTourGuideReady(true);
       return () => {
         disposed = true;
       };
     }
 
-    const intervalId = window.setInterval(() => {
-      if (window.TourGuideClient) {
-        updateStatus();
-        window.clearInterval(intervalId);
-      }
-    }, 500);
+    setIsTourGuideReady(false);
+
+    const schedulePreload =
+      typeof window.requestIdleCallback === 'function'
+        ? () => window.requestIdleCallback(preloadTourGuide, { timeout: 1500 })
+        : () => window.setTimeout(preloadTourGuide, 200);
+
+    const cancelPreload =
+      typeof window.cancelIdleCallback === 'function'
+        ? (id) => window.cancelIdleCallback(id)
+        : (id) => window.clearTimeout(id);
+
+    const preloadId = schedulePreload();
 
     return () => {
       disposed = true;
-      window.clearInterval(intervalId);
+      cancelPreload(preloadId);
     };
   }, []);
 
@@ -1822,10 +1913,24 @@ const updateProjectFilters = useCallback((updater) => {
       return;
     }
 
-    if (typeof window === 'undefined' || typeof window.TourGuideClient !== 'function') {
-      if (typeof window !== 'undefined' && typeof window.alert === 'function') {
-        window.alert('Le guide interactif est momentanément indisponible.');
-      }
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    if (typeof window.TourGuideClient !== 'function') {
+      ensureTourGuideAssets()
+        .then((isReady) => {
+          setIsTourGuideReady(Boolean(isReady));
+          if (!isReady && typeof window.alert === 'function') {
+            window.alert('Le guide interactif est momentanément indisponible.');
+          }
+        })
+        .catch(() => {
+          setIsTourGuideReady(false);
+          if (typeof window.alert === 'function') {
+            window.alert('Le guide interactif est momentanément indisponible.');
+          }
+        });
       return;
     }
 
@@ -4714,7 +4819,8 @@ const updateProjectFilters = useCallback((updater) => {
             </Suspense>
           </AdminBackOfficeErrorBoundary>
         ) : screen === 'home' ? (
-          <HomeScreen
+          <Suspense fallback={(<LoadingFallback label="Chargement de l’écran…" hint="Préparation de l’interface." />)}>
+            <LazyHomeScreen
             projects={projects}
             projectFilters={projectFilters}
             teamLeadOptions={teamLeadTeamOptions}
@@ -4736,17 +4842,21 @@ const updateProjectFilters = useCallback((updater) => {
             onReintegrateProjectInCommittee={handleReintegrateProjectInCommittee}
             isAdminMode={isAdminMode}
             tourContext={tourContext}
-          />
+            />
+          </Suspense>
         ) : screen === 'inspiration-form' ? (
-          <InspirationForm
+          <Suspense fallback={(<LoadingFallback label="Chargement du formulaire…" hint="Préparation de votre formulaire inspiration." />)}>
+            <LazyInspirationForm
             project={activeInspirationProject}
             formConfig={inspirationFormFields}
             existingProjects={inspirationProjects}
             onAutosave={handleAutosaveInspirationProject}
             onCancel={handleCancelInspirationForm}
-          />
+            />
+          </Suspense>
         ) : screen === 'inspiration-detail' ? (
-          <InspirationDetail
+          <Suspense fallback={(<LoadingFallback label="Chargement du détail…" hint="Préparation de la fiche inspiration." />)}>
+            <LazyInspirationDetail
             project={activeInspirationProject}
             formConfig={inspirationFormFields}
             onBack={() => {
@@ -4755,9 +4865,11 @@ const updateProjectFilters = useCallback((updater) => {
             }}
             onUpdate={handleUpdateInspirationProject}
             onExport={handleExportInspirationProject}
-          />
+            />
+          </Suspense>
         ) : screen === 'questionnaire' ? (
-          <QuestionnaireScreen
+          <Suspense fallback={(<LoadingFallback label="Chargement du questionnaire…" hint="Préparation des questions en cours." />)}>
+            <LazyQuestionnaireScreen
             questions={activeQuestions}
             currentIndex={currentQuestionIndex}
             answers={answers}
@@ -4776,7 +4888,8 @@ const updateProjectFilters = useCallback((updater) => {
             isReturnToSynthesisRequested={returnToSynthesisAfterEdit}
             tourContext={tourContext}
             onFinish={navigateToSynthesis}
-          />
+            />
+          </Suspense>
         ) : screen === 'mandatory-summary' ? (
           <MandatoryQuestionsSummary
             pendingQuestions={pendingMandatoryQuestions}
@@ -4786,7 +4899,8 @@ const updateProjectFilters = useCallback((updater) => {
             onProceedToSynthesis={handleProceedToSynthesis}
           />
         ) : screen === 'synthesis' ? (
-            <SynthesisReport
+          <Suspense fallback={(<LoadingFallback label="Chargement de la synthèse…" hint="Analyse de conformité en cours." />)}>
+            <LazySynthesisReport
               answers={answers}
               analysis={analysis}
               teams={teams}
@@ -4819,6 +4933,7 @@ const updateProjectFilters = useCallback((updater) => {
               validationCommitteeConfig={validationCommitteeConfig}
               adminEmails={adminEmails}
             />
+          </Suspense>
         ) : screen === 'showcase' ? (
           showcaseProjectContext ? (
             <div className="space-y-4">

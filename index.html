@@ -8,7 +8,6 @@
     <link rel="preload" href="./src/styles/tailwind-internal.css" as="style" />
     <link rel="stylesheet" href="./src/styles/fonts.css" />
     <link rel="stylesheet" href="./src/styles/tailwind-internal.css" />
-    <link rel="stylesheet" href="./src/styles/tourguide.css" />
     <style>
       .hv-modal-panel {
         max-height: calc(100vh - 2rem);
@@ -52,11 +51,9 @@
     <script src="./src/vendor/react.production.min.js"></script>
     <script src="./src/vendor/react-dom.production.min.js"></script>
     <script src="./src/vendor/babel.min.js"></script>
-    <script src="./src/vendor/tourguide.js"></script>
-    <script src="./src/module-manifest.js"></script>
     <script src="./src/module-loader.js"></script>
     <script>
-      (function bootstrapApplication() {
+      (async function bootstrapApplication() {
         const renderBootstrapError = (error) => {
           const root = document.getElementById('root');
           if (!root) {
@@ -76,6 +73,24 @@
           `;
         };
 
+
+        const loadScript = (src) => new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = src;
+          script.async = true;
+          script.onload = () => resolve();
+          script.onerror = () => reject(new Error(`Impossible de charger ${src}.`));
+          document.head.appendChild(script);
+        });
+
+        const ensureManifestForFileProtocol = async () => {
+          if (window.location.protocol !== 'file:') {
+            return;
+          }
+
+          await loadScript('./src/module-manifest.js');
+        };
+
         const fallbackToBabelScript = () => {
           if (!window.Babel || typeof window.Babel.transformScriptTags !== 'function') {
             return false;
@@ -91,6 +106,7 @@
 
         try {
           if (window.ModuleLoader && typeof window.ModuleLoader.import === 'function') {
+            await ensureManifestForFileProtocol();
             window.ModuleLoader.import('./src/main.jsx');
             return;
           }
