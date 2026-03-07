@@ -2013,7 +2013,7 @@ export const ProjectShowcase = ({
       selector = '[data-tour-id="showcase-roadmap"]';
       scrollOptions = { behavior: 'smooth', block: 'center' };
     } else if (activeStep === 'showcase-comments-postits') {
-      selector = '[data-tour-id="showcase-preview"]';
+      selector = '[data-tour-id="showcase-annotation-note"]';
       scrollOptions = { behavior: 'smooth', block: 'center' };
     } else if (activeStep === 'showcase-edit-trigger') {
       selector = '[data-tour-id="showcase-edit-trigger"]';

@@ -65,9 +65,9 @@ export const initialOnboardingTourConfig = {
     },
     {
       "id": "questionnaire-finish",
-      "target": "[data-tour-id=\"questionnaire-view-synthesis\"]",
+      "target": "[data-tour-id=\"questionnaire-finish-button\"]",
       "title": "Fin du formulaire",
-      "content": "Sur la dernière question, cliquez sur “Voir la synthèse” pour accéder au rapport complet.",
+      "content": "Cliquez sur “Fin” pour terminer rapidement le formulaire et accéder au rapport complet.",
       "placement": "top",
       "highlightScope": "target",
       "scrollIntoViewOptions": {
@@ -253,7 +253,7 @@ export const initialOnboardingTourConfig = {
     },
     {
       "id": "showcase-comments-postits",
-      "target": "[data-tour-id=\"showcase-comment-toggle\"]",
+      "target": "[data-tour-id=\"showcase-annotation-note\"]",
       "title": "Voir les post-its",
       "content": "Une fois le mode annotation actif, les post-its apparaissent sur la vitrine pour centraliser les retours des parties prenantes.",
       "placement": "right",

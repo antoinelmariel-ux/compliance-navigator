@@ -44,7 +44,7 @@ import { dataProvider } from './utils/dataProvider.js';
 import { inspirationDataProvider } from './utils/inspirationDataProvider.js';
 import { createAutosaveQueue } from './utils/autosaveQueue.js';
 
-const APP_VERSION = 'v1.0.354';
+const APP_VERSION = 'v1.0.355';
 
 class AdminBackOfficeErrorBoundary extends React.Component {
   constructor(props) {
@@ -1692,8 +1692,8 @@ const updateProjectFilters = useCallback((updater) => {
         const totalQuestionsCount = Array.isArray(demoData.questions) && demoData.questions.length > 0
           ? demoData.questions.length
           : questions.length;
-        const lastIndex = totalQuestionsCount > 0 ? totalQuestionsCount - 1 : 0;
-        setCurrentQuestionIndex(lastIndex);
+        const finishButtonIndex = totalQuestionsCount > 1 ? totalQuestionsCount - 2 : 0;
+        setCurrentQuestionIndex(finishButtonIndex);
         break;
       }
       case 'compliance-report-top':

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from '../react.js';
 import { Close } from './icons.js';
+import { RichTextEditor } from './RichTextEditor.jsx';
 import { normalizeInspirationFormConfig } from '../utils/inspirationConfig.js';
 
 const buildInitialFormState = (config) => {
@@ -48,6 +49,31 @@ const normalizeMultiSelect = (value) =>
         .map((item) => (typeof item === 'string' ? item.trim() : ''))
         .filter(Boolean)
     : [];
+
+
+const VISIBILITY_LABEL_BY_VALUE = {
+  personal: 'Personnel',
+  shared: 'Partagé'
+};
+
+const VISIBILITY_VALUE_BY_LABEL = {
+  Personnel: 'personal',
+  Partagé: 'shared'
+};
+
+const toVisibilityValue = (value) => {
+  if (value === 'shared' || value === 'personal') {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    return VISIBILITY_VALUE_BY_LABEL[value.trim()] || 'personal';
+  }
+
+  return 'personal';
+};
+
+const toVisibilityLabel = (value) => VISIBILITY_LABEL_BY_VALUE[toVisibilityValue(value)] || 'Personnel';
 
 const renderFieldLabel = (field) => {
   if (!field) {
@@ -141,7 +167,7 @@ export const InspirationForm = ({
         return acc;
       }, {});
 
-      payload.visibility = payload.visibility === 'shared' ? 'shared' : 'personal';
+      payload.visibility = toVisibilityValue(payload.visibility);
       if (!project?.createdAt) {
         payload.createdAt = now;
       }
@@ -277,13 +303,23 @@ export const InspirationForm = ({
                   const emptyOptionLabel = typeof field.placeholder === 'string' && field.placeholder.trim() !== ''
                     ? field.placeholder.trim()
                     : 'Sélectionner...';
+                  const selectValue = field.id === 'visibility'
+                    ? toVisibilityLabel(formState[field.id])
+                    : (formState[field.id] || '');
 
                   return (
                     <label key={field.id} className="flex flex-col gap-2 text-sm font-medium text-gray-700">
                       <span>{renderFieldLabel(field)}</span>
                       <select
-                        value={formState[field.id] || ''}
-                        onChange={(event) => updateField(field.id, event.target.value)}
+                        value={selectValue}
+                        onChange={(event) => {
+                          if (field.id === 'visibility') {
+                            updateField(field.id, toVisibilityValue(event.target.value));
+                            return;
+                          }
+
+                          updateField(field.id, event.target.value);
+                        }}
                         className="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                       >
                         <option value="">{emptyOptionLabel}</option>
@@ -366,23 +402,37 @@ export const InspirationForm = ({
 
           {normalizedConfig.fields
             .filter((field) => field.enabled && field.type === 'long_text')
-            .map((field) => (
-              <label key={field.id} className="flex flex-col gap-2 text-sm font-medium text-gray-700">
-                <span>{renderFieldLabel(field)}</span>
-                <textarea
-                  value={formState[field.id] || ''}
-                  onChange={(event) => updateField(field.id, event.target.value)}
-                  className="min-h-[140px] rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                  placeholder={
-                    typeof field.placeholder === 'string' && field.placeholder.trim() !== ''
-                      ? field.placeholder.trim()
-                      : field.id === 'review'
-                        ? 'Ajoutez votre avis détaillé sur ce projet inspirant...'
-                        : 'Saisir une description détaillée...'
-                  }
-                />
-              </label>
-            ))}
+            .map((field) => {
+              const placeholder = typeof field.placeholder === 'string' && field.placeholder.trim() !== ''
+                ? field.placeholder.trim()
+                : field.id === 'review'
+                  ? 'Ajoutez votre avis détaillé sur ce projet inspirant...'
+                  : 'Saisir une description détaillée...';
+              const isRichTextField = field.id === 'description' || field.id === 'review';
+
+              return (
+                <label key={field.id} className="flex flex-col gap-2 text-sm font-medium text-gray-700">
+                  <span>{renderFieldLabel(field)}</span>
+                  {isRichTextField ? (
+                    <RichTextEditor
+                      id={`inspiration-${field.id}`}
+                      value={formState[field.id] || ''}
+                      onChange={(value) => updateField(field.id, value)}
+                      placeholder={placeholder}
+                      compact
+                      ariaLabel={field.label}
+                    />
+                  ) : (
+                    <textarea
+                      value={formState[field.id] || ''}
+                      onChange={(event) => updateField(field.id, event.target.value)}
+                      className="min-h-[140px] rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                      placeholder={placeholder}
+                    />
+                  )}
+                </label>
+              );
+            })}
 
           {normalizedConfig.fields
             .filter((field) => field.enabled && field.type === 'documents')
