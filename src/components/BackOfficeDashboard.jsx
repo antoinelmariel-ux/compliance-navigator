@@ -136,6 +136,9 @@ const averageFormatter = new Intl.NumberFormat('fr-FR', {
   minimumFractionDigits: 0
 });
 
+const COMPLIANCE_COMMENTS_KEY = '__compliance_team_comments__';
+const PENDING_INFORMATION_STATUS = 'pending_information';
+
 const formatDays = (value) => {
   if (!Number.isFinite(value)) {
     return '—';
@@ -217,6 +220,181 @@ const getLeadTeamsFromProject = (project) => {
 const getLaunchDate = (project) => {
   const answers = project?.answers || {};
   return parseDate(answers.launchDate || answers.projectLaunchDate);
+};
+
+const getComplianceComments = (project) => {
+  const raw = project?.answers?.[COMPLIANCE_COMMENTS_KEY];
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    return { teams: {}, committees: {} };
+  }
+
+  const teams = raw.teams && typeof raw.teams === 'object' ? raw.teams : {};
+  const committees = raw.committees && typeof raw.committees === 'object' ? raw.committees : {};
+  return { teams, committees };
+};
+
+const normalizeReply = (reply) => {
+  if (!reply || typeof reply !== 'object') {
+    return null;
+  }
+
+  const createdAt = parseDate(reply.createdAt);
+  if (!createdAt) {
+    return null;
+  }
+
+  return {
+    message: typeof reply.message === 'string' ? reply.message : '',
+    authorEmail: typeof reply.authorEmail === 'string' ? reply.authorEmail.trim().toLowerCase() : '',
+    authorName: typeof reply.authorName === 'string' ? reply.authorName : '',
+    createdAt
+  };
+};
+
+const isDecisionStatus = (status) =>
+  typeof status === 'string' && status.length > 0 && status !== PENDING_INFORMATION_STATUS;
+
+const DAY_IN_MS = 1000 * 60 * 60 * 24;
+
+const computeDelayInDays = (startDate, endDate) => {
+  if (!startDate || !endDate) {
+    return null;
+  }
+
+  const diff = (endDate.getTime() - startDate.getTime()) / DAY_IN_MS;
+  if (!Number.isFinite(diff)) {
+    return null;
+  }
+
+  return Math.max(0, diff);
+};
+
+const getProjectLeadEmails = (project) => {
+  const recipients = [project?.ownerEmail, ...(Array.isArray(project?.sharedWith) ? project.sharedWith : [])]
+    .map((email) => (typeof email === 'string' ? email.trim().toLowerCase() : ''))
+    .filter((email) => email.length > 0);
+  return new Set(recipients);
+};
+
+const buildExpertLabelMap = (teams = []) => {
+  const map = new Map();
+  (Array.isArray(teams) ? teams : []).forEach((team) => {
+    if (team?.id) {
+      map.set(team.id, team.name || team.id);
+    }
+  });
+  return map;
+};
+
+const computeComplianceMetrics = (projects = [], teams = []) => {
+  const expertLabelMap = buildExpertLabelMap(teams);
+  const perExpert = new Map();
+  let globalValidationTotal = 0;
+  let globalValidationCount = 0;
+  let globalReactionTotal = 0;
+  let globalReactionCount = 0;
+
+  projects.forEach((project) => {
+    const comments = getComplianceComments(project);
+    const teamEntries = comments.teams && typeof comments.teams === 'object' ? comments.teams : {};
+    const projectLeadEmails = getProjectLeadEmails(project);
+    const submissionDate = getProjectGeneratedAt(project) || parseDate(project?.submittedAt);
+    let projectStartDate = null;
+    let earliestDecisionDate = null;
+
+    Object.entries(teamEntries).forEach(([teamId, entry]) => {
+      const label = expertLabelMap.get(teamId) || teamId || 'Expert non identifié';
+      const normalizedReplies = Array.isArray(entry?.replies)
+        ? entry.replies.map(normalizeReply).filter(Boolean).sort((a, b) => a.createdAt - b.createdAt)
+        : [];
+
+      const firstProjectLeadReply = normalizedReplies.find((reply) => projectLeadEmails.has(reply.authorEmail));
+      const decisionDate = isDecisionStatus(entry?.status)
+        ? (normalizedReplies.length > 0 ? normalizedReplies[normalizedReplies.length - 1].createdAt : parseDate(project?.lastUpdated))
+        : null;
+
+      if (firstProjectLeadReply && (!projectStartDate || firstProjectLeadReply.createdAt < projectStartDate)) {
+        projectStartDate = firstProjectLeadReply.createdAt;
+      }
+
+      const effectiveStartDate = firstProjectLeadReply?.createdAt || submissionDate;
+
+      if (!perExpert.has(teamId || label)) {
+        perExpert.set(teamId || label, {
+          id: teamId || label,
+          label,
+          validationTotal: 0,
+          validationCount: 0,
+          reactionTotal: 0,
+          reactionCount: 0
+        });
+      }
+
+      const expertMetrics = perExpert.get(teamId || label);
+
+      const validationDelay = computeDelayInDays(effectiveStartDate, decisionDate);
+      if (validationDelay !== null) {
+        expertMetrics.validationTotal += validationDelay;
+        expertMetrics.validationCount += 1;
+        if (!earliestDecisionDate || decisionDate < earliestDecisionDate) {
+          earliestDecisionDate = decisionDate;
+        }
+      }
+
+      let previous = null;
+      normalizedReplies.forEach((reply) => {
+        if (decisionDate && reply.createdAt > decisionDate) {
+          return;
+        }
+
+        const role = projectLeadEmails.has(reply.authorEmail) ? 'project_lead' : 'expert';
+        if (!previous) {
+          previous = { ...reply, role };
+          return;
+        }
+
+        if (previous.role !== role) {
+          const delay = computeDelayInDays(previous.createdAt, reply.createdAt);
+          if (delay !== null) {
+            expertMetrics.reactionTotal += delay;
+            expertMetrics.reactionCount += 1;
+          }
+        }
+
+        previous = { ...reply, role };
+      });
+    });
+
+    const effectiveProjectStart = projectStartDate || submissionDate;
+    const globalValidationDelay = computeDelayInDays(effectiveProjectStart, earliestDecisionDate);
+    if (globalValidationDelay !== null) {
+      globalValidationTotal += globalValidationDelay;
+      globalValidationCount += 1;
+    }
+  });
+
+  const expertEntries = Array.from(perExpert.values())
+    .map((entry) => ({
+      ...entry,
+      validationAverage: entry.validationCount > 0 ? entry.validationTotal / entry.validationCount : 0,
+      reactionAverage: entry.reactionCount > 0 ? entry.reactionTotal / entry.reactionCount : 0
+    }))
+    .sort((a, b) => b.validationAverage - a.validationAverage || a.label.localeCompare(b.label));
+
+  expertEntries.forEach((entry) => {
+    if (entry.reactionCount > 0) {
+      globalReactionTotal += entry.reactionTotal;
+      globalReactionCount += entry.reactionCount;
+    }
+  });
+
+  return {
+    globalValidationAverage: globalValidationCount > 0 ? globalValidationTotal / globalValidationCount : 0,
+    globalValidationCount,
+    globalReactionAverage: globalReactionCount > 0 ? globalReactionTotal / globalReactionCount : 0,
+    globalReactionCount,
+    expertEntries
+  };
 };
 
 const PieChart = ({ data, colors = COLORBLIND_SAFE_PALETTE, size = 180, strokeWidth = 26, title }) => {
@@ -561,6 +739,11 @@ export const BackOfficeDashboard = ({ projects = [], teams = [] }) => {
     };
   }, [filteredProjects]);
 
+  const complianceMetrics = useMemo(
+    () => computeComplianceMetrics(filteredProjects, teams),
+    [filteredProjects, teams]
+  );
+
   const riskSeverityAverages = useMemo(() => {
     const totals = new Map();
 
@@ -775,7 +958,7 @@ export const BackOfficeDashboard = ({ projects = [], teams = [] }) => {
         </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-2xl border border-blue-100 bg-blue-50/60 p-5">
           <p className="text-sm font-medium text-blue-800">Nombre de projets soumis</p>
           <p className="mt-3 text-4xl font-bold text-blue-900">
@@ -794,6 +977,67 @@ export const BackOfficeDashboard = ({ projects = [], teams = [] }) => {
             Basé sur {numberFormatter.format(averageDelay.count)} projet{averageDelay.count > 1 ? 's' : ''} disposant des deux dates.
           </p>
         </div>
+        <div className="rounded-2xl border border-indigo-100 bg-indigo-50/70 p-5">
+          <p className="text-sm font-medium text-indigo-800">Temps moyen de validation globale</p>
+          <p className="mt-3 text-3xl font-bold text-indigo-900">
+            {formatDays(complianceMetrics.globalValidationAverage)}
+          </p>
+          <p className="mt-2 text-xs text-indigo-700">
+            Démarre à la 1ère réponse du chef de projet aux questions automatiques (sinon soumission), puis s'arrête à la 1ère décision expert hors « En attente d'informations ».
+          </p>
+          <p className="mt-1 text-xs text-indigo-700">
+            {numberFormatter.format(complianceMetrics.globalValidationCount)} projet{complianceMetrics.globalValidationCount > 1 ? 's' : ''} avec décision exploitable.
+          </p>
+        </div>
+        <div className="rounded-2xl border border-fuchsia-100 bg-fuchsia-50/70 p-5">
+          <p className="text-sm font-medium text-fuchsia-800">Temps moyen de réactivité globale</p>
+          <p className="mt-3 text-3xl font-bold text-fuchsia-900">
+            {formatDays(complianceMetrics.globalReactionAverage)}
+          </p>
+          <p className="mt-2 text-xs text-fuchsia-700">
+            Moyenne des délais de réponse alternés chef de projet / expert sur les échanges compliance.
+          </p>
+          <p className="mt-1 text-xs text-fuchsia-700">
+            {numberFormatter.format(complianceMetrics.globalReactionCount)} échange{complianceMetrics.globalReactionCount > 1 ? 's' : ''} analysé{complianceMetrics.globalReactionCount > 1 ? 's' : ''}.
+          </p>
+        </div>
+      </section>
+
+      <section className="grid gap-6 lg:grid-cols-2" aria-label="Délais de validation et de réactivité par expert">
+        <article className="rounded-2xl border border-gray-100 bg-white/80 p-5 shadow-inner">
+          <header className="mb-4">
+            <h3 className="text-lg font-semibold text-gray-800">Temps moyen de validation par expert</h3>
+            <p className="text-sm text-gray-500">
+              Exemple de lecture : DPO, Pharmacovigilance, Médical, etc. Le délai se termine au premier statut de décision.
+            </p>
+          </header>
+          <BarChart
+            data={complianceMetrics.expertEntries.map((entry) => ({
+              id: `expert-validation-${entry.id}`,
+              label: entry.label,
+              value: entry.validationAverage
+            }))}
+            valueFormatter={(value) => formatDays(value)}
+            emptyLabel="Aucun délai de validation expert disponible sur les filtres sélectionnés."
+          />
+        </article>
+        <article className="rounded-2xl border border-gray-100 bg-white/80 p-5 shadow-inner">
+          <header className="mb-4">
+            <h3 className="text-lg font-semibold text-gray-800">Temps moyen de réactivité par expert</h3>
+            <p className="text-sm text-gray-500">
+              Mesure les délais de réponse dans les échanges chef de projet ↔ expert, jusqu'à la première décision expert.
+            </p>
+          </header>
+          <BarChart
+            data={complianceMetrics.expertEntries.map((entry) => ({
+              id: `expert-reactivity-${entry.id}`,
+              label: entry.label,
+              value: entry.reactionAverage
+            }))}
+            valueFormatter={(value) => formatDays(value)}
+            emptyLabel="Aucun échange exploitable pour calculer la réactivité par expert."
+          />
+        </article>
       </section>
 
       <section className="grid gap-6 lg:grid-cols-2" aria-label="Répartition des projets">
@@ -861,4 +1105,3 @@ export const BackOfficeDashboard = ({ projects = [], teams = [] }) => {
     </article>
   );
 };
-
