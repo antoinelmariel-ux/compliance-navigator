@@ -13,7 +13,7 @@ export const initialOnboardingTourConfig = {
       "target": "#tour-onboarding-anchor",
       "title": "Bienvenue sur Project Navigator",
       "content": "Découvrons ensemble comment cadrer votre projet pas à pas.",
-      "placement": "",
+      "placement": "bottom",
       "highlightScope": "target",
       "showDefaultButtons": false,
       "actions": [
@@ -48,7 +48,7 @@ export const initialOnboardingTourConfig = {
       "target": "[data-tour-id=\"question-main-content\"]",
       "title": "Répondre aux questions",
       "content": "Renseignez les informations demandées étape par étape pour qualifier votre initiative.",
-      "placement": "",
+      "placement": "top",
       "highlightScope": "target",
       "showDefaultButtons": true,
       "actions": []
@@ -58,7 +58,7 @@ export const initialOnboardingTourConfig = {
       "target": "[data-tour-id=\"question-guidance-toggle\"]",
       "title": "Comprendre chaque question",
       "content": "Chaque étape propose des conseils contextualisés pour répondre sereinement.",
-      "placement": "",
+      "placement": "left",
       "highlightScope": "target",
       "showDefaultButtons": true,
       "actions": []
@@ -68,8 +68,13 @@ export const initialOnboardingTourConfig = {
       "target": "[data-tour-id=\"questionnaire-finish\"]",
       "title": "Fin du formulaire",
       "content": "Sur la dernière question, cliquez sur “Voir la synthèse” pour accéder au rapport complet.",
-      "placement": "",
+      "placement": "top",
       "highlightScope": "target",
+      "scrollIntoViewOptions": {
+        "behavior": "smooth",
+        "block": "center",
+        "inline": "nearest"
+      },
       "showDefaultButtons": true,
       "actions": []
     },
@@ -78,7 +83,7 @@ export const initialOnboardingTourConfig = {
       "target": "[data-tour-id=\"synthesis-summary\"]",
       "title": "Lire le rapport de compliance",
       "content": "Retrouvez ici le résumé du projet avec l'ensemble des informations que vous avez remplies. Vous pouvez revenir en arrière pour les modifier.",
-      "placement": "",
+      "placement": "bottom",
       "highlightScope": "target",
       "scrollIntoViewOptions": {
         "behavior": "smooth",
@@ -93,7 +98,7 @@ export const initialOnboardingTourConfig = {
       "target": "[data-tour-id=\"synthesis-teams\"]",
       "title": "Identifier les équipes compliance",
       "content": "Visualisez les interlocuteurs clés, leurs priorités et les questions à anticiper pour préparer vos échanges.",
-      "placement": "",
+      "placement": "top",
       "highlightScope": "target",
       "showDefaultButtons": true,
       "actions": []
@@ -103,7 +108,7 @@ export const initialOnboardingTourConfig = {
       "target": "[data-tour-id=\"synthesis-risks\"]",
       "title": "Risques et points de vigilance",
       "content": "Analysez les risques identifiés et les points de vigilance compliance à adresser en priorité.",
-      "placement": "",
+      "placement": "top",
       "highlightScope": "target",
       "showDefaultButtons": true,
       "actions": []
@@ -113,7 +118,7 @@ export const initialOnboardingTourConfig = {
       "target": "[data-tour-id=\"synthesis-submit\"]",
       "title": "Soumettre le projet",
       "content": "Envoyez votre rapport directement par e-mail aux équipes concernées.",
-      "placement": "",
+      "placement": "left",
       "highlightScope": "target",
       "showDefaultButtons": true,
       "actions": []
@@ -123,7 +128,7 @@ export const initialOnboardingTourConfig = {
       "target": "[data-tour-id=\"synthesis-showcase\"]",
       "title": "Ouvrir la vitrine du projet",
       "content": "Accédez à la vitrine du projet générée automatiquement pour présenter votre initiative.",
-      "placement": "",
+      "placement": "left",
       "highlightScope": "target",
       "showDefaultButtons": true,
       "actions": []
@@ -149,7 +154,7 @@ export const initialOnboardingTourConfig = {
       "target": "[data-tour-id=\"showcase-roadmap\"]",
       "title": "Explorer la suite de la vitrine",
       "content": "Vous retrouvez sur la vitrine les jalons de votre projet mais également les alertes liées à des problématiques de respect de certains délais.",
-      "placement": "",
+      "placement": "top",
       "highlightScope": "target",
       "scrollIntoViewOptions": {
         "behavior": "smooth",
@@ -165,7 +170,7 @@ export const initialOnboardingTourConfig = {
       "target": "[data-tour-id=\"showcase-edit-trigger\"]",
       "title": "Modifier la vitrine",
       "content": "Activez le mode édition pour ajuster les contenus avant diffusion.",
-      "placement": "",
+      "placement": "bottom",
       "highlightScope": "target",
       "scrollIntoViewOptions": {
         "behavior": "smooth",
@@ -181,7 +186,7 @@ export const initialOnboardingTourConfig = {
       "target": "[data-tour-id=\"showcase-edit-panel\"]",
       "title": "Personnaliser la vitrine",
       "content": "Adaptez textes, messages clés et jalons pour refléter fidèlement votre projet. Ses informations sont automatiquement mise à jour dans le rapport de compliance.",
-      "placement": "",
+      "placement": "left",
       "highlightScope": "target",
       "showDefaultButtons": true,
       "actions": []
@@ -191,7 +196,7 @@ export const initialOnboardingTourConfig = {
       "target": "[data-tour-id=\"showcase-edit-panel\"]",
       "title": "Créer des sections personnalisées",
       "content": "Ajoutez des sections sur-mesure avec différents modèles : listes, colonnes, accroches et même des blocs qui intègrent des documents (PDF, slides, etc.).",
-      "placement": "",
+      "placement": "left",
       "highlightScope": "target",
       "showDefaultButtons": true,
       "actions": []
@@ -201,7 +206,7 @@ export const initialOnboardingTourConfig = {
       "target": "[data-tour-id=\"showcase-save-edits\"]",
       "title": "Enregistrer les modifications",
       "content": "Validez vos ajustements pour mettre à jour immédiatement la vitrine.",
-      "placement": "",
+      "placement": "top",
       "highlightScope": "target",
       "showDefaultButtons": true,
       "actions": []
@@ -221,7 +226,7 @@ export const initialOnboardingTourConfig = {
       "target": "[data-tour-id=\"showcase-share-trigger\"]",
       "title": "Partager la vitrine du projet",
       "content": "Cliquez sur ce bouton pour partager la vitrine du projet avec vos collaborateurs.",
-      "placement": "",
+      "placement": "bottom",
       "highlightScope": "target",
       "showDefaultButtons": true,
       "actions": []
@@ -261,7 +266,7 @@ export const initialOnboardingTourConfig = {
       "target": "[data-tour-id=\"showcase-back-to-report\"]",
       "title": "Retourner à la synthèse",
       "content": "Revenez au rapport de synthèse pour poursuivre votre préparation et éventuellement enregistrer la dernière version de votre projet.",
-      "placement": "",
+      "placement": "bottom",
       "highlightScope": "target",
       "showDefaultButtons": true,
       "actions": []
@@ -271,7 +276,7 @@ export const initialOnboardingTourConfig = {
       "target": "[data-tour-id=\"home-filters\"]",
       "title": "Découvrir les projets",
       "content": "Filtrez les initiatives par nom, équipe ou date et laissez vous inspirer.",
-      "placement": "",
+      "placement": "bottom",
       "highlightScope": "target",
       "showDefaultButtons": true,
       "actions": []
@@ -281,7 +286,7 @@ export const initialOnboardingTourConfig = {
       "target": "[data-tour-id=\"home-inspiration-toggle\"]",
       "title": "Voir et ajouter des projets inspirants",
       "content": "Passez sur l'onglet Inspiration pour consulter des projets inspirants et utilisez le bouton dédié pour en ajouter un nouveau.",
-      "placement": "",
+      "placement": "bottom",
       "highlightScope": "target",
       "showDefaultButtons": true,
       "actions": []
