@@ -16,7 +16,6 @@ import {
   Close,
   Sparkles
 } from './icons.js';
-import { VirtualizedList } from './VirtualizedList.jsx';
 import { normalizeProjectFilterConfig } from '../utils/projectFilters.js';
 import { normalizeInspirationFiltersConfig } from '../utils/inspirationConfig.js';
 import { normalizeTeamContacts } from '../utils/teamContacts.js';
@@ -64,6 +63,8 @@ const normalizeInspirationFieldValues = (value) => {
 const DEFAULT_SELECT_FILTER_VALUE = 'all';
 const DEFAULT_TEXT_FILTER_VALUE = '';
 const COMPLIANCE_COMMENTS_KEY = '__compliance_team_comments__';
+const PROJECTS_PAGE_SIZE = 6;
+const INSPIRATIONS_PAGE_SIZE = 6;
 
 const normalizeComplianceComments = (value) => {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
@@ -230,6 +231,44 @@ const statusStyles = {
   }
 };
 
+const PaginationControls = ({ page, totalPages, onPrevious, onNext }) => {
+  if (totalPages <= 1) {
+    return null;
+  }
+
+  return (
+    <div className="flex items-center justify-end gap-2 pt-2">
+      <button
+        type="button"
+        onClick={onPrevious}
+        disabled={page <= 1}
+        className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
+          page <= 1
+            ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400'
+            : 'border-blue-200 bg-white text-blue-700 hover:bg-blue-50'
+        }`}
+      >
+        Précédent
+      </button>
+      <span className="text-xs font-medium text-gray-500">
+        Page {page} / {totalPages}
+      </span>
+      <button
+        type="button"
+        onClick={onNext}
+        disabled={page >= totalPages}
+        className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
+          page >= totalPages
+            ? 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400'
+            : 'border-blue-200 bg-white text-blue-700 hover:bg-blue-50'
+        }`}
+      >
+        Suivant
+      </button>
+    </div>
+  );
+};
+
 const computeRemainingQuestions = (project) => {
   if (!project || typeof project.totalQuestions !== 'number' || project.totalQuestions <= 0) {
     return null;
@@ -291,6 +330,8 @@ export const HomeScreen = ({
   const [inspirationFiltersState, setInspirationFiltersState] = useState(() =>
     buildInitialFiltersState(normalizedInspirationFilters)
   );
+  const [projectPage, setProjectPage] = useState(1);
+  const [inspirationPage, setInspirationPage] = useState(1);
   const [deleteDialogState, setDeleteDialogState] = useState(() => ({
     isOpen: false,
     project: null
@@ -944,14 +985,24 @@ export const HomeScreen = ({
     () => filteredInspirationProjects.filter((project) => project?.visibility === 'shared'),
     [filteredInspirationProjects]
   );
-  const projectRows = useMemo(() => {
-    const rows = [];
-    for (let index = 0; index < filteredProjects.length; index += 2) {
-      rows.push(filteredProjects.slice(index, index + 2));
-    }
-    return rows;
-  }, [filteredProjects]);
-  const shouldVirtualizeProjects = projectRows.length > 6;
+  const totalProjectPages = Math.max(1, Math.ceil(filteredProjects.length / PROJECTS_PAGE_SIZE));
+  const paginatedProjects = useMemo(() => {
+    const offset = (projectPage - 1) * PROJECTS_PAGE_SIZE;
+    return filteredProjects.slice(offset, offset + PROJECTS_PAGE_SIZE);
+  }, [filteredProjects, projectPage]);
+  const totalInspirationPages = Math.max(1, Math.ceil(filteredInspirationProjects.length / INSPIRATIONS_PAGE_SIZE));
+  const paginatedPersonalInspirationProjects = useMemo(() => {
+    const offset = (inspirationPage - 1) * INSPIRATIONS_PAGE_SIZE;
+    const pageEntries = filteredInspirationProjects.slice(offset, offset + INSPIRATIONS_PAGE_SIZE);
+
+    return pageEntries.filter((project) => project?.visibility !== 'shared');
+  }, [filteredInspirationProjects, inspirationPage]);
+  const paginatedSharedInspirationProjects = useMemo(() => {
+    const offset = (inspirationPage - 1) * INSPIRATIONS_PAGE_SIZE;
+    const pageEntries = filteredInspirationProjects.slice(offset, offset + INSPIRATIONS_PAGE_SIZE);
+
+    return pageEntries.filter((project) => project?.visibility === 'shared');
+  }, [filteredInspirationProjects, inspirationPage]);
 
   const hasProjects = accessibleProjects.length > 0;
   const hasFilteredProjects = filteredProjects.length > 0;
@@ -961,6 +1012,8 @@ export const HomeScreen = ({
   const hasPersonalInspirations = personalInspirationProjects.length > 0;
   const hasSharedInspirations = sharedInspirationProjects.length > 0;
   const hasSubmittedInspirations = submittedInspirationProjects.length > 0;
+  const hasPaginatedPersonalInspirations = paginatedPersonalInspirationProjects.length > 0;
+  const hasPaginatedSharedInspirations = paginatedSharedInspirationProjects.length > 0;
   const pendingDeletionProjectName = useMemo(() => {
     if (!deleteDialogState.project) {
       return '';
@@ -1046,6 +1099,14 @@ export const HomeScreen = ({
     ? normalizedInspirationFilters.fields.filter((field) => field && field.enabled)
     : [];
   const shouldShowInspirationFiltersCard = hasInspirationProjects && inspirationFilterFields.length > 0;
+
+  useEffect(() => {
+    setProjectPage(1);
+  }, [filteredProjects.length, homeView]);
+
+  useEffect(() => {
+    setInspirationPage(1);
+  }, [filteredInspirationProjects.length, homeView]);
 
   const handleClearProjectFilter = useCallback((target) => {
     setFiltersState((prev) => {
@@ -1772,27 +1833,17 @@ export const HomeScreen = ({
               )}
 
               {hasFilteredProjects ? (
-                shouldVirtualizeProjects ? (
-                  <VirtualizedList
-                    items={projectRows}
-                    itemKey={(_row, index) => `project-row-${index}`}
-                    estimatedItemHeight={420}
-                    overscan={3}
-                    role="list"
-                    className="relative"
-                    renderItem={(row) => (
-                      <div className="pb-6">
-                        <div className="flex flex-col md:flex-row gap-6">
-                          {row.map(project => renderProjectCard(project))}
-                        </div>
-                      </div>
-                    )}
-                  />
-                ) : (
+                <>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6" role="list">
-                    {filteredProjects.map(project => renderProjectCard(project))}
+                    {paginatedProjects.map(project => renderProjectCard(project))}
                   </div>
-                )
+                  <PaginationControls
+                    page={projectPage}
+                    totalPages={totalProjectPages}
+                    onPrevious={() => setProjectPage((prev) => Math.max(1, prev - 1))}
+                    onNext={() => setProjectPage((prev) => Math.min(totalProjectPages, prev + 1))}
+                  />
+                </>
               ) : (
                 <div
                   className="bg-white border border-dashed border-blue-200 rounded-3xl p-8 text-center text-gray-600 hv-surface"
@@ -1970,9 +2021,9 @@ export const HomeScreen = ({
                       )}
                     </div>
 
-                    {hasPersonalInspirations ? (
+                    {hasPaginatedPersonalInspirations ? (
                       <div className="grid grid-cols-1 gap-6 md:grid-cols-2" role="list">
-                        {personalInspirationProjects.map((project) => renderInspirationCard(project))}
+                        {paginatedPersonalInspirationProjects.map((project) => renderInspirationCard(project))}
                       </div>
                     ) : (
                       <div className="rounded-3xl border border-dashed border-blue-200 bg-white p-6 text-center text-gray-600 hv-surface">
@@ -1993,9 +2044,9 @@ export const HomeScreen = ({
                       )}
                     </div>
 
-                    {hasSharedInspirations ? (
+                    {hasPaginatedSharedInspirations ? (
                       <div className="grid grid-cols-1 gap-6 md:grid-cols-2" role="list">
-                        {sharedInspirationProjects.map((project) => renderInspirationCard(project))}
+                        {paginatedSharedInspirationProjects.map((project) => renderInspirationCard(project))}
                       </div>
                     ) : (
                       <div className="rounded-3xl border border-dashed border-emerald-200 bg-white p-6 text-center text-gray-600 hv-surface">
@@ -2003,6 +2054,12 @@ export const HomeScreen = ({
                       </div>
                     )}
                   </section>
+                  <PaginationControls
+                    page={inspirationPage}
+                    totalPages={totalInspirationPages}
+                    onPrevious={() => setInspirationPage((prev) => Math.max(1, prev - 1))}
+                    onNext={() => setInspirationPage((prev) => Math.min(totalInspirationPages, prev + 1))}
+                  />
                 </div>
               ) : (
                 <div
