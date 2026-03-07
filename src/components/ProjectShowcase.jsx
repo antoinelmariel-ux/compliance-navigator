@@ -2012,7 +2012,7 @@ export const ProjectShowcase = ({
     } else if (activeStep === 'showcase-bottom') {
       selector = '[data-tour-id="showcase-roadmap"]';
       scrollOptions = { behavior: 'smooth', block: 'center' };
-    } else if (activeStep === 'showcase-comments') {
+    } else if (activeStep === 'showcase-comments-postits') {
       selector = '[data-tour-id="showcase-preview"]';
       scrollOptions = { behavior: 'smooth', block: 'center' };
     } else if (activeStep === 'showcase-edit-trigger') {
@@ -4743,7 +4743,7 @@ export const ProjectShowcase = ({
             Choisissez entre l'affichage complet ou Light pour ajuster la vitrine.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2" data-tour-id="showcase-display-mode-buttons">
           <button
             type="button"
             onClick={() => handleDisplayModeChange('light')}

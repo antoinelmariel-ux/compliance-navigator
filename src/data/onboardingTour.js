@@ -64,16 +64,6 @@ export const initialOnboardingTourConfig = {
       "actions": []
     },
     {
-      "id": "project-save-anytime",
-      "target": "[data-tour-id=\"question-save-draft\"]",
-      "title": "Sauvegarder à tout moment",
-      "content": "Téléchargez un brouillon de votre projet quand vous le souhaitez et rechargez-le depuis l’accueil. Attention, il n'y a pas de sauvegarde automatique.",
-      "placement": "",
-      "highlightScope": "target",
-      "showDefaultButtons": true,
-      "actions": []
-    },
-    {
       "id": "questionnaire-finish",
       "target": "[data-tour-id=\"questionnaire-finish\"]",
       "title": "Fin du formulaire",
@@ -143,14 +133,14 @@ export const initialOnboardingTourConfig = {
       "target": "[data-tour-id=\"showcase-hero\"]",
       "title": "Présenter votre projet",
       "content": "Parcourez la vitrine présentant votre projet avec une mise en page le mettant en valeur. Parfait pour une présentation à votre manager !",
-      "placement": "",
+      "placement": "bottom",
       "highlightScope": "target",
       "scrollIntoViewOptions": {
         "behavior": "smooth",
-        "block": "center",
+        "block": "start",
         "inline": "nearest"
       },
-      "scrollDuration": 5200,
+      "scrollDuration": 3000,
       "showDefaultButtons": true,
       "actions": []
     },
@@ -218,10 +208,10 @@ export const initialOnboardingTourConfig = {
     },
     {
       "id": "showcase-usage-mode-selection",
-      "target": "[data-tour-id=\"showcase-display-modes\"]",
+      "target": "[data-tour-id=\"showcase-display-mode-buttons\"]",
       "title": "Sélection du mode d'utilisation",
       "content": "Ce bloc vous permet de configurer l'affichage de la vitrine du projet (mode Light ou complet) pour masquer certains éléments pendant une présentation à une équipe.",
-      "placement": "",
+      "placement": "bottom",
       "highlightScope": "target",
       "showDefaultButtons": true,
       "actions": []
@@ -237,21 +227,31 @@ export const initialOnboardingTourConfig = {
       "actions": []
     },
     {
-      "id": "showcase-display-modes",
-      "target": "[data-tour-id=\"showcase-display-modes\"]",
+      "id": "showcase-share-settings",
+      "target": "#showcase-share-title",
       "title": "Choisir l’affichage & activer les commentaires",
       "content": "Sélectionnez un affichage Light ou complet pour masquer certaines informations pendant vos présentations. Lors du partage, vous pouvez aussi autoriser les commentaires : des post-its fictifs illustrent le résultat.",
-      "placement": "",
-      "highlightScope": "page",
+      "placement": "bottom",
+      "highlightScope": "target",
       "showDefaultButtons": true,
       "actions": []
     },
     {
-      "id": "showcase-comments",
-      "target": "[data-tour-id=\"showcase-hero\"]",
-      "title": "Les commentaires",
-      "content": "Pour commenter la vitrine projet, le visiteur doit d'abord cliquer sur le bouton « Activer le mode annotation ». Les post-its s’affichent ensuite directement sur la vitrine pour recueillir les retours des parties prenantes.",
+      "id": "showcase-comment-button",
+      "target": "[data-tour-id=\"showcase-comment-toggle\"]",
+      "title": "Activer les commentaires",
+      "content": "Ce bouton permet d’ouvrir l’espace de commentaires et d’ajouter des post-its directement dans la vitrine.",
       "placement": "bottom",
+      "highlightScope": "target",
+      "showDefaultButtons": true,
+      "actions": []
+    },
+    {
+      "id": "showcase-comments-postits",
+      "target": "[data-tour-id=\"showcase-annotation-note\"]",
+      "title": "Voir les post-its",
+      "content": "Une fois le mode annotation actif, les post-its apparaissent sur la vitrine pour centraliser les retours des parties prenantes.",
+      "placement": "right",
       "highlightScope": "target",
       "showDefaultButtons": true,
       "actions": []
@@ -261,16 +261,6 @@ export const initialOnboardingTourConfig = {
       "target": "[data-tour-id=\"showcase-back-to-report\"]",
       "title": "Retourner à la synthèse",
       "content": "Revenez au rapport de synthèse pour poursuivre votre préparation et éventuellement enregistrer la dernière version de votre projet.",
-      "placement": "",
-      "highlightScope": "target",
-      "showDefaultButtons": true,
-      "actions": []
-    },
-    {
-      "id": "project-import",
-      "target": "[data-tour-id=\"home-import-project\"]",
-      "title": "Charger un projet existant",
-      "content": "Vous pouvez importer un projet enregistrer pour reprendre son édition avant soumission à la compliance.",
       "placement": "",
       "highlightScope": "target",
       "showDefaultButtons": true,
@@ -292,6 +282,16 @@ export const initialOnboardingTourConfig = {
       "title": "Voir et ajouter des projets inspirants",
       "content": "Passez sur l'onglet Inspiration pour consulter des projets inspirants et utilisez le bouton dédié pour en ajouter un nouveau.",
       "placement": "",
+      "highlightScope": "target",
+      "showDefaultButtons": true,
+      "actions": []
+    },
+    {
+      "id": "home-goodbye",
+      "target": "[data-tour-id=\"home-create-project\"]",
+      "title": "Merci d'utiliser Project Navigator",
+      "content": "Nous espérons que Project Navigator vous plaira et vous sera utile pour mener à bien votre projet.",
+      "placement": "bottom",
       "highlightScope": "target",
       "showDefaultButtons": true,
       "actions": []
