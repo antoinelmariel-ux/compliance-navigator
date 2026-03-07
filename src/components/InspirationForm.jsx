@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from '../react.js';
-import { Plus, Close } from './icons.js';
+import { Close } from './icons.js';
 import { normalizeInspirationFormConfig } from '../utils/inspirationConfig.js';
-import { RichTextEditor } from './RichTextEditor.jsx';
 
 const buildInitialFormState = (config) => {
   const fields = Array.isArray(config?.fields) ? config.fields : [];
@@ -13,7 +12,7 @@ const buildInitialFormState = (config) => {
     }
 
     if (field.type === 'documents') {
-      initialState[field.id] = [{ name: '', url: '' }];
+      initialState[field.id] = [];
       return;
     }
 
@@ -33,9 +32,14 @@ const normalizeDocuments = (documents) =>
     ? documents
         .map((doc) => ({
           name: typeof doc?.name === 'string' ? doc.name.trim() : '',
-          url: typeof doc?.url === 'string' ? doc.url.trim() : ''
+          url: typeof doc?.url === 'string' ? doc.url.trim() : '',
+          fileName: typeof doc?.fileName === 'string' ? doc.fileName.trim() : '',
+          source: typeof doc?.source === 'string' ? doc.source.trim() : '',
+          mimeType: typeof doc?.mimeType === 'string' ? doc.mimeType.trim() : '',
+          fileSize: Number.isFinite(doc?.fileSize) ? doc.fileSize : null,
+          lastModified: Number.isFinite(doc?.lastModified) ? doc.lastModified : null
         }))
-        .filter((doc) => doc.name.length > 0 || doc.url.length > 0)
+        .filter((doc) => doc.name.length > 0 || doc.url.length > 0 || doc.fileName.length > 0)
     : [];
 
 const normalizeMultiSelect = (value) =>
@@ -187,19 +191,25 @@ export const InspirationForm = ({
     setFormState((prev) => ({ ...prev, [fieldId]: value }));
   };
 
-  const handleDocumentChange = (fieldId, index, key, value) => {
-    setFormState((prev) => {
-      const nextDocuments = Array.isArray(prev[fieldId]) ? prev[fieldId].slice() : [];
-      const target = nextDocuments[index] || { name: '', url: '' };
-      nextDocuments[index] = { ...target, [key]: value };
-      return { ...prev, [fieldId]: nextDocuments };
-    });
-  };
+  const handleDocumentUpload = (fieldId, files) => {
+    const uploadedFiles = Array.from(files || []);
+    if (uploadedFiles.length === 0) {
+      return;
+    }
 
-  const handleAddDocument = (fieldId) => {
+    const uploadedDocuments = uploadedFiles.map((file) => ({
+      name: file.name,
+      fileName: file.name,
+      mimeType: file.type || '',
+      fileSize: Number.isFinite(file.size) ? file.size : null,
+      lastModified: Number.isFinite(file.lastModified) ? file.lastModified : null,
+      source: 'pending_sharepoint_upload',
+      url: ''
+    }));
+
     setFormState((prev) => ({
       ...prev,
-      [fieldId]: [...(prev[fieldId] || []), { name: '', url: '' }]
+      [fieldId]: [...(Array.isArray(prev[fieldId]) ? prev[fieldId] : []), ...uploadedDocuments]
     }));
   };
 
@@ -209,7 +219,7 @@ export const InspirationForm = ({
       nextDocuments.splice(index, 1);
       return {
         ...prev,
-        [fieldId]: nextDocuments.length > 0 ? nextDocuments : [{ name: '', url: '' }]
+        [fieldId]: nextDocuments
       };
     });
   };
@@ -359,11 +369,10 @@ export const InspirationForm = ({
             .map((field) => (
               <label key={field.id} className="flex flex-col gap-2 text-sm font-medium text-gray-700">
                 <span>{renderFieldLabel(field)}</span>
-                <RichTextEditor
-                  id={`inspiration-${field.id}`}
+                <textarea
                   value={formState[field.id] || ''}
-                  onChange={(value) => updateField(field.id, value)}
-                  ariaLabel={`${field.label} (édition riche)`}
+                  onChange={(event) => updateField(field.id, event.target.value)}
+                  className="min-h-[140px] rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
                   placeholder={
                     typeof field.placeholder === 'string' && field.placeholder.trim() !== ''
                       ? field.placeholder.trim()
@@ -371,7 +380,6 @@ export const InspirationForm = ({
                         ? 'Ajoutez votre avis détaillé sur ce projet inspirant...'
                         : 'Saisir une description détaillée...'
                   }
-                  compact
                 />
               </label>
             ))}
@@ -383,42 +391,40 @@ export const InspirationForm = ({
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-700">{renderFieldLabel(field)}</p>
-                    <p className="text-xs text-gray-500">
-                      Ajoutez plusieurs documents (nom + URL).
-                    </p>
+                    <p className="text-xs text-gray-500">Téléversez un ou plusieurs documents.</p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleAddDocument(field.id)}
-                    className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 hover:bg-blue-100"
-                  >
-                    <Plus className="h-4 w-4" aria-hidden="true" />
-                    Ajouter
-                  </button>
                 </div>
                 <p className="text-xs text-amber-600">
-                  Les fichiers doivent bien être partagés aux collaborateurs LFB.
+                  Les fichiers seront envoyés vers SharePoint après migration.
                 </p>
+                <label className="flex w-full cursor-pointer items-center justify-center rounded-xl border border-dashed border-blue-300 bg-blue-50 px-4 py-6 text-center text-sm font-medium text-blue-700 hover:bg-blue-100">
+                  <input
+                    type="file"
+                    multiple
+                    className="sr-only"
+                    onChange={(event) => {
+                      handleDocumentUpload(field.id, event.target.files);
+                      event.target.value = '';
+                    }}
+                  />
+                  Choisir des fichiers
+                </label>
                 <div className="space-y-3">
                   {(formState[field.id] || []).map((doc, index) => (
                     <div
                       key={`doc-${index}`}
-                      className="grid grid-cols-1 gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3 md:grid-cols-[1fr_1fr_auto]"
+                      className="grid grid-cols-1 gap-3 rounded-xl border border-gray-200 bg-gray-50 p-3 md:grid-cols-[1fr_auto]"
                     >
-                      <input
-                        type="text"
-                        value={doc.name}
-                        onChange={(event) => handleDocumentChange(field.id, index, 'name', event.target.value)}
-                        className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                        placeholder="Nom du document"
-                      />
-                      <input
-                        type="url"
-                        value={doc.url}
-                        onChange={(event) => handleDocumentChange(field.id, index, 'url', event.target.value)}
-                        className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                        placeholder="https://..."
-                      />
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-gray-700">
+                          {doc.name || doc.fileName || 'Document'}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {doc.source === 'pending_sharepoint_upload'
+                            ? 'En attente de dépôt SharePoint'
+                            : doc.url || 'Document importé'}
+                        </p>
+                      </div>
                       <button
                         type="button"
                         onClick={() => handleRemoveDocument(field.id, index)}
