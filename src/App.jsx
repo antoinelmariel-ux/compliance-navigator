@@ -44,7 +44,7 @@ import { dataProvider } from './utils/dataProvider.js';
 import { inspirationDataProvider } from './utils/inspirationDataProvider.js';
 import { createAutosaveQueue } from './utils/autosaveQueue.js';
 
-const APP_VERSION = 'v1.0.350';
+const APP_VERSION = 'v1.0.351';
 
 class AdminBackOfficeErrorBoundary extends React.Component {
   constructor(props) {
@@ -1649,7 +1649,7 @@ const updateProjectFilters = useCallback((updater) => {
       scrollToTop();
     };
 
-    const shouldOpenShareModal = stepId === 'showcase-display-modes';
+    const shouldOpenShareModal = stepId === 'showcase-share-settings';
 
     if (!shouldOpenShareModal && isShowcaseShareOpen) {
       setIsShowcaseShareOpen(false);
@@ -1668,8 +1668,7 @@ const updateProjectFilters = useCallback((updater) => {
         break;
       }
       case 'question-overview':
-      case 'question-guidance':
-      case 'project-save-anytime': {
+      case 'question-guidance': {
         setShowcaseProjectContext(null);
         setScreen('questionnaire');
         setActiveProjectId('onboarding-demo');
@@ -1726,10 +1725,10 @@ const updateProjectFilters = useCallback((updater) => {
         openDemoShowcase();
         break;
       }
-      case 'showcase-display-modes': {
+      case 'showcase-share-settings': {
         openDemoShowcase();
         setShowcaseShareMode(showcaseDisplayMode === 'light' ? 'light' : 'full');
-        setShowcaseShareCommentsEnabled(false);
+        setShowcaseShareCommentsEnabled(true);
         setShowcaseShareAnnotationVisibility('all');
         setIsShowcaseShareOpen(true);
         setShowcaseShareFeedback('');
@@ -1737,7 +1736,15 @@ const updateProjectFilters = useCallback((updater) => {
         setIsAnnotationPaused(false);
         break;
       }
-      case 'showcase-comments': {
+      case 'showcase-comment-button': {
+        openDemoShowcase();
+        setIsShowcaseShareOpen(false);
+        setShowcaseShareFeedback('');
+        setIsAnnotationModeEnabled(false);
+        setIsAnnotationPaused(false);
+        break;
+      }
+      case 'showcase-comments-postits': {
         openDemoShowcase();
         setIsShowcaseShareOpen(false);
         setShowcaseShareFeedback('');
@@ -1749,8 +1756,9 @@ const updateProjectFilters = useCallback((updater) => {
         }));
         break;
       }
-      case 'project-import':
-      case 'project-filters': {
+      case 'project-filters':
+      case 'project-inspiration':
+      case 'home-goodbye': {
         setShowcaseProjectContext(null);
         setScreen('home');
         setActiveProjectId(null);
@@ -2146,7 +2154,7 @@ const updateProjectFilters = useCallback((updater) => {
   );
 
   useEffect(() => {
-    if (!isOnboardingActive || onboardingStepId !== 'showcase-comments') {
+    if (!isOnboardingActive || onboardingStepId !== 'showcase-comments-postits') {
       return;
     }
 
@@ -4304,6 +4312,7 @@ const updateProjectFilters = useCallback((updater) => {
                   aria-label={isAnnotationModeEnabled ? 'Désactiver le mode annotation' : 'Activer le mode annotation'}
                   title={isAnnotationModeEnabled ? 'Désactiver le mode annotation' : 'Activer le mode annotation'}
                   data-annotation-ui="true"
+                  data-tour-id="showcase-comment-toggle"
                 >
                   <MessageSquare className="h-5 w-5" />
                   <span className="sr-only">Annotation</span>

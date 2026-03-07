@@ -341,6 +341,7 @@ export const AnnotationLayer = ({
               style={{ left: `${position.left}px`, top: `${position.top}px` }}
               data-annotation-ui="true"
               data-feedback-source-color={paletteKey}
+              data-tour-id={index === 0 ? 'showcase-annotation-note' : undefined}
             >
               <div className="feedback-note-header">
                 <div className="feedback-note-heading">
