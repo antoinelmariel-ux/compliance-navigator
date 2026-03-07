@@ -42,19 +42,21 @@ const demoProjectAnswers = {
     }
   ],
   teamLead: 'Bertrand Darieux',
-  teamLeadTeam: 'Marketing',
+  teamLeadTeam: 'Marketing DOI',
   teamCoreMembers:
     'Julien Morel - Directeur du site de production de Lille\nClaire Martin - Responsable Médicale\nSophie Leclerc - Responsable Communication Digitale\nStudio Nova - Agence de communication scientifique et design interactif',
-  ProjectType: ['Support d\'information / sensibilisation'],
-  q11: ['Site internet', 'Communication sur les réseaux sociaux'],
-  q3: ['Oui - Données personnelles standard'],
-  q13: 'Oui',
-  q10: ['Prestataire de service', 'Professionnel de santé (via contrat à mettre en place)'],
-  q14: {
-    values: ['Via les canaux digitaux du LFB', 'Communiqué de presse'],
-    children: {
-      'Via les canaux digitaux du LFB': ['Site internet corporate du LFB', 'Réseaux sociaux du LFB']
-    }
+  ProjectType: 'Projet du LFB',
+  q11: ['Visuels créés spécifiquement pour le projet', 'Contenu généré via de l\'IA'],
+  q3: ['Oui - Données de santé', 'Oui - Données personnelles standard (ex : email, satisfaction, ...)'],
+  q10: ['Professionnel de santé français (ou association de PdS / Société savante)', 'Agence'],
+  q14: ['Via les canaux digitaux du LFB', 'Communiqué de presse'],
+  q17: ['Possibilité de renouveler facilement ce type de projets dans le temps'],
+  q19: ['Digital', 'Rédaction d’abstract / de poster / articles scientifiques'],
+  q24: ['Partager des informations sur des sujets sensibles (ex : défaillance industrielle, tension d\'approvisionnement, augmentation de capital, ...)'],
+  q27: ['France', 'Pays liés à des filiales hors France'],
+  agencyRanking: {
+    prioritized: ['critere-2', 'critere-1', 'critere-3'],
+    ignored: []
   },
   q15:
     'Le projet prévoit un point d\'étape trimestriel avec les équipes Médical, Communication et Compliance pour ajuster les contenus selon les retours terrain.',
