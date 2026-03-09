@@ -64,21 +64,6 @@ export const initialOnboardingTourConfig = {
       "actions": []
     },
     {
-      "id": "questionnaire-finish",
-      "target": "[data-tour-id=\"questionnaire-finish-button\"]",
-      "title": "Fin du formulaire",
-      "content": "Cliquez sur “Fin” pour terminer rapidement le formulaire et accéder au rapport complet.",
-      "placement": "top",
-      "highlightScope": "target",
-      "scrollIntoViewOptions": {
-        "behavior": "smooth",
-        "block": "center",
-        "inline": "nearest"
-      },
-      "showDefaultButtons": true,
-      "actions": []
-    },
-    {
       "id": "compliance-report-top",
       "target": "[data-tour-id=\"synthesis-summary\"]",
       "title": "Lire le rapport de compliance",
