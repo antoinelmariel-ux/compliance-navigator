@@ -4256,6 +4256,7 @@ const updateProjectFilters = useCallback((updater) => {
 
   const syncStatusLabel = formatSyncStatusLabel(syncStatus);
   const syncStatusMeta = formatSyncMeta(syncStatus);
+  const isSyncing = syncStatus?.state === 'syncing';
 
   const showcaseProjectId = showcaseProjectContext?.projectId || '';
   const canShareActiveProjectShowcase = useMemo(
@@ -5008,7 +5009,12 @@ const updateProjectFilters = useCallback((updater) => {
 
     <footer className="bg-white border-t border-gray-200 mt-10" aria-label="Pied de page">
       <p className="text-xs text-gray-400 text-center py-4">
-        Project Navigator · Version {APP_VERSION} · {syncStatusLabel}{syncStatusMeta ? ` · ${syncStatusMeta}` : ''} ·{' '}
+        Project Navigator · Version {APP_VERSION} ·{' '}
+        <span className="inline-flex items-center gap-1">
+          {isSyncing ? <span className="loading-spinner-sm" aria-hidden="true" /> : null}
+          <span>{syncStatusLabel}</span>
+        </span>
+        {syncStatusMeta ? ` · ${syncStatusMeta}` : ''} ·{' '}
         <a
           href="./mentions-legales.html"
           target="_blank"

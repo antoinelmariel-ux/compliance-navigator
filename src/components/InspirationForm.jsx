@@ -96,7 +96,9 @@ export const InspirationForm = ({
   );
   const formTopRef = useRef(null);
   const autosaveTimeoutRef = useRef(null);
+  const autosaveStatusTimeoutRef = useRef(null);
   const [formState, setFormState] = useState(() => buildInitialFormState(normalizedConfig));
+  const [autosaveStatus, setAutosaveStatus] = useState('saved');
 
   const labSuggestions = useMemo(() => {
     const suggestions = new Set();
@@ -141,6 +143,7 @@ export const InspirationForm = ({
     }
 
     autosaveTimeoutRef.current = setTimeout(() => {
+      setAutosaveStatus('saving');
       const now = new Date().toISOString();
       const payload = normalizedConfig.fields.reduce((acc, field) => {
         if (!field.enabled) {
@@ -173,12 +176,23 @@ export const InspirationForm = ({
       }
 
       onAutosave(project.id, payload);
+      setAutosaveStatus('saved');
+      if (autosaveStatusTimeoutRef.current) {
+        clearTimeout(autosaveStatusTimeoutRef.current);
+      }
+      autosaveStatusTimeoutRef.current = setTimeout(() => {
+        setAutosaveStatus('idle');
+      }, 1600);
     }, 500);
 
     return () => {
       if (autosaveTimeoutRef.current) {
         clearTimeout(autosaveTimeoutRef.current);
         autosaveTimeoutRef.current = null;
+      }
+      if (autosaveStatusTimeoutRef.current) {
+        clearTimeout(autosaveStatusTimeoutRef.current);
+        autosaveStatusTimeoutRef.current = null;
       }
     };
   }, [formState, normalizedConfig.fields, onAutosave, project?.createdAt, project?.id]);
@@ -214,10 +228,12 @@ export const InspirationForm = ({
   }, []);
 
   const updateField = (fieldId, value) => {
+    setAutosaveStatus('saving');
     setFormState((prev) => ({ ...prev, [fieldId]: value }));
   };
 
   const handleDocumentUpload = (fieldId, files) => {
+    setAutosaveStatus('saving');
     const uploadedFiles = Array.from(files || []);
     if (uploadedFiles.length === 0) {
       return;
@@ -240,6 +256,7 @@ export const InspirationForm = ({
   };
 
   const handleRemoveDocument = (fieldId, index) => {
+    setAutosaveStatus('saving');
     setFormState((prev) => {
       const nextDocuments = Array.isArray(prev[fieldId]) ? prev[fieldId].slice() : [];
       nextDocuments.splice(index, 1);
@@ -282,7 +299,17 @@ export const InspirationForm = ({
           className="space-y-6 rounded-3xl border border-gray-200 bg-white p-6 shadow-lg"
         >
           <p className="rounded-xl border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-700">
-            Enregistrement automatique activé : vos modifications sont sauvegardées en continu.
+            <span className="inline-flex items-center gap-2">
+              {autosaveStatus === 'saving' ? <span className="loading-spinner-sm" aria-hidden="true" /> : null}
+              <span>
+                Enregistrement automatique activé :{' '}
+                {autosaveStatus === 'saving'
+                  ? 'sauvegarde en cours…'
+                  : autosaveStatus === 'saved'
+                    ? 'modifications enregistrées.'
+                    : 'vos modifications sont sauvegardées en continu.'}
+              </span>
+            </span>
           </p>
           <p className="text-xs italic text-gray-400">
             Le LFB traite les données recueillies pour gérer les projets à soumettre aux équipes compliance.{' '}

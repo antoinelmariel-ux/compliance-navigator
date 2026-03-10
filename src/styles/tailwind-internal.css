@@ -1697,6 +1697,16 @@ a {
   flex-shrink: 0;
 }
 
+.loading-spinner-sm {
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 9999px;
+  border: 2px solid rgba(148, 163, 184, 0.5);
+  border-top-color: rgba(37, 99, 235, 0.9);
+  animation: loading-spin 0.75s linear infinite;
+  flex-shrink: 0;
+}
+
 @keyframes loading-spin {
   to {
     transform: rotate(360deg);
