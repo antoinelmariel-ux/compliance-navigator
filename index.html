@@ -9,23 +9,6 @@
     <link rel="stylesheet" href="./src/styles/fonts.css" />
     <link rel="stylesheet" href="./src/styles/tailwind-internal.css" />
     <style>
-      :root {
-        --hv-ui-scale: 0.8;
-      }
-
-      body {
-        zoom: var(--hv-ui-scale);
-      }
-
-      @supports not (zoom: 1) {
-        body {
-          transform: scale(var(--hv-ui-scale));
-          transform-origin: top left;
-          width: calc(100% / var(--hv-ui-scale));
-          min-height: calc(100vh / var(--hv-ui-scale));
-        }
-      }
-
       .hv-modal-panel {
         max-height: calc(100vh - 2rem);
       }
