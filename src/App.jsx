@@ -39,7 +39,7 @@ import { dataProvider } from './utils/dataProvider.js';
 import { inspirationDataProvider } from './utils/inspirationDataProvider.js';
 import { createAutosaveQueue } from './utils/autosaveQueue.js';
 
-const APP_VERSION = 'v1.0.361';
+const APP_VERSION = 'v1.0.362';
 
 class AdminBackOfficeErrorBoundary extends React.Component {
   constructor(props) {
@@ -121,6 +121,11 @@ const loadScript = (src) => {
       return Promise.resolve();
     }
 
+    if (existingScript.dataset.failed === 'true') {
+      existingScript.remove();
+      return loadScript(src);
+    }
+
     return new Promise((resolve, reject) => {
       existingScript.addEventListener('load', () => resolve(), { once: true });
       existingScript.addEventListener('error', () => reject(new Error(`Impossible de charger ${src}.`)), { once: true });
@@ -136,7 +141,10 @@ const loadScript = (src) => {
       script.dataset.loaded = 'true';
       resolve();
     }, { once: true });
-    script.addEventListener('error', () => reject(new Error(`Impossible de charger ${src}.`)), { once: true });
+    script.addEventListener('error', () => {
+      script.dataset.failed = 'true';
+      reject(new Error(`Impossible de charger ${src}.`));
+    }, { once: true });
     document.head.appendChild(script);
   });
 };
