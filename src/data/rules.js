@@ -1380,7 +1380,7 @@ export const initialRules = [
         "type": "question",
         "question": "q11",
         "operator": "equals",
-        "value": "Extrait de de sites internet"
+        "value": "Extrait de sites internet"
       }
     ],
     "conditionGroups": [
@@ -1391,7 +1391,7 @@ export const initialRules = [
             "type": "question",
             "question": "q11",
             "operator": "equals",
-            "value": "Extrait de de sites internet"
+            "value": "Extrait de sites internet"
           }
         ]
       }
@@ -1776,7 +1776,7 @@ export const initialRules = [
         "type": "question",
         "question": "q10",
         "operator": "equals",
-        "value": "Expert français non professionnels de santé"
+        "value": "Expert français non professionnel de santé"
       },
       {
         "type": "question",
@@ -1811,7 +1811,7 @@ export const initialRules = [
             "type": "question",
             "question": "q10",
             "operator": "equals",
-            "value": "Expert français non professionnels de santé"
+            "value": "Expert français non professionnel de santé"
           },
           {
             "type": "question",
@@ -2314,7 +2314,7 @@ export const initialRules = [
             "type": "question",
             "question": "q10",
             "operator": "equals",
-            "value": "Expert français non professionnels de santé"
+            "value": "Expert français non professionnel de santé"
           }
         ]
       }
@@ -3573,13 +3573,13 @@ export const initialRules = [
         "type": "question",
         "question": "q18_copy",
         "operator": "equals",
-        "value": "Etude interventionnelle (IIS)"
+        "value": "Etude interventionnelle"
       },
       {
         "type": "question",
         "question": "q18_copy",
         "operator": "equals",
-        "value": "Etude non-interventionnelle (NIS)"
+        "value": "Etude non-interventionnelle"
       }
     ],
     "conditionGroups": [
@@ -3590,13 +3590,13 @@ export const initialRules = [
             "type": "question",
             "question": "q18_copy",
             "operator": "equals",
-            "value": "Etude interventionnelle (IIS)"
+            "value": "Etude interventionnelle"
           },
           {
             "type": "question",
             "question": "q18_copy",
             "operator": "equals",
-            "value": "Etude non-interventionnelle (NIS)"
+            "value": "Etude non-interventionnelle"
           }
         ]
       }
@@ -4027,7 +4027,7 @@ export const initialRules = [
         "type": "question",
         "question": "q18_copy",
         "operator": "equals",
-        "value": "Etude non-interventionnelle (NIS)"
+        "value": "Etude non-interventionnelle"
       }
     ],
     "conditionGroups": [
@@ -4038,7 +4038,7 @@ export const initialRules = [
             "type": "question",
             "question": "q18_copy",
             "operator": "equals",
-            "value": "Etude non-interventionnelle (NIS)"
+            "value": "Etude non-interventionnelle"
           }
         ]
       }
