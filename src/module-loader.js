@@ -120,12 +120,7 @@
     return manifest[relativePath] || manifest[`./${relativePath}`] || null;
   };
 
-  const fetchSourceSync = url => {
-    const manifestSource = fetchFromManifest(url);
-    if (typeof manifestSource === 'string') {
-      return manifestSource;
-    }
-
+  const fetchSourceFromXhr = (url) => {
     const xhr = new XMLHttpRequest();
     xhr.open('GET', url, false);
     xhr.send(null);
@@ -138,6 +133,19 @@
     }
 
     return xhr.responseText;
+  };
+
+  const fetchSourceSync = (url) => {
+    try {
+      return fetchSourceFromXhr(url);
+    } catch (xhrError) {
+      const manifestSource = fetchFromManifest(url);
+      if (typeof manifestSource === 'string') {
+        return manifestSource;
+      }
+
+      throw xhrError;
+    }
   };
 
   const normalizeModuleUrl = (value) => {

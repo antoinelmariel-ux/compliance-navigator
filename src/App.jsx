@@ -40,7 +40,7 @@ import { inspirationDataProvider } from './utils/inspirationDataProvider.js';
 import { createAutosaveQueue } from './utils/autosaveQueue.js';
 import { reinitializeSharePointConfiguration } from './utils/sharePointSetup.js';
 
-const APP_VERSION = 'v1.0.364';
+const APP_VERSION = 'v1.0.365';
 
 class AdminBackOfficeErrorBoundary extends React.Component {
   constructor(props) {
