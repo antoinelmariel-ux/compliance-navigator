@@ -38,8 +38,9 @@ import currentUser from './data/graph-current-user.json';
 import { dataProvider } from './utils/dataProvider.js';
 import { inspirationDataProvider } from './utils/inspirationDataProvider.js';
 import { createAutosaveQueue } from './utils/autosaveQueue.js';
+import { reinitializeSharePointConfiguration } from './utils/sharePointSetup.js';
 
-const APP_VERSION = 'v1.0.363';
+const APP_VERSION = 'v1.0.364';
 
 class AdminBackOfficeErrorBoundary extends React.Component {
   constructor(props) {
@@ -906,6 +907,11 @@ export const App = () => {
   const [isShowcaseEditing, setIsShowcaseEditing] = useState(false);
   const [isShowcaseShareOpen, setIsShowcaseShareOpen] = useState(false);
   const [showcaseShareFeedback, setShowcaseShareFeedback] = useState('');
+  const [sharePointReinitState, setSharePointReinitState] = useState({
+    inProgress: false,
+    message: '',
+    status: 'idle'
+  });
   const annotationNotesRef = useRef(annotationNotes);
   const annotationFileInputRef = useRef(null);
   const showcaseProjectNameRef = useRef('');
@@ -4384,6 +4390,60 @@ const updateProjectFilters = useCallback((updater) => {
     setShowcaseShareFeedback('Raccourci téléchargé.');
   }, [showcaseProjectId, showcaseShareUrl]);
 
+  const handleSharePointReinitialization = useCallback(async () => {
+    setSharePointReinitState({
+      inProgress: true,
+      message: 'Réinitialisation SharePoint en cours…',
+      status: 'pending'
+    });
+
+    try {
+      const summary = await reinitializeSharePointConfiguration({
+        questions,
+        rules,
+        teams,
+        riskLevelRules,
+        riskWeights,
+        projectFilters,
+        inspirationFilters,
+        inspirationFormFields,
+        onboardingTourConfig,
+        validationCommitteeConfig,
+        showcaseThemes,
+        adminEmails
+      });
+
+      const details = summary.lists
+        .map((entry) => `${entry.name}: ${entry.count}`)
+        .join(' · ');
+
+      setSharePointReinitState({
+        inProgress: false,
+        message: `Réinitialisation terminée (${details}). Bibliothèque: ${summary.libraryName}.`,
+        status: 'success'
+      });
+    } catch (error) {
+      setSharePointReinitState({
+        inProgress: false,
+        message: error?.message || 'Échec de la réinitialisation SharePoint.',
+        status: 'error'
+      });
+    }
+  }, [
+    adminEmails,
+    inspirationFilters,
+    inspirationFormFields,
+    onboardingTourConfig,
+    projectFilters,
+    questions,
+    riskLevelRules,
+    riskWeights,
+    rules,
+    showcaseThemes,
+    teams,
+    validationCommitteeConfig
+  ]);
+
   return (
     <div className={`min-h-screen ${annotationOffsetClass}`}>
       <AnnotationLayer
@@ -4823,6 +4883,8 @@ const updateProjectFilters = useCallback((updater) => {
                 setAdminEmails={setAdminEmails}
                 currentUserEmail={currentUserEmail}
                 isCurrentUserAdmin={isCurrentUserAdmin}
+                onSharePointReinitialize={handleSharePointReinitialization}
+                sharePointReinitializeState={sharePointReinitState}
               />
             </Suspense>
           </AdminBackOfficeErrorBoundary>

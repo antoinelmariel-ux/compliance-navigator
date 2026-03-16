@@ -652,7 +652,9 @@ export const BackOffice = ({
   adminEmails,
   setAdminEmails,
   currentUserEmail = '',
-  isCurrentUserAdmin = false
+  isCurrentUserAdmin = false,
+  onSharePointReinitialize,
+  sharePointReinitializeState = { inProgress: false, message: '', status: 'idle' }
 }) => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [editingRule, setEditingRule] = useState(null);
@@ -7105,6 +7107,35 @@ export const BackOffice = ({
                   </p>
                 )}
               </div>
+
+              {isCurrentUserAdmin && (
+                <div className="bg-white border border-amber-200 rounded-xl p-6 shadow-sm hv-surface space-y-4">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800">Réinitialisation SharePoint</h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Recrée les listes et la bibliothèque de configuration via Microsoft Graph pour restaurer les règles, équipes et paramètres du back-office.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={onSharePointReinitialize}
+                    disabled={sharePointReinitializeState.inProgress || typeof onSharePointReinitialize !== 'function'}
+                    className="inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all hv-button"
+                  >
+                    {sharePointReinitializeState.inProgress ? 'Réinitialisation en cours…' : 'Réinitialisation'}
+                  </button>
+
+                  {sharePointReinitializeState.message && (
+                    <p
+                      className={`text-sm ${sharePointReinitializeState.status === 'error' ? 'text-red-700' : 'text-gray-700'}`}
+                      role="status"
+                    >
+                      {sharePointReinitializeState.message}
+                    </p>
+                  )}
+                </div>
+              )}
             </section>
           )}
 
