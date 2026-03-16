@@ -745,6 +745,11 @@ export const BackOffice = ({
     () => (Array.isArray(adminEmails) ? adminEmails.filter(Boolean) : []),
     [adminEmails]
   );
+  const [adminEmailsDraft, setAdminEmailsDraft] = useState(() => normalizedAdminEmails.join('\n'));
+  useEffect(() => {
+    const normalizedDraft = normalizedAdminEmails.join('\n');
+    setAdminEmailsDraft((previousDraft) => (previousDraft === normalizedDraft ? previousDraft : normalizedDraft));
+  }, [normalizedAdminEmails]);
   const normalizedCurrentUserEmail = useMemo(
     () => (typeof currentUserEmail === 'string' ? currentUserEmail.trim().toLowerCase() : ''),
     [currentUserEmail]
@@ -7061,9 +7066,11 @@ export const BackOffice = ({
                   <textarea
                     id="admin-emails"
                     rows={4}
-                    value={normalizedAdminEmails.join('\n')}
+                    value={adminEmailsDraft}
                     onChange={(event) => {
-                      const nextEmails = parseEmailList(event.target.value);
+                      const nextValue = event.target.value;
+                      setAdminEmailsDraft(nextValue);
+                      const nextEmails = parseEmailList(nextValue);
                       if (typeof setAdminEmails === 'function') {
                         setAdminEmails(nextEmails);
                       }
