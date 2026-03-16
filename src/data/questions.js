@@ -479,7 +479,7 @@ export const initialQuestions = [
         "conditionLogic": "all"
       },
       {
-        "label": "Etude interventionnelle (IIS)",
+        "label": "Etude interventionnelle",
         "visibility": "always",
         "subType": null,
         "subOptions": [
@@ -507,7 +507,7 @@ export const initialQuestions = [
         "conditionLogic": "all"
       },
       {
-        "label": "Etude non-interventionnelle (NIS)",
+        "label": "Etude non-interventionnelle",
         "visibility": "always",
         "conditionGroups": [],
         "conditions": [],
@@ -1214,8 +1214,7 @@ export const initialQuestions = [
       "objective": "Clarifier l’expérience proposée avant de détailler les bénéfices.",
       "details": "Cette description introduit la section “Solution” et doit rester simple à comprendre.",
       "tips": [
-        "Structurez en 2-3 phrases : quoi, pour qui, comment.",
-        "Évitez le vocabulaire interne : imaginez que vous présentez le concept à un prospect."
+        "Structurez en 2-3 phrases : quoi, pour qui, comment."
       ]
     },
     "showcase": {
@@ -2194,7 +2193,13 @@ export const initialQuestions = [
             "conditionLogic": "all"
           },
           {
-            "label": "Evénements (via stand, kakémono, ...)"
+            "label": "Evénements (via stand, kakémono, ...)",
+            "visibility": "always",
+            "subType": null,
+            "subOptions": [],
+            "conditionGroups": [],
+            "conditions": [],
+            "conditionLogic": "all"
           }
         ],
         "conditionGroups": [],
@@ -2256,12 +2261,12 @@ export const initialQuestions = [
       {
         "question": "q18_copy",
         "operator": "not_equals",
-        "value": "Etude interventionnelle (IIS)"
+        "value": "Etude interventionnelle"
       },
       {
         "question": "q18_copy",
         "operator": "not_equals",
-        "value": "Etude non-interventionnelle (NIS)"
+        "value": "Etude non-interventionnelle"
       },
       {
         "question": "ProjectType",
@@ -2282,12 +2287,12 @@ export const initialQuestions = [
           {
             "question": "q18_copy",
             "operator": "not_equals",
-            "value": "Etude interventionnelle (IIS)"
+            "value": "Etude interventionnelle"
           },
           {
             "question": "q18_copy",
             "operator": "not_equals",
-            "value": "Etude non-interventionnelle (NIS)"
+            "value": "Etude non-interventionnelle"
           },
           {
             "question": "ProjectType",
@@ -2374,7 +2379,7 @@ export const initialQuestions = [
         "conditionLogic": "all"
       },
       {
-        "label": "Expert français non professionnels de santé",
+        "label": "Expert français non professionnel de santé",
         "visibility": "always",
         "conditionGroups": [],
         "conditions": [],
@@ -2957,7 +2962,7 @@ export const initialQuestions = [
         "conditionLogic": "all"
       },
       {
-        "label": "Extrait de de sites internet",
+        "label": "Extrait de sites internet",
         "visibility": "always",
         "subType": null,
         "subOptions": [],
@@ -3136,7 +3141,7 @@ export const initialQuestions = [
       "objective": "",
       "details": "Prenez en compte l'ensemble du budget (développement ET déploiement / communication) pour le lancement du projet",
       "tips": [
-        "Si vous ne savez pas encore le montant précis, indiquez un autre d'idée",
+        "Si vous ne savez pas encore le montant précis, indiquez un ordre d'idée",
         "Pensez également aux coûts des éventuelles mises à jour"
       ]
     },
@@ -3409,7 +3414,7 @@ export const initialQuestions = [
   {
     "id": "q26",
     "type": "long_text",
-    "question": "Indiquez moi ce qui évolue entre le projet historique et le nouveau projet",
+    "question": "Indiquez ce qui évolue entre le projet historique et le nouveau projet",
     "options": [],
     "required": true,
     "conditions": [
@@ -3523,18 +3528,15 @@ export const initialQuestions = [
   {
     "id": "campaignKickoffDate",
     "type": "date",
-    "question": "À quelle date allez-vous soumettre ce projet à la compliance ?",
+    "question": "À quelle date allez-vous soumettre ce projet aux experts internes pour revue ?",
     "options": [],
     "required": false,
     "conditions": [],
     "conditionLogic": "all",
     "guidance": {
       "objective": "Poser le jalon officiel de passage en revue compliance.",
-      "details": "Cette date permet d’anticiper les échanges de validation et le temps de traitement.",
-      "tips": [
-        "Indiquez la date d’envoi du dossier complet à la compliance.",
-        "Mettez à jour la date dès qu’un nouveau créneau est confirmé."
-      ]
+      "details": "Cette date permet d’anticiper les échanges de validation et le temps de traitement. Cette date correspond à la date de soumission du projet via le bouton \"Soumission\" dans Project Navigator",
+      "tips": []
     },
     "showcase": {
       "sections": [
