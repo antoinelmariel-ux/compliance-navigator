@@ -21,7 +21,8 @@ export const initialTeams = [
     "name": "Juridique France",
     "contacts": [
       "hantzbergk@lfb.fr",
-      "vanessa.dealmeida@lfb.fr"
+      "vanessa.dealmeida@lfb.fr",
+      "beremel@lfb.fr"
     ],
     "expertise": "Le pôle juridique France accompagne les équipes DOF et Direction Corporate dans la conception, la structuration et la sécurisation juridique des projets en France dont ceux qui impliquent des impacts IT\nSon rôle est d’anticiper les risques juridiques et de protéger le LFB contre une mauvaise exécution du contrat par le partenaire."
   },
@@ -71,9 +72,7 @@ export const initialTeams = [
     "id": "pi",
     "name": "PI",
     "contacts": [
-      "audrey.dupuy@lfb.fr",
-      "letexierl@lfb.fr",
-      "vauvrecys@lfb.fr"
+      "dpi@lfb.fr"
     ],
     "expertise": "L’équipe Propriété intellectuelle a pour mission de protéger, valoriser et sécuriser les actifs immatériels du Groupe, tout en veillant à ce que les projets ne portent pas atteinte aux droits de propriété intellectuelle des tiers."
   },
