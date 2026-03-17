@@ -85,6 +85,18 @@
 
   const isFileProtocol = global.location && global.location.protocol === 'file:';
 
+  const normalizeRelativePath = (value) => {
+    if (typeof value !== 'string') {
+      return null;
+    }
+
+    const withoutBackslashes = value.replace(/\\/g, '/');
+    const withoutLeadingSlash = withoutBackslashes.replace(/^\/+/, '');
+    const withoutDrivePrefix = withoutLeadingSlash.replace(/^[a-zA-Z]:\//, '');
+
+    return withoutDrivePrefix || null;
+  };
+
   const toRelativeFromRoot = (absoluteUrl) => {
     if (!global.location || !absoluteUrl) {
       return null;
@@ -92,8 +104,8 @@
 
     try {
       const parsedUrl = new URL(absoluteUrl);
-      const baseDirectory = new URL('.', global.location.href).pathname;
-      let relativePath = parsedUrl.pathname;
+      const baseDirectory = decodeURIComponent(new URL('.', global.location.href).pathname || '');
+      let relativePath = decodeURIComponent(parsedUrl.pathname || '');
 
       if (baseDirectory && relativePath.startsWith(baseDirectory)) {
         relativePath = relativePath.slice(baseDirectory.length);
@@ -101,7 +113,7 @@
         relativePath = relativePath.replace(/^\//, '');
       }
 
-      return relativePath || null;
+      return normalizeRelativePath(relativePath);
     } catch (error) {
       return null;
     }
@@ -117,7 +129,26 @@
       return null;
     }
 
-    return manifest[relativePath] || manifest[`./${relativePath}`] || null;
+    const normalizedRelativePath = normalizeRelativePath(relativePath);
+    if (!normalizedRelativePath) {
+      return null;
+    }
+
+    const manifestKeys = [
+      normalizedRelativePath,
+      `./${normalizedRelativePath}`,
+      normalizedRelativePath.replace(/^src\//, ''),
+      `./${normalizedRelativePath.replace(/^src\//, '')}`
+    ];
+
+    for (let index = 0; index < manifestKeys.length; index += 1) {
+      const key = manifestKeys[index];
+      if (typeof key === 'string' && Object.prototype.hasOwnProperty.call(manifest, key)) {
+        return manifest[key];
+      }
+    }
+
+    return null;
   };
 
   const fetchSourceFromXhr = (url) => {
