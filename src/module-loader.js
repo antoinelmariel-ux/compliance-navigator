@@ -136,6 +136,13 @@
   };
 
   const fetchSourceSync = (url) => {
+    if (isFileProtocol) {
+      const manifestSource = fetchFromManifest(url);
+      if (typeof manifestSource === 'string') {
+        return manifestSource;
+      }
+    }
+
     try {
       return fetchSourceFromXhr(url);
     } catch (xhrError) {
