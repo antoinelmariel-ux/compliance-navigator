@@ -9,7 +9,7 @@
 
   const isAbsoluteUrl = url => /^(?:[a-z]+:)?\/\//i.test(url);
 
-  const manifest = global.__COMPLIANCE_NAVIGATOR_MANIFEST__;
+  const getManifest = () => global.__COMPLIANCE_NAVIGATOR_MANIFEST__;
 
   const supportsLocalStorage = (() => {
     try {
@@ -120,6 +120,7 @@
   };
 
   const fetchFromManifest = (url) => {
+    const manifest = getManifest();
     if (!isFileProtocol || !manifest || typeof manifest !== 'object') {
       return null;
     }
