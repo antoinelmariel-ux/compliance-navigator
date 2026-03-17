@@ -900,13 +900,13 @@ export const SynthesisReport = ({
   const normalizedOwnerEmail = useMemo(() => normalizeEmail(ownerEmail), [ownerEmail]);
   const canReplyAsProjectContributor = useMemo(() => {
     if (!currentUserEmail) {
-      return false;
+      return isProjectEditable && !projectId;
     }
 
     const isOwner = normalizedOwnerEmail.length > 0 && normalizedOwnerEmail === currentUserEmail;
     const isCoOwner = normalizedSharedMembers.some((member) => normalizeEmail(member) === currentUserEmail);
-    return isOwner || isCoOwner;
-  }, [currentUserEmail, normalizedOwnerEmail, normalizedSharedMembers]);
+    return isOwner || isCoOwner || (isProjectEditable && !projectId);
+  }, [currentUserEmail, isProjectEditable, normalizedOwnerEmail, normalizedSharedMembers, projectId]);
   const normalizedValidationCommitteeConfig = useMemo(
     () => normalizeValidationCommitteeConfig(validationCommitteeConfig),
     [validationCommitteeConfig]
