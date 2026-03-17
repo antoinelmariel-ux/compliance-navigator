@@ -2203,7 +2203,7 @@ export const initialRules = [
           }
         },
         {
-          "text": "Qui est le bénéficiaire du don ? Quel est son statut ? Y-a-il des PS dans son board ?",
+          "text": "Qui est le bénéficiaire du don ?&nbsp; Y-a-il des PS dans son board ?",
           "timingConstraint": {
             "enabled": false,
             "startQuestion": "",
@@ -2211,15 +2211,7 @@ export const initialRules = [
           }
         },
         {
-          "text": "Quel est la rationnel du don pour le LFB ? (intérêt général, scientifique, institutionnel ?)",
-          "timingConstraint": {
-            "enabled": false,
-            "startQuestion": "",
-            "endQuestion": ""
-          }
-        },
-        {
-          "text": "Qui est à l'origine du contact avec le demandeur du don ?",
+          "text": "Pouvez-vous charger la lettre de sollicitation du don ?",
           "timingConstraint": {
             "enabled": false,
             "startQuestion": "",
