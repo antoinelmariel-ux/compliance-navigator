@@ -959,13 +959,11 @@ export const HomeScreen = ({
       return [];
     }
 
-    const sourceProjects = isComplianceActor || isAdminMode ? projects : accessibleProjects;
-
-    return sourceProjects
+    return projects
       .filter((project) => project?.status === 'submitted')
       .slice()
       .sort((a, b) => getProjectTimestamp(b) - getProjectTimestamp(a));
-  }, [projects, isComplianceActor, isAdminMode, accessibleProjects]);
+  }, [projects]);
 
   const submittedInspirationProjects = useMemo(() => {
     if (!Array.isArray(inspirationProjects)) {
