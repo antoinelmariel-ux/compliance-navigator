@@ -39,9 +39,9 @@ import { dataProvider } from './utils/dataProvider.js';
 import { inspirationDataProvider } from './utils/inspirationDataProvider.js';
 import { createAutosaveQueue } from './utils/autosaveQueue.js';
 import { reinitializeSharePointConfiguration } from './utils/sharePointSetup.js';
-import headerLogo from './components/logo.png';
+const HEADER_LOGO_PATH = './src/components/logo.png';
 
-const APP_VERSION = 'v1.0.373';
+const APP_VERSION = 'v1.0.374';
 
 class AdminBackOfficeErrorBoundary extends React.Component {
   constructor(props) {
@@ -4486,7 +4486,7 @@ const updateProjectFilters = useCallback((updater) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-8 py-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex items-center space-x-3">
-              <img src={headerLogo} alt="" className="h-10 w-10 rounded-lg object-cover" aria-hidden="true" />
+              <img src={HEADER_LOGO_PATH} alt="" className="h-10 w-10 rounded-lg object-cover" aria-hidden="true" />
               <div>
                 <h1 className="text-lg font-bold text-gray-800 sm:text-xl">Project Navigator</h1>
                 <p className="text-xs text-gray-500">Outil d'aide à la décision</p>
