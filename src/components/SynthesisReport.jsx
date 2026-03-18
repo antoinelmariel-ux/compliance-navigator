@@ -1754,7 +1754,7 @@ export const SynthesisReport = ({
                 data-tour-id="synthesis-submit"
               >
                 <Send className="w-4 h-4 mr-2" />
-                Soumettre par e-mail
+                Soumettre le projet
               </button>
               {canOpenProjectShowcase && (
                 <button
