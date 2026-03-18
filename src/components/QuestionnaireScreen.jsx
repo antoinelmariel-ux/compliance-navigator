@@ -1324,28 +1324,30 @@ export const QuestionnaireScreen = ({
               <h2 id={questionTextId} className="text-2xl font-bold text-gray-800 sm:text-3xl">
                 {currentQuestion.question}
               </h2>
-              {!currentQuestion.required && (
-                <span className="inline-flex items-center px-3 py-1 text-xs font-semibold uppercase tracking-wide bg-gray-100 text-gray-600 rounded-full border border-gray-200 hv-badge self-start">
-                  Réponse facultative
-                </span>
-              )}
-              {hasGuidanceContent && (
-                <button
-                  type="button"
-                  onClick={() => setShowGuidance(prev => !prev)}
-                  className={`inline-flex items-center justify-center w-full sm:w-auto px-4 py-2 text-sm font-medium rounded-lg border transition-all hv-button hv-focus-ring ${
-                    showGuidance
-                      ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'
-                      : 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'
-                  }`}
-                  aria-expanded={showGuidance}
-                  aria-controls={guidancePanelId}
-                  data-tour-id="question-guidance-toggle"
-                >
-                  <Info className="w-4 h-4 mr-2" />
-                  {showGuidance ? "Masquer l'aide" : 'Comprendre cette question'}
-                </button>
-              )}
+              <div className="flex flex-col items-start gap-2 w-full lg:w-auto">
+                {hasGuidanceContent && (
+                  <button
+                    type="button"
+                    onClick={() => setShowGuidance(prev => !prev)}
+                    className={`inline-flex items-center justify-center w-full sm:w-auto px-4 py-2 text-sm font-medium rounded-lg border transition-all hv-button hv-focus-ring ${
+                      showGuidance
+                        ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'
+                        : 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'
+                    }`}
+                    aria-expanded={showGuidance}
+                    aria-controls={guidancePanelId}
+                    data-tour-id="question-guidance-toggle"
+                  >
+                    <Info className="w-4 h-4 mr-2" />
+                    {showGuidance ? "Masquer l'aide" : 'Comprendre cette question'}
+                  </button>
+                )}
+                {!currentQuestion.required && !showGuidance && (
+                  <span className="inline-flex items-center px-3 py-1 text-xs font-semibold uppercase tracking-wide bg-gray-100 text-gray-600 rounded-full border border-gray-200 hv-badge self-start">
+                    Réponse facultative
+                  </span>
+                )}
+              </div>
             </div>
 
             {hasGuidanceContent && showGuidance && (
