@@ -3482,7 +3482,7 @@ export const initialQuestions = [
     "conditionLogic": "all",
     "guidance": {
       "objective": "Aligner toutes les parties prenantes sur la cible de lancement.",
-      "details": "Associée à la date de soumission compliance, cette information permet de vérifier la faisabilité du planning.",
+      "details": "Cette information permet de vérifier la faisabilité globale du planning projet.",
       "tips": [
         "Renseignez la première date de mise en avant (événement, publication, annonce).",
         "Si la date n’est pas figée, indiquez l’hypothèse la plus réaliste pour planifier les ressources."
@@ -3493,56 +3493,6 @@ export const initialQuestions = [
         "timeline"
       ],
       "usage": "Date cible utilisée pour le calcul du runway et du calendrier."
-    },
-    "extraCheckbox": {
-      "enabled": false,
-      "label": ""
-    },
-    "otherOption": {
-      "enabled": false,
-      "label": "Autre",
-      "placeholder": ""
-    },
-    "placeholder": "",
-    "numberUnit": "",
-    "rankingConfig": {
-      "title": "Base de données",
-      "criteria": [
-        {
-          "id": "critere-1",
-          "label": "Critère 1"
-        },
-        {
-          "id": "critere-2",
-          "label": "Critère 2"
-        },
-        {
-          "id": "critere-3",
-          "label": "Critère 3"
-        }
-      ],
-      "entries": []
-    },
-    "conditionGroups": []
-  },
-  {
-    "id": "campaignKickoffDate",
-    "type": "date",
-    "question": "À quelle date allez-vous soumettre ce projet aux experts internes pour revue ?",
-    "options": [],
-    "required": false,
-    "conditions": [],
-    "conditionLogic": "all",
-    "guidance": {
-      "objective": "Poser le jalon officiel de passage en revue compliance.",
-      "details": "Cette date permet d’anticiper les échanges de validation et le temps de traitement. Cette date correspond à la date de soumission du projet via le bouton \"Soumission\" dans Project Navigator",
-      "tips": []
-    },
-    "showcase": {
-      "sections": [
-        "timeline"
-      ],
-      "usage": "Point de départ utilisé pour calculer le runway et les prochaines étapes."
     },
     "extraCheckbox": {
       "enabled": false,
