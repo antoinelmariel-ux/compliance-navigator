@@ -60,6 +60,7 @@ if (rootElement && ReactDOM) {
         <App />
       </AppErrorBoundary>
     );
+    rootElement.dataset.appMounted = 'true';
   } else if (typeof ReactDOM.render === 'function') {
     ReactDOM.render(
       <AppErrorBoundary>
@@ -67,6 +68,7 @@ if (rootElement && ReactDOM) {
       </AppErrorBoundary>,
       rootElement
     );
+    rootElement.dataset.appMounted = 'true';
   } else {
     console.error('Aucune méthode de rendu ReactDOM disponible.');
   }
