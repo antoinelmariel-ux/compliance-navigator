@@ -4538,13 +4538,12 @@ const updateProjectFilters = useCallback((updater) => {
               <img
                 src={HEADER_LOGO_PATH}
                 alt=""
-                className="h-10 w-10 shrink-0 rounded-lg object-contain object-center"
+                className="h-20 w-12 shrink-0 object-contain object-center"
                 aria-hidden="true"
               />
               <div>
                 <h1 className="text-lg font-bold text-gray-800 sm:text-xl">Project Navigator</h1>
-                <p className="text-xs text-gray-500">Outil d'aide à la décision</p>
-              </div>
+                    </div>
             </div>
 
             <div
