@@ -135,6 +135,7 @@
 
         try {
           if (window.ModuleLoader && typeof window.ModuleLoader.import === 'function') {
+            await ensureBabelRuntime();
             try {
               window.ModuleLoader.import('./src/main.jsx');
               const isMountedWithModuleLoader = await waitForAppMount();
