@@ -41,7 +41,7 @@ import { createAutosaveQueue } from './utils/autosaveQueue.js';
 import { reinitializeSharePointConfiguration } from './utils/sharePointSetup.js';
 const HEADER_LOGO_PATH = './src/components/logo.png';
 
-const APP_VERSION = 'v1.0.380';
+const APP_VERSION = 'v1.0.381';
 
 class AdminBackOfficeErrorBoundary extends React.Component {
   constructor(props) {
@@ -4534,7 +4534,7 @@ const updateProjectFilters = useCallback((updater) => {
       <nav className="bg-white shadow-sm border-b border-gray-200 hv-surface">
         <div className="max-w-7xl mx-auto px-4 sm:px-8 py-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center space-x-3 self-start sm:self-center">
+            <div className="flex items-center space-x-3 self-center">
               <img
                 src={HEADER_LOGO_PATH}
                 alt=""
