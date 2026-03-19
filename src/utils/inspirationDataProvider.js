@@ -5,6 +5,14 @@ const cloneDeep = (value) => {
     return value;
   }
 
+  if (typeof structuredClone === 'function') {
+    try {
+      return structuredClone(value);
+    } catch (error) {
+      // fallback below
+    }
+  }
+
   try {
     return JSON.parse(JSON.stringify(value));
   } catch (error) {

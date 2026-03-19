@@ -57,6 +57,7 @@ export const VirtualizedList = ({
   itemKey,
   estimatedItemHeight = DEFAULT_ESTIMATED_HEIGHT,
   overscan = DEFAULT_OVERSCAN,
+  scrollContainerRef = null,
   className,
   role,
   renderItem
@@ -96,15 +97,52 @@ export const VirtualizedList = ({
     ? itemOffsets[itemOffsets.length - 1] + itemSizes[itemSizes.length - 1]
     : 0;
 
+  const resolvedScrollContainerRef = useRef(null);
+
+  const resolveScrollContainer = useCallback(() => {
+    if (scrollContainerRef && scrollContainerRef.current) {
+      return scrollContainerRef.current;
+    }
+
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
+    if (!containerRef.current) {
+      return window;
+    }
+
+    let parent = containerRef.current.parentElement;
+    while (parent) {
+      const style = window.getComputedStyle(parent);
+      const isScrollable = /(auto|scroll|overlay)/.test(style.overflowY || '');
+      if (isScrollable) {
+        return parent;
+      }
+      parent = parent.parentElement;
+    }
+
+    return window;
+  }, [scrollContainerRef]);
+
   const handleViewportUpdate = useCallback(() => {
     if (!containerRef.current) {
       return;
     }
 
+    const scrollContainer = resolvedScrollContainerRef.current || resolveScrollContainer();
+    resolvedScrollContainerRef.current = scrollContainer;
     const rect = containerRef.current.getBoundingClientRect();
-    const scrollTop = window.scrollY || window.pageYOffset || 0;
-    const listTop = scrollTop + rect.top;
-    const viewportHeight = window.innerHeight || rect.height || 0;
+    const isWindowContainer = !scrollContainer || scrollContainer === window;
+    const scrollTop = isWindowContainer
+      ? (window.scrollY || window.pageYOffset || 0)
+      : scrollContainer.scrollTop;
+    const viewportHeight = isWindowContainer
+      ? (window.innerHeight || rect.height || 0)
+      : scrollContainer.clientHeight;
+    const listTop = isWindowContainer
+      ? scrollTop + rect.top
+      : (scrollTop + rect.top - scrollContainer.getBoundingClientRect().top);
 
     setViewportState((prev) => {
       if (
@@ -116,7 +154,7 @@ export const VirtualizedList = ({
       }
       return { scrollTop, listTop, viewportHeight };
     });
-  }, []);
+  }, [resolveScrollContainer]);
 
   const scheduleViewportUpdate = useCallback(() => {
     if (rafRef.current) {
@@ -130,22 +168,27 @@ export const VirtualizedList = ({
   }, [handleViewportUpdate]);
 
   useEffect(() => {
+    resolvedScrollContainerRef.current = resolveScrollContainer();
     handleViewportUpdate();
-  }, [handleViewportUpdate, items.length]);
+  }, [handleViewportUpdate, resolveScrollContainer, items.length]);
 
   useEffect(() => {
-    window.addEventListener('scroll', scheduleViewportUpdate, { passive: true });
+    const scrollContainer = resolveScrollContainer();
+    resolvedScrollContainerRef.current = scrollContainer;
+    const scrollTarget = !scrollContainer || scrollContainer === window ? window : scrollContainer;
+
+    scrollTarget.addEventListener('scroll', scheduleViewportUpdate, { passive: true });
     window.addEventListener('resize', scheduleViewportUpdate);
 
     return () => {
-      window.removeEventListener('scroll', scheduleViewportUpdate);
+      scrollTarget.removeEventListener('scroll', scheduleViewportUpdate);
       window.removeEventListener('resize', scheduleViewportUpdate);
       if (rafRef.current) {
         window.cancelAnimationFrame(rafRef.current);
         rafRef.current = null;
       }
     };
-  }, [scheduleViewportUpdate]);
+  }, [resolveScrollContainer, scheduleViewportUpdate]);
 
   const updateItemSize = useCallback((key, nextSize) => {
     if (key === undefined || key === null || !Number.isFinite(nextSize) || nextSize <= 0) {

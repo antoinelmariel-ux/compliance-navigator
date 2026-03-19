@@ -1,6 +1,5 @@
 export const STORAGE_KEY = 'complianceNavigatorState';
-// Persistance locale désactivée : l'état n'est plus sauvegardé en local.
-const ENABLE_PERSISTENCE = false;
+const ENABLE_PERSISTENCE = true;
 
 export const loadPersistedState = () => {
   if (
