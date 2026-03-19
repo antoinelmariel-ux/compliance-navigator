@@ -129,7 +129,7 @@
           script.setAttribute('data-type', 'module');
           script.src = './src/main.jsx';
           document.body.appendChild(script);
-          window.Babel.transformScriptTags([script]);
+          window.Babel.transformScriptTags();
           return true;
         };
 
