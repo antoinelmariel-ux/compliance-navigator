@@ -53,6 +53,7 @@ class AppErrorBoundary extends React.Component {
 const rootElement = document.getElementById('root');
 
 if (rootElement && ReactDOM) {
+  rootElement.dataset.appMounted = 'false';
   if (typeof ReactDOM.createRoot === 'function') {
     const root = ReactDOM.createRoot(rootElement);
     root.render(
@@ -60,6 +61,7 @@ if (rootElement && ReactDOM) {
         <App />
       </AppErrorBoundary>
     );
+    rootElement.dataset.appMounted = 'true';
   } else if (typeof ReactDOM.render === 'function') {
     ReactDOM.render(
       <AppErrorBoundary>
@@ -67,6 +69,7 @@ if (rootElement && ReactDOM) {
       </AppErrorBoundary>,
       rootElement
     );
+    rootElement.dataset.appMounted = 'true';
   } else {
     console.error('Aucune méthode de rendu ReactDOM disponible.');
   }
