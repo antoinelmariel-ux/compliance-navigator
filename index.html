@@ -98,6 +98,27 @@
           await loadScript('./src/vendor/babel.min.js');
         };
 
+        const waitForAppMount = (timeoutMs = 1800) => new Promise((resolve) => {
+          const root = document.getElementById('root');
+          const start = Date.now();
+
+          const checkMounted = () => {
+            if (root && root.dataset && root.dataset.appMounted === 'true') {
+              resolve(true);
+              return;
+            }
+
+            if (Date.now() - start >= timeoutMs) {
+              resolve(false);
+              return;
+            }
+
+            window.requestAnimationFrame(checkMounted);
+          };
+
+          checkMounted();
+        });
+
         const fallbackToBabelScript = () => {
           if (!window.Babel || typeof window.Babel.transformScriptTags !== 'function') {
             return false;
@@ -116,12 +137,22 @@
           if (window.ModuleLoader && typeof window.ModuleLoader.import === 'function') {
             try {
               window.ModuleLoader.import('./src/main.jsx');
-              return;
+              const isMountedWithModuleLoader = await waitForAppMount();
+              if (isMountedWithModuleLoader) {
+                return;
+              }
+
+              throw new Error('Le rendu initial n’a pas confirmé le montage de l’application.');
             } catch (initialError) {
               if (window.location.protocol === 'file:') {
                 await ensureManifestForFileProtocol();
                 window.ModuleLoader.import('./src/main.jsx');
-                return;
+                const isMountedWithManifest = await waitForAppMount();
+                if (isMountedWithManifest) {
+                  return;
+                }
+
+                throw new Error('Le rendu initial n’a pas confirmé le montage de l’application.');
               }
 
               throw initialError;
@@ -132,6 +163,11 @@
           if (!fallbackToBabelScript()) {
             throw new Error('ModuleLoader indisponible et fallback Babel non disponible.');
           }
+
+          const isMountedWithBabelFallback = await waitForAppMount();
+          if (!isMountedWithBabelFallback) {
+            throw new Error('Le fallback Babel a été chargé mais l’application ne s’est pas affichée.');
+          }
         } catch (error) {
           console.error('Erreur lors du chargement de l\'application :', error);
 
@@ -140,6 +176,12 @@
             if (!fallbackToBabelScript()) {
               throw error;
             }
+
+            const isMountedAfterRecovery = await waitForAppMount(2200);
+            if (!isMountedAfterRecovery) {
+              throw new Error('Le fallback de récupération n’a pas permis d’afficher l’application.');
+            }
+              return;
           } catch (fallbackError) {
             renderBootstrapError(fallbackError);
           }
