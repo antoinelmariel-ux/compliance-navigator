@@ -50,7 +50,6 @@
 
     <script src="./src/vendor/react.production.min.js"></script>
     <script src="./src/vendor/react-dom.production.min.js"></script>
-    <script src="./src/vendor/babel.min.js"></script>
     <script src="./src/module-loader.js"></script>
     <script>
       (async function bootstrapApplication() {
@@ -84,11 +83,19 @@
         });
 
         const ensureManifestForFileProtocol = async () => {
-          if (window.location.protocol !== 'file:') {
+          if (window.location.protocol !== 'file:' || window.__COMPLIANCE_NAVIGATOR_MANIFEST__) {
             return;
           }
 
           await loadScript('./src/module-manifest.js');
+        };
+
+        const ensureBabelRuntime = async () => {
+          if (window.Babel && typeof window.Babel.transformScriptTags === 'function') {
+            return;
+          }
+
+          await loadScript('./src/vendor/babel.min.js');
         };
 
         const fallbackToBabelScript = () => {
@@ -106,11 +113,21 @@
 
         try {
           if (window.ModuleLoader && typeof window.ModuleLoader.import === 'function') {
-            await ensureManifestForFileProtocol();
-            window.ModuleLoader.import('./src/main.jsx');
-            return;
+            try {
+              window.ModuleLoader.import('./src/main.jsx');
+              return;
+            } catch (initialError) {
+              if (window.location.protocol === 'file:') {
+                await ensureManifestForFileProtocol();
+                window.ModuleLoader.import('./src/main.jsx');
+                return;
+              }
+
+              throw initialError;
+            }
           }
 
+          await ensureBabelRuntime();
           if (!fallbackToBabelScript()) {
             throw new Error('ModuleLoader indisponible et fallback Babel non disponible.');
           }
@@ -118,6 +135,7 @@
           console.error('Erreur lors du chargement de l\'application :', error);
 
           try {
+            await ensureBabelRuntime();
             if (!fallbackToBabelScript()) {
               throw error;
             }

@@ -1,7 +1,4 @@
 (function (global) {
-  if (!global.Babel) {
-    throw new Error('Babel doit être chargé avant le module loader.');
-  }
 
   const moduleCache = Object.create(null);
   const LOCAL_STORAGE_NAMESPACE = 'module-cache:';
@@ -212,6 +209,12 @@
     const cached = readCacheRecord(url, sourceHash);
     if (cached) {
       return cached;
+    }
+
+    if (!global.Babel || typeof global.Babel.transform !== 'function') {
+      const error = new Error('Babel requis pour transpiler ce module.');
+      error.code = 'BABEL_REQUIRED';
+      throw error;
     }
 
     const transformed = global.Babel.transform(source, {

@@ -1,5 +1,7 @@
 const DEFAULT_BASE_DELAY = 1000;
 const MAX_RETRY_DELAY = 8000;
+const MAX_RETRIES = 5;
+const MAX_QUEUE_SIZE = 20;
 
 const wait = (delay) => new Promise((resolve) => {
   setTimeout(resolve, delay);
@@ -8,6 +10,14 @@ const wait = (delay) => new Promise((resolve) => {
 export const createAutosaveQueue = ({ processItem, onStatusChange }) => {
   const queue = [];
   let isRunning = false;
+
+  const getItemKey = (item) => {
+    const projectId = item?.project?.id;
+    if (typeof projectId === 'string' && projectId.length > 0) {
+      return projectId;
+    }
+    return null;
+  };
 
   const setStatus = (status, details = {}) => {
     if (typeof onStatusChange === 'function') {
@@ -53,6 +63,15 @@ export const createAutosaveQueue = ({ processItem, onStatusChange }) => {
         }
 
         const retryCount = (item.retryCount || 0) + 1;
+        if (retryCount > MAX_RETRIES) {
+          setStatus('error', {
+            queueSize: queue.length,
+            error,
+            projectId: item?.project?.id
+          });
+          continue;
+        }
+
         const retryDelay = Math.min(DEFAULT_BASE_DELAY * (2 ** (retryCount - 1)), MAX_RETRY_DELAY);
         queue.unshift({
           ...item,
@@ -68,7 +87,22 @@ export const createAutosaveQueue = ({ processItem, onStatusChange }) => {
 
   return {
     enqueue(item) {
-      queue.push({ ...item, retryCount: 0 });
+      const normalizedItem = { ...item, retryCount: 0 };
+      const itemKey = getItemKey(normalizedItem);
+      if (itemKey) {
+        const existingIndex = queue.findIndex((entry) => getItemKey(entry) === itemKey);
+        if (existingIndex >= 0) {
+          queue.splice(existingIndex, 1, normalizedItem);
+        } else {
+          queue.push(normalizedItem);
+        }
+      } else {
+        queue.push(normalizedItem);
+      }
+
+      if (queue.length > MAX_QUEUE_SIZE) {
+        queue.splice(0, queue.length - MAX_QUEUE_SIZE);
+      }
       run();
     },
     flush() {

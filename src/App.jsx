@@ -11,7 +11,7 @@ import { initialShowcaseThemes } from './data/showcaseThemes.js';
 import { initialOnboardingTourConfig } from './data/onboardingTour.js';
 import { initialValidationCommitteeConfig } from './data/validationCommitteeConfig.js';
 import { initialAdminEmails } from './data/adminEmails.js';
-import { loadPersistedState } from './utils/storage.js';
+import { loadPersistedState, persistState } from './utils/storage.js';
 import { shouldShowQuestion } from './utils/questions.js';
 import { analyzeAnswers } from './utils/rules.js';
 import { extractProjectName } from './utils/projects.js';
@@ -41,7 +41,7 @@ import { createAutosaveQueue } from './utils/autosaveQueue.js';
 import { reinitializeSharePointConfiguration } from './utils/sharePointSetup.js';
 const HEADER_LOGO_PATH = './src/components/logo.png';
 
-const APP_VERSION = 'v1.0.374';
+const APP_VERSION = 'v1.0.375';
 
 class AdminBackOfficeErrorBoundary extends React.Component {
   constructor(props) {
@@ -413,7 +413,7 @@ const restoreShowcaseQuestions = (currentQuestions, referenceQuestions = initial
     const existingIndex = nextQuestions.findIndex((item) => item && item.id === referenceQuestion.id);
 
     if (existingIndex === -1) {
-      const clonedQuestion = JSON.parse(JSON.stringify(referenceQuestion));
+      const clonedQuestion = cloneDeep(referenceQuestion);
       const insertionIndex = Math.min(referenceIndex, nextQuestions.length);
       nextQuestions.splice(insertionIndex, 0, clonedQuestion);
       changed = true;
@@ -431,7 +431,7 @@ const restoreShowcaseQuestions = (currentQuestions, referenceQuestions = initial
     if (showcaseMetaDiffers) {
       nextQuestions[existingIndex] = {
         ...existingQuestion,
-        showcase: JSON.parse(JSON.stringify(referenceShowcaseMeta))
+        showcase: cloneDeep(referenceShowcaseMeta)
       };
       changed = true;
     }
@@ -1344,6 +1344,55 @@ const updateProjectFilters = useCallback((updater) => {
       loadInspirationProjectsIfNeeded();
     }
   }, [homeView, screen, loadInspirationProjectsIfNeeded]);
+
+  useEffect(() => {
+    if (!isHydrated) {
+      return undefined;
+    }
+
+    const timerId = setTimeout(() => {
+      persistState({
+        projects,
+        inspirationProjects,
+        activeProjectId,
+        activeInspirationId,
+        homeView,
+        questions,
+        rules,
+        riskLevelRules,
+        riskWeights,
+        teams,
+        showcaseThemes,
+        projectFilters,
+        inspirationFilters,
+        inspirationFormFields,
+        onboardingTourConfig,
+        validationCommitteeConfig,
+        adminEmails
+      });
+    }, 400);
+
+    return () => clearTimeout(timerId);
+  }, [
+    isHydrated,
+    projects,
+    inspirationProjects,
+    activeProjectId,
+    activeInspirationId,
+    homeView,
+    questions,
+    rules,
+    riskLevelRules,
+    riskWeights,
+    teams,
+    showcaseThemes,
+    projectFilters,
+    inspirationFilters,
+    inspirationFormFields,
+    onboardingTourConfig,
+    validationCommitteeConfig,
+    adminEmails
+  ]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
