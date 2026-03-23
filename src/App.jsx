@@ -35,14 +35,15 @@ import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.
 import { isShowcaseAccessBlockedByProjectType } from './utils/showcase.js';
 import { normalizeTeamContacts } from './utils/teamContacts.js';
 import { normalizeRulesTeamReferences } from './utils/teamIds.js';
-import currentUser from './data/graph-current-user.json';
+import fallbackCurrentUser from './data/graph-current-user.json';
 import { dataProvider } from './utils/dataProvider.js';
 import { inspirationDataProvider } from './utils/inspirationDataProvider.js';
 import { createAutosaveQueue } from './utils/autosaveQueue.js';
 import { reinitializeSharePointConfiguration } from './utils/sharePointSetup.js';
+import { getGraphCurrentUser, graphSetup } from './utils/graphAuth.js';
 const HEADER_LOGO_PATH = './src/components/logo.png';
 
-const APP_VERSION = 'v1.0.387';
+const APP_VERSION = 'v1.0.388';
 
 class AdminBackOfficeErrorBoundary extends React.Component {
   constructor(props) {
@@ -815,6 +816,7 @@ const sanitizeRestoredProjects = (projects) => {
 };
 
 export const App = () => {
+  const [currentUser, setCurrentUser] = useState(fallbackCurrentUser);
   const [mode, setMode] = useState('user');
   const [screen, setScreen] = useState('home');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -870,7 +872,7 @@ export const App = () => {
   );
   const currentUserEmail = useMemo(
     () => normalizeEmail(currentUser?.mail || currentUser?.userPrincipalName || ''),
-    []
+    [currentUser]
   );
   const currentUserDisplayName = useMemo(() => {
     const firstName = typeof currentUser?.givenName === 'string' ? currentUser.givenName.trim() : '';
@@ -927,6 +929,85 @@ export const App = () => {
   const autosaveQueueRef = useRef(null);
   const autosaveTimeoutRef = useRef(null);
   const showcaseCommentNotificationTimeoutsRef = useRef(new Map());
+
+  useEffect(() => {
+    if (!graphSetup.isGraphRuntimeReady()) {
+      return;
+    }
+
+    let isActive = true;
+
+    getGraphCurrentUser()
+      .then((user) => {
+        if (isActive && user && typeof user === 'object') {
+          setCurrentUser(user);
+        }
+      })
+      .catch((error) => {
+        if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+          console.warn('Impossible de récupérer le profil utilisateur Graph :', error);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof dataProvider?.listProjects !== 'function') {
+      return;
+    }
+
+    let isActive = true;
+
+    dataProvider.listProjects()
+      .then((providerProjects) => {
+        if (!isActive || !Array.isArray(providerProjects) || providerProjects.length === 0) {
+          return;
+        }
+
+        const normalized = normalizeProjectsCollection(providerProjects, questions.length);
+        if (normalized && normalized.length > 0) {
+          setProjects(normalized);
+        }
+      })
+      .catch((error) => {
+        if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+          console.warn('Chargement des projets SharePoint impossible, fallback local conservé :', error);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [questions.length]);
+
+  useEffect(() => {
+    if (typeof inspirationDataProvider?.listInspirations !== 'function') {
+      return;
+    }
+
+    let isActive = true;
+
+    inspirationDataProvider.listInspirations()
+      .then((entries) => {
+        if (!isActive || !Array.isArray(entries) || entries.length === 0) {
+          return;
+        }
+        setInspirationProjects(cloneDeep(entries));
+        setHasLoadedInspirationProjects(true);
+      })
+      .catch((error) => {
+        if (typeof console !== 'undefined' && typeof console.warn === 'function') {
+          console.warn('Chargement des inspirations SharePoint impossible, fallback local conservé :', error);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   const loadInspirationProjectsIfNeeded = useCallback(() => {
     if (hasLoadedInspirationProjects) {
