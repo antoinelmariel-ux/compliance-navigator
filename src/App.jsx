@@ -42,7 +42,7 @@ import { createAutosaveQueue } from './utils/autosaveQueue.js';
 import { reinitializeSharePointConfiguration } from './utils/sharePointSetup.js';
 const HEADER_LOGO_PATH = './src/components/logo.png';
 
-const APP_VERSION = 'v1.0.386';
+const APP_VERSION = 'v1.0.387';
 
 class AdminBackOfficeErrorBoundary extends React.Component {
   constructor(props) {
@@ -1359,6 +1359,11 @@ const updateProjectFilters = useCallback((updater) => {
 
     const timerId = setTimeout(() => {
       persistState({
+        mode,
+        screen,
+        currentQuestionIndex,
+        answers,
+        analysis,
         projects,
         inspirationProjects,
         activeProjectId,
@@ -1373,6 +1378,8 @@ const updateProjectFilters = useCallback((updater) => {
         projectFilters,
         inspirationFilters,
         inspirationFormFields,
+        saveFeedback,
+        hasUnsavedChanges,
         onboardingTourConfig,
         validationCommitteeConfig,
         adminEmails
@@ -1382,6 +1389,11 @@ const updateProjectFilters = useCallback((updater) => {
     return () => clearTimeout(timerId);
   }, [
     isHydrated,
+    mode,
+    screen,
+    currentQuestionIndex,
+    answers,
+    analysis,
     projects,
     inspirationProjects,
     activeProjectId,
@@ -1396,6 +1408,8 @@ const updateProjectFilters = useCallback((updater) => {
     projectFilters,
     inspirationFilters,
     inspirationFormFields,
+    saveFeedback,
+    hasUnsavedChanges,
     onboardingTourConfig,
     validationCommitteeConfig,
     adminEmails
