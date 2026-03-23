@@ -34,6 +34,7 @@ import { exportInspirationToFile } from './utils/inspirationExport.js';
 import { normalizeValidationCommitteeConfig } from './utils/validationCommittee.js';
 import { isShowcaseAccessBlockedByProjectType } from './utils/showcase.js';
 import { normalizeTeamContacts } from './utils/teamContacts.js';
+import { normalizeRulesTeamReferences } from './utils/teamIds.js';
 import currentUser from './data/graph-current-user.json';
 import { dataProvider } from './utils/dataProvider.js';
 import { inspirationDataProvider } from './utils/inspirationDataProvider.js';
@@ -41,7 +42,7 @@ import { createAutosaveQueue } from './utils/autosaveQueue.js';
 import { reinitializeSharePointConfiguration } from './utils/sharePointSetup.js';
 const HEADER_LOGO_PATH = './src/components/logo.png';
 
-const APP_VERSION = 'v1.0.383';
+const APP_VERSION = 'v1.0.384';
 
 class AdminBackOfficeErrorBoundary extends React.Component {
   constructor(props) {
@@ -720,7 +721,9 @@ const buildInitialProjectsState = () => {
   }
 
   const fallbackQuestions = Array.isArray(savedState.questions) ? savedState.questions : initialQuestions;
-  const fallbackRules = Array.isArray(savedState.rules) ? savedState.rules : initialRules;
+  const fallbackRules = Array.isArray(savedState.rules)
+    ? normalizeRulesTeamReferences(savedState.rules)
+    : initialRules;
   const fallbackRiskLevelRules = Array.isArray(savedState.riskLevelRules)
     ? savedState.riskLevelRules
     : initialRiskLevelRules;
@@ -1260,7 +1263,9 @@ const updateProjectFilters = useCallback((updater) => {
       }
 
       const fallbackQuestions = Array.isArray(savedState.questions) ? savedState.questions : questions;
-      const fallbackRules = Array.isArray(savedState.rules) ? savedState.rules : rules;
+      const fallbackRules = Array.isArray(savedState.rules)
+        ? normalizeRulesTeamReferences(savedState.rules)
+        : rules;
       const fallbackRiskLevelRules = Array.isArray(savedState.riskLevelRules)
         ? savedState.riskLevelRules
         : riskLevelRules;
@@ -1311,7 +1316,9 @@ const updateProjectFilters = useCallback((updater) => {
       if (Array.isArray(savedState.questions)) {
         setQuestions(restoreShowcaseQuestions(savedState.questions));
       }
-      if (Array.isArray(savedState.rules)) setRules(savedState.rules);
+      if (Array.isArray(savedState.rules)) {
+        setRules(normalizeRulesTeamReferences(savedState.rules));
+      }
       if (Array.isArray(savedState.riskLevelRules)) setRiskLevelRules(savedState.riskLevelRules);
       if (savedState && typeof savedState.riskWeights === 'object') {
         setRiskWeights(normalizeRiskWeighting(savedState.riskWeights));
