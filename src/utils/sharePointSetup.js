@@ -65,6 +65,21 @@ const SHAREPOINT_RESOURCES = [
   }
 ];
 
+const CONFIGURATION_LIBRARY_FILES = [
+  { fileName: 'questions.json', resolver: (payload) => payload?.questions || [] },
+  { fileName: 'rules.json', resolver: (payload) => payload?.rules || [] },
+  { fileName: 'teams.json', resolver: (payload) => payload?.teams || [] },
+  { fileName: 'risk-level-rules.json', resolver: (payload) => payload?.riskLevelRules || [] },
+  { fileName: 'risk-weights.json', resolver: (payload) => payload?.riskWeights || {} },
+  { fileName: 'project-filters.json', resolver: (payload) => payload?.projectFilters || {} },
+  { fileName: 'inspiration-filters.json', resolver: (payload) => payload?.inspirationFilters || {} },
+  { fileName: 'inspiration-form-fields.json', resolver: (payload) => payload?.inspirationFormFields || [] },
+  { fileName: 'onboarding-tour-config.json', resolver: (payload) => payload?.onboardingTourConfig || {} },
+  { fileName: 'validation-committee-config.json', resolver: (payload) => payload?.validationCommitteeConfig || {} },
+  { fileName: 'showcase-themes.json', resolver: (payload) => payload?.showcaseThemes || [] },
+  { fileName: 'admin-emails.json', resolver: (payload) => payload?.adminEmails || [] }
+];
+
 const resolveGraphConfig = (overrides = {}) => {
   const fromWindow = typeof window !== 'undefined' ? window.__COMPLIANCE_NAVIGATOR_GRAPH__ : null;
   const fromStorage = typeof window !== 'undefined' && window.localStorage
@@ -201,6 +216,46 @@ const ensureConfigurationLibrary = async ({ token, siteId }) => {
     : null;
 };
 
+const clearDriveItems = async ({ token, driveId }) => {
+  const rootChildren = await graphRequest(`/drives/${driveId}/root/children?$select=id,name`, { token });
+  const children = Array.isArray(rootChildren?.value) ? rootChildren.value : [];
+
+  await Promise.all(children.map((item) => graphRequest(`/drives/${driveId}/items/${item.id}`, {
+    token,
+    method: 'DELETE'
+  })));
+};
+
+const uploadConfigurationFiles = async ({ token, driveId, payload }) => {
+  for (let index = 0; index < CONFIGURATION_LIBRARY_FILES.length; index += 1) {
+    const definition = CONFIGURATION_LIBRARY_FILES[index];
+    const fileBody = JSON.stringify(definition.resolver(payload), null, 2);
+    await fetch(`${GRAPH_BASE_URL}/drives/${driveId}/root:/${definition.fileName}:/content`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: fileBody
+    }).then(async (response) => {
+      if (response.ok) {
+        return;
+      }
+
+      let details = '';
+      try {
+        const errorBody = await response.json();
+        details = errorBody?.error?.message || '';
+      } catch (error) {
+        details = await response.text();
+      }
+
+      throw new Error(`Microsoft Graph PUT /drives/${driveId}/root:/${definition.fileName}:/content a échoué (${response.status}). ${details}`.trim());
+    });
+  }
+};
+
 export const reinitializeSharePointConfiguration = async (payload, options = {}) => {
   const config = resolveGraphConfig(options);
 
@@ -215,7 +270,8 @@ export const reinitializeSharePointConfiguration = async (payload, options = {})
   const summary = {
     siteId: config.siteId,
     lists: [],
-    libraryName: ''
+    libraryName: '',
+    files: []
   };
 
   for (let index = 0; index < SHAREPOINT_RESOURCES.length; index += 1) {
@@ -239,7 +295,14 @@ export const reinitializeSharePointConfiguration = async (payload, options = {})
   }
 
   const library = await ensureConfigurationLibrary({ token: config.token, siteId: config.siteId });
+  if (!library?.id) {
+    throw new Error('Impossible de retrouver la bibliothèque SharePoint PN-Documents-Configuration après création.');
+  }
+
+  await clearDriveItems({ token: config.token, driveId: library.id });
+  await uploadConfigurationFiles({ token: config.token, driveId: library.id, payload });
   summary.libraryName = library?.name || 'PN-Documents-Configuration';
+  summary.files = CONFIGURATION_LIBRARY_FILES.map((entry) => entry.fileName);
 
   return summary;
 };

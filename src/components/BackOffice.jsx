@@ -7114,7 +7114,7 @@ export const BackOffice = ({
                   <div>
                     <h3 className="text-lg font-semibold text-gray-800">Réinitialisation SharePoint</h3>
                     <p className="text-sm text-gray-600 mt-1">
-                      Recrée les listes et la bibliothèque de configuration via Microsoft Graph pour restaurer les règles, équipes et paramètres du back-office.
+                      Recrée les listes SharePoint et les fichiers JSON de la bibliothèque de configuration via Microsoft Graph pour restaurer les règles, équipes et paramètres du back-office.
                     </p>
                   </div>
 
@@ -7124,7 +7124,7 @@ export const BackOffice = ({
                     disabled={sharePointReinitializeState.inProgress || typeof onSharePointReinitialize !== 'function'}
                     className="inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all hv-button"
                   >
-                    {sharePointReinitializeState.inProgress ? 'Réinitialisation en cours…' : 'Réinitialisation'}
+                    {sharePointReinitializeState.inProgress ? 'Réinitialisation en cours…' : 'Réinitialiser listes + fichiers'}
                   </button>
 
                   {sharePointReinitializeState.message && (
