@@ -1,3 +1,5 @@
+import { graphConfig } from '../config/graphConfig.js';
+import { getGraphAccessToken } from './graphAuth.js';
 const GRAPH_BASE_URL = 'https://graph.microsoft.com/v1.0';
 
 const DEFAULT_GRAPH_CONFIG = {
@@ -91,7 +93,7 @@ const resolveGraphConfig = (overrides = {}) => {
 
   return {
     token: overrides.token || fromWindow?.token || fromStorage.token || '',
-    siteId: overrides.siteId || fromWindow?.siteId || fromStorage.siteId || ''
+    siteId: overrides.siteId || fromWindow?.siteId || fromStorage.siteId || graphConfig.siteId || ''
   };
 };
 
@@ -258,6 +260,13 @@ const uploadConfigurationFiles = async ({ token, driveId, payload }) => {
 
 export const reinitializeSharePointConfiguration = async (payload, options = {}) => {
   const config = resolveGraphConfig(options);
+  if (!config.token) {
+    try {
+      config.token = await getGraphAccessToken();
+    } catch (error) {
+      // fallback on explicit error below
+    }
+  }
 
   if (!config.token) {
     throw new Error('Token Graph manquant. Renseignez window.__COMPLIANCE_NAVIGATOR_GRAPH__.token ou localStorage.graphAccessToken.');

@@ -1,4 +1,6 @@
 import { initialMockSharePointProjects } from '../data/mockSharePointProjects.js';
+import { graphConfig, isGraphRuntimeReady } from '../config/graphConfig.js';
+import { graphRequest } from './graphAuth.js';
 
 const cloneDeep = (value) => {
   if (value === null || value === undefined) {
@@ -27,6 +29,26 @@ const normalizeStatus = (status) => {
   return 'Draft';
 };
 
+const parseJsonField = (value, fallback) => {
+  if (value === null || value === undefined || value === '') {
+    return cloneDeep(fallback);
+  }
+
+  if (typeof value === 'object') {
+    return cloneDeep(value);
+  }
+
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value);
+    } catch (error) {
+      return cloneDeep(fallback);
+    }
+  }
+
+  return cloneDeep(fallback);
+};
+
 export class ConflictError extends Error {
   constructor(message, serverRecord) {
     super(message);
@@ -38,8 +60,8 @@ export class ConflictError extends Error {
 const DEFAULT_PROJECTS = initialMockSharePointProjects;
 
 const toProjectEntry = (item) => {
-  const answers = item?.AnswersJson && typeof item.AnswersJson === 'object' ? item.AnswersJson : {};
-  const analysis = item?.AnalysisJson && typeof item.AnalysisJson === 'object' ? item.AnalysisJson : null;
+  const answers = parseJsonField(item?.AnswersJson, {});
+  const analysis = parseJsonField(item?.AnalysisJson, null);
 
   return {
     id: item.ProjectId,
@@ -63,8 +85,8 @@ const toListItem = (project, userEmail) => ({
   Status: normalizeStatus(project.status),
   OwnerEmail: project.ownerEmail || userEmail || '',
   CurrentEditorEmail: userEmail || project.ownerEmail || '',
-  AnswersJson: cloneDeep(project.answers || {}),
-  AnalysisJson: cloneDeep(project.analysis || {}),
+  AnswersJson: JSON.stringify(cloneDeep(project.answers || {})),
+  AnalysisJson: JSON.stringify(cloneDeep(project.analysis || {})),
   ProgressAnswered: Number(project.answeredQuestions) || 0,
   ProgressTotal: Number(project.totalQuestions) || 0,
   SubmissionDate: project.status === 'submitted' ? project.submittedAt || new Date().toISOString() : null,
@@ -123,14 +145,105 @@ class MockSharePointProvider {
   }
 }
 
-export class GraphDataProvider {
-  async listProjects() {
-    throw new Error('GraphDataProvider non configuré: clés API Microsoft Graph requises.');
+const resolveListId = async (listName) => {
+  const encodedName = listName.replace(/'/g, "''");
+  const response = await graphRequest(`/sites/${graphConfig.siteId}/lists?$filter=displayName eq '${encodedName}'`);
+  const match = Array.isArray(response?.value) ? response.value[0] : null;
+
+  if (!match?.id) {
+    throw new Error(`La liste SharePoint "${listName}" est introuvable sur le site ${graphConfig.siteId}.`);
   }
 
-  async upsertProject() {
-    throw new Error('GraphDataProvider non configuré: clés API Microsoft Graph requises.');
+  return match.id;
+};
+
+const toGraphProjectFields = (listItem) => {
+  const fields = listItem?.fields || {};
+  return {
+    ...fields,
+    _graphItemId: listItem?.id || null,
+    _graphEtag: listItem?.eTag || null
+  };
+};
+
+export class GraphDataProvider {
+  constructor() {
+    this.projectsListIdPromise = null;
+  }
+
+  async getProjectsListId() {
+    if (!this.projectsListIdPromise) {
+      this.projectsListIdPromise = resolveListId(graphConfig.lists.projects);
+    }
+    return this.projectsListIdPromise;
+  }
+
+  async listProjects() {
+    const listId = await this.getProjectsListId();
+    const response = await graphRequest(`/sites/${graphConfig.siteId}/lists/${listId}/items?$expand=fields`);
+
+    return (Array.isArray(response?.value) ? response.value : [])
+      .map(toGraphProjectFields)
+      .filter((item) => !!item.ProjectId)
+      .map(toProjectEntry);
+  }
+
+  async upsertProject(project, { expectedRowVersion, userEmail } = {}) {
+    if (!project?.id) {
+      throw new Error('Projet invalide: id manquant');
+    }
+
+    const listId = await this.getProjectsListId();
+    const encodedProjectId = String(project.id).replace(/'/g, "''");
+    const existingResponse = await graphRequest(`/sites/${graphConfig.siteId}/lists/${listId}/items?$expand=fields&$filter=fields/ProjectId eq '${encodedProjectId}'`);
+    const existingItem = Array.isArray(existingResponse?.value) ? existingResponse.value[0] : null;
+    const existingFields = existingItem?.fields || null;
+
+    if (existingFields) {
+      const currentVersion = Number(existingFields.RowVersion) || 1;
+      if (
+        typeof expectedRowVersion === 'number'
+        && expectedRowVersion > 0
+        && expectedRowVersion !== currentVersion
+      ) {
+        throw new ConflictError('Conflit de version détecté.', toProjectEntry(existingFields));
+      }
+    }
+
+    const nextVersion = existingFields ? (Number(existingFields.RowVersion) || 1) + 1 : 1;
+    const payload = {
+      ...toListItem(project, userEmail),
+      RowVersion: nextVersion
+    };
+
+    if (existingItem?.id) {
+      await graphRequest(`/sites/${graphConfig.siteId}/lists/${listId}/items/${existingItem.id}/fields`, {
+        method: 'PATCH',
+        body: payload
+      });
+    } else {
+      await graphRequest(`/sites/${graphConfig.siteId}/lists/${listId}/items`, {
+        method: 'POST',
+        body: {
+          fields: payload
+        }
+      });
+    }
+
+    const refreshedResponse = await graphRequest(`/sites/${graphConfig.siteId}/lists/${listId}/items?$expand=fields&$filter=fields/ProjectId eq '${encodedProjectId}'`);
+    const refreshed = Array.isArray(refreshedResponse?.value) ? refreshedResponse.value[0] : null;
+    const refreshedFields = toGraphProjectFields(refreshed);
+    const savedProject = toProjectEntry(refreshedFields);
+
+    return {
+      project: savedProject,
+      etag: refreshedFields._graphEtag || `W/"${savedProject.id}-${savedProject.rowVersion}"`,
+      updatedAt: savedProject.lastUpdated,
+      updatedBy: savedProject.lastModifiedBy
+    };
   }
 }
 
-export const dataProvider = new MockSharePointProvider();
+const provider = isGraphRuntimeReady() ? new GraphDataProvider() : new MockSharePointProvider();
+
+export const dataProvider = provider;
