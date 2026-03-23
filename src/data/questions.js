@@ -479,7 +479,7 @@ export const initialQuestions = [
         "conditionLogic": "all"
       },
       {
-        "label": "Etude interventionnelle",
+        "label": "Etude interventionnelle (IIS)",
         "visibility": "always",
         "subType": null,
         "subOptions": [
@@ -507,7 +507,7 @@ export const initialQuestions = [
         "conditionLogic": "all"
       },
       {
-        "label": "Etude non-interventionnelle",
+        "label": "Etude non-interventionnelle (NIS)",
         "visibility": "always",
         "conditionGroups": [],
         "conditions": [],
@@ -908,7 +908,7 @@ export const initialQuestions = [
             "conditionLogic": "all"
           },
           {
-            "label": "Iqymune / Clairyg",
+            "label": "Iqymune / Clairyg100/Clairyg 5%",
             "visibility": "always",
             "subType": null,
             "subOptions": [],
@@ -917,68 +917,22 @@ export const initialQuestions = [
             "conditionLogic": "all"
           },
           {
-            "label": "Cevenfacta",
-            "visibility": "always",
-            "subType": null,
-            "subOptions": [],
-            "conditionGroups": [],
-            "conditions": [],
-            "conditionLogic": "all"
+            "label": "Cevenfacta"
           },
           {
-            "label": "Clottafact/Fibclot",
-            "visibility": "always",
-            "subType": null,
-            "subOptions": [],
-            "conditionGroups": [],
-            "conditions": [],
-            "conditionLogic": "all"
+            "label": "Clottafact/Fibclot"
           },
           {
-            "label": "Vialebex",
-            "visibility": "always",
-            "subType": null,
-            "subOptions": [],
-            "conditionGroups": [],
-            "conditions": [],
-            "conditionLogic": "all"
+            "label": "Tegeline"
           },
           {
-            "label": "Wilfactin/ Willfact",
-            "visibility": "always",
-            "subType": null,
-            "subOptions": [],
-            "conditionGroups": [],
-            "conditions": [],
-            "conditionLogic": "all"
+            "label": "Vialebex"
           },
           {
-            "label": "Cross-produits",
-            "visibility": "always",
-            "subType": null,
-            "subOptions": [],
-            "conditionGroups": [],
-            "conditions": [],
-            "conditionLogic": "all"
+            "label": "Wilfactin/ Willfact"
           },
           {
-            "label": "Autre produit",
-            "isOther": true,
-            "visibility": "always",
-            "subType": null,
-            "subOptions": [],
-            "conditionGroups": [],
-            "conditions": [],
-            "conditionLogic": "all"
-          },
-          {
-            "label": "Pharmaciens",
-            "visibility": "always",
-            "subType": null,
-            "subOptions": [],
-            "conditionGroups": [],
-            "conditions": [],
-            "conditionLogic": "all"
+            "label": "Cross-produits"
           }
         ],
         "conditionGroups": [],
@@ -1009,40 +963,10 @@ export const initialQuestions = [
             "conditionLogic": "all"
           },
           {
-            "label": "Pneumologie",
-            "visibility": "always",
-            "subType": null,
-            "subOptions": [],
-            "conditionGroups": [],
-            "conditions": [],
-            "conditionLogic": "all"
+            "label": "Pneumologie"
           },
           {
-            "label": "Soins intensifs",
-            "visibility": "always",
-            "subType": null,
-            "subOptions": [],
-            "conditionGroups": [],
-            "conditions": [],
-            "conditionLogic": "all"
-          },
-          {
-            "label": "Cross aires thérapeutiques",
-            "visibility": "always",
-            "subType": null,
-            "subOptions": [],
-            "conditionGroups": [],
-            "conditions": [],
-            "conditionLogic": "all"
-          },
-          {
-            "label": "Pharmaciens",
-            "visibility": "always",
-            "subType": null,
-            "subOptions": [],
-            "conditionGroups": [],
-            "conditions": [],
-            "conditionLogic": "all"
+            "label": "Soins intensifs"
           }
         ],
         "conditionGroups": [],
@@ -1214,7 +1138,8 @@ export const initialQuestions = [
       "objective": "Clarifier l’expérience proposée avant de détailler les bénéfices.",
       "details": "Cette description introduit la section “Solution” et doit rester simple à comprendre.",
       "tips": [
-        "Structurez en 2-3 phrases : quoi, pour qui, comment."
+        "Structurez en 2-3 phrases : quoi, pour qui, comment.",
+        "Évitez le vocabulaire interne : imaginez que vous présentez le concept à un prospect."
       ]
     },
     "showcase": {
@@ -1445,7 +1370,7 @@ export const initialQuestions = [
             "conditionLogic": "all"
           },
           {
-            "label": "Bot IA",
+            "label": "Outil d'IA (ex : bot IA)",
             "visibility": "always",
             "subType": null,
             "subOptions": [],
@@ -2175,16 +2100,7 @@ export const initialQuestions = [
             "conditionLogic": "all"
           },
           {
-            "label": "Equipe médicale",
-            "visibility": "always",
-            "subType": null,
-            "subOptions": [],
-            "conditionGroups": [],
-            "conditions": [],
-            "conditionLogic": "all"
-          },
-          {
-            "label": "Equipe RGC",
+            "label": "Equipe médical",
             "visibility": "always",
             "subType": null,
             "subOptions": [],
@@ -2261,12 +2177,12 @@ export const initialQuestions = [
       {
         "question": "q18_copy",
         "operator": "not_equals",
-        "value": "Etude interventionnelle"
+        "value": "Etude interventionnelle (IIS)"
       },
       {
         "question": "q18_copy",
         "operator": "not_equals",
-        "value": "Etude non-interventionnelle"
+        "value": "Etude non-interventionnelle (NIS)"
       },
       {
         "question": "ProjectType",
@@ -2287,12 +2203,12 @@ export const initialQuestions = [
           {
             "question": "q18_copy",
             "operator": "not_equals",
-            "value": "Etude interventionnelle"
+            "value": "Etude interventionnelle (IIS)"
           },
           {
             "question": "q18_copy",
             "operator": "not_equals",
-            "value": "Etude non-interventionnelle"
+            "value": "Etude non-interventionnelle (NIS)"
           },
           {
             "question": "ProjectType",
@@ -2379,7 +2295,7 @@ export const initialQuestions = [
         "conditionLogic": "all"
       },
       {
-        "label": "Expert français non professionnel de santé",
+        "label": "Expert français non professionnels de santé",
         "visibility": "always",
         "conditionGroups": [],
         "conditions": [],
@@ -2962,7 +2878,7 @@ export const initialQuestions = [
         "conditionLogic": "all"
       },
       {
-        "label": "Extrait de sites internet",
+        "label": "Extrait de de sites internet",
         "visibility": "always",
         "subType": null,
         "subOptions": [],
@@ -3141,7 +3057,7 @@ export const initialQuestions = [
       "objective": "",
       "details": "Prenez en compte l'ensemble du budget (développement ET déploiement / communication) pour le lancement du projet",
       "tips": [
-        "Si vous ne savez pas encore le montant précis, indiquez un ordre d'idée",
+        "Si vous ne savez pas encore le montant précis, indiquez un autre d'idée",
         "Pensez également aux coûts des éventuelles mises à jour"
       ]
     },
@@ -3414,7 +3330,7 @@ export const initialQuestions = [
   {
     "id": "q26",
     "type": "long_text",
-    "question": "Indiquez ce qui évolue entre le projet historique et le nouveau projet",
+    "question": "Indiquez moi ce qui évolue entre le projet historique et le nouveau projet",
     "options": [],
     "required": true,
     "conditions": [
@@ -3482,7 +3398,7 @@ export const initialQuestions = [
     "conditionLogic": "all",
     "guidance": {
       "objective": "Aligner toutes les parties prenantes sur la cible de lancement.",
-      "details": "Cette information permet de vérifier la faisabilité globale du planning projet.",
+      "details": "Associée à la date de soumission compliance, cette information permet de vérifier la faisabilité du planning.",
       "tips": [
         "Renseignez la première date de mise en avant (événement, publication, annonce).",
         "Si la date n’est pas figée, indiquez l’hypothèse la plus réaliste pour planifier les ressources."
@@ -3493,6 +3409,59 @@ export const initialQuestions = [
         "timeline"
       ],
       "usage": "Date cible utilisée pour le calcul du runway et du calendrier."
+    },
+    "extraCheckbox": {
+      "enabled": false,
+      "label": ""
+    },
+    "otherOption": {
+      "enabled": false,
+      "label": "Autre",
+      "placeholder": ""
+    },
+    "placeholder": "",
+    "numberUnit": "",
+    "rankingConfig": {
+      "title": "Base de données",
+      "criteria": [
+        {
+          "id": "critere-1",
+          "label": "Critère 1"
+        },
+        {
+          "id": "critere-2",
+          "label": "Critère 2"
+        },
+        {
+          "id": "critere-3",
+          "label": "Critère 3"
+        }
+      ],
+      "entries": []
+    },
+    "conditionGroups": []
+  },
+  {
+    "id": "campaignKickoffDate",
+    "type": "date",
+    "question": "À quelle date allez-vous soumettre ce projet à la compliance ?",
+    "options": [],
+    "required": false,
+    "conditions": [],
+    "conditionLogic": "all",
+    "guidance": {
+      "objective": "Poser le jalon officiel de passage en revue compliance.",
+      "details": "Cette date permet d’anticiper les échanges de validation et le temps de traitement.",
+      "tips": [
+        "Indiquez la date d’envoi du dossier complet à la compliance.",
+        "Mettez à jour la date dès qu’un nouveau créneau est confirmé."
+      ]
+    },
+    "showcase": {
+      "sections": [
+        "timeline"
+      ],
+      "usage": "Point de départ utilisé pour calculer le runway et les prochaines étapes."
     },
     "extraCheckbox": {
       "enabled": false,
