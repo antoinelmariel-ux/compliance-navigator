@@ -18,7 +18,7 @@ import {
   createEmptyTimingCondition
 } from '../utils/ruleConditions.js';
 import { ensureOperatorForType, getOperatorOptionsForType } from '../utils/operatorOptions.js';
-import { getConditionQuestionEntries, getQuestionOptionLabels } from '../utils/questions.js';
+import { getConditionQuestionEntries, getQuestionOptionEntries } from '../utils/questions.js';
 import {
   sanitizeRiskTimingConstraint,
   sanitizeTeamQuestionEntry,
@@ -862,7 +862,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                             }
 
                                             if (usesOptions) {
-                                              const optionLabels = getQuestionOptionLabels(selectedQuestion);
+                                              const optionEntries = getQuestionOptionEntries(selectedQuestion);
                                               return (
                                                 <select
                                                   value={condition.value}
@@ -870,8 +870,8 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                                                 >
                                                   <option value="">Sélectionner...</option>
-                                                  {optionLabels.map((opt, i) => (
-                                                    <option key={i} value={opt}>{opt}</option>
+                                                  {optionEntries.map((entry, i) => (
+                                                    <option key={i} value={entry.value}>{entry.label}</option>
                                                   ))}
                                                 </select>
                                               );
@@ -1566,7 +1566,9 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
                                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
                                 >
                                   <option value="">Sélectionner...</option>
-                                  {getQuestionOptionLabels(selectedQuestion).map((opt, optIdx) => (<option key={optIdx} value={opt}>{opt}</option>))}
+                                  {getQuestionOptionEntries(selectedQuestion).map((entry, optIdx) => (
+                                    <option key={optIdx} value={entry.value}>{entry.label}</option>
+                                  ))}
                                 </select>
                               ) : (
                                 <input

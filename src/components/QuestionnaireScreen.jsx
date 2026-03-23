@@ -217,7 +217,6 @@ export const QuestionnaireScreen = ({
     () => normalizeOtherOption(currentQuestion.otherOption),
     [currentQuestion.otherOption]
   );
-  const otherOptionLabel = typeof otherOption.label === 'string' ? otherOption.label.trim() : '';
   const otherOptionPlaceholder = typeof otherOption.placeholder === 'string'
     ? otherOption.placeholder.trim()
     : '';
@@ -229,8 +228,8 @@ export const QuestionnaireScreen = ({
     () => normalizedOptions.filter(option => shouldShowOption(option, answers)),
     [normalizedOptions, answers]
   );
-  const visibleOptionLabels = useMemo(
-    () => visibleOptions.map(option => option.label),
+  const visibleOptionValues = useMemo(
+    () => visibleOptions.map(option => option.value),
     [visibleOptions]
   );
   const rankingConfig = useMemo(
@@ -328,16 +327,17 @@ export const QuestionnaireScreen = ({
 
   useEffect(() => {
     if (questionType === 'choice') {
-      if (choiceAnswerState.value && !visibleOptionLabels.includes(choiceAnswerState.value)) {
+      if (choiceAnswerState.value && !visibleOptionValues.includes(choiceAnswerState.value)) {
         onAnswer(currentQuestion.id, null);
       }
       return;
     }
 
     if (questionType === 'multi_choice') {
-      const filtered = multiSelection.filter(option => visibleOptionLabels.includes(option));
+      const filtered = multiSelection.filter(option => visibleOptionValues.includes(option));
       if (filtered.length !== multiSelection.length) {
-        const nextOtherText = otherOptionLabel && filtered.includes(otherOptionLabel)
+        const otherOptionValue = visibleOptions.find((option) => option.isOther)?.value || '';
+        const nextOtherText = otherOptionValue && filtered.includes(otherOptionValue)
           ? multiAnswerState.otherText
           : '';
         onAnswer(
@@ -358,9 +358,9 @@ export const QuestionnaireScreen = ({
     multiAnswerState.otherText,
     multiSelection,
     onAnswer,
-    otherOptionLabel,
     questionType,
-    visibleOptionLabels
+    visibleOptionValues,
+    visibleOptions
   ]);
 
   useEffect(() => {
@@ -575,19 +575,21 @@ export const QuestionnaireScreen = ({
           <fieldset className="space-y-3 mb-8" aria-describedby={currentIndex === 0 ? instructionsId : undefined}>
             <legend className="sr-only">{currentQuestion.question}</legend>
             {visibleOptions.map((option, idx) => {
+              const optionValue = option.value;
               const optionLabel = option.label;
-              const isSelected = choiceAnswerState.value === optionLabel;
+              const isSelected = choiceAnswerState.value === optionValue;
               const optionId = `${currentQuestion.id}-option-${idx}`;
               const subOptions = Array.isArray(option.subOptions) ? option.subOptions : [];
               const hasSubOptions = subOptions.length > 0;
               const subType = option.subType === 'multi_choice' ? 'multi_choice' : 'choice';
               const isOtherOption = option.isOther === true;
-              const otherSubOptionLabel = subOptions.find(subOption => subOption?.isOther)?.label;
+              const otherSubOptionValue = subOptions.find(subOption => subOption?.isOther)?.value;
 
               const handleSelectOption = () => {
                 if (isOtherOption) {
                   onAnswer(currentQuestion.id, {
-                    value: optionLabel,
+                    value: optionValue,
+                    label: optionLabel,
                     otherText: choiceAnswerState.otherText || ''
                   });
                   return;
@@ -596,13 +598,14 @@ export const QuestionnaireScreen = ({
                   const preservedChildren = isSelected ? choiceAnswerState.children : [];
                   const preservedChildrenOtherText = isSelected ? choiceAnswerState.childrenOtherText : '';
                   onAnswer(currentQuestion.id, {
-                    value: optionLabel,
+                    value: optionValue,
+                    label: optionLabel,
                     children: preservedChildren,
                     childrenOtherText: preservedChildrenOtherText
                   });
                   return;
                 }
-                onAnswer(currentQuestion.id, optionLabel);
+                onAnswer(currentQuestion.id, optionValue);
               };
 
               const handleUnselectOption = () => {
@@ -627,7 +630,7 @@ export const QuestionnaireScreen = ({
                       type="radio"
                       id={optionId}
                       name={currentQuestion.id}
-                      value={optionLabel}
+                      value={optionValue}
                       checked={isSelected}
                       onClick={handleUnselectOption}
                       onChange={handleSelectOption}
@@ -644,7 +647,8 @@ export const QuestionnaireScreen = ({
                         type="text"
                         value={choiceAnswerState.otherText}
                         onChange={(e) => onAnswer(currentQuestion.id, {
-                          value: optionLabel,
+                          value: optionValue,
+                          label: optionLabel,
                           otherText: e.target.value
                         })}
                         placeholder={otherOptionPlaceholder || 'Précisez votre réponse'}
@@ -657,22 +661,24 @@ export const QuestionnaireScreen = ({
                       <p className="text-xs text-gray-500">Précisez votre choix</p>
                       <div className="space-y-2">
                         {subOptions.map((subOption, subIdx) => {
+                          const subValue = subOption.value;
                           const subLabel = subOption.label;
                           const subId = `${optionId}-sub-${subIdx}`;
-                          const isSubSelected = childSelections.includes(subLabel);
+                          const isSubSelected = childSelections.includes(subValue);
                           const isSubOtherOption = subOption.isOther === true;
                           const toggleSubOption = () => {
                             const nextChildren = subType === 'multi_choice'
                               ? (isSubSelected
-                                ? childSelections.filter(item => item !== subLabel)
-                                : [...childSelections, subLabel])
-                              : [subLabel];
-                            const nextChildrenOtherText = otherSubOptionLabel
-                              && !nextChildren.includes(otherSubOptionLabel)
+                                ? childSelections.filter(item => item !== subValue)
+                                : [...childSelections, subValue])
+                              : [subValue];
+                            const nextChildrenOtherText = otherSubOptionValue
+                              && !nextChildren.includes(otherSubOptionValue)
                               ? ''
                               : choiceAnswerState.childrenOtherText;
                             onAnswer(currentQuestion.id, {
-                              value: optionLabel,
+                              value: optionValue,
+                              label: optionLabel,
                               children: nextChildren,
                               childrenOtherText: nextChildrenOtherText
                             });
@@ -681,7 +687,8 @@ export const QuestionnaireScreen = ({
                           const unselectSubOption = () => {
                             if (subType !== 'multi_choice' && isSubSelected) {
                               onAnswer(currentQuestion.id, {
-                                value: optionLabel,
+                                value: optionValue,
+                                label: optionLabel,
                                 children: [],
                                 childrenOtherText: ''
                               });
@@ -708,7 +715,8 @@ export const QuestionnaireScreen = ({
                                   value={choiceAnswerState.childrenOtherText}
                                   onChange={(event) =>
                                     onAnswer(currentQuestion.id, {
-                                      value: optionLabel,
+                                      value: optionValue,
+                                      label: optionLabel,
                                       children: childSelections,
                                       childrenOtherText: event.target.value
                                     })}
@@ -731,31 +739,32 @@ export const QuestionnaireScreen = ({
         return (
           <div className="space-y-3 mb-8">
             {visibleOptions.map((option, idx) => {
+              const optionValue = option.value;
               const optionLabel = option.label;
-              const isSelected = multiSelection.includes(optionLabel);
+              const isSelected = multiSelection.includes(optionValue);
               const optionId = `${currentQuestion.id}-multi-option-${idx}`;
               const subOptions = Array.isArray(option.subOptions) ? option.subOptions : [];
               const hasSubOptions = subOptions.length > 0;
               const subType = option.subType === 'multi_choice' ? 'multi_choice' : 'choice';
-              const childSelections = Array.isArray(multiAnswerState.children[optionLabel])
-                ? multiAnswerState.children[optionLabel]
+              const childSelections = Array.isArray(multiAnswerState.children[optionValue])
+                ? multiAnswerState.children[optionValue]
                 : [];
-              const otherSubOptionLabel = subOptions.find(subOption => subOption?.isOther)?.label;
-              const childOtherText = typeof multiAnswerState.childrenOtherText?.[optionLabel] === 'string'
-                ? multiAnswerState.childrenOtherText[optionLabel]
+              const otherSubOptionValue = subOptions.find(subOption => subOption?.isOther)?.value;
+              const childOtherText = typeof multiAnswerState.childrenOtherText?.[optionValue] === 'string'
+                ? multiAnswerState.childrenOtherText[optionValue]
                 : '';
               const isOtherOption = option.isOther === true;
               const resolveOtherText = (values) => (
-                otherOptionLabel && values.includes(otherOptionLabel) ? multiAnswerState.otherText : ''
+                option.isOther && values.includes(optionValue) ? multiAnswerState.otherText : ''
               );
 
               const toggleOption = () => {
                 const nextChildren = { ...multiAnswerState.children };
                 const nextChildrenOtherText = { ...multiAnswerState.childrenOtherText };
                 if (isSelected) {
-                  delete nextChildren[optionLabel];
-                  delete nextChildrenOtherText[optionLabel];
-                  const nextValues = multiSelection.filter(item => item !== optionLabel);
+                  delete nextChildren[optionValue];
+                  delete nextChildrenOtherText[optionValue];
+                  const nextValues = multiSelection.filter(item => item !== optionValue);
                   const nextOtherText = isOtherOption ? '' : resolveOtherText(nextValues);
                   onAnswer(
                     currentQuestion.id,
@@ -767,7 +776,7 @@ export const QuestionnaireScreen = ({
                     )
                   );
                 } else {
-                  const nextValues = [...multiSelection, optionLabel];
+                  const nextValues = [...multiSelection, optionValue];
                   onAnswer(
                     currentQuestion.id,
                     buildMultiChoiceAnswerPayload(
@@ -810,7 +819,7 @@ export const QuestionnaireScreen = ({
                         onChange={(e) => {
                           const nextValues = isSelected
                             ? multiSelection
-                            : [...multiSelection, optionLabel];
+                            : [...multiSelection, optionValue];
                           onAnswer(
                             currentQuestion.id,
                             buildMultiChoiceAnswerPayload(
@@ -831,22 +840,23 @@ export const QuestionnaireScreen = ({
                       <p className="text-xs text-gray-500">Précisez votre choix</p>
                       <div className="space-y-2">
                         {subOptions.map((subOption, subIdx) => {
+                          const subValue = subOption.value;
                           const subLabel = subOption.label;
                           const subId = `${optionId}-sub-${subIdx}`;
-                          const isSubSelected = childSelections.includes(subLabel);
+                          const isSubSelected = childSelections.includes(subValue);
                           const isSubOtherOption = subOption.isOther === true;
                           const toggleSubOption = () => {
                             const nextChildren = subType === 'multi_choice'
                               ? (isSubSelected
-                                ? childSelections.filter(item => item !== subLabel)
-                                : [...childSelections, subLabel])
-                              : [subLabel];
+                                ? childSelections.filter(item => item !== subValue)
+                                : [...childSelections, subValue])
+                              : [subValue];
                             const nextValues = isSelected
                               ? multiSelection
-                              : [...multiSelection, optionLabel];
+                              : [...multiSelection, optionValue];
                             const nextChildrenOtherText = { ...multiAnswerState.childrenOtherText };
-                            if (otherSubOptionLabel && !nextChildren.includes(otherSubOptionLabel)) {
-                              delete nextChildrenOtherText[optionLabel];
+                            if (otherSubOptionValue && !nextChildren.includes(otherSubOptionValue)) {
+                              delete nextChildrenOtherText[optionValue];
                             }
                             onAnswer(
                               currentQuestion.id,
@@ -854,7 +864,7 @@ export const QuestionnaireScreen = ({
                                 nextValues,
                                 {
                                   ...multiAnswerState.children,
-                                  [optionLabel]: nextChildren
+                                  [optionValue]: nextChildren
                                 },
                                 resolveOtherText(nextValues),
                                 nextChildrenOtherText
@@ -882,19 +892,19 @@ export const QuestionnaireScreen = ({
                                   onChange={(event) => {
                                     const nextValues = isSelected
                                       ? multiSelection
-                                      : [...multiSelection, optionLabel];
+                                      : [...multiSelection, optionValue];
                                     onAnswer(
                                       currentQuestion.id,
                                       buildMultiChoiceAnswerPayload(
                                         nextValues,
                                         {
                                           ...multiAnswerState.children,
-                                          [optionLabel]: childSelections
+                                          [optionValue]: childSelections
                                         },
                                         resolveOtherText(nextValues),
                                         {
                                           ...multiAnswerState.childrenOtherText,
-                                          [optionLabel]: event.target.value
+                                          [optionValue]: event.target.value
                                         }
                                       )
                                     );

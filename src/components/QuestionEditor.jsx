@@ -4,6 +4,7 @@ import {
   Trash2,
   ArrowUp,
   ArrowDown,
+  Eye,
   Clipboard,
   Compass,
   Target,
@@ -15,7 +16,7 @@ import { ensureOperatorForType, getOperatorOptionsForType } from '../utils/opera
 import {
   buildExtraCheckboxQuestionId,
   getConditionQuestionEntries,
-  getQuestionOptionLabels,
+  getQuestionOptionEntries,
   normalizeOtherOption,
   normalizeQuestionOptions
 } from '../utils/questions.js';
@@ -61,6 +62,16 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
       return 'Renseignez ici les informations détaillées...';
     }
     return '';
+  };
+
+  const slugifyOptionValue = (value, fallbackPrefix = 'option') => {
+    const normalized = typeof value === 'string' ? value : String(value || '');
+    const slug = normalized
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '_')
+      .replace(/[^a-z0-9_-]/g, '');
+    return slug || `${fallbackPrefix}_${Math.random().toString(36).slice(2, 8)}`;
   };
 
   const buildDefaultRankingConfig = (previousConfig = null) => {
@@ -134,6 +145,7 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
 
   const [optionConditionModal, setOptionConditionModal] = useState({ index: null, groups: [] });
   const [expandedOptionIndex, setExpandedOptionIndex] = useState(null);
+  const [showOptionIds, setShowOptionIds] = useState(false);
   const questionType = editedQuestion.type || 'choice';
   const typeUsesOptions = questionType === 'choice' || questionType === 'multi_choice';
   const normalizedGuidance = ensureGuidance(editedQuestion.guidance);
@@ -196,10 +208,10 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
         type: newType,
         options:
           prev.options && prev.options.length > 0
-            ? prev.options
-            : [
-                applyConditionGroups({ label: 'Option 1', visibility: 'always' }, []),
-                applyConditionGroups({ label: 'Option 2', visibility: 'always' }, [])
+              ? prev.options
+              : [
+                applyConditionGroups({ label: 'Option 1', value: 'option_1', visibility: 'always' }, []),
+                applyConditionGroups({ label: 'Option 2', value: 'option_2', visibility: 'always' }, [])
               ]
       }));
       return;
@@ -661,7 +673,14 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
       ...editedQuestion,
       options: [
         ...editedQuestion.options,
-        applyConditionGroups({ label: 'Nouvelle option', visibility: 'always' }, [])
+        applyConditionGroups(
+          {
+            label: 'Nouvelle option',
+            value: slugifyOptionValue(`option_${editedQuestion.options.length + 1}`),
+            visibility: 'always'
+          },
+          []
+        )
       ]
     });
   };
@@ -671,7 +690,8 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
     const current = newOptions[index];
     newOptions[index] = {
       ...(current && typeof current === 'object' ? current : {}),
-      label: value
+      label: value,
+      value: current?.value || slugifyOptionValue(value, `option_${index + 1}`)
     };
     setEditedQuestion({ ...editedQuestion, options: newOptions });
   };
@@ -692,7 +712,13 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
     const existing = Array.isArray(current?.subOptions) ? current.subOptions : [];
     newOptions[index] = {
       ...(current && typeof current === 'object' ? current : {}),
-      subOptions: [...existing, { label: 'Nouvelle sous-option' }]
+      subOptions: [
+        ...existing,
+        {
+          label: 'Nouvelle sous-option',
+          value: slugifyOptionValue(`sub_option_${index + 1}_${existing.length + 1}`, 'sub_option')
+        }
+      ]
     };
     setEditedQuestion({ ...editedQuestion, options: newOptions });
   };
@@ -709,7 +735,14 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
 
     newOptions[index] = {
       ...(current && typeof current === 'object' ? current : {}),
-      subOptions: [...existing, { label: 'Autre', isOther: true }]
+      subOptions: [
+        ...existing,
+        {
+          label: 'Autre',
+          value: slugifyOptionValue(`sub_option_other_${index + 1}`, 'sub_option_other'),
+          isOther: true
+        }
+      ]
     };
     setEditedQuestion({ ...editedQuestion, options: newOptions });
   };
@@ -725,7 +758,8 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
 
       return {
         ...(entry && typeof entry === 'object' ? entry : {}),
-        label: value
+        label: value,
+        value: entry?.value || slugifyOptionValue(value, `sub_option_${index + 1}_${subIndex + 1}`)
       };
     });
 
@@ -1073,13 +1107,29 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                       ? 'Options de sélection multiple'
                       : 'Options de réponse'}
                   </h3>
-                  <button
-                    onClick={addOption}
-                    className="flex items-center px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-all text-sm font-medium"
-                  >
-                    <Plus className="w-4 h-4 mr-1" />
-                    Ajouter une option
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowOptionIds((prev) => !prev)}
+                      className={`inline-flex items-center gap-1 rounded-lg border px-3 py-2 text-xs font-semibold transition-all ${
+                        showOptionIds
+                          ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
+                          : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                      }`}
+                      aria-pressed={showOptionIds}
+                      title={showOptionIds ? 'Masquer les IDs' : 'Afficher les IDs'}
+                    >
+                      <Eye className="h-4 w-4" />
+                      {showOptionIds ? 'Masquer IDs' : 'Afficher IDs'}
+                    </button>
+                    <button
+                      onClick={addOption}
+                      className="flex items-center px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-all text-sm font-medium"
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      Ajouter une option
+                    </button>
+                  </div>
                 </div>
 
                 <p className="text-xs text-gray-500 mb-3">
@@ -1095,6 +1145,7 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                         : typeof option?.label === 'string'
                           ? option.label
                           : '';
+                    const optionValue = typeof option?.value === 'string' ? option.value : '';
                     const visibility = option?.visibility || 'always';
                     const statusColor =
                       visibility === 'conditional'
@@ -1146,6 +1197,11 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                           className="flex-1 min-w-[220px] px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                           placeholder="Texte de l'option..."
                         />
+                        {showOptionIds && (
+                          <code className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-700">
+                            ID: {optionValue || '—'}
+                          </code>
+                        )}
                         <button
                           type="button"
                           onClick={() => setExpandedOptionIndex(isExpanded ? null : idx)}
@@ -1202,6 +1258,11 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                                   className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                                   placeholder={`Sous-option ${subIdx + 1}`}
                                 />
+                                {showOptionIds && (
+                                  <code className="rounded bg-white px-2 py-1 text-xs text-gray-600 border border-gray-200">
+                                    ID: {typeof subOption?.value === 'string' ? subOption.value : '—'}
+                                  </code>
+                                )}
                                 <button
                                   type="button"
                                   onClick={() => deleteSubOption(idx, subIdx)}
@@ -1771,7 +1832,7 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                                         }
 
                                         if (usesOptions) {
-                                          const optionLabels = getQuestionOptionLabels(selectedQuestion);
+                                          const optionEntries = getQuestionOptionEntries(selectedQuestion);
                                           return (
                                             <select
                                               value={condition.value}
@@ -1779,8 +1840,8 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                                               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500"
                                             >
                                               <option value="">Sélectionner...</option>
-                                              {optionLabels.map((opt, i) => (
-                                                <option key={i} value={opt}>{opt}</option>
+                                              {optionEntries.map((entry, i) => (
+                                                <option key={i} value={entry.value}>{entry.label}</option>
                                               ))}
                                             </select>
                                           );
@@ -2028,9 +2089,9 @@ export const QuestionEditor = ({ question, onSave, onCancel, allQuestions }) => 
                                           className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
                                         >
                                           <option value="">Sélectionner...</option>
-                                          {getQuestionOptionLabels(selectedQuestion).map((opt, optIdx) => (
-                                            <option key={optIdx} value={opt}>
-                                              {opt}
+                                          {getQuestionOptionEntries(selectedQuestion).map((entry, optIdx) => (
+                                            <option key={optIdx} value={entry.value}>
+                                              {entry.label}
                                             </option>
                                           ))}
                                         </select>

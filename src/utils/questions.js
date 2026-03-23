@@ -192,6 +192,10 @@ export const normalizeQuestionOption = (option) => {
   const label = typeof rawLabel === 'string' || typeof rawLabel === 'number' || typeof rawLabel === 'boolean'
     ? String(rawLabel)
     : '';
+  const rawValue = baseOption.value ?? baseOption.id ?? rawLabel;
+  const value = typeof rawValue === 'string' || typeof rawValue === 'number' || typeof rawValue === 'boolean'
+    ? String(rawValue)
+    : '';
   const rawVisibility = baseOption.visibility;
   const visibility = rawVisibility === 'conditional' || rawVisibility === 'disabled' ? rawVisibility : 'always';
   const conditionGroups = normalizeConditionGroups(baseOption);
@@ -202,6 +206,7 @@ export const normalizeQuestionOption = (option) => {
   return applyConditionGroups(
     {
       ...baseOption,
+      value,
       label,
       visibility,
       subType,
@@ -276,13 +281,63 @@ export const getQuestionOptionLabels = (questionOrOptions, { includeChildren = t
   return labels;
 };
 
-const getOtherSubOptionLabel = (question, parentLabel) => {
-  if (!question || !parentLabel) {
+export const getQuestionOptionEntries = (questionOrOptions, { includeChildren = true } = {}) => {
+  const normalizedOptions = normalizeQuestionOptions(questionOrOptions);
+  const entries = [];
+
+  normalizedOptions.forEach((option) => {
+    if (option?.value) {
+      entries.push({
+        value: String(option.value),
+        label: option?.label ? String(option.label) : String(option.value)
+      });
+    }
+
+    if (!includeChildren || !Array.isArray(option.subOptions)) {
+      return;
+    }
+
+    option.subOptions.forEach((subOption) => {
+      if (subOption?.value) {
+        entries.push({
+          value: String(subOption.value),
+          label: subOption?.label ? String(subOption.label) : String(subOption.value)
+        });
+      }
+    });
+  });
+
+  return entries;
+};
+
+const resolveOptionLabelFromQuestion = (question, value) => {
+  if (value === null || value === undefined) {
+    return '';
+  }
+
+  const stringValue = String(value);
+  const entries = getQuestionOptionEntries(question);
+  const matchByValue = entries.find((entry) => entry.value === stringValue);
+  if (matchByValue) {
+    return matchByValue.label;
+  }
+
+  const matchByLabel = entries.find((entry) => entry.label === stringValue);
+  if (matchByLabel) {
+    return matchByLabel.label;
+  }
+
+  return stringValue;
+};
+
+const getOtherSubOptionLabel = (question, parentValueOrLabel) => {
+  if (!question || !parentValueOrLabel) {
     return '';
   }
 
   const options = normalizeQuestionOptions(question, { includeOther: false });
-  const parentOption = options.find(option => option.label === parentLabel);
+  const normalizedParent = String(parentValueOrLabel);
+  const parentOption = options.find(option => option.value === normalizedParent || option.label === normalizedParent);
 
   if (!parentOption || !Array.isArray(parentOption.subOptions)) {
     return '';
@@ -364,12 +419,12 @@ export const formatAnswer = (question, answer) => {
   }
 
   if (questionType === 'multi_choice' && Array.isArray(answer)) {
-    return answer.join(', ');
+    return answer.map((value) => resolveOptionLabelFromQuestion(question, value)).join(', ');
   }
 
   if (questionType === 'choice' && answer && typeof answer === 'object' && !Array.isArray(answer)) {
     const value = typeof answer.value !== 'undefined' ? answer.value : answer.name;
-    const label = value == null ? '' : String(value);
+    const label = resolveOptionLabelFromQuestion(question, value);
     const children = Array.isArray(answer.children) ? answer.children : [];
     const otherText = typeof answer.otherText === 'string' ? answer.otherText.trim() : '';
     const childrenOtherText = typeof answer.childrenOtherText === 'string'
@@ -385,10 +440,11 @@ export const formatAnswer = (question, answer) => {
     const formattedChildren = children
       .map((item) => {
         const childLabel = String(item);
+        const resolvedChildLabel = resolveOptionLabelFromQuestion(question, childLabel);
         if (childrenOtherText && otherChildLabel && childLabel === otherChildLabel) {
-          return `${childLabel} (${childrenOtherText})`;
+          return `${resolvedChildLabel} (${childrenOtherText})`;
         }
-        return childLabel;
+        return resolvedChildLabel;
       })
       .join(', ');
     if (otherText) {
@@ -407,19 +463,18 @@ export const formatAnswer = (question, answer) => {
     if (values.length === 0) {
       return '';
     }
-    const otherLabel = typeof question?.otherOption?.label === 'string'
-      ? question.otherOption.label.trim()
-      : '';
+    const otherOptionValue = normalizeQuestionOptions(question).find((option) => option.isOther)?.value || '';
     return values
       .map((value) => {
-        const label = value == null ? '' : String(value);
-        const childValues = Array.isArray(children[label]) ? children[label] : [];
-        const childOtherText = typeof childrenOtherText[label] === 'string'
-          ? childrenOtherText[label].trim()
+        const label = resolveOptionLabelFromQuestion(question, value);
+        const optionValue = value == null ? '' : String(value);
+        const childValues = Array.isArray(children[optionValue]) ? children[optionValue] : [];
+        const childOtherText = typeof childrenOtherText[optionValue] === 'string'
+          ? childrenOtherText[optionValue].trim()
           : '';
-        const otherChildLabel = childOtherText ? getOtherSubOptionLabel(question, label) : '';
+        const otherChildLabel = childOtherText ? getOtherSubOptionLabel(question, optionValue) : '';
         if (childValues.length === 0) {
-          if (otherText && otherLabel && label === otherLabel) {
+          if (otherText && otherOptionValue && optionValue === otherOptionValue) {
             return `${label} (${otherText})`;
           }
           return label;
@@ -427,13 +482,14 @@ export const formatAnswer = (question, answer) => {
         const formattedChildren = childValues
           .map((item) => {
             const childLabel = String(item);
+            const resolvedChildLabel = resolveOptionLabelFromQuestion(question, childLabel);
             if (childOtherText && otherChildLabel && childLabel === otherChildLabel) {
-              return `${childLabel} (${childOtherText})`;
+              return `${resolvedChildLabel} (${childOtherText})`;
             }
-            return childLabel;
+            return resolvedChildLabel;
           })
           .join(', ');
-        if (otherText && otherLabel && label === otherLabel) {
+        if (otherText && otherOptionValue && optionValue === otherOptionValue) {
           return `${label} (${formattedChildren} · ${otherText})`;
         }
         return `${label} (${formattedChildren})`;
