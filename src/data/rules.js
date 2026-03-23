@@ -1039,7 +1039,7 @@ export const initialRules = [
     "questions": {
       "pi": [
         {
-          "text": "Pensez à bien faire signer à l'agence - une fois le logo / nom reçu -&nbsp;<a href=\"https://lfb1.sharepoint.com/sites/lfb-domains/fr-FR/legal/contractual-commitment\" target=\"_blank\" rel=\"noopener noreferrer\">le contrat de cession de droits d'auteur</a>",
+          "text": "Pensez à bien faire signer à l'agence - une fois le logo / nom reçu - le contrat suivant : XXXXXXX (version française) ; XXXXX (version anglaise)",
           "timingConstraint": {
             "enabled": false,
             "startQuestion": "",
@@ -1082,7 +1082,7 @@ export const initialRules = [
     "questions": {
       "pi": [
         {
-          "text": "Contactez-nous pour établir une étude de liberté d'exploitation des visuels créés pour le projet.&nbsp;<br>Si ce visuel a été créé par une personne externe au LFB, il conviendra de lui faire signer&nbsp;<a href=\"https://lfb1.sharepoint.com/sites/lfb-domains/fr-FR/legal/contractual-commitment\" target=\"_blank\" rel=\"noopener noreferrer\">un contrat de cession de droits d'auteur</a>.",
+          "text": "Contactez-nous pour établir une étude de liberté d'exploitation des visuels créés pour le projet.&nbsp;<br>Si ce visuel a été créé par une personne externe au LFB, il conviendra de lui faire signer un contrat de cession de droit d'auteur : XXXXXX (version française) ; XXXX (version anglaise)",
           "timingConstraint": {
             "enabled": false,
             "startQuestion": "",
@@ -1133,7 +1133,7 @@ export const initialRules = [
           }
         },
         {
-          "text": "Si un stagiaire travaille sur le projet, assurez-vous de maintenir la confidentialité des rapports de stage / d'alternance s'il partage des informations sur nos produits, procédés de fabrication, installations ou éléments techniques. Téléchargez les&nbsp;<a href=\"https://lfb1.sharepoint.com/sites/lfb-domains/fr-FR/legal/contractual-commitment\" target=\"_blank\" rel=\"noopener noreferrer\">accords spécifiques pour les soutenances</a>.",
+          "text": "Si un stagiaire travaille sur le projet, assurez-vous de maintenir la confidentialité des rapport de stage / d'alternance s'il partage des informations sur nos procédés de fabrication, installations ou éléments techniques",
           "timingConstraint": {
             "enabled": false,
             "startQuestion": "",
@@ -1180,7 +1180,7 @@ export const initialRules = [
       {
         "description": "CELLCOS",
         "level": "Moyen",
-        "mitigation": "Les projets prévoyant des publications nécessitent un passage en CELLCOS. Voici l'adresse à laquelle écrire : cellcoss@lfb.fr\nEnvoyer le document à revoir minimum 2 semaines avant la date limite de soumission",
+        "mitigation": "Les projets prévoyant des publications nécessitent un passage en CELLCOS",
         "priority": "A anticiper",
         "teamId": "pi",
         "timingConstraint": {
@@ -1198,9 +1198,9 @@ export const initialRules = [
     "conditions": [
       {
         "type": "question",
-        "question": "q11",
+        "question": "q24",
         "operator": "equals",
-        "value": "Logo de tiers (ex : logos d'associations de patients, de sociétés savantes, ...)"
+        "value": "Partager des informations sur nos procédés de fabrication, nos installations ou des éléments techniques"
       }
     ],
     "conditionGroups": [
@@ -1209,9 +1209,9 @@ export const initialRules = [
         "conditions": [
           {
             "type": "question",
-            "question": "q11",
+            "question": "q24",
             "operator": "equals",
-            "value": "Logo de tiers (ex : logos d'associations de patients, de sociétés savantes, ...)"
+            "value": "Partager des informations sur nos procédés de fabrication, nos installations ou des éléments techniques"
           }
         ]
       }
@@ -1223,7 +1223,7 @@ export const initialRules = [
     "questions": {
       "pi": [
         {
-          "text": "Pour l'utilisation de logo de tiers, pensez à obtenir leur autorisation écrite. Concernant les associations de patients, passez par l'équipe Affaires Publiques pour obtenir cette accord.",
+          "text": "Pour l'utilisation de logo de tiers, pensez à obtenir leur autorisation écrite. Concernant les associations de patients, voici la liste des associations nous permettant de communiquer sur notre soutien auprès d'elles pour l'année en cours : XXXXX",
           "timingConstraint": {
             "enabled": false,
             "startQuestion": "",
@@ -1309,7 +1309,7 @@ export const initialRules = [
     "questions": {
       "pi": [
         {
-          "text": "Si les extraits de publications ont été intégrés tel quel sans modification ni paraphrase, vérifiez si la publication est intégré au périmètre de la licence CFC (Centre Français de Copie) / BioMed et les droits qui sont accordés, en utilisant&nbsp;<a href=\"https://v1.cfcopies.com/biomed/index.html\" target=\"_blank\" rel=\"noopener noreferrer\">ce lien</a>. Intégrez la référence de l'article dans le rendu de votre projet<br>",
+          "text": "Si les extraits de publications ont été intégrés tel quel sans modification ni paraphrase, vérifiez si la publication est intégré au périmètre de la licence CFC (Centre Français de Copie) / BioMed et les droits qui sont accordés, en utilisant&nbsp;<a href=\"https://v1.cfcopies.com/biomed/index.html\" target=\"_blank\" rel=\"noopener noreferrer\">ce lien</a><br>",
           "timingConstraint": {
             "enabled": false,
             "startQuestion": "",
@@ -1317,7 +1317,7 @@ export const initialRules = [
           }
         },
         {
-          "text": "Si l'intégration des extraits de publication se fait en retravaillant de manière substantielle les textes, schémas ou figure, intégrez la référence de l'article dans le rendu de votre projet",
+          "text": "Si l'intégration des extraits de publication se fait avec retravaillant de manière substantielle les textes, schémas ou figure, intégrez la référence de l'article dans le rendu de votre projet",
           "timingConstraint": {
             "enabled": false,
             "startQuestion": "",
@@ -1380,7 +1380,7 @@ export const initialRules = [
         "type": "question",
         "question": "q11",
         "operator": "equals",
-        "value": "Extrait de sites internet"
+        "value": "Extrait de de sites internet"
       }
     ],
     "conditionGroups": [
@@ -1391,7 +1391,7 @@ export const initialRules = [
             "type": "question",
             "question": "q11",
             "operator": "equals",
-            "value": "Extrait de sites internet"
+            "value": "Extrait de de sites internet"
           }
         ]
       }
@@ -1456,7 +1456,7 @@ export const initialRules = [
     "questions": {
       "pi": [
         {
-          "text": "Contactez le pôle PI pour vérifier la disponibilité des noms de domaine s'il s'agit d'un nouveau site internet : dpi@lfb.fr",
+          "text": "Contactez le pôle PI pour vérifier la disponibilité des noms de domaine s'il s'agit d'un nouveau site internet",
           "timingConstraint": {
             "enabled": false,
             "startQuestion": "",
@@ -1776,7 +1776,7 @@ export const initialRules = [
         "type": "question",
         "question": "q10",
         "operator": "equals",
-        "value": "Expert français non professionnel de santé"
+        "value": "Expert français non professionnels de santé"
       },
       {
         "type": "question",
@@ -1811,7 +1811,7 @@ export const initialRules = [
             "type": "question",
             "question": "q10",
             "operator": "equals",
-            "value": "Expert français non professionnel de santé"
+            "value": "Expert français non professionnels de santé"
           },
           {
             "type": "question",
@@ -2203,7 +2203,7 @@ export const initialRules = [
           }
         },
         {
-          "text": "Qui est le bénéficiaire du don ?&nbsp; Y-a-il des PS dans son board ?",
+          "text": "Qui est le bénéficiaire du don ? Quel est son statut ? Y-a-il des PS dans son board ?",
           "timingConstraint": {
             "enabled": false,
             "startQuestion": "",
@@ -2211,7 +2211,15 @@ export const initialRules = [
           }
         },
         {
-          "text": "Pouvez-vous charger la lettre de sollicitation du don ?",
+          "text": "Quel est la rationnel du don pour le LFB ? (intérêt général, scientifique, institutionnel ?)",
+          "timingConstraint": {
+            "enabled": false,
+            "startQuestion": "",
+            "endQuestion": ""
+          }
+        },
+        {
+          "text": "Qui est à l'origine du contact avec le demandeur du don ?",
           "timingConstraint": {
             "enabled": false,
             "startQuestion": "",
@@ -2306,7 +2314,7 @@ export const initialRules = [
             "type": "question",
             "question": "q10",
             "operator": "equals",
-            "value": "Expert français non professionnel de santé"
+            "value": "Expert français non professionnels de santé"
           }
         ]
       }
@@ -3565,13 +3573,13 @@ export const initialRules = [
         "type": "question",
         "question": "q18_copy",
         "operator": "equals",
-        "value": "Etude interventionnelle"
+        "value": "Etude interventionnelle (IIS)"
       },
       {
         "type": "question",
         "question": "q18_copy",
         "operator": "equals",
-        "value": "Etude non-interventionnelle"
+        "value": "Etude non-interventionnelle (NIS)"
       }
     ],
     "conditionGroups": [
@@ -3582,13 +3590,13 @@ export const initialRules = [
             "type": "question",
             "question": "q18_copy",
             "operator": "equals",
-            "value": "Etude interventionnelle"
+            "value": "Etude interventionnelle (IIS)"
           },
           {
             "type": "question",
             "question": "q18_copy",
             "operator": "equals",
-            "value": "Etude non-interventionnelle"
+            "value": "Etude non-interventionnelle (NIS)"
           }
         ]
       }
@@ -4019,7 +4027,7 @@ export const initialRules = [
         "type": "question",
         "question": "q18_copy",
         "operator": "equals",
-        "value": "Etude non-interventionnelle"
+        "value": "Etude non-interventionnelle (NIS)"
       }
     ],
     "conditionGroups": [
@@ -4030,7 +4038,7 @@ export const initialRules = [
             "type": "question",
             "question": "q18_copy",
             "operator": "equals",
-            "value": "Etude non-interventionnelle"
+            "value": "Etude non-interventionnelle (NIS)"
           }
         ]
       }
