@@ -476,6 +476,7 @@ export const analyzeAnswers = (answers, rules, riskLevelRules, riskWeighting) =>
   const timelineByTeam = {};
   const timingDetails = [];
   const vigilanceAlerts = [];
+  const sharedTeamBlocks = [];
 
   evaluations.forEach(({ rule, evaluation }) => {
     if (!evaluation.triggered) {
@@ -493,18 +494,31 @@ export const analyzeAnswers = (answers, rules, riskLevelRules, riskWeighting) =>
       }
     };
 
-    const ruleTeams = Array.isArray(rule?.teams) ? rule.teams : [];
+    const ruleTeams = Array.isArray(rule?.teams)
+      ? Array.from(new Set(rule.teams.filter(teamId => typeof teamId === 'string' && teamId.trim() !== '')))
+      : [];
     const primaryTeamId = ruleTeams[0] || '';
     const assignedTeamId = resolveRuleAssignedTeam(rule, answers);
+    const activeTeamIds = Array.from(
+      new Set(
+        ruleTeams.map((teamId) => (teamId === primaryTeamId ? assignedTeamId : teamId)).filter(Boolean)
+      )
+    );
 
-    addTeam(assignedTeamId);
+    activeTeamIds.forEach(addTeam);
 
     const primaryQuestions = primaryTeamId && rule.questions && typeof rule.questions === 'object'
       ? rule.questions[primaryTeamId]
       : [];
-    const sourceQuestions = assignedTeamId
-      ? { [assignedTeamId]: primaryQuestions }
-      : {};
+    const sourceQuestions = activeTeamIds.reduce((accumulator, teamId) => {
+      const teamQuestions = rule.questions && typeof rule.questions === 'object'
+        ? rule.questions[teamId]
+        : null;
+      return {
+        ...accumulator,
+        [teamId]: Array.isArray(teamQuestions) ? teamQuestions : primaryQuestions
+      };
+    }, {});
 
     Object.entries(sourceQuestions).forEach(([teamId, questions]) => {
       if (!teamId) {
@@ -708,6 +722,21 @@ export const analyzeAnswers = (answers, rules, riskLevelRules, riskWeighting) =>
 
     allRisks.push(...processedRisks);
 
+    if (activeTeamIds.length > 1) {
+      const sharedQuestions = Array.isArray(primaryQuestions)
+        ? primaryQuestions
+            .map(sanitizeTeamQuestionEntry)
+            .filter(entry => typeof entry?.text === 'string' && entry.text.trim().length > 0)
+        : [];
+
+      sharedTeamBlocks.push({
+        ruleId: rule.id,
+        ruleName: rule.name,
+        teamIds: activeTeamIds,
+        questions: sharedQuestions
+      });
+    }
+
     evaluation.timingContexts.forEach(context => {
       if (!context || !context.diff) {
         timingDetails.push({
@@ -787,7 +816,8 @@ export const analyzeAnswers = (answers, rules, riskLevelRules, riskWeighting) =>
       vigilance: vigilanceAlerts
     },
     complexity,
-    complexityRule
+    complexityRule,
+    sharedTeamBlocks
   };
 };
 

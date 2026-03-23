@@ -533,12 +533,53 @@ const buildEmailHtml = ({
       `
     : '';
 
+  const sharedTeamBlocks = Array.isArray(analysis?.sharedTeamBlocks) ? analysis.sharedTeamBlocks : [];
+  const sharedTeamSection = sharedTeamBlocks.length
+    ? `
+        <div style="margin-bottom:16px;">
+          <h3 style="font-size:15px; font-weight:600; color:#1f2937; margin-bottom:10px;">
+            Blocs communs multi-équipes
+          </h3>
+          ${sharedTeamBlocks.map((block) => {
+            const teamLabels = (Array.isArray(block.teamIds) ? block.teamIds : [])
+              .map((teamId) => relevantTeams.find((team) => team.id === teamId)?.name || teamId)
+              .filter(Boolean);
+            const formattedQuestions = Array.isArray(block.questions)
+              ? block.questions
+                  .map(normalizeTeamQuestionForDisplay)
+                  .filter(question => (question.text || '').trim().length > 0)
+              : [];
+            const questionItems = formattedQuestions.length
+              ? `
+                  <ul style="margin:8px 0 0; padding-left:18px; list-style-type:disc; color:#4b5563; font-size:13px;">
+                    ${formattedQuestions.map((question) => `<li>${escapeHtml(question.text)}</li>`).join('')}
+                  </ul>
+                `
+              : '';
+
+            return `
+              <div style="border:1px solid #bfdbfe; border-radius:12px; padding:14px; margin-bottom:10px; background-color:#eff6ff;">
+                <div style="font-size:14px; font-weight:600; color:#1e3a8a;">
+                  ${escapeHtml(block.ruleName || 'Règle sans nom')}
+                </div>
+                <div style="font-size:13px; color:#1f2937; margin-top:6px;">
+                  Équipes : ${escapeHtml(teamLabels.join(', '))}
+                </div>
+                ${questionItems}
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `
+    : '';
+
   const teamSection = relevantTeams.length
     ? `
         <div style="margin-bottom:24px;">
           <h2 style="font-size:18px; font-weight:600; color:#1f2937; margin-bottom:12px;">
             Équipes à mobiliser
           </h2>
+          ${sharedTeamSection}
           ${relevantTeams
             .map(team => {
               const teamPriority = getTeamPriority(analysis, team.id);
@@ -841,6 +882,25 @@ export const SynthesisReport = ({
   }, [tourContext]);
   const relevantTeams = teams.filter(team => (analysis?.teams || []).includes(team.id));
   const notifiedTeams = teams.filter(team => (analysis?.notifiedTeams || analysis?.teams || []).includes(team.id));
+  const sharedTeamBlocks = useMemo(() => {
+    const blocks = Array.isArray(analysis?.sharedTeamBlocks) ? analysis.sharedTeamBlocks : [];
+    return blocks.map((block) => {
+      const teamIds = Array.isArray(block?.teamIds) ? block.teamIds : [];
+      const teamNames = teamIds
+        .map((teamId) => teams.find((team) => team?.id === teamId)?.name || teamId)
+        .filter(Boolean);
+      const formattedQuestions = Array.isArray(block?.questions)
+        ? block.questions
+            .map(normalizeTeamQuestionForDisplay)
+            .filter((question) => (question.text || '').trim().length > 0)
+        : [];
+      return {
+        ...block,
+        teamNames,
+        questions: formattedQuestions
+      };
+    });
+  }, [analysis?.sharedTeamBlocks, teams]);
   const hasSaveFeedback = Boolean(saveFeedback?.message);
   const isSaveSuccess = saveFeedback?.status === 'success';
   const complianceComments = useMemo(
@@ -1936,6 +1996,34 @@ export const SynthesisReport = ({
               </div>
             )}
             <div className="grid grid-cols-1 gap-4">
+              {sharedTeamBlocks.map((block) => (
+                <div
+                  key={`shared-${block.ruleId || block.ruleName}`}
+                  className="bg-blue-50 rounded-xl p-6 border-2 border-blue-200 hv-surface"
+                  role="article"
+                  aria-label={`Bloc commun ${block.ruleName || 'règle'}`}
+                >
+                  <h3 className="text-lg font-bold text-blue-900">
+                    {block.ruleName || 'Règle sans nom'}
+                  </h3>
+                  <p className="mt-2 text-sm text-blue-800">
+                    Bloc commun pour : {block.teamNames.join(' · ')}
+                  </p>
+                  {block.questions.length > 0 && (
+                    <div className="mt-4">
+                      <h4 className="text-sm font-semibold text-blue-900 mb-2">Points à préparer (communs) :</h4>
+                      <ul className="space-y-1">
+                        {block.questions.map((question, idx) => (
+                          <li key={idx} className="text-sm text-blue-900 flex">
+                            <span className="mr-2">•</span>
+                            <span>{renderTextWithLinks(question.text)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              ))}
               {relevantTeams.map(team => {
                 const teamPriority = getTeamPriority(analysis, team.id);
                 const teamQuestions = analysis.questions?.[team.id];
