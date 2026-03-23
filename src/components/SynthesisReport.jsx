@@ -840,6 +840,7 @@ export const SynthesisReport = ({
     }
   }, [tourContext]);
   const relevantTeams = teams.filter(team => (analysis?.teams || []).includes(team.id));
+  const notifiedTeams = teams.filter(team => (analysis?.notifiedTeams || analysis?.teams || []).includes(team.id));
   const hasSaveFeedback = Boolean(saveFeedback?.message);
   const isSaveSuccess = saveFeedback?.status === 'success';
   const complianceComments = useMemo(
@@ -1683,7 +1684,7 @@ export const SynthesisReport = ({
     const fallbackBody = `${emailText}\n\nFichier du projet : ${fileName}\nLe fichier JSON a été téléchargé automatiquement ; merci de l'ajouter en pièce jointe avant envoi.`;
     const mailtoLink = buildMailtoLink({
       projectName: effectiveProjectName,
-      relevantTeams,
+      relevantTeams: notifiedTeams,
       committees: triggeredValidationCommittees,
       body: fallbackBody
     });
@@ -1695,7 +1696,7 @@ export const SynthesisReport = ({
     answers,
     effectiveProjectName,
     questions,
-    relevantTeams,
+    notifiedTeams,
     triggeredValidationCommittees,
     timelineDetails,
     setAttachmentReminder

@@ -470,6 +470,7 @@ export const analyzeAnswers = (answers, rules, riskLevelRules, riskWeighting) =>
   const evaluations = rules.map(rule => ({ rule, evaluation: evaluateRule(rule, answers) }));
 
   const teamsSet = new Set();
+  const notifiedTeamsSet = new Set();
   const allQuestions = {};
   const allRisks = [];
   const timelineByTeam = {};
@@ -481,13 +482,22 @@ export const analyzeAnswers = (answers, rules, riskLevelRules, riskWeighting) =>
       return;
     }
 
+    const shouldNotifyTeam = rule?.notifyTeam !== false;
+    const addTeam = (teamId) => {
+      if (!teamId) {
+        return;
+      }
+      teamsSet.add(teamId);
+      if (shouldNotifyTeam) {
+        notifiedTeamsSet.add(teamId);
+      }
+    };
+
     const ruleTeams = Array.isArray(rule?.teams) ? rule.teams : [];
     const primaryTeamId = ruleTeams[0] || '';
     const assignedTeamId = resolveRuleAssignedTeam(rule, answers);
 
-    if (assignedTeamId) {
-      teamsSet.add(assignedTeamId);
-    }
+    addTeam(assignedTeamId);
 
     const primaryQuestions = primaryTeamId && rule.questions && typeof rule.questions === 'object'
       ? rule.questions[primaryTeamId]
@@ -556,7 +566,7 @@ export const analyzeAnswers = (answers, rules, riskLevelRules, riskWeighting) =>
             }
           });
 
-          teamsSet.add(teamId);
+          addTeam(teamId);
           return;
         }
 
@@ -569,7 +579,7 @@ export const analyzeAnswers = (answers, rules, riskLevelRules, riskWeighting) =>
         }
 
         allQuestions[teamId].push({ text: rawText, timingViolation: null });
-        teamsSet.add(teamId);
+        addTeam(teamId);
       });
     });
 
@@ -593,9 +603,7 @@ export const analyzeAnswers = (answers, rules, riskLevelRules, riskWeighting) =>
           const weightedRisk = { ...baseRisk, weight };
 
           if (!timingConstraint.enabled) {
-            if (preferredTeam) {
-              teamsSet.add(preferredTeam);
-            }
+            addTeam(preferredTeam);
             return weightedRisk;
           }
 
@@ -666,9 +674,7 @@ export const analyzeAnswers = (answers, rules, riskLevelRules, riskWeighting) =>
             return null;
           }
 
-          if (preferredTeam) {
-            teamsSet.add(preferredTeam);
-          }
+          addTeam(preferredTeam);
 
           const timingViolation = {
             startQuestion: timingConstraint.startQuestion,
@@ -771,6 +777,7 @@ export const analyzeAnswers = (answers, rules, riskLevelRules, riskWeighting) =>
   return {
     triggeredRules: evaluations.filter(({ evaluation }) => evaluation.triggered).map(({ rule }) => rule),
     teams: Array.from(teamsSet),
+    notifiedTeams: Array.from(notifiedTeamsSet),
     questions: allQuestions,
     risks: allRisks,
     riskScore,

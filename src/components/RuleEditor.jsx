@@ -134,6 +134,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
 
     const base = {
       ...rest,
+      notifyTeam: rest.notifyTeam !== false,
       conditionLogic: rest.conditionLogic === 'any' ? 'any' : 'all',
       conditions: Array.isArray(rest.conditions)
         ? rest.conditions.map(sanitizeRuleCondition)
@@ -909,6 +910,19 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
               <Users className="w-5 h-5 text-blue-500" />
               Équipe compliance à déclencher
             </h3>
+            <label className="mb-4 inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                checked={editedRule.notifyTeam !== false}
+                onChange={(event) =>
+                  setEditedRule((prev) => ({
+                    ...prev,
+                    notifyTeam: event.target.checked
+                  }))}
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              Notifier l’équipe concernée lorsque cette règle se déclenche
+            </label>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {teams.map(team => (
                 <button

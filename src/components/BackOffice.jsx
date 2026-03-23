@@ -3677,6 +3677,7 @@ export const BackOffice = ({
     const newRule = {
       id: getNextId(rules, 'rule'),
       name: 'Nouvelle règle',
+      notifyTeam: true,
       conditions: [],
       conditionGroups: [],
       conditionLogic: 'all',
