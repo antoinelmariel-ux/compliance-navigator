@@ -41,7 +41,7 @@ import { createAutosaveQueue } from './utils/autosaveQueue.js';
 import { reinitializeSharePointConfiguration } from './utils/sharePointSetup.js';
 const HEADER_LOGO_PATH = './src/components/logo.png';
 
-const APP_VERSION = 'v1.0.382';
+const APP_VERSION = 'v1.0.383';
 
 class AdminBackOfficeErrorBoundary extends React.Component {
   constructor(props) {

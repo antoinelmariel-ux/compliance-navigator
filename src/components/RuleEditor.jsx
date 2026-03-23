@@ -130,7 +130,9 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
   const buildRuleState = (source) => {
     const sanitizedSource = source || {};
     const { priority: _discardedPriority, ...rest } = sanitizedSource;
-    const teamsList = Array.isArray(rest.teams) ? rest.teams.slice(0, 1) : [];
+    const teamsList = Array.isArray(rest.teams)
+      ? Array.from(new Set(rest.teams.filter(teamId => typeof teamId === 'string' && teamId.trim() !== '')))
+      : [];
 
     const base = {
       ...rest,
@@ -258,15 +260,23 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
     });
   };
 
-  const setPrimaryTeam = (teamId) => {
-    const newTeams = teamId ? [teamId] : [];
-    const normalizedRisks = normalizeRiskList(editedRule.risks, newTeams);
-    setEditedRule(prev => ({
-      ...prev,
-      teams: newTeams,
-      risks: normalizedRisks,
-      teamRoutingRules: normalizeRoutingRules(prev.teamRoutingRules).filter((route) => route.targetTeamId !== teamId)
-    }));
+  const toggleTeamSelection = (teamId) => {
+    setEditedRule(prev => {
+      const currentTeams = Array.isArray(prev.teams) ? prev.teams : [];
+      const alreadySelected = currentTeams.includes(teamId);
+      const nextTeams = alreadySelected
+        ? currentTeams.filter((id) => id !== teamId)
+        : [...currentTeams, teamId];
+      const normalizedRisks = normalizeRiskList(prev.risks, nextTeams);
+      const primaryTeam = nextTeams[0] || '';
+
+      return {
+        ...prev,
+        teams: nextTeams,
+        risks: normalizedRisks,
+        teamRoutingRules: normalizeRoutingRules(prev.teamRoutingRules).filter((route) => route.targetTeamId !== primaryTeam)
+      };
+    });
   };
 
   const primaryTeamId = Array.isArray(editedRule.teams) ? (editedRule.teams[0] || '') : '';
@@ -908,7 +918,7 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
           <div>
             <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
               <Users className="w-5 h-5 text-blue-500" />
-              Équipe compliance à déclencher
+              Équipes compliance à déclencher
             </h3>
             <label className="mb-4 inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
               <input
@@ -927,20 +937,21 @@ export const RuleEditor = ({ rule, onSave, onCancel, questions, teams }) => {
               {teams.map(team => (
                 <button
                   key={team.id}
-                  onClick={() => setPrimaryTeam(team.id)}
+                  type="button"
+                  onClick={() => toggleTeamSelection(team.id)}
                   className={`p-4 rounded-lg border-2 text-left transition-all ${
-                    primaryTeamId === team.id
+                    editedRule.teams?.includes(team.id)
                       ? 'border-blue-600 bg-blue-50'
                       : 'border-gray-200 hover:border-blue-300'
                   }`}
                 >
                   <div className="flex items-center">
                     <div className={`w-5 h-5 rounded border-2 mr-3 flex items-center justify-center ${
-                      primaryTeamId === team.id
+                      editedRule.teams?.includes(team.id)
                         ? 'border-blue-600 bg-blue-600 text-white'
                         : 'border-gray-300'
                     }`}>
-                      {primaryTeamId === team.id && (
+                      {editedRule.teams?.includes(team.id) && (
                         <CheckCircle className="w-4 h-4" />
                       )}
                     </div>
