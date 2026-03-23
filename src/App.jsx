@@ -42,7 +42,7 @@ import { createAutosaveQueue } from './utils/autosaveQueue.js';
 import { reinitializeSharePointConfiguration } from './utils/sharePointSetup.js';
 const HEADER_LOGO_PATH = './src/components/logo.png';
 
-const APP_VERSION = 'v1.0.385';
+const APP_VERSION = 'v1.0.386';
 
 class AdminBackOfficeErrorBoundary extends React.Component {
   constructor(props) {
@@ -4476,7 +4476,7 @@ const updateProjectFilters = useCallback((updater) => {
 
       setSharePointReinitState({
         inProgress: false,
-        message: `Réinitialisation terminée (${details}). Bibliothèque: ${summary.libraryName}.`,
+        message: `Réinitialisation terminée (${details}). Bibliothèque: ${summary.libraryName}. Fichiers régénérés: ${summary.files.length}.`,
         status: 'success'
       });
     } catch (error) {
