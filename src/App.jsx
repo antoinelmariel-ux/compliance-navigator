@@ -43,7 +43,7 @@ import { reinitializeSharePointConfiguration } from './utils/sharePointSetup.js'
 import { getGraphCurrentUser, graphSetup } from './utils/graphAuth.js';
 const HEADER_LOGO_PATH = './src/components/logo.png';
 
-const APP_VERSION = 'v1.0.390';
+const APP_VERSION = 'v1.0.391';
 
 class AdminBackOfficeErrorBoundary extends React.Component {
   constructor(props) {
@@ -918,6 +918,7 @@ export const App = () => {
     message: '',
     status: 'idle'
   });
+  const [graphConnectionState, setGraphConnectionState] = useState('unknown');
   const annotationNotesRef = useRef(annotationNotes);
   const annotationFileInputRef = useRef(null);
   const showcaseProjectNameRef = useRef('');
@@ -932,18 +933,24 @@ export const App = () => {
 
   useEffect(() => {
     if (!graphSetup.isGraphRuntimeReady()) {
+      setGraphConnectionState('disabled');
       return;
     }
 
     let isActive = true;
+    setGraphConnectionState('connecting');
 
     getGraphCurrentUser()
       .then((user) => {
         if (isActive && user && typeof user === 'object') {
           setCurrentUser(user);
+          setGraphConnectionState('connected');
         }
       })
       .catch((error) => {
+        if (isActive) {
+          setGraphConnectionState('error');
+        }
         if (typeof console !== 'undefined' && typeof console.warn === 'function') {
           console.warn('Impossible de récupérer le profil utilisateur Graph :', error);
         }
@@ -4422,6 +4429,13 @@ const updateProjectFilters = useCallback((updater) => {
 
   const syncStatusLabel = formatSyncStatusLabel(syncStatus);
   const syncStatusMeta = formatSyncMeta(syncStatus);
+  const graphConnectionLabel = graphConnectionState === 'connected'
+    ? 'API Graph connectée'
+    : graphConnectionState === 'connecting'
+      ? 'API Graph : connexion…'
+      : graphConnectionState === 'error'
+        ? 'API Graph déconnectée'
+        : 'API Graph non configurée';
 
   const showcaseProjectId = showcaseProjectContext?.projectId || '';
   const canShareActiveProjectShowcase = useMemo(
@@ -5232,7 +5246,7 @@ const updateProjectFilters = useCallback((updater) => {
 
     <footer className="bg-white border-t border-gray-200 mt-10" aria-label="Pied de page">
       <p className="text-xs text-gray-400 text-center py-4">
-        Project Navigator · Version {APP_VERSION} · {syncStatusLabel}{syncStatusMeta ? ` · ${syncStatusMeta}` : ''} ·{' '}
+        Project Navigator · Version {APP_VERSION} · {syncStatusLabel}{syncStatusMeta ? ` · ${syncStatusMeta}` : ''} · {graphConnectionLabel} ·{' '}
         <a
           href="./mentions-legales.html"
           target="_blank"
