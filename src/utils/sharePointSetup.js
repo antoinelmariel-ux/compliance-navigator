@@ -260,16 +260,24 @@ const uploadConfigurationFiles = async ({ token, driveId, payload }) => {
 
 export const reinitializeSharePointConfiguration = async (payload, options = {}) => {
   const config = resolveGraphConfig(options);
+  let tokenAcquisitionError = null;
+
   if (!config.token) {
     try {
       config.token = await getGraphAccessToken();
     } catch (error) {
-      // fallback on explicit error below
+      tokenAcquisitionError = error;
     }
   }
 
   if (!config.token) {
-    throw new Error('Token Graph manquant. Renseignez window.__COMPLIANCE_NAVIGATOR_GRAPH__.token ou localStorage.graphAccessToken.');
+    const details = tokenAcquisitionError && tokenAcquisitionError.message
+      ? ` Détail MSAL: ${tokenAcquisitionError.message}`
+      : '';
+    throw new Error(
+      'Token Graph manquant. Connectez-vous via la popup Microsoft (MSAL) ou renseignez window.__COMPLIANCE_NAVIGATOR_GRAPH__.token/localStorage.graphAccessToken.'
+      + details
+    );
   }
 
   if (!config.siteId) {

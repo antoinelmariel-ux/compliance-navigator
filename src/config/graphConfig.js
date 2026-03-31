@@ -2,8 +2,6 @@ export const graphConfig = {
   enabled: true,
   tenantId: 'XXX',
   clientId: 'XXX',
-  clientSecretValue: 'XXX',
-  secretId: 'XXX',
   siteId: 'd0694d91-5626-4dc4-b738-0c61730474d4',
   siteUrl: 'https://lfb1.sharepoint.com/sites/ProjectNavigator_DEV/',
   indexUrl: 'https://lfb1.sharepoint.com/sites/ProjectNavigator_DEV/Documents%20partages/app/index.aspx',
