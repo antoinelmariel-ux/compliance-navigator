@@ -43,7 +43,7 @@ import { reinitializeSharePointConfiguration } from './utils/sharePointSetup.js'
 import { getGraphCurrentUser, graphSetup } from './utils/graphAuth.js';
 const HEADER_LOGO_PATH = './src/components/logo.png';
 
-const APP_VERSION = 'v1.0.389';
+const APP_VERSION = 'v1.0.392';
 
 class AdminBackOfficeErrorBoundary extends React.Component {
   constructor(props) {
