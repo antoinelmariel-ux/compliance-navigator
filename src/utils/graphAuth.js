@@ -1,7 +1,7 @@
 import { graphConfig, isGraphRuntimeReady } from '../config/graphConfig.js';
 
 const GRAPH_BASE_URL = 'https://graph.microsoft.com/v1.0';
-const MSAL_BROWSER_CDN = 'https://alcdn.msauth.net/browser/2.39.0/js/msal-browser.min.js';
+const MSAL_BROWSER_CDN = 'https://alcdn.msauth.net/browser/2.35.0/js/msal-browser.min.js';
 
 let msalLoadPromise = null;
 let msalClient = null;
