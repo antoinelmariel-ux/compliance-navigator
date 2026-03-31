@@ -130,19 +130,6 @@ const formatDaysValue = (days) => {
   return `${formatNumber(Math.round(days))} j.`;
 };
 
-const formatRiskScore = (score) => {
-  if (typeof score !== 'number' || Number.isNaN(score)) {
-    return null;
-  }
-
-  const sanitized = Math.max(0, score);
-  const hasDecimals = Math.abs(sanitized - Math.round(sanitized)) > 0.0001;
-
-  return formatNumber(sanitized, {
-    minimumFractionDigits: hasDecimals ? 1 : 0,
-    maximumFractionDigits: hasDecimals ? 2 : 0
-  });
-};
 
 const isAnswerProvided = (value) => {
   if (Array.isArray(value)) {
@@ -1041,7 +1028,6 @@ export const SynthesisReport = ({
     Faible: 'text-green-600'
   };
 
-  const formattedRiskScore = formatRiskScore(analysis?.riskScore);
 
   const rankingQuestions = useMemo(
     () => (Array.isArray(questions) ? questions.filter(question => question?.type === 'ranking') : []),
@@ -1973,11 +1959,6 @@ export const SynthesisReport = ({
             {analysis?.complexityRule?.description && (
               <p className="mt-3 bg-white border border-gray-200 rounded-lg p-3 text-sm text-gray-600 hv-surface">
                 {analysis.complexityRule.description}
-              </p>
-            )}
-            {formattedRiskScore && (
-              <p className="mt-3 text-sm text-gray-500">
-                Score de risque total : {formattedRiskScore}
               </p>
             )}
           </section>
