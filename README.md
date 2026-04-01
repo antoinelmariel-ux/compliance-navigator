@@ -12,3 +12,4 @@ Project Navigator aide les équipes projets et compliance à qualifier rapidemen
 
 - **Source de vérité mocks SharePoint** : les données `mock-sharepoint-lists/*.json` sont la référence migration; les modules `src/data/mockSharePoint*.js` sont auto-générés pour le runtime local (mode fichier). Utiliser `node scripts/sync-mock-sharepoint-data.js` après modification des JSON.
 - **Stockage flexible des inspirations** : comme les projets (`AnswersJson`), les inspirations sont désormais portées par une colonne JSON (`InspirationJson`) afin de limiter le nombre de colonnes SharePoint et de faciliter l’évolution du schéma.
+- **Diagnostic progressif des permissions Graph** : exécutez `node scripts/graph-permission-probe.js` avec `GRAPH_ACCESS_TOKEN` (et optionnellement `GRAPH_SITE_ID`, `GRAPH_DRIVE_ID`) pour identifier précisément la permission qui bloque en premier, suivre l’avancement étape par étape (`[x/n]`), voir les durées et obtenir un résumé final.
