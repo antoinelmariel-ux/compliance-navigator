@@ -43,7 +43,7 @@ import { reinitializeSharePointConfiguration } from './utils/sharePointSetup.js'
 import { getGraphCurrentUser, graphSetup } from './utils/graphAuth.js';
 const HEADER_LOGO_PATH = './src/components/logo.png';
 
-const APP_VERSION = 'v1.0.394';
+const APP_VERSION = 'v1.0.395';
 
 class AdminBackOfficeErrorBoundary extends React.Component {
   constructor(props) {
@@ -919,6 +919,19 @@ export const App = () => {
     status: 'idle'
   });
   const [graphConnectionState, setGraphConnectionState] = useState('unknown');
+  const [isGraphProbeOpen, setIsGraphProbeOpen] = useState(false);
+  const [graphProbeForm, setGraphProbeForm] = useState({
+    accessToken: '',
+    siteId: '',
+    driveId: '',
+    recipient: '',
+    continueOnError: false,
+    allowSendMail: false
+  });
+  const [graphProbeRunning, setGraphProbeRunning] = useState(false);
+  const [graphProbeResults, setGraphProbeResults] = useState([]);
+  const [graphProbeLogs, setGraphProbeLogs] = useState([]);
+  const [graphProbeError, setGraphProbeError] = useState('');
   const annotationNotesRef = useRef(annotationNotes);
   const annotationFileInputRef = useRef(null);
   const showcaseProjectNameRef = useRef('');
@@ -4436,6 +4449,202 @@ const updateProjectFilters = useCallback((updater) => {
       : graphConnectionState === 'error'
         ? 'API Graph déconnectée'
         : 'API Graph non configurée';
+  const appendGraphProbeLog = useCallback((message) => {
+    setGraphProbeLogs(prev => [...prev, message]);
+  }, []);
+  const handleOpenGraphProbe = useCallback(() => {
+    setGraphProbeError('');
+    setGraphProbeResults([]);
+    setGraphProbeLogs([]);
+    setGraphProbeForm({
+      accessToken: '',
+      siteId: '',
+      driveId: '',
+      recipient: '',
+      continueOnError: false,
+      allowSendMail: false
+    });
+    setIsGraphProbeOpen(true);
+  }, []);
+  const handleCloseGraphProbe = useCallback(() => {
+    if (graphProbeRunning) {
+      return;
+    }
+    setIsGraphProbeOpen(false);
+  }, [graphProbeRunning]);
+  const handleGraphProbeFieldChange = useCallback((field, value) => {
+    setGraphProbeForm(prev => ({ ...prev, [field]: value }));
+  }, []);
+  const runGraphProbeRequest = useCallback(async ({ accessToken, method = 'GET', path, body }) => {
+    try {
+      const response = await fetch(`https://graph.microsoft.com/v1.0${path}`, {
+        method,
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: body ? JSON.stringify(body) : undefined
+      });
+      const text = await response.text();
+      let data = null;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch (error) {
+        data = text;
+      }
+      return { ok: response.ok, status: response.status, data };
+    } catch (error) {
+      return {
+        ok: false,
+        status: -1,
+        data: { error: { code: error?.code || 'NETWORK_ERROR', message: error?.message || 'Network request failed' } }
+      };
+    }
+  }, []);
+  const formatGraphProbeError = useCallback((data) => {
+    const code = data?.error?.code;
+    const message = data?.error?.message;
+    if (code || message) {
+      return `${code || 'Error'}: ${message || 'Unknown error'}`;
+    }
+    if (typeof data === 'string') {
+      return data;
+    }
+    return JSON.stringify(data);
+  }, []);
+  const handleLaunchGraphProbe = useCallback(async () => {
+    const accessToken = graphProbeForm.accessToken.trim();
+    if (!accessToken) {
+      setGraphProbeError('Le token GRAPH_ACCESS_TOKEN est requis.');
+      return;
+    }
+    if (graphProbeForm.allowSendMail && !graphProbeForm.recipient.trim()) {
+      setGraphProbeError('Le destinataire est requis si "Tester Mail.Send" est activé.');
+      return;
+    }
+    setGraphProbeError('');
+    setGraphProbeRunning(true);
+    setGraphProbeResults([]);
+    setGraphProbeLogs([]);
+    appendGraphProbeLog('🔎 Démarrage du diagnostic Graph...');
+    const siteId = graphProbeForm.siteId.trim();
+    const driveId = graphProbeForm.driveId.trim();
+    const recipient = graphProbeForm.recipient.trim();
+    const tests = [
+      {
+        id: 'user-profile',
+        label: 'Read current user profile (/me)',
+        expectedPermission: 'User.Read',
+        run: () => runGraphProbeRequest({ accessToken, path: '/me?$select=id,displayName,userPrincipalName' })
+      },
+      {
+        id: 'sites-root',
+        label: 'List followed sites (/me/followedSites)',
+        expectedPermission: 'Sites.Read.All or equivalent delegated access',
+        run: () => runGraphProbeRequest({ accessToken, path: '/me/followedSites?$top=1' })
+      },
+      {
+        id: 'site-read',
+        label: 'Read configured SharePoint site metadata',
+        expectedPermission: 'Sites.Read.All / Sites.ReadWrite.All',
+        run: () => (!siteId
+          ? Promise.resolve({ ok: false, status: 0, data: { error: { message: 'GRAPH_SITE_ID manquant (test ignoré).' } } })
+          : runGraphProbeRequest({
+              accessToken,
+              path: `/sites/${encodeURIComponent(siteId)}?$select=id,displayName,webUrl`
+            }))
+      },
+      {
+        id: 'site-lists',
+        label: 'List SharePoint lists on configured site',
+        expectedPermission: 'Sites.Read.All / Sites.ReadWrite.All',
+        run: () => (!siteId
+          ? Promise.resolve({ ok: false, status: 0, data: { error: { message: 'GRAPH_SITE_ID manquant (test ignoré).' } } })
+          : runGraphProbeRequest({ accessToken, path: `/sites/${encodeURIComponent(siteId)}/lists?$top=1` }))
+      },
+      {
+        id: 'drive-read',
+        label: 'Read one drive item from configured drive',
+        expectedPermission: 'Files.Read.All / Files.ReadWrite.All',
+        run: () => (!siteId || !driveId
+          ? Promise.resolve({
+              ok: false,
+              status: 0,
+              data: { error: { message: 'GRAPH_SITE_ID ou GRAPH_DRIVE_ID manquant (test ignoré).' } }
+            })
+          : runGraphProbeRequest({
+              accessToken,
+              path: `/sites/${encodeURIComponent(siteId)}/drives/${encodeURIComponent(driveId)}/root/children?$top=1`
+            }))
+      },
+      {
+        id: 'mail-send',
+        label: 'Send a probe email from current user (/me/sendMail)',
+        expectedPermission: 'Mail.Send',
+        run: () => (!graphProbeForm.allowSendMail
+          ? Promise.resolve({
+              ok: false,
+              status: 0,
+              data: { error: { message: 'Test désactivé. Activez "Tester Mail.Send".' } }
+            })
+          : runGraphProbeRequest({
+              accessToken,
+              method: 'POST',
+              path: '/me/sendMail',
+              body: {
+                message: {
+                  subject: '[Graph Probe] Mail.Send validation',
+                  body: {
+                    contentType: 'Text',
+                    content: 'This message was sent by in-app Graph probe.'
+                  },
+                  toRecipients: [
+                    {
+                      emailAddress: {
+                        address: recipient
+                      }
+                    }
+                  ]
+                },
+                saveToSentItems: false
+              }
+            }))
+      }
+    ];
+    const results = [];
+    for (const [index, test] of tests.entries()) {
+      const startedAt = Date.now();
+      const step = index + 1;
+      appendGraphProbeLog(`[${step}/${tests.length}] ${test.label}`);
+      appendGraphProbeLog(`   Permission attendue: ${test.expectedPermission}`);
+      const result = await test.run();
+      const durationMs = Date.now() - startedAt;
+      if (result.ok) {
+        appendGraphProbeLog(`   ✅ PASS (${result.status}) en ${durationMs}ms`);
+        results.push({ step, id: test.id, status: 'PASS', httpStatus: result.status, durationMs });
+        continue;
+      }
+      const errorText = formatGraphProbeError(result.data);
+      const statusLabel = result.status === 0 ? 'SKIPPED' : `FAIL (${result.status})`;
+      appendGraphProbeLog(`   ❌ ${statusLabel} en ${durationMs}ms`);
+      appendGraphProbeLog(`   ↳ ${errorText}`);
+      results.push({
+        step,
+        id: test.id,
+        status: result.status === 0 ? 'SKIPPED' : 'FAIL',
+        httpStatus: result.status,
+        durationMs,
+        error: errorText
+      });
+      const isBlockingError = result.status === 401 || result.status === 403 || result.status === 0 || result.status === -1;
+      if (isBlockingError && !graphProbeForm.continueOnError) {
+        appendGraphProbeLog('🛑 Arrêt au premier blocage (401/403/skip/network).');
+        break;
+      }
+    }
+    setGraphProbeResults(results);
+    setGraphProbeRunning(false);
+  }, [appendGraphProbeLog, formatGraphProbeError, graphProbeForm, runGraphProbeRequest]);
 
   const showcaseProjectId = showcaseProjectContext?.projectId || '';
   const canShareActiveProjectShowcase = useMemo(
@@ -5005,6 +5214,128 @@ const updateProjectFilters = useCallback((updater) => {
         </div>
       )}
 
+      {isGraphProbeOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="graph-probe-title"
+        >
+          <div className="absolute inset-0 bg-gray-900/50" onClick={handleCloseGraphProbe} aria-hidden="true" />
+          <div className="relative w-full max-w-3xl rounded-2xl bg-white p-6 shadow-2xl hv-surface">
+            <div className="text-center">
+              <h2 id="graph-probe-title" className="text-xl font-semibold text-gray-800">
+                Diagnostic permissions Graph
+              </h2>
+              <p className="mt-2 text-sm text-gray-600">
+                Lance une vérification progressive des permissions Microsoft Graph depuis l&apos;application.
+              </p>
+            </div>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <label className="text-sm text-gray-700">
+                Token Graph (requis)
+                <input
+                  type="password"
+                  value={graphProbeForm.accessToken}
+                  onChange={(event) => handleGraphProbeFieldChange('accessToken', event.target.value)}
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                  placeholder="GRAPH_ACCESS_TOKEN"
+                />
+              </label>
+              <label className="text-sm text-gray-700">
+                Site ID (optionnel)
+                <input
+                  type="text"
+                  value={graphProbeForm.siteId}
+                  onChange={(event) => handleGraphProbeFieldChange('siteId', event.target.value)}
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                  placeholder="GRAPH_SITE_ID"
+                />
+              </label>
+              <label className="text-sm text-gray-700">
+                Drive ID (optionnel)
+                <input
+                  type="text"
+                  value={graphProbeForm.driveId}
+                  onChange={(event) => handleGraphProbeFieldChange('driveId', event.target.value)}
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                  placeholder="GRAPH_DRIVE_ID"
+                />
+              </label>
+              <label className="text-sm text-gray-700">
+                Destinataire mail (si Mail.Send)
+                <input
+                  type="email"
+                  value={graphProbeForm.recipient}
+                  onChange={(event) => handleGraphProbeFieldChange('recipient', event.target.value)}
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                  placeholder="nom@entreprise.com"
+                />
+              </label>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-4">
+              <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={graphProbeForm.continueOnError}
+                  onChange={(event) => handleGraphProbeFieldChange('continueOnError', event.target.checked)}
+                />
+                Continuer en cas d&apos;erreur
+              </label>
+              <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={graphProbeForm.allowSendMail}
+                  onChange={(event) => handleGraphProbeFieldChange('allowSendMail', event.target.checked)}
+                />
+                Tester Mail.Send (envoi réel)
+              </label>
+            </div>
+            {graphProbeError && <p className="mt-3 text-sm text-red-600">{graphProbeError}</p>}
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:justify-center">
+              <button
+                type="button"
+                onClick={handleCloseGraphProbe}
+                disabled={graphProbeRunning}
+                className="px-5 py-2 rounded-lg border border-gray-200 text-gray-700 disabled:opacity-60"
+              >
+                Fermer
+              </button>
+              <button
+                type="button"
+                onClick={handleLaunchGraphProbe}
+                disabled={graphProbeRunning}
+                className="px-5 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-60"
+              >
+                {graphProbeRunning ? 'Diagnostic en cours…' : 'Lancer le diagnostic'}
+              </button>
+            </div>
+            <div className="mt-5 grid gap-4 lg:grid-cols-2">
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-600">Journal</p>
+                <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap text-xs text-gray-700">
+                  {graphProbeLogs.length > 0 ? graphProbeLogs.join('\n') : 'Aucune exécution.'}
+                </pre>
+              </div>
+              <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-600">Résumé</p>
+                {graphProbeResults.length === 0 ? (
+                  <p className="mt-2 text-xs text-gray-600">Aucun résultat.</p>
+                ) : (
+                  <ul className="mt-2 space-y-1 text-xs text-gray-700">
+                    {graphProbeResults.map((entry) => (
+                      <li key={`${entry.id}-${entry.step}`}>
+                        [{entry.step}] {entry.id} · {entry.status} · HTTP {entry.httpStatus} · {entry.durationMs}ms
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <main id="main-content" tabIndex="-1" className="focus:outline-none hv-background">
         {!isHydrated ? (
           <div className="flex min-h-[60vh] items-center justify-center">
@@ -5245,17 +5576,28 @@ const updateProjectFilters = useCallback((updater) => {
     )}
 
     <footer className="bg-white border-t border-gray-200 mt-10" aria-label="Pied de page">
-      <p className="text-xs text-gray-400 text-center py-4">
-        Project Navigator · Version {APP_VERSION} · {syncStatusLabel}{syncStatusMeta ? ` · ${syncStatusMeta}` : ''} · {graphConnectionLabel} ·{' '}
-        <a
-          href="./mentions-legales.html"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline hover:text-gray-500"
-        >
-          Mentions légales
-        </a>
-      </p>
+      <div className="py-4 space-y-2">
+        <p className="text-xs text-gray-400 text-center">
+          Project Navigator · Version {APP_VERSION} · {syncStatusLabel}{syncStatusMeta ? ` · ${syncStatusMeta}` : ''} · {graphConnectionLabel} ·{' '}
+          <a
+            href="./mentions-legales.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-gray-500"
+          >
+            Mentions légales
+          </a>
+        </p>
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={handleOpenGraphProbe}
+            className="rounded-full border border-blue-200 bg-blue-50 px-4 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
+          >
+            Diagnostiquer permissions Graph
+          </button>
+        </div>
+      </div>
     </footer>
     </div>
   );
