@@ -53,20 +53,6 @@ const normalizeRiskLevelRules = (rules) => {
         minRisks: minScore,
         maxRisks: maxScore
       };
-    })
-    .sort((a, b) => {
-      if (a.minScore !== b.minScore) {
-        return a.minScore - b.minScore;
-      }
-
-      const aMax = a.maxScore === null ? Number.POSITIVE_INFINITY : a.maxScore;
-      const bMax = b.maxScore === null ? Number.POSITIVE_INFINITY : b.maxScore;
-
-      if (aMax !== bMax) {
-        return aMax - bMax;
-      }
-
-      return a.id.localeCompare(b.id);
     });
 };
 
